@@ -1,7 +1,5 @@
 using FluentAssertions;
 
-using JiraMetrics.Abstractions;
-using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Presentation;
@@ -13,27 +11,12 @@ namespace JiraMetrics.Tests.Presentation;
 
 public sealed class SpectreJiraPresentationServiceTests
 {
-    [Fact(DisplayName = "Constructor throws when analytics service is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenAnalyticsServiceIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        IJiraAnalyticsService analyticsService = null!;
-
-        // Act
-        Action act = () => _ = new SpectreJiraPresentationService(analyticsService);
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
-    }
-
     [Fact(DisplayName = "ShowAuthenticationSucceeded writes user display name")]
     [Trait("Category", "Unit")]
     public async Task ShowAuthenticationSucceededWhenCalledWritesDisplayName()
     {
         // Arrange
-        var service = new SpectreJiraPresentationService(new JiraAnalyticsService());
+        var service = new SpectreJiraPresentationService();
 
         // Act
         var output = await RunWithTestConsoleAsync(console =>
@@ -52,7 +35,7 @@ public sealed class SpectreJiraPresentationServiceTests
     public async Task ShowFailuresWhenFailuresExistWritesTable()
     {
         // Arrange
-        var service = new SpectreJiraPresentationService(new JiraAnalyticsService());
+        var service = new SpectreJiraPresentationService();
         var failures = new List<LoadFailure>
         {
             new(new IssueKey("AAA-1"), new ErrorMessage("boom"))
@@ -76,7 +59,7 @@ public sealed class SpectreJiraPresentationServiceTests
     public async Task ShowFailuresWhenListIsEmptyWritesNothing()
     {
         // Arrange
-        var service = new SpectreJiraPresentationService(new JiraAnalyticsService());
+        var service = new SpectreJiraPresentationService();
 
         // Act
         var output = await RunWithTestConsoleAsync(console =>
@@ -94,7 +77,7 @@ public sealed class SpectreJiraPresentationServiceTests
     public async Task ShowDoneIssuesTableWhenCalledWritesIssueType()
     {
         // Arrange
-        var service = new SpectreJiraPresentationService(new JiraAnalyticsService());
+        var service = new SpectreJiraPresentationService();
         var transitions = new List<TransitionEvent>
         {
             new(new StatusName("Open"), new StatusName("Done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(2))

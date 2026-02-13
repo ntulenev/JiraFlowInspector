@@ -15,17 +15,6 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 public sealed class SpectreJiraPresentationService : IJiraPresentationService
 {
-    private readonly IJiraAnalyticsService _analyticsService;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SpectreJiraPresentationService"/> class.
-    /// </summary>
-    /// <param name="analyticsService">Analytics service.</param>
-    public SpectreJiraPresentationService(IJiraAnalyticsService analyticsService)
-    {
-        _analyticsService = analyticsService ?? throw new ArgumentNullException(nameof(analyticsService));
-    }
-
     /// <inheritdoc />
     public void ShowAuthenticationStarted() => AnsiConsole.MarkupLine("[grey]Authenticating with Jira...[/]");
 
@@ -115,7 +104,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             _ = table.AddRow(
                 Markup.Escape(issue.Key.Value),
                 Markup.Escape(issue.IssueType.Value),
-                Markup.Escape(_analyticsService.Truncate(issue.Summary, new TextLength(120)).Value),
+                Markup.Escape(issue.Summary.Truncate(new TextLength(120)).Value),
                 Markup.Escape(lastDoneAtText));
         }
 
@@ -159,7 +148,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             var stageDurations = group.P75Transitions
                 .Select(static transition => (stage: transition.From.Value, duration: transition.P75Duration))
                 .ToList();
-            var totalTtm = _analyticsService.FormatDuration(group.TotalP75).Value;
+            var totalTtm = DurationLabel.FromDuration(group.TotalP75).Value;
             RenderDurationTimeline(stageDurations, totalTtm);
             AnsiConsole.WriteLine();
 
@@ -175,7 +164,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 _ = table.AddRow(
                     Markup.Escape(transition.From.Value),
                     Markup.Escape(transition.To.Value),
-                    _analyticsService.FormatDuration(transition.P75Duration).Value);
+                    DurationLabel.FromDuration(transition.P75Duration).Value);
             }
 
             AnsiConsole.Write(table);

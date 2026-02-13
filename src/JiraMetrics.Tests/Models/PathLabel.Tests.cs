@@ -1,5 +1,6 @@
 using FluentAssertions;
 
+using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Tests.Models;
@@ -62,5 +63,37 @@ public sealed class PathLabelTests
 
         // Assert
         text.Should().Be("sample");
+    }
+
+    [Fact(DisplayName = "FromTransitions returns no transitions label when list is empty")]
+    [Trait("Category", "Unit")]
+    public void FromTransitionsWhenTransitionsAreEmptyReturnsNoTransitionsLabel()
+    {
+        // Arrange
+        var transitions = Array.Empty<TransitionEvent>();
+
+        // Act
+        var pathLabel = PathLabel.FromTransitions(transitions);
+
+        // Assert
+        pathLabel.Value.Should().Be("No transitions");
+    }
+
+    [Fact(DisplayName = "FromTransitions builds expected joined path label")]
+    [Trait("Category", "Unit")]
+    public void FromTransitionsWhenTransitionsExistReturnsJoinedLabel()
+    {
+        // Arrange
+        var transitions = new List<TransitionEvent>
+        {
+            new(new StatusName("Open"), new StatusName("Code Review"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1)),
+            new(new StatusName("Code Review"), new StatusName("Done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(2))
+        };
+
+        // Act
+        var pathLabel = PathLabel.FromTransitions(transitions);
+
+        // Assert
+        pathLabel.Value.Should().Be("Open -> Code Review | Code Review -> Done");
     }
 }

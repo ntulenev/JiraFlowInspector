@@ -21,6 +21,19 @@ public readonly record struct StageName
     public string Value { get; }
 
     /// <summary>
+    /// Determines whether this stage is used in a transition.
+    /// </summary>
+    /// <param name="transition">Transition event.</param>
+    /// <returns><see langword="true"/> when stage matches transition source or destination.</returns>
+    public bool IsUsedInTransition(TransitionEvent transition)
+    {
+        ArgumentNullException.ThrowIfNull(transition);
+
+        return transition.From.Value.Contains(Value, StringComparison.OrdinalIgnoreCase)
+            || transition.To.Value.Contains(Value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Returns stage name text.
     /// </summary>
     /// <returns>Stage name text.</returns>

@@ -32,7 +32,7 @@ public sealed class JiraLogicService : IJiraLogicService
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        return [.. issues.Where(issue => _analytics.PathContainsStage(issue.Transitions, requiredPathStage))];
+        return [.. issues.Where(issue => issue.Transitions.Any(requiredPathStage.IsUsedInTransition))];
     }
 
     /// <summary>

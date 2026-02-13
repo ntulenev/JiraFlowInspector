@@ -17,26 +17,9 @@ public sealed class JiraApiClientTests
     {
         // Arrange
         IJiraTransport transport = null!;
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict).Object;
 
         // Act
-        Action act = () => _ = new JiraApiClient(transport, analytics);
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Constructor throws when analytics service is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenAnalyticsServiceIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        var transport = new Mock<IJiraTransport>(MockBehavior.Strict).Object;
-        IJiraAnalyticsService analytics = null!;
-
-        // Act
-        Action act = () => _ = new JiraApiClient(transport, analytics);
+        Action act = () => _ = new JiraApiClient(transport);
 
         // Assert
         act.Should()
@@ -62,8 +45,7 @@ public sealed class JiraApiClientTests
                 AccountId = "123"
             });
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict).Object;
-        var client = new JiraApiClient(transport.Object, analytics);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         var user = await client.GetCurrentUserAsync(cts.Token);
@@ -88,8 +70,7 @@ public sealed class JiraApiClientTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((JiraCurrentUserResponse?)null);
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict).Object;
-        var client = new JiraApiClient(transport.Object, analytics);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         Func<Task> act = () => client.GetCurrentUserAsync(cts.Token);
@@ -135,8 +116,7 @@ public sealed class JiraApiClientTests
             .Callback(() => sendCalls++)
             .ReturnsAsync(secondResponse);
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict).Object;
-        var client = new JiraApiClient(transport.Object, analytics);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         var keys = await client.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -173,8 +153,7 @@ public sealed class JiraApiClientTests
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict).Object;
-        var client = new JiraApiClient(transport.Object, analytics);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         _ = await client.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -223,13 +202,7 @@ public sealed class JiraApiClientTests
                 }
             });
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict);
-        analytics.Setup(x => x.BuildPathKey(It.IsAny<IReadOnlyList<JiraMetrics.Models.TransitionEvent>>()))
-            .Returns(new PathKey("OPEN->DONE"));
-        analytics.Setup(x => x.BuildPathLabel(It.IsAny<IReadOnlyList<JiraMetrics.Models.TransitionEvent>>()))
-            .Returns(new PathLabel("Open -> Done"));
-
-        var client = new JiraApiClient(transport.Object, analytics.Object);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
@@ -271,13 +244,7 @@ public sealed class JiraApiClientTests
                 }
             });
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict);
-        analytics.Setup(x => x.BuildPathKey(It.IsAny<IReadOnlyList<JiraMetrics.Models.TransitionEvent>>()))
-            .Returns(new PathKey("NO_TRANSITIONS"));
-        analytics.Setup(x => x.BuildPathLabel(It.IsAny<IReadOnlyList<JiraMetrics.Models.TransitionEvent>>()))
-            .Returns(new PathLabel("No transitions"));
-
-        var client = new JiraApiClient(transport.Object, analytics.Object);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
@@ -304,8 +271,7 @@ public sealed class JiraApiClientTests
                 Fields = null
             });
 
-        var analytics = new Mock<IJiraAnalyticsService>(MockBehavior.Strict).Object;
-        var client = new JiraApiClient(transport.Object, analytics);
+        var client = new JiraApiClient(transport.Object);
 
         // Act
         Func<Task> act = () => client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);

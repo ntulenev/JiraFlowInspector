@@ -117,8 +117,6 @@ public sealed class JiraLogicServiceTests
 
     private static IssueTimeline CreateIssue(IssueKey key, IReadOnlyList<TransitionEvent> transitions)
     {
-        var analytics = new JiraAnalyticsService();
-
         return new IssueTimeline(
             key,
             new IssueTypeName("Story"),
@@ -126,8 +124,8 @@ public sealed class JiraLogicServiceTests
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,
             transitions,
-            analytics.BuildPathKey(transitions),
-            analytics.BuildPathLabel(transitions));
+            PathKey.FromTransitions(transitions),
+            PathLabel.FromTransitions(transitions));
     }
 
     private static IssueTimeline CreateIssueWithPath(IssueKey key, PathKey pathKey, PathLabel pathLabel)

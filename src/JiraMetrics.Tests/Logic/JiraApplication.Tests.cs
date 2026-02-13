@@ -134,7 +134,6 @@ public sealed class JiraApplicationTests
 
     private static IssueTimeline CreateIssue(IssueKey key)
     {
-        var analytics = new JiraAnalyticsService();
         var transitions = new List<TransitionEvent>
         {
             new(new StatusName("Open"), new StatusName("Code Review"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1)),
@@ -148,8 +147,8 @@ public sealed class JiraApplicationTests
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,
             transitions,
-            analytics.BuildPathKey(transitions),
-            analytics.BuildPathLabel(transitions));
+            PathKey.FromTransitions(transitions),
+            PathLabel.FromTransitions(transitions));
     }
 
     private sealed class FakeApiClient : IJiraApiClient

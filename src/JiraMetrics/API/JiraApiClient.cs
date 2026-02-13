@@ -14,14 +14,11 @@ public sealed class JiraApiClient : IJiraApiClient
     /// Initializes a new instance of the <see cref="JiraApiClient"/> class.
     /// </summary>
     /// <param name="transport">Jira transport instance.</param>
-    /// <param name="analyticsService">Analytics service.</param>
-    public JiraApiClient(IJiraTransport transport, IJiraAnalyticsService analyticsService)
+    public JiraApiClient(IJiraTransport transport)
     {
         ArgumentNullException.ThrowIfNull(transport);
-        ArgumentNullException.ThrowIfNull(analyticsService);
 
         _transport = transport;
-        _analyticsService = analyticsService;
     }
 
     /// <inheritdoc />
@@ -149,8 +146,8 @@ public sealed class JiraApiClient : IJiraApiClient
             created,
             endTime,
             transitions,
-            _analyticsService.BuildPathKey(transitions),
-            _analyticsService.BuildPathLabel(transitions));
+            PathKey.FromTransitions(transitions),
+            PathLabel.FromTransitions(transitions));
     }
 
     private static List<TransitionEvent> ParseTransitions(IReadOnlyList<JiraHistoryResponse> histories, DateTimeOffset created)
@@ -214,5 +211,4 @@ public sealed class JiraApiClient : IJiraApiClient
     }
 
     private readonly IJiraTransport _transport;
-    private readonly IJiraAnalyticsService _analyticsService;
 }

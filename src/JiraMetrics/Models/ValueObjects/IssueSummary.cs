@@ -21,6 +21,21 @@ public readonly record struct IssueSummary
     public string Value { get; }
 
     /// <summary>
+    /// Truncates summary to a specific maximum length.
+    /// </summary>
+    /// <param name="maxLength">Maximum length.</param>
+    /// <returns>Truncated summary.</returns>
+    public IssueSummary Truncate(TextLength maxLength)
+    {
+        if (Value.Length <= maxLength.Value)
+        {
+            return this;
+        }
+
+        return new IssueSummary(Value[..(maxLength.Value - 3)] + "...");
+    }
+
+    /// <summary>
     /// Returns summary text.
     /// </summary>
     /// <returns>Summary text.</returns>

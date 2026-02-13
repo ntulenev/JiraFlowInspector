@@ -1,5 +1,6 @@
 using FluentAssertions;
 
+using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Tests.Models;
@@ -62,5 +63,43 @@ public sealed class StageNameTests
 
         // Assert
         text.Should().Be("sample");
+    }
+
+    [Fact(DisplayName = "IsUsedInTransition returns true when stage matches from or to")]
+    [Trait("Category", "Unit")]
+    public void IsUsedInTransitionWhenStageMatchesReturnsTrue()
+    {
+        // Arrange
+        var stage = new StageName("code review");
+        var transition = new TransitionEvent(
+            new StatusName("Open"),
+            new StatusName("Code Review"),
+            DateTimeOffset.UtcNow,
+            TimeSpan.FromHours(1));
+
+        // Act
+        var result = stage.IsUsedInTransition(transition);
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "IsUsedInTransition returns false when stage does not match")]
+    [Trait("Category", "Unit")]
+    public void IsUsedInTransitionWhenStageDoesNotMatchReturnsFalse()
+    {
+        // Arrange
+        var stage = new StageName("blocked");
+        var transition = new TransitionEvent(
+            new StatusName("Open"),
+            new StatusName("Done"),
+            DateTimeOffset.UtcNow,
+            TimeSpan.FromHours(1));
+
+        // Act
+        var result = stage.IsUsedInTransition(transition);
+
+        // Assert
+        result.Should().BeFalse();
     }
 }

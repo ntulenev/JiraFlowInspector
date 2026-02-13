@@ -21,6 +21,47 @@ public readonly record struct DurationLabel
     public string Value { get; }
 
     /// <summary>
+    /// Creates a formatted duration label.
+    /// </summary>
+    /// <param name="duration">Duration value.</param>
+    /// <returns>Duration label.</returns>
+    public static DurationLabel FromDuration(TimeSpan duration)
+    {
+        if (duration < TimeSpan.Zero)
+        {
+            duration = TimeSpan.Zero;
+        }
+
+        var days = (int)duration.TotalDays;
+        var hours = duration.Hours;
+        var minutes = duration.Minutes;
+        var seconds = duration.Seconds;
+
+        var parts = new List<string>();
+        if (days > 0)
+        {
+            parts.Add($"{days}d");
+        }
+
+        if (hours > 0)
+        {
+            parts.Add($"{hours}h");
+        }
+
+        if (minutes > 0)
+        {
+            parts.Add($"{minutes}m");
+        }
+
+        if (parts.Count == 0)
+        {
+            parts.Add($"{seconds}s");
+        }
+
+        return new DurationLabel(string.Join(" ", parts));
+    }
+
+    /// <summary>
     /// Returns duration label text.
     /// </summary>
     /// <returns>Duration label text.</returns>

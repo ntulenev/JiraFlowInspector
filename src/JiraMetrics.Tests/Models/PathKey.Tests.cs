@@ -1,5 +1,6 @@
 using FluentAssertions;
 
+using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Tests.Models;
@@ -62,5 +63,37 @@ public sealed class PathKeyTests
 
         // Assert
         text.Should().Be("sample");
+    }
+
+    [Fact(DisplayName = "FromTransitions returns no transitions key when list is empty")]
+    [Trait("Category", "Unit")]
+    public void FromTransitionsWhenTransitionsAreEmptyReturnsNoTransitionsKey()
+    {
+        // Arrange
+        var transitions = Array.Empty<TransitionEvent>();
+
+        // Act
+        var pathKey = PathKey.FromTransitions(transitions);
+
+        // Assert
+        pathKey.Value.Should().Be("__NO_TRANSITIONS__");
+    }
+
+    [Fact(DisplayName = "FromTransitions builds uppercase combined key")]
+    [Trait("Category", "Unit")]
+    public void FromTransitionsWhenTransitionsExistReturnsCombinedKey()
+    {
+        // Arrange
+        var transitions = new List<TransitionEvent>
+        {
+            new(new StatusName("open"), new StatusName("code review"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1)),
+            new(new StatusName("code review"), new StatusName("done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1))
+        };
+
+        // Act
+        var pathKey = PathKey.FromTransitions(transitions);
+
+        // Assert
+        pathKey.Value.Should().Be("OPEN->CODE REVIEW||CODE REVIEW->DONE");
     }
 }
