@@ -32,6 +32,9 @@ builder.Services.AddSingleton(sp =>
     var monthLabel = string.IsNullOrWhiteSpace(source.MonthLabel)
         ? MonthLabel.CurrentUtc()
         : new MonthLabel(source.MonthLabel);
+    var createdAfter = string.IsNullOrWhiteSpace(source.CreatedAfter)
+        ? (CreatedAfterDate?)null
+        : new CreatedAfterDate(source.CreatedAfter);
 
     var settings = new AppSettings(
         new JiraBaseUrl(source.BaseUrl.ToString()),
@@ -40,7 +43,8 @@ builder.Services.AddSingleton(sp =>
         new ProjectKey(source.ProjectKey),
         new StatusName(source.DoneStatusName),
         new StageName(source.RequiredPathStage),
-        monthLabel);
+        monthLabel,
+        createdAfter);
 
     return Options.Create(settings);
 });

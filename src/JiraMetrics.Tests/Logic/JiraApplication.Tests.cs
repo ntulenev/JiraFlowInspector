@@ -143,6 +143,7 @@ public sealed class JiraApplicationTests
 
         return new IssueTimeline(
             key,
+            new IssueTypeName("Story"),
             new IssueSummary($"Summary {key.Value}"),
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,
@@ -176,6 +177,7 @@ public sealed class JiraApplicationTests
         public Task<IReadOnlyList<IssueKey>> GetIssueKeysMovedToDoneThisMonthAsync(
             ProjectKey projectKey,
             StatusName doneStatusName,
+            CreatedAfterDate? createdAfter,
             CancellationToken cancellationToken) => Task.FromResult(IssueKeys);
 
         public Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
@@ -192,6 +194,7 @@ public sealed class JiraApplicationTests
 
             return Task.FromResult(new IssueTimeline(
                 issueKey,
+                IssueToReturn.IssueType,
                 IssueToReturn.Summary,
                 IssueToReturn.Created,
                 IssueToReturn.EndTime,
@@ -219,9 +222,9 @@ public sealed class JiraApplicationTests
         {
         }
 
-        public void ShowAuthenticationFailed(ErrorMessage error) => AuthenticationFailedShown = true;
+        public void ShowAuthenticationFailed(ErrorMessage errorMessage) => AuthenticationFailedShown = true;
 
-        public void ShowIssueSearchFailed(ErrorMessage error)
+        public void ShowIssueSearchFailed(ErrorMessage errorMessage)
         {
         }
 

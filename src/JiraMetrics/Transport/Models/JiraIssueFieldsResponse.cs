@@ -24,4 +24,10 @@ internal sealed class JiraIssueFieldsResponse
     /// </summary>
     [JsonPropertyName("resolutiondate")]
     public string? ResolutionDate { get; init; }
+
+    /// <summary>
+    /// Gets issue type.
+    /// </summary>
+    [JsonPropertyName("issuetype")]
+    public JiraIssueTypeResponse? IssueType { get; init; }
 }

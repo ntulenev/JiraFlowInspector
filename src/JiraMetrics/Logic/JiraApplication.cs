@@ -62,6 +62,7 @@ public sealed class JiraApplication : IJiraApplication
             issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
                 _settings.ProjectKey,
                 _settings.DoneStatusName,
+                _settings.CreatedAfter,
                 cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException ex)

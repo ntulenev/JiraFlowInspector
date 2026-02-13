@@ -45,12 +45,23 @@ public sealed class JiraApiClient : IJiraApiClient
     public async Task<IReadOnlyList<IssueKey>> GetIssueKeysMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
+        CreatedAfterDate? createdAfter,
         CancellationToken cancellationToken)
     {
         var escapedProject = EscapeJqlString(projectKey.Value);
         var escapedDoneStatus = EscapeJqlString(doneStatusName.Value);
-        var jql =
-            $"project = \"{escapedProject}\" AND status CHANGED TO \"{escapedDoneStatus}\" AFTER startOfMonth() ORDER BY key ASC";
+        var clauses = new List<string>
+        {
+            $"project = \"{escapedProject}\"",
+            $"status CHANGED TO \"{escapedDoneStatus}\" AFTER startOfMonth()"
+        };
+
+        if (createdAfter is { } createdAfterDate)
+        {
+            clauses.Add($"created >= \"{createdAfterDate}\"");
+        }
+
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
 
         var issueKeys = new List<IssueKey>();
         const int pageSize = 100;
@@ -133,6 +144,7 @@ public sealed class JiraApiClient : IJiraApiClient
 
         return new IssueTimeline(
             !string.IsNullOrWhiteSpace(response.Key) ? new IssueKey(response.Key.Trim()) : issueKey,
+            IssueTypeName.FromNullable(response.Fields.IssueType?.Name),
             new IssueSummary(string.IsNullOrWhiteSpace(response.Fields.Summary) ? "No summary" : response.Fields.Summary),
             created,
             endTime,

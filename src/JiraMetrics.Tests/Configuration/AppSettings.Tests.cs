@@ -19,9 +19,10 @@ public sealed class AppSettingsTests
         var doneStatus = new StatusName("Done");
         var requiredPathStage = new StageName("Code Review");
         var monthLabel = new MonthLabel("2026-02");
+        var createdAfter = new CreatedAfterDate("2026-01-15");
 
         // Act
-        var settings = new AppSettings(baseUrl, email, token, projectKey, doneStatus, requiredPathStage, monthLabel);
+        var settings = new AppSettings(baseUrl, email, token, projectKey, doneStatus, requiredPathStage, monthLabel, createdAfter);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -31,5 +32,6 @@ public sealed class AppSettingsTests
         settings.DoneStatusName.Should().Be(doneStatus);
         settings.RequiredPathStage.Should().Be(requiredPathStage);
         settings.MonthLabel.Should().Be(monthLabel);
+        settings.CreatedAfter.Should().Be(createdAfter);
     }
 }

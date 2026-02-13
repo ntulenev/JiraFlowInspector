@@ -55,6 +55,12 @@ public sealed class JiraOptions
     public string? MonthLabel { get; init; }
 
     /// <summary>
+    /// Gets or sets optional lower bound for issue creation date in yyyy-MM-dd format.
+    /// </summary>
+    [RegularExpression(@"^\d{4}-\d{2}-\d{2}$")]
+    public string? CreatedAfter { get; init; }
+
+    /// <summary>
     /// Gets or sets number of retries for transient Jira API errors.
     /// </summary>
     [Range(0, 10)]

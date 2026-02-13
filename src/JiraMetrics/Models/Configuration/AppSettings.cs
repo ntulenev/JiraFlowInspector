@@ -17,6 +17,7 @@ public sealed record AppSettings
     /// <param name="doneStatusName">Done status name.</param>
     /// <param name="requiredPathStage">Required path stage.</param>
     /// <param name="monthLabel">Month label used in output.</param>
+    /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -24,7 +25,8 @@ public sealed record AppSettings
         ProjectKey projectKey,
         StatusName doneStatusName,
         StageName requiredPathStage,
-        MonthLabel monthLabel)
+        MonthLabel monthLabel,
+        CreatedAfterDate? createdAfter = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -33,6 +35,7 @@ public sealed record AppSettings
         DoneStatusName = doneStatusName;
         RequiredPathStage = requiredPathStage;
         MonthLabel = monthLabel;
+        CreatedAfter = createdAfter;
     }
 
     /// <summary>
@@ -69,4 +72,9 @@ public sealed record AppSettings
     /// Gets month label.
     /// </summary>
     public MonthLabel MonthLabel { get; }
+
+    /// <summary>
+    /// Gets optional lower bound for issue creation date.
+    /// </summary>
+    public CreatedAfterDate? CreatedAfter { get; }
 }

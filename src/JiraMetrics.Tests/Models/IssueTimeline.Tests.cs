@@ -17,6 +17,7 @@ public sealed class IssueTimelineTests
         // Act
         Action act = () => _ = new IssueTimeline(
             new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
             new IssueSummary("Summary"),
             DateTimeOffset.UtcNow.AddHours(-1),
             DateTimeOffset.UtcNow,
@@ -40,6 +41,7 @@ public sealed class IssueTimelineTests
         // Act
         Action act = () => _ = new IssueTimeline(
             new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
             new IssueSummary("Summary"),
             created,
             endTime,
@@ -67,6 +69,7 @@ public sealed class IssueTimelineTests
         // Act
         var issue = new IssueTimeline(
             new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
             new IssueSummary("Summary"),
             created,
             endTime,
@@ -76,6 +79,7 @@ public sealed class IssueTimelineTests
 
         // Assert
         issue.Key.Value.Should().Be("AAA-1");
+        issue.IssueType.Value.Should().Be("Story");
         issue.Summary.Value.Should().Be("Summary");
         issue.Created.Should().Be(created);
         issue.EndTime.Should().Be(endTime);
@@ -84,4 +88,3 @@ public sealed class IssueTimelineTests
         issue.PathLabel.Value.Should().Be("Open -> Done");
     }
 }
-

@@ -20,11 +20,13 @@ public interface IJiraApiClient
     /// </summary>
     /// <param name="projectKey">Project key.</param>
     /// <param name="doneStatusName">Done status.</param>
+    /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Issue keys.</returns>
     Task<IReadOnlyList<IssueKey>> GetIssueKeysMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
+        CreatedAfterDate? createdAfter,
         CancellationToken cancellationToken);
 
     /// <summary>

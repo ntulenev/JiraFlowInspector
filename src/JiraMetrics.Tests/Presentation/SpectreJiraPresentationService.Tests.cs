@@ -89,6 +89,38 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "ShowDoneIssuesTable writes issue type column and value")]
+    [Trait("Category", "Unit")]
+    public async Task ShowDoneIssuesTableWhenCalledWritesIssueType()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService(new JiraAnalyticsService());
+        var transitions = new List<TransitionEvent>
+        {
+            new(new StatusName("Open"), new StatusName("Done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(2))
+        };
+        var issue = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Bug"),
+            new IssueSummary("Fix login"),
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow,
+            transitions,
+            new PathKey("OPEN->DONE"),
+            new PathLabel("Open -> Done"));
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowDoneIssuesTable([issue], new StatusName("Done"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Type");
+        output.Should().Contain("Bug");
+    }
+
     private static async Task<T> RunWithTestConsoleAsync<T>(Func<TestConsole, Task<T>> action)
     {
         var original = AnsiConsole.Console;

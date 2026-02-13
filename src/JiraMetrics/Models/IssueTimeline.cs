@@ -11,6 +11,7 @@ public sealed record IssueTimeline
     /// Initializes a new instance of the <see cref="IssueTimeline"/> class.
     /// </summary>
     /// <param name="key">Issue key.</param>
+    /// <param name="issueType">Issue type.</param>
     /// <param name="summary">Issue summary.</param>
     /// <param name="created">Issue creation timestamp.</param>
     /// <param name="endTime">Issue end timestamp used for analytics.</param>
@@ -20,6 +21,7 @@ public sealed record IssueTimeline
     /// <exception cref="ArgumentException">Thrown when <paramref name="endTime"/> is earlier than <paramref name="created"/>.</exception>
     public IssueTimeline(
         IssueKey key,
+        IssueTypeName issueType,
         IssueSummary summary,
         DateTimeOffset created,
         DateTimeOffset endTime,
@@ -28,6 +30,7 @@ public sealed record IssueTimeline
         PathLabel pathLabel)
     {
         Key = key;
+        IssueType = issueType;
         Summary = summary;
         Created = created;
         EndTime = endTime;
@@ -50,6 +53,11 @@ public sealed record IssueTimeline
     /// Gets the issue summary.
     /// </summary>
     public IssueSummary Summary { get; }
+
+    /// <summary>
+    /// Gets the issue type.
+    /// </summary>
+    public IssueTypeName IssueType { get; }
 
     /// <summary>
     /// Gets the issue creation timestamp.

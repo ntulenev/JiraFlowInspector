@@ -121,6 +121,7 @@ public sealed class JiraLogicServiceTests
 
         return new IssueTimeline(
             key,
+            new IssueTypeName("Story"),
             new IssueSummary($"Summary {key.Value}"),
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,
@@ -138,6 +139,7 @@ public sealed class JiraLogicServiceTests
 
         return new IssueTimeline(
             key,
+            new IssueTypeName("Story"),
             new IssueSummary($"Summary {key.Value}"),
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,

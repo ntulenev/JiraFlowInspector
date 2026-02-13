@@ -54,6 +54,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         AnsiConsole.MarkupLine(
             $"[grey]Filter:[/] project = {Markup.Escape(settings.ProjectKey.Value)}, moved to {Markup.Escape(settings.DoneStatusName.Value)} in {Markup.Escape(settings.MonthLabel.Value)}");
+        if (settings.CreatedAfter is { } createdAfter)
+        {
+            AnsiConsole.MarkupLine($"[grey]Created after:[/] {Markup.Escape(createdAfter.ToString())}");
+        }
+
         AnsiConsole.MarkupLine($"[grey]Required stage in path:[/] {Markup.Escape(settings.RequiredPathStage.Value)}");
     }
 
@@ -91,6 +96,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .RoundedBorder()
             .BorderColor(Color.Grey)
             .AddColumn("[bold]Issue[/]")
+            .AddColumn("[bold]Type[/]")
             .AddColumn("[bold]Summary[/]")
             .AddColumn("[bold]Last Done At[/]");
 
@@ -108,6 +114,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
             _ = table.AddRow(
                 Markup.Escape(issue.Key.Value),
+                Markup.Escape(issue.IssueType.Value),
                 Markup.Escape(_analyticsService.Truncate(issue.Summary, new TextLength(120)).Value),
                 Markup.Escape(lastDoneAtText));
         }
@@ -148,11 +155,12 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 continue;
             }
 
-            AnsiConsole.MarkupLine("[bold]P75 Timeline Diagram[/]");
-            var segments = group.P75Transitions
-                .Select(x => (label: $"{x.From.Value} -> {x.To.Value}", duration: x.P75Duration))
+            AnsiConsole.MarkupLine("[bold]Timeline Diagram[/]");
+            var stageDurations = group.P75Transitions
+                .Select(static transition => (stage: transition.From.Value, duration: transition.P75Duration))
                 .ToList();
-            RenderDurationTimeline(segments);
+            var totalTtm = _analyticsService.FormatDuration(group.TotalP75).Value;
+            RenderDurationTimeline(stageDurations, totalTtm);
             AnsiConsole.WriteLine();
 
             var table = new Table()
@@ -160,16 +168,14 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 .BorderColor(Color.Grey)
                 .AddColumn("[bold]From[/]")
                 .AddColumn("[bold]To[/]")
-                .AddColumn("[bold]P75 Time[/]")
-                .AddColumn("[bold]Samples[/]");
+                .AddColumn("[bold]P75 Time[/]");
 
             foreach (var transition in group.P75Transitions)
             {
                 _ = table.AddRow(
                     Markup.Escape(transition.From.Value),
                     Markup.Escape(transition.To.Value),
-                    _analyticsService.FormatDuration(transition.P75Duration).Value,
-                    group.Issues.Count.ToString(CultureInfo.InvariantCulture));
+                    _analyticsService.FormatDuration(transition.P75Duration).Value);
             }
 
             AnsiConsole.Write(table);
@@ -203,94 +209,111 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         AnsiConsole.Write(table);
     }
 
-    private void RenderDurationTimeline(List<(string label, TimeSpan duration)> segments)
+    private static void RenderDurationTimeline(
+        List<(string stage, TimeSpan duration)> stageDurations,
+        string totalTtm)
     {
-        if (segments.Count == 0)
+        if (stageDurations.Count == 0)
         {
             AnsiConsole.MarkupLine("[grey]No transitions to render.[/]");
             return;
         }
 
-        var normalized = segments
-            .Select(segment => (segment.label, duration: segment.duration < TimeSpan.Zero ? TimeSpan.Zero : segment.duration))
+        var normalizedDurations = stageDurations
+            .Select(static stageDuration => (stageDuration.stage, duration: stageDuration.duration < TimeSpan.Zero ? TimeSpan.Zero : stageDuration.duration))
             .ToList();
 
-        var width = Math.Clamp(AnsiConsole.Profile.Width - 16, 30, 100);
-        var total = normalized.Aggregate(TimeSpan.Zero, (acc, segment) => acc + segment.duration);
-        var totalSeconds = Math.Max(0.0, total.TotalSeconds);
-
+        var width = Math.Clamp(AnsiConsole.Profile.Width - 4, 30, 110);
+        var stageColors = BuildStageColors(normalizedDurations);
+        var segmentWidths = ComputeSegmentWidths(normalizedDurations, width);
         var bar = new StringBuilder();
-        var cursor = 0;
-        var cumulativeSeconds = 0.0;
 
-        for (var i = 0; i < normalized.Count; i++)
+        for (var i = 0; i < normalizedDurations.Count; i++)
         {
-            var (_, duration) = normalized[i];
-            var startPos = totalSeconds <= 0
-                ? 0
-                : (int)Math.Round(cumulativeSeconds / totalSeconds * (width - 1));
-            var endCumulativeSeconds = cumulativeSeconds + duration.TotalSeconds;
-            var endPos = totalSeconds <= 0
-                ? width - 1
-                : (int)Math.Round(endCumulativeSeconds / totalSeconds * (width - 1));
-
-            if (startPos < cursor)
+            if (segmentWidths[i] <= 0)
             {
-                startPos = cursor;
-            }
-
-            if (endPos < startPos)
-            {
-                endPos = startPos;
-            }
-
-            if (i == normalized.Count - 1)
-            {
-                endPos = width - 1;
-            }
-
-            if (startPos > cursor)
-            {
-                _ = bar.Append(new string(' ', startPos - cursor));
-            }
-
-            var segmentWidth = Math.Max(1, endPos - startPos + 1);
-            var maxWidth = width - startPos;
-            if (maxWidth <= 0)
-            {
-                break;
-            }
-
-            if (segmentWidth > maxWidth)
-            {
-                segmentWidth = maxWidth;
+                continue;
             }
 
             _ = bar.Append('[')
-                .Append(GetTimelineColor(i))
+                .Append(stageColors[normalizedDurations[i].stage])
                 .Append(']')
-                .Append(new string('#', segmentWidth))
+                .Append(new string('█', segmentWidths[i]))
                 .Append("[/]");
-            cursor = startPos + segmentWidth;
-            cumulativeSeconds = endCumulativeSeconds;
-        }
-
-        if (cursor < width)
-        {
-            _ = bar.Append(new string(' ', width - cursor));
         }
 
         AnsiConsole.MarkupLine(bar.ToString());
 
-        var left = "0";
-        var right = $"P75 total: {_analyticsService.FormatDuration(total).Value}";
-        var spacing = Math.Max(1, width - left.Length - right.Length);
-        AnsiConsole.MarkupLine($"[grey]{Markup.Escape(left)}{new string(' ', spacing)}{Markup.Escape(right)}[/]");
-
         var legend = string.Join(
             "  ",
-            normalized.Select((segment, i) => $"[{GetTimelineColor(i)}]#[/] {Markup.Escape(segment.label)}"));
+            stageColors.Select(static pair => $"[{pair.Value}]■[/] {Markup.Escape(pair.Key)}"));
         AnsiConsole.MarkupLine(legend);
+
+        AnsiConsole.MarkupLine($"[grey]TTM 75P:[/] {Markup.Escape(totalTtm)}");
+    }
+
+    private static Dictionary<string, string> BuildStageColors(
+        List<(string stage, TimeSpan duration)> stageDurations)
+    {
+        var orderedStages = new List<string>();
+        foreach (var (stage, _) in stageDurations)
+        {
+            if (!orderedStages.Contains(stage, StringComparer.OrdinalIgnoreCase))
+            {
+                orderedStages.Add(stage);
+            }
+        }
+
+        var colors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < orderedStages.Count; i++)
+        {
+            colors[orderedStages[i]] = GetTimelineColor(i);
+        }
+
+        return colors;
+    }
+
+    private static List<int> ComputeSegmentWidths(
+        List<(string stage, TimeSpan duration)> stageDurations,
+        int width)
+    {
+        var segmentCount = stageDurations.Count;
+        if (segmentCount == 0 || width <= 0)
+        {
+            return [];
+        }
+
+        var totalSeconds = stageDurations.Sum(static segment => Math.Max(0.0, segment.duration.TotalSeconds));
+        if (totalSeconds <= 0)
+        {
+            var equalWidth = Math.Max(1, width / segmentCount);
+            var equalWidths = Enumerable.Repeat(equalWidth, segmentCount).ToList();
+            var remaining = width - equalWidths.Sum();
+            for (var i = 0; i < remaining; i++)
+            {
+                equalWidths[i % segmentCount]++;
+            }
+
+            return equalWidths;
+        }
+
+        var rawWidths = stageDurations
+            .Select(segment => Math.Max(0.0, segment.duration.TotalSeconds) / totalSeconds * width)
+            .ToList();
+        var widths = rawWidths.Select(static rawWidth => (int)Math.Floor(rawWidth)).ToList();
+
+        var remainder = width - widths.Sum();
+        var order = rawWidths
+            .Select((rawWidth, index) => (index, fraction: rawWidth - Math.Floor(rawWidth)))
+            .OrderByDescending(static item => item.fraction)
+            .ToList();
+
+        for (var i = 0; i < remainder; i++)
+        {
+            widths[order[i % order.Count].index]++;
+        }
+
+        return widths;
     }
 
     private static string GetTimelineColor(int index) => index switch
@@ -301,6 +324,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         3 => "springgreen1",
         4 => "yellow1",
         5 => "orange1",
+        6 => "gold1",
         _ => "grey82"
     };
 }

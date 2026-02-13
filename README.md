@@ -1,17 +1,11 @@
 # JiraFlowInspector
 
+<img src="FlowLogo.png" alt="logo" width="250">
+
 JiraFlowInspector is a console analytics utility for tracking Jira issue transition flow.
 It helps detect bottlenecks and compare transition paths with P75 timing.
 
-## Project structure
-- `src/JiraMetrics/Abstractions`: Service contracts/interfaces.
-- `src/JiraMetrics/Models`: Domain models (one model per file).
-- `src/JiraMetrics/Models/ValueObjects`: Domain primitive wrappers.
-- `src/JiraMetrics/Models/Configuration`: Options/configuration models and validation.
-- `src/JiraMetrics/Logic`: Configuration + analytics + orchestration logic.
-- `src/JiraMetrics/Transport`: Jira API transport client and response DTOs.
-- `src/JiraMetrics/Presentation`: Console UI rendering (Spectre.Console).
-- `src/JiraMetrics.Tests/Logic`: Unit tests split per tested type.
+
 
 ## How the service works
 1. Loads configuration from `appsettings.json` (`Jira` section).
@@ -27,15 +21,18 @@ It helps detect bottlenecks and compare transition paths with P75 timing.
    - Failure report (if any)
 
 ## appsettings.json parameters
-All settings are under the `Jira` object.
+### `Jira` section
+Application options are under the `Jira` object.
 
-- `BaseUrl` (`string`): Jira base URL (for example `https://your-company.atlassian.net`).
-- `Email` (`string`): Jira account email used for authentication.
-- `ApiToken` (`string`): Jira API token used for authentication.
-- `ProjectKey` (`string`): Jira project key used in JQL filter.
-- `DoneStatusName` (`string`): Target done status name used in JQL filter.
-- `RequiredPathStage` (`string`): Stage that must be present in the issue transition path.
-- `MonthLabel` (`string`): Label shown in the console filter summary.
+- `BaseUrl` (`string`, required): Jira base URL (for example `https://your-company.atlassian.net`).
+- `Email` (`string`, required): Jira account email used for authentication.
+- `ApiToken` (`string`, required): Jira API token used for authentication.
+- `ProjectKey` (`string`, required): Jira project key used in JQL filter.
+- `DoneStatusName` (`string`, required): Target done status name used in JQL filter.
+- `RequiredPathStage` (`string`, required): Stage that must be present in the issue transition path.
+- `MonthLabel` (`string`, optional): Label shown in the console filter summary (`yyyy-MM`); defaults to current UTC month when omitted.
+- `CreatedAfter` (`string`, optional): Lower bound for issue creation date (`yyyy-MM-dd`); adds `created >= "<date>"` to JQL when provided.
+- `RetryCount` (`int`, optional): Number of retries for transient Jira API failures (`0..10`, default `0`).
 
 ## Example configuration
 ```json
@@ -44,20 +41,16 @@ All settings are under the `Jira` object.
     "BaseUrl": "https://your-company.atlassian.net",
     "Email": "your-email@company.com",
     "ApiToken": "your-jira-api-token",
-    "ProjectKey": "",
+    "ProjectKey": "ABC",
     "DoneStatusName": "Done",
     "RequiredPathStage": "Code Review",
-    "MonthLabel": "2026-02"
+    "CreatedAfter": "2026-01-01",
+    "MonthLabel": "2026-02",
+    "RetryCount": 2
   }
 }
 ```
 
-## Run
-```bash
-dotnet run --project src/JiraMetrics/JiraMetrics.csproj
-```
+## Output
 
-## Test
-```bash
-dotnet test src/JiraMetrics.slnx
-```
+<img src="Screenshot.png" alt="Output">
