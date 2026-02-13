@@ -96,4 +96,19 @@ public sealed class PathKeyTests
         // Assert
         pathKey.Value.Should().Be("OPEN->CODE REVIEW||CODE REVIEW->DONE");
     }
+
+    [Fact(DisplayName = "FromTransitions throws when transitions are null")]
+    [Trait("Category", "Unit")]
+    public void FromTransitionsWhenTransitionsAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        IReadOnlyList<TransitionEvent> transitions = null!;
+
+        // Act
+        Action act = () => _ = PathKey.FromTransitions(transitions);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
 }

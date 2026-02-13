@@ -11,6 +11,21 @@ namespace JiraMetrics.Tests.Transport;
 
 public sealed class JiraRetryPolicyTests
 {
+    [Fact(DisplayName = "Constructor throws when options are null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenOptionsAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        IOptions<JiraOptions> options = null!;
+
+        // Act
+        Action act = () => _ = new JiraRetryPolicy(options);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "TryGetDelay returns false when retry attempt is out of range")]
     [Trait("Category", "Unit")]
     public void TryGetDelayWhenRetryAttemptIsOutOfRangeReturnsFalse()

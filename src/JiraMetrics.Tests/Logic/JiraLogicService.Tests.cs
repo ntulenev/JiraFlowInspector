@@ -26,6 +26,38 @@ public sealed class JiraLogicServiceTests
             .Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "FilterIssuesByRequiredStage throws when issues are null")]
+    [Trait("Category", "Unit")]
+    public void FilterIssuesByRequiredStageWhenIssuesAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        IReadOnlyList<IssueTimeline> issues = null!;
+
+        // Act
+        Action act = () => _ = service.FilterIssuesByRequiredStage(issues, new StageName("Code Review"));
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "BuildPathGroups throws when issues are null")]
+    [Trait("Category", "Unit")]
+    public void BuildPathGroupsWhenIssuesAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        IReadOnlyList<IssueTimeline> issues = null!;
+
+        // Act
+        Action act = () => _ = service.BuildPathGroups(issues);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "FilterIssuesByRequiredStage returns only matching issues")]
     [Trait("Category", "Unit")]
     public void FilterIssuesByRequiredStageWhenStageIsProvidedReturnsOnlyMatches()

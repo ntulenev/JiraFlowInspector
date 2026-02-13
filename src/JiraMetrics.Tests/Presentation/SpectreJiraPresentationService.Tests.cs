@@ -1,6 +1,7 @@
 using FluentAssertions;
 
 using JiraMetrics.Models;
+using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Presentation;
 
@@ -11,6 +12,102 @@ namespace JiraMetrics.Tests.Presentation;
 
 public sealed class SpectreJiraPresentationServiceTests
 {
+    [Fact(DisplayName = "ShowAuthenticationSucceeded throws when user is null")]
+    [Trait("Category", "Unit")]
+    public void ShowAuthenticationSucceededWhenUserIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        JiraAuthUser user = null!;
+
+        // Act
+        Action act = () => service.ShowAuthenticationSucceeded(user);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "ShowReportHeader throws when settings are null")]
+    [Trait("Category", "Unit")]
+    public void ShowReportHeaderWhenSettingsAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        AppSettings settings = null!;
+
+        // Act
+        Action act = () => service.ShowReportHeader(settings, new ItemCount(0));
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "ShowDoneIssuesTable throws when issues are null")]
+    [Trait("Category", "Unit")]
+    public void ShowDoneIssuesTableWhenIssuesAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        IReadOnlyList<IssueTimeline> issues = null!;
+
+        // Act
+        Action act = () => service.ShowDoneIssuesTable(issues, new StatusName("Done"));
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "ShowPathGroupsSummary throws when summary is null")]
+    [Trait("Category", "Unit")]
+    public void ShowPathGroupsSummaryWhenSummaryIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        PathGroupsSummary summary = null!;
+
+        // Act
+        Action act = () => service.ShowPathGroupsSummary(summary);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "ShowPathGroups throws when groups are null")]
+    [Trait("Category", "Unit")]
+    public void ShowPathGroupsWhenGroupsAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        IReadOnlyList<PathGroup> groups = null!;
+
+        // Act
+        Action act = () => service.ShowPathGroups(groups);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "ShowFailures throws when failures are null")]
+    [Trait("Category", "Unit")]
+    public void ShowFailuresWhenFailuresAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        IReadOnlyList<LoadFailure> failures = null!;
+
+        // Act
+        Action act = () => service.ShowFailures(failures);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "ShowAuthenticationSucceeded writes user display name")]
     [Trait("Category", "Unit")]
     public async Task ShowAuthenticationSucceededWhenCalledWritesDisplayName()

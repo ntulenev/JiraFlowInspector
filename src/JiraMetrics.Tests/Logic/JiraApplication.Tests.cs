@@ -48,6 +48,60 @@ public sealed class JiraApplicationTests
             .Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "Constructor throws when settings value is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenSettingsValueIsNullThrowsArgumentException()
+    {
+        // Arrange
+        var settings = Options.Create<AppSettings>(null!);
+        var apiClient = new FakeApiClient();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var presentation = new FakePresentationService();
+
+        // Act
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when logic service is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenLogicServiceIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var settings = Options.Create(CreateSettings());
+        var apiClient = new FakeApiClient();
+        IJiraLogicService logic = null!;
+        var presentation = new FakePresentationService();
+
+        // Act
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when presentation service is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenPresentationServiceIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var settings = Options.Create(CreateSettings());
+        var apiClient = new FakeApiClient();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        IJiraPresentationService presentation = null!;
+
+        // Act
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "RunAsync shows no issues matched filter when search returns empty list")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenSearchReturnsEmptyListShowsNoIssuesMatchedFilter()

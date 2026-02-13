@@ -96,4 +96,19 @@ public sealed class PathLabelTests
         // Assert
         pathLabel.Value.Should().Be("Open -> Code Review | Code Review -> Done");
     }
+
+    [Fact(DisplayName = "FromTransitions throws when transitions are null")]
+    [Trait("Category", "Unit")]
+    public void FromTransitionsWhenTransitionsAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        IReadOnlyList<TransitionEvent> transitions = null!;
+
+        // Act
+        Action act = () => _ = PathLabel.FromTransitions(transitions);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
 }

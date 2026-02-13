@@ -50,6 +50,24 @@ public sealed class JiraTransportTests
             .Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "GetAsync throws when url is null")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncWhenUrlIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        using var http = new HttpClient { BaseAddress = new Uri("https://example.test/") };
+        var transport = new JiraTransport(http, new JiraRetryPolicy(Options.Create(CreateOptions())));
+        Uri url = null!;
+
+        // Act
+        Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(url, cts.Token);
+
+        // Assert
+        await act.Should()
+            .ThrowAsync<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "GetAsync returns deserialized DTO when response is valid")]
     [Trait("Category", "Unit")]
     public async Task GetAsyncWhenResponseIsValidReturnsDto()

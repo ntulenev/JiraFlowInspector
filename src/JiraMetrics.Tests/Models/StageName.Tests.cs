@@ -102,4 +102,20 @@ public sealed class StageNameTests
         // Assert
         result.Should().BeFalse();
     }
+
+    [Fact(DisplayName = "IsUsedInTransition throws when transition is null")]
+    [Trait("Category", "Unit")]
+    public void IsUsedInTransitionWhenTransitionIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var stage = new StageName("blocked");
+        TransitionEvent transition = null!;
+
+        // Act
+        Action act = () => _ = stage.IsUsedInTransition(transition);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
 }
