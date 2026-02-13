@@ -23,7 +23,8 @@ public sealed class JiraOptionsTests
             RequiredPathStage = "Code Review",
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
-            RetryCount = 0
+            RetryCount = 0,
+            IssueTypes = ["Bug", "Story"]
         };
 
         // Act

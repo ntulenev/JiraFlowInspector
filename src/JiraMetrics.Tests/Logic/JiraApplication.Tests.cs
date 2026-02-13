@@ -174,7 +174,35 @@ public sealed class JiraApplicationTests
         presentation.AuthenticationFailedShown.Should().BeTrue();
     }
 
-    private static AppSettings CreateSettings()
+    [Fact(DisplayName = "RunAsync shows no issues matched filter when issue type filter excludes all loaded issues")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenIssueTypeFilterExcludesAllIssuesShowsNoIssuesMatchedFilter()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task"))
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var app = new JiraApplication(
+            Options.Create(CreateSettings([new IssueTypeName("Bug"), new IssueTypeName("Story")])),
+            apiClient,
+            logic,
+            presentation);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        presentation.NoIssuesMatchedFilterShown.Should().BeTrue();
+        presentation.DoneIssuesTableShown.Should().BeFalse();
+    }
+
+    private static AppSettings CreateSettings(IReadOnlyList<IssueTypeName>? issueTypes = null)
     {
         return new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -183,10 +211,12 @@ public sealed class JiraApplicationTests
             new ProjectKey("AAA"),
             new StatusName("Done"),
             new StageName("Code Review"),
-            new MonthLabel("2026-02"));
+            new MonthLabel("2026-02"),
+            null,
+            issueTypes);
     }
 
-    private static IssueTimeline CreateIssue(IssueKey key)
+    private static IssueTimeline CreateIssue(IssueKey key, IssueTypeName? issueType = null)
     {
         var transitions = new List<TransitionEvent>
         {
@@ -196,7 +226,7 @@ public sealed class JiraApplicationTests
 
         return new IssueTimeline(
             key,
-            new IssueTypeName("Story"),
+            issueType ?? new IssueTypeName("Story"),
             new IssueSummary($"Summary {key.Value}"),
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,

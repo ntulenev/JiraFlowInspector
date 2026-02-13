@@ -88,6 +88,83 @@ public sealed class JiraLogicServiceTests
         result[0].Key.Value.Should().Be("AAA-1");
     }
 
+    [Fact(DisplayName = "FilterIssuesByIssueTypes throws when issue types are null")]
+    [Trait("Category", "Unit")]
+    public void FilterIssuesByIssueTypesWhenIssueTypesAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var issues = new List<IssueTimeline>();
+        IReadOnlyList<IssueTypeName> issueTypes = null!;
+
+        // Act
+        Action act = () => _ = service.FilterIssuesByIssueTypes(issues, issueTypes);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "FilterIssuesByIssueTypes returns all issues when issue types filter is empty")]
+    [Trait("Category", "Unit")]
+    public void FilterIssuesByIssueTypesWhenIssueTypesFilterIsEmptyReturnsAllIssues()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var issues = new List<IssueTimeline>
+        {
+            CreateIssue(new IssueKey("AAA-1"), [new TransitionEvent(new StatusName("Open"), new StatusName("Done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1))]),
+            CreateIssue(new IssueKey("AAA-2"), [new TransitionEvent(new StatusName("Open"), new StatusName("Done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1))])
+        };
+
+        // Act
+        var result = service.FilterIssuesByIssueTypes(issues, []);
+
+        // Assert
+        result.Should().BeSameAs(issues);
+    }
+
+    [Fact(DisplayName = "FilterIssuesByIssueTypes returns only issues with configured types")]
+    [Trait("Category", "Unit")]
+    public void FilterIssuesByIssueTypesWhenTypesAreConfiguredReturnsMatchingIssues()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var now = DateTimeOffset.UtcNow;
+        var transitions = new List<TransitionEvent>
+        {
+            new(new StatusName("Open"), new StatusName("Done"), now, TimeSpan.FromHours(1))
+        };
+
+        var bugIssue = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Bug"),
+            new IssueSummary("Bug issue"),
+            now.AddDays(-1),
+            now,
+            transitions,
+            PathKey.FromTransitions(transitions),
+            PathLabel.FromTransitions(transitions));
+        var taskIssue = new IssueTimeline(
+            new IssueKey("AAA-2"),
+            new IssueTypeName("Task"),
+            new IssueSummary("Task issue"),
+            now.AddDays(-1),
+            now,
+            transitions,
+            PathKey.FromTransitions(transitions),
+            PathLabel.FromTransitions(transitions));
+
+        // Act
+        var result = service.FilterIssuesByIssueTypes(
+            [bugIssue, taskIssue],
+            [new IssueTypeName("Bug"), new IssueTypeName("Story")]);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].Key.Value.Should().Be("AAA-1");
+    }
+
     [Fact(DisplayName = "BuildPathGroups groups by path and calculates p75 transitions")]
     [Trait("Category", "Unit")]
     public void BuildPathGroupsWhenIssuesSharePathBuildsSingleGroupWithP75()

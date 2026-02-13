@@ -19,6 +19,16 @@ public interface IJiraLogicService
         StageName requiredPathStage);
 
     /// <summary>
+    /// Filters issues by configured issue types.
+    /// </summary>
+    /// <param name="issues">Issues.</param>
+    /// <param name="issueTypes">Allowed issue types.</param>
+    /// <returns>Filtered issues.</returns>
+    IReadOnlyList<IssueTimeline> FilterIssuesByIssueTypes(
+        IReadOnlyList<IssueTimeline> issues,
+        IReadOnlyList<IssueTypeName> issueTypes);
+
+    /// <summary>
     /// Groups issues by transition path and calculates per-transition P75 durations.
     /// </summary>
     /// <param name="issues">Issues.</param>

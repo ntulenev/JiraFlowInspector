@@ -201,6 +201,35 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Bug");
     }
 
+    [Fact(DisplayName = "ShowReportHeader writes issue type filter when configured")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReportHeaderWhenIssueTypesAreConfiguredWritesIssueTypesLine()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            new StageName("Code Review"),
+            new MonthLabel("2026-02"),
+            null,
+            [new IssueTypeName("Bug"), new IssueTypeName("Story")]);
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReportHeader(settings, new ItemCount(2));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Issue types:");
+        output.Should().Contain("Bug, Story");
+    }
+
     private static async Task<T> RunWithTestConsoleAsync<T>(Func<TestConsole, Task<T>> action)
     {
         var original = AnsiConsole.Console;

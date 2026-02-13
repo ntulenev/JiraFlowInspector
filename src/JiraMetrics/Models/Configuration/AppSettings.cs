@@ -18,6 +18,7 @@ public sealed record AppSettings
     /// <param name="requiredPathStage">Required path stage.</param>
     /// <param name="monthLabel">Month label used in output.</param>
     /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
+    /// <param name="issueTypes">Optional issue types filter.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -26,7 +27,8 @@ public sealed record AppSettings
         StatusName doneStatusName,
         StageName requiredPathStage,
         MonthLabel monthLabel,
-        CreatedAfterDate? createdAfter = null)
+        CreatedAfterDate? createdAfter = null,
+        IReadOnlyList<IssueTypeName>? issueTypes = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -36,6 +38,7 @@ public sealed record AppSettings
         RequiredPathStage = requiredPathStage;
         MonthLabel = monthLabel;
         CreatedAfter = createdAfter;
+        IssueTypes = issueTypes is null ? [] : [.. issueTypes];
     }
 
     /// <summary>
@@ -77,4 +80,9 @@ public sealed record AppSettings
     /// Gets optional lower bound for issue creation date.
     /// </summary>
     public CreatedAfterDate? CreatedAfter { get; }
+
+    /// <summary>
+    /// Gets optional issue types filter.
+    /// </summary>
+    public IReadOnlyList<IssueTypeName> IssueTypes { get; }
 }

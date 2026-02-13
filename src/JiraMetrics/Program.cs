@@ -35,6 +35,12 @@ builder.Services.AddSingleton(sp =>
     var createdAfter = string.IsNullOrWhiteSpace(source.CreatedAfter)
         ? (CreatedAfterDate?)null
         : new CreatedAfterDate(source.CreatedAfter);
+    IssueTypeName[] issueTypes = source.IssueTypes is null
+        ? []
+        : [.. source.IssueTypes
+            .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
+            .Select(static issueType => new IssueTypeName(issueType))
+            .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
 
     var settings = new AppSettings(
         new JiraBaseUrl(source.BaseUrl.ToString()),
@@ -44,7 +50,8 @@ builder.Services.AddSingleton(sp =>
         new StatusName(source.DoneStatusName),
         new StageName(source.RequiredPathStage),
         monthLabel,
-        createdAfter);
+        createdAfter,
+        issueTypes);
 
     return Options.Create(settings);
 });

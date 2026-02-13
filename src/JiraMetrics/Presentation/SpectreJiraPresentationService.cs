@@ -48,6 +48,12 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             AnsiConsole.MarkupLine($"[grey]Created after:[/] {Markup.Escape(createdAfter.ToString())}");
         }
 
+        if (settings.IssueTypes.Count > 0)
+        {
+            var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
+            AnsiConsole.MarkupLine($"[grey]Issue types:[/] {Markup.Escape(issueTypes)}");
+        }
+
         AnsiConsole.MarkupLine($"[grey]Required stage in path:[/] {Markup.Escape(settings.RequiredPathStage.Value)}");
     }
 

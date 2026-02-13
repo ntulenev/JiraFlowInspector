@@ -36,6 +36,31 @@ public sealed class JiraLogicService : IJiraLogicService
     }
 
     /// <summary>
+    /// Filters issues by allowed issue types.
+    /// </summary>
+    /// <param name="issues">Issues to filter.</param>
+    /// <param name="issueTypes">Allowed issue types.</param>
+    /// <returns>Filtered issues.</returns>
+    public IReadOnlyList<IssueTimeline> FilterIssuesByIssueTypes(
+        IReadOnlyList<IssueTimeline> issues,
+        IReadOnlyList<IssueTypeName> issueTypes)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+        ArgumentNullException.ThrowIfNull(issueTypes);
+
+        if (issueTypes.Count == 0)
+        {
+            return issues;
+        }
+
+        var allowedTypes = issueTypes
+            .Select(static issueType => issueType.Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return [.. issues.Where(issue => allowedTypes.Contains(issue.IssueType.Value))];
+    }
+
+    /// <summary>
     /// Builds grouped path statistics for issues.
     /// </summary>
     /// <param name="issues">Issues.</param>

@@ -20,9 +20,10 @@ public sealed class AppSettingsTests
         var requiredPathStage = new StageName("Code Review");
         var monthLabel = new MonthLabel("2026-02");
         var createdAfter = new CreatedAfterDate("2026-01-15");
+        var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
 
         // Act
-        var settings = new AppSettings(baseUrl, email, token, projectKey, doneStatus, requiredPathStage, monthLabel, createdAfter);
+        var settings = new AppSettings(baseUrl, email, token, projectKey, doneStatus, requiredPathStage, monthLabel, createdAfter, issueTypes);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -33,5 +34,6 @@ public sealed class AppSettingsTests
         settings.RequiredPathStage.Should().Be(requiredPathStage);
         settings.MonthLabel.Should().Be(monthLabel);
         settings.CreatedAfter.Should().Be(createdAfter);
+        settings.IssueTypes.Select(static issueType => issueType.Value).Should().ContainInOrder("Bug", "Story");
     }
 }

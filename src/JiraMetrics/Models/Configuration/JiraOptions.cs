@@ -65,4 +65,9 @@ public sealed class JiraOptions
     /// </summary>
     [Range(0, 10)]
     public int RetryCount { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional issue types filter.
+    /// </summary>
+    public IReadOnlyList<string>? IssueTypes { get; init; }
 }
