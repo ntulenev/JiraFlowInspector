@@ -34,6 +34,7 @@ Application options are under the `Jira` object.
 - `IssueTypes` (`string[]`, optional): Allowed Jira issue types filter (for example `["Bug", "Story"]`). When omitted or empty, all issue types are included.
 - `MonthLabel` (`string`, optional): Label shown in the console filter summary (`yyyy-MM`); defaults to current UTC month when omitted.
 - `CreatedAfter` (`string`, optional): Lower bound for issue creation date (`yyyy-MM-dd`); adds `created >= "<date>"` to JQL when provided.
+- `ExcludeWeekend` (`bool`, optional): When `true`, Saturday/Sunday time is excluded from transition durations; defaults to `false`.
 - `RetryCount` (`int`, optional): Number of retries for transient Jira API failures (`0..10`, default `0`).
 
 ## Example configuration
@@ -49,6 +50,7 @@ Application options are under the `Jira` object.
     "IssueTypes": ["Bug", "Story"],
     "CreatedAfter": "2026-01-01",
     "MonthLabel": "2026-02",
+    "ExcludeWeekend": false,
     "RetryCount": 2
   }
 }
