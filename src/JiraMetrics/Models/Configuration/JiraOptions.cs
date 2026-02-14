@@ -70,4 +70,9 @@ public sealed class JiraOptions
     /// Gets or sets optional issue types filter.
     /// </summary>
     public IReadOnlyList<string>? IssueTypes { get; init; }
+
+    /// <summary>
+    /// Gets or sets whether to exclude weekends from transition durations.
+    /// </summary>
+    public bool ExcludeWeekend { get; init; }
 }

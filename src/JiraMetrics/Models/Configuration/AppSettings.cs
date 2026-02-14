@@ -19,6 +19,7 @@ public sealed record AppSettings
     /// <param name="monthLabel">Month label used in output.</param>
     /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
     /// <param name="issueTypes">Optional issue types filter.</param>
+    /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -28,7 +29,8 @@ public sealed record AppSettings
         StageName requiredPathStage,
         MonthLabel monthLabel,
         CreatedAfterDate? createdAfter = null,
-        IReadOnlyList<IssueTypeName>? issueTypes = null)
+        IReadOnlyList<IssueTypeName>? issueTypes = null,
+        bool excludeWeekend = false)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -39,6 +41,7 @@ public sealed record AppSettings
         MonthLabel = monthLabel;
         CreatedAfter = createdAfter;
         IssueTypes = issueTypes is null ? [] : [.. issueTypes];
+        ExcludeWeekend = excludeWeekend;
     }
 
     /// <summary>
@@ -85,4 +88,9 @@ public sealed record AppSettings
     /// Gets optional issue types filter.
     /// </summary>
     public IReadOnlyList<IssueTypeName> IssueTypes { get; }
+
+    /// <summary>
+    /// Gets whether to exclude weekends from transition durations.
+    /// </summary>
+    public bool ExcludeWeekend { get; }
 }

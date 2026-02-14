@@ -1,7 +1,10 @@
 using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
+using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
+
+using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.API;
 
@@ -14,11 +17,15 @@ public sealed class JiraApiClient : IJiraApiClient
     /// Initializes a new instance of the <see cref="JiraApiClient"/> class.
     /// </summary>
     /// <param name="transport">Jira transport instance.</param>
-    public JiraApiClient(IJiraTransport transport)
+    /// <param name="settings">Application settings options.</param>
+    public JiraApiClient(IJiraTransport transport, IOptions<AppSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(transport);
+        ArgumentNullException.ThrowIfNull(settings);
 
         _transport = transport;
+        var resolved = settings.Value ?? throw new ArgumentException("App settings value is required.", nameof(settings));
+        _excludeWeekend = resolved.ExcludeWeekend;
     }
 
     /// <inheritdoc />
@@ -125,7 +132,7 @@ public sealed class JiraApiClient : IJiraApiClient
             throw new InvalidOperationException("Issue created date is missing.");
         }
 
-        var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created);
+        var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created, _excludeWeekend);
 
         var endTime = DateTimeOffset.UtcNow;
         if (!string.IsNullOrWhiteSpace(response.Fields.ResolutionDate)
@@ -150,7 +157,10 @@ public sealed class JiraApiClient : IJiraApiClient
             PathLabel.FromTransitions(transitions));
     }
 
-    private static List<TransitionEvent> ParseTransitions(IReadOnlyList<JiraHistoryResponse> histories, DateTimeOffset created)
+    private static List<TransitionEvent> ParseTransitions(
+        IReadOnlyList<JiraHistoryResponse> histories,
+        DateTimeOffset created,
+        bool excludeWeekend)
     {
         var rawTransitions = new List<(DateTimeOffset At, StatusName From, StatusName To)>();
 
@@ -190,7 +200,9 @@ public sealed class JiraApiClient : IJiraApiClient
                 at = previousAt;
             }
 
-            var sincePrevious = at - previousAt;
+            var sincePrevious = excludeWeekend
+                ? CalculateWeekdayDuration(previousAt, at)
+                : at - previousAt;
             if (sincePrevious < TimeSpan.Zero)
             {
                 sincePrevious = TimeSpan.Zero;
@@ -203,6 +215,32 @@ public sealed class JiraApiClient : IJiraApiClient
         return transitions;
     }
 
+    private static TimeSpan CalculateWeekdayDuration(DateTimeOffset start, DateTimeOffset end)
+    {
+        if (end <= start)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var total = TimeSpan.Zero;
+        var cursor = start;
+
+        while (cursor < end)
+        {
+            var nextDay = new DateTimeOffset(cursor.Date.AddDays(1), cursor.Offset);
+            var segmentEnd = end < nextDay ? end : nextDay;
+
+            if (cursor.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
+            {
+                total += segmentEnd - cursor;
+            }
+
+            cursor = segmentEnd;
+        }
+
+        return total < TimeSpan.Zero ? TimeSpan.Zero : total;
+    }
+
     private static string EscapeJqlString(string value)
     {
         return value
@@ -211,4 +249,5 @@ public sealed class JiraApiClient : IJiraApiClient
     }
 
     private readonly IJiraTransport _transport;
+    private readonly bool _excludeWeekend;
 }

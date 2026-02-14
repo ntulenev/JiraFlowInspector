@@ -51,7 +51,8 @@ builder.Services.AddSingleton(sp =>
         new StageName(source.RequiredPathStage),
         monthLabel,
         createdAfter,
-        issueTypes);
+        issueTypes,
+        source.ExcludeWeekend);
 
     return Options.Create(settings);
 });

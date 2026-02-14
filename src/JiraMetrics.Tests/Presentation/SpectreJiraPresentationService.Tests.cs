@@ -216,7 +216,8 @@ public sealed class SpectreJiraPresentationServiceTests
             new StageName("Code Review"),
             new MonthLabel("2026-02"),
             null,
-            [new IssueTypeName("Bug"), new IssueTypeName("Story")]);
+            [new IssueTypeName("Bug"), new IssueTypeName("Story")],
+            excludeWeekend: false);
 
         // Act
         var output = await RunWithTestConsoleAsync(console =>

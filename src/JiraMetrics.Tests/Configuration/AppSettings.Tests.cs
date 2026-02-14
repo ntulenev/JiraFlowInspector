@@ -23,7 +23,17 @@ public sealed class AppSettingsTests
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
 
         // Act
-        var settings = new AppSettings(baseUrl, email, token, projectKey, doneStatus, requiredPathStage, monthLabel, createdAfter, issueTypes);
+        var settings = new AppSettings(
+            baseUrl,
+            email,
+            token,
+            projectKey,
+            doneStatus,
+            requiredPathStage,
+            monthLabel,
+            createdAfter,
+            issueTypes,
+            excludeWeekend: true);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -35,5 +45,6 @@ public sealed class AppSettingsTests
         settings.MonthLabel.Should().Be(monthLabel);
         settings.CreatedAfter.Should().Be(createdAfter);
         settings.IssueTypes.Select(static issueType => issueType.Value).Should().ContainInOrder("Bug", "Story");
+        settings.ExcludeWeekend.Should().BeTrue();
     }
 }

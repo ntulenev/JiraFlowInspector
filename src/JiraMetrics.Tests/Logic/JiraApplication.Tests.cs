@@ -213,7 +213,8 @@ public sealed class JiraApplicationTests
             new StageName("Code Review"),
             new MonthLabel("2026-02"),
             null,
-            issueTypes);
+            issueTypes,
+            excludeWeekend: false);
     }
 
     private static IssueTimeline CreateIssue(IssueKey key, IssueTypeName? issueType = null)

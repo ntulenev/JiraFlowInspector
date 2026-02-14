@@ -2,8 +2,11 @@ using FluentAssertions;
 
 using JiraMetrics.Abstractions;
 using JiraMetrics.API;
+using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
+
+using Microsoft.Extensions.Options;
 
 using Moq;
 
@@ -19,7 +22,7 @@ public sealed class JiraApiClientTests
         IJiraTransport transport = null!;
 
         // Act
-        Action act = () => _ = new JiraApiClient(transport);
+        Action act = () => _ = new JiraApiClient(transport, CreateSettings());
 
         // Assert
         act.Should()
@@ -45,7 +48,7 @@ public sealed class JiraApiClientTests
                 AccountId = "123"
             });
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         var user = await client.GetCurrentUserAsync(cts.Token);
@@ -70,7 +73,7 @@ public sealed class JiraApiClientTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((JiraCurrentUserResponse?)null);
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         Func<Task> act = () => client.GetCurrentUserAsync(cts.Token);
@@ -116,7 +119,7 @@ public sealed class JiraApiClientTests
             .Callback(() => sendCalls++)
             .ReturnsAsync(secondResponse);
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         var keys = await client.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -153,7 +156,7 @@ public sealed class JiraApiClientTests
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         _ = await client.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -202,7 +205,7 @@ public sealed class JiraApiClientTests
                 }
             });
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
@@ -214,6 +217,53 @@ public sealed class JiraApiClientTests
         issue.PathKey.Value.Should().Be("OPEN->DONE");
         issue.PathLabel.Value.Should().Be("Open -> Done");
         issue.Transitions.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "GetIssueTimelineAsync excludes weekends when configured")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenExcludeWeekendIsTrueSkipsWeekendHours()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraIssueResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraIssueResponse
+            {
+                Key = "AAA-1",
+                Fields = new JiraIssueFieldsResponse
+                {
+                    Summary = "Fix bug",
+                    IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                    Created = "2026-02-06T10:00:00Z",
+                    ResolutionDate = "2026-02-09T10:00:00Z"
+                },
+                Changelog = new JiraChangelogResponse
+                {
+                    Histories =
+                    [
+                        new JiraHistoryResponse
+                        {
+                            Created = "2026-02-09T10:00:00Z",
+                            Items = [new JiraHistoryItemResponse { Field = "status", FromStatus = "Open", ToStatus = "Done" }]
+                        }
+                    ]
+                }
+            });
+
+        var client = new JiraApiClient(transport.Object, CreateSettings(excludeWeekend: true));
+
+        // Act
+        var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
+
+        // Assert
+        issue.Transitions.Should()
+            .ContainSingle()
+            .Which.SincePrevious.Should()
+            .Be(TimeSpan.FromHours(24));
     }
 
     [Fact(DisplayName = "GetIssueTimelineAsync uses unknown issue type when response issue type is missing")]
@@ -244,7 +294,7 @@ public sealed class JiraApiClientTests
                 }
             });
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
@@ -271,7 +321,7 @@ public sealed class JiraApiClientTests
                 Fields = null
             });
 
-        var client = new JiraApiClient(transport.Object);
+        var client = new JiraApiClient(transport.Object, CreateSettings());
 
         // Act
         Func<Task> act = () => client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
@@ -279,5 +329,22 @@ public sealed class JiraApiClientTests
         // Assert
         await act.Should()
             .ThrowAsync<InvalidOperationException>();
+    }
+
+    private static IOptions<AppSettings> CreateSettings(bool excludeWeekend = false)
+    {
+        var settings = new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            new StageName("Code Review"),
+            new MonthLabel("2026-02"),
+            createdAfter: null,
+            issueTypes: null,
+            excludeWeekend: excludeWeekend);
+
+        return Options.Create(settings);
     }
 }
