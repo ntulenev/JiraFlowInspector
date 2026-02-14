@@ -266,6 +266,54 @@ public sealed class JiraApiClientTests
             .Be(TimeSpan.FromHours(24));
     }
 
+    [Fact(DisplayName = "GetIssueTimelineAsync excludes configured holidays")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenExcludedDaysAreConfiguredSkipsThoseHours()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraIssueResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraIssueResponse
+            {
+                Key = "AAA-1",
+                Fields = new JiraIssueFieldsResponse
+                {
+                    Summary = "Fix bug",
+                    IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                    Created = "2026-02-02T10:00:00Z",
+                    ResolutionDate = "2026-02-04T10:00:00Z"
+                },
+                Changelog = new JiraChangelogResponse
+                {
+                    Histories =
+                    [
+                        new JiraHistoryResponse
+                        {
+                            Created = "2026-02-04T10:00:00Z",
+                            Items = [new JiraHistoryItemResponse { Field = "status", FromStatus = "Open", ToStatus = "Done" }]
+                        }
+                    ]
+                }
+            });
+
+        var excludedDays = new List<DateOnly> { new(2026, 2, 3) };
+        var client = new JiraApiClient(transport.Object, CreateSettings(excludedDays: excludedDays));
+
+        // Act
+        var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
+
+        // Assert
+        issue.Transitions.Should()
+            .ContainSingle()
+            .Which.SincePrevious.Should()
+            .Be(TimeSpan.FromHours(24));
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync uses unknown issue type when response issue type is missing")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenIssueTypeIsMissingUsesUnknownIssueType()
@@ -331,7 +379,9 @@ public sealed class JiraApiClientTests
             .ThrowAsync<InvalidOperationException>();
     }
 
-    private static IOptions<AppSettings> CreateSettings(bool excludeWeekend = false)
+    private static IOptions<AppSettings> CreateSettings(
+        bool excludeWeekend = false,
+        IReadOnlyList<DateOnly>? excludedDays = null)
     {
         var settings = new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -343,7 +393,8 @@ public sealed class JiraApiClientTests
             new MonthLabel("2026-02"),
             createdAfter: null,
             issueTypes: null,
-            excludeWeekend: excludeWeekend);
+            excludeWeekend: excludeWeekend,
+            excludedDays: excludedDays);
 
         return Options.Create(settings);
     }

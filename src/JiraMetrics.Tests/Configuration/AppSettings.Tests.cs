@@ -21,6 +21,7 @@ public sealed class AppSettingsTests
         var monthLabel = new MonthLabel("2026-02");
         var createdAfter = new CreatedAfterDate("2026-01-15");
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
+        var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };
 
         // Act
         var settings = new AppSettings(
@@ -33,7 +34,8 @@ public sealed class AppSettingsTests
             monthLabel,
             createdAfter,
             issueTypes,
-            excludeWeekend: true);
+            excludeWeekend: true,
+            excludedDays: excludedDays);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -46,5 +48,6 @@ public sealed class AppSettingsTests
         settings.CreatedAfter.Should().Be(createdAfter);
         settings.IssueTypes.Select(static issueType => issueType.Value).Should().ContainInOrder("Bug", "Story");
         settings.ExcludeWeekend.Should().BeTrue();
+        settings.ExcludedDays.Should().ContainInOrder(excludedDays);
     }
 }

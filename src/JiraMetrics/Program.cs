@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -41,6 +42,12 @@ builder.Services.AddSingleton(sp =>
             .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
             .Select(static issueType => new IssueTypeName(issueType))
             .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
+    DateOnly[] excludedDays = source.ExcludedDays is null
+        ? []
+        : [.. source.ExcludedDays
+            .Where(static day => !string.IsNullOrWhiteSpace(day))
+            .Select(static day => ParseExcludedDay(day.Trim()))
+            .Distinct()];
 
     var settings = new AppSettings(
         new JiraBaseUrl(source.BaseUrl.ToString()),
@@ -52,7 +59,8 @@ builder.Services.AddSingleton(sp =>
         monthLabel,
         createdAfter,
         issueTypes,
-        source.ExcludeWeekend);
+        source.ExcludeWeekend,
+        excludedDays);
 
     return Options.Create(settings);
 });
@@ -80,3 +88,18 @@ using var host = builder.Build();
 
 var app = host.Services.GetRequiredService<IJiraApplication>();
 await app.RunAsync(CancellationToken.None).ConfigureAwait(false);
+
+static DateOnly ParseExcludedDay(string value)
+{
+    if (DateOnly.TryParseExact(value, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day))
+    {
+        return day;
+    }
+
+    if (DateOnly.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out day))
+    {
+        return day;
+    }
+
+    throw new FormatException($"Invalid excluded day '{value}'. Expected dd.MM.yyyy or yyyy-MM-dd.");
+}

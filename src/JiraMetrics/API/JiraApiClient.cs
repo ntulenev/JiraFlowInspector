@@ -26,6 +26,7 @@ public sealed class JiraApiClient : IJiraApiClient
         _transport = transport;
         var resolved = settings.Value ?? throw new ArgumentException("App settings value is required.", nameof(settings));
         _excludeWeekend = resolved.ExcludeWeekend;
+        _excludedDays = new HashSet<DateOnly>(resolved.ExcludedDays);
     }
 
     /// <inheritdoc />
@@ -132,7 +133,7 @@ public sealed class JiraApiClient : IJiraApiClient
             throw new InvalidOperationException("Issue created date is missing.");
         }
 
-        var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created, _excludeWeekend);
+        var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created, _excludeWeekend, _excludedDays);
 
         var endTime = DateTimeOffset.UtcNow;
         if (!string.IsNullOrWhiteSpace(response.Fields.ResolutionDate)
@@ -160,7 +161,8 @@ public sealed class JiraApiClient : IJiraApiClient
     private static List<TransitionEvent> ParseTransitions(
         IReadOnlyList<JiraHistoryResponse> histories,
         DateTimeOffset created,
-        bool excludeWeekend)
+        bool excludeWeekend,
+        IReadOnlySet<DateOnly> excludedDays)
     {
         var rawTransitions = new List<(DateTimeOffset At, StatusName From, StatusName To)>();
 
@@ -200,9 +202,7 @@ public sealed class JiraApiClient : IJiraApiClient
                 at = previousAt;
             }
 
-            var sincePrevious = excludeWeekend
-                ? CalculateWeekdayDuration(previousAt, at)
-                : at - previousAt;
+            var sincePrevious = CalculateWorkingDuration(previousAt, at, excludeWeekend, excludedDays);
             if (sincePrevious < TimeSpan.Zero)
             {
                 sincePrevious = TimeSpan.Zero;
@@ -215,11 +215,20 @@ public sealed class JiraApiClient : IJiraApiClient
         return transitions;
     }
 
-    private static TimeSpan CalculateWeekdayDuration(DateTimeOffset start, DateTimeOffset end)
+    private static TimeSpan CalculateWorkingDuration(
+        DateTimeOffset start,
+        DateTimeOffset end,
+        bool excludeWeekend,
+        IReadOnlySet<DateOnly> excludedDays)
     {
         if (end <= start)
         {
             return TimeSpan.Zero;
+        }
+
+        if (!excludeWeekend && excludedDays.Count == 0)
+        {
+            return end - start;
         }
 
         var total = TimeSpan.Zero;
@@ -230,7 +239,10 @@ public sealed class JiraApiClient : IJiraApiClient
             var nextDay = new DateTimeOffset(cursor.Date.AddDays(1), cursor.Offset);
             var segmentEnd = end < nextDay ? end : nextDay;
 
-            if (cursor.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
+            var isWeekend = cursor.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+            var isExcluded = excludedDays.Contains(DateOnly.FromDateTime(cursor.Date));
+
+            if ((!excludeWeekend || !isWeekend) && !isExcluded)
             {
                 total += segmentEnd - cursor;
             }
@@ -250,4 +262,5 @@ public sealed class JiraApiClient : IJiraApiClient
 
     private readonly IJiraTransport _transport;
     private readonly bool _excludeWeekend;
+    private readonly IReadOnlySet<DateOnly> _excludedDays;
 }
