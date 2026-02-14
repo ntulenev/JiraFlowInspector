@@ -170,6 +170,80 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().Contain("2026-01-15");
     }
 
+    [Fact(DisplayName = "GetIssueKeysMovedToDoneThisMonthAsync adds custom field filter when configured")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueKeysMovedToDoneThisMonthAsyncWhenCustomFieldFilterIsConfiguredAddsClause()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues = [new JiraIssueKeyResponse { Key = "AAA-1" }],
+            IsLast = true,
+            NextPageToken = null
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var client = new JiraApiClient(transport.Object, CreateSettings(customFieldName: "Team", customFieldValue: "Import"));
+
+        // Act
+        _ = await client.GetIssueKeysMovedToDoneThisMonthAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            cts.Token);
+
+        // Assert
+        capturedUrl.Should().Contain("Team");
+        capturedUrl.Should().Contain("Import");
+    }
+
+    [Fact(DisplayName = "GetIssueKeysMovedToDoneThisMonthAsync uses configured month label in JQL")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueKeysMovedToDoneThisMonthAsyncWhenMonthLabelIsConfiguredUsesMonthRange()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues = [new JiraIssueKeyResponse { Key = "AAA-1" }],
+            IsLast = true,
+            NextPageToken = null
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var client = new JiraApiClient(transport.Object, CreateSettings(monthLabel: "2026-01"));
+
+        // Act
+        _ = await client.GetIssueKeysMovedToDoneThisMonthAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            cts.Token);
+
+        // Assert
+        capturedUrl.Should().Contain("2026-01-01");
+        capturedUrl.Should().Contain("2026-02-01");
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync returns mapped timeline")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenResponseIsValidReturnsMappedTimeline()
@@ -381,7 +455,10 @@ public sealed class JiraApiClientTests
 
     private static IOptions<AppSettings> CreateSettings(
         bool excludeWeekend = false,
-        IReadOnlyList<DateOnly>? excludedDays = null)
+        IReadOnlyList<DateOnly>? excludedDays = null,
+        string? customFieldName = null,
+        string? customFieldValue = null,
+        string monthLabel = "2026-02")
     {
         var settings = new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -389,10 +466,12 @@ public sealed class JiraApiClientTests
             new JiraApiToken("token"),
             new ProjectKey("AAA"),
             new StatusName("Done"),
-            new StageName("Code Review"),
-            new MonthLabel("2026-02"),
+            [new StageName("Code Review")],
+            new MonthLabel(monthLabel),
             createdAfter: null,
             issueTypes: null,
+            customFieldName: customFieldName,
+            customFieldValue: customFieldValue,
             excludeWeekend: excludeWeekend,
             excludedDays: excludedDays);
 

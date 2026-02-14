@@ -210,10 +210,12 @@ public sealed class JiraApplicationTests
             new JiraApiToken("token"),
             new ProjectKey("AAA"),
             new StatusName("Done"),
-            new StageName("Code Review"),
+            [new StageName("Code Review")],
             new MonthLabel("2026-02"),
             null,
             issueTypes,
+            customFieldName: null,
+            customFieldValue: null,
             excludeWeekend: false);
     }
 

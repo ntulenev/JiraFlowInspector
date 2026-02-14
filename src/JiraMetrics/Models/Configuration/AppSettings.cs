@@ -15,10 +15,12 @@ public sealed record AppSettings
     /// <param name="apiToken">Jira API token.</param>
     /// <param name="projectKey">Jira project key.</param>
     /// <param name="doneStatusName">Done status name.</param>
-    /// <param name="requiredPathStage">Required path stage.</param>
+    /// <param name="requiredPathStages">Required path stages.</param>
     /// <param name="monthLabel">Month label used in output.</param>
     /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
     /// <param name="issueTypes">Optional issue types filter.</param>
+    /// <param name="customFieldName">Optional custom field name for filtering.</param>
+    /// <param name="customFieldValue">Optional custom field value for filtering.</param>
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     public AppSettings(
@@ -27,10 +29,12 @@ public sealed record AppSettings
         JiraApiToken apiToken,
         ProjectKey projectKey,
         StatusName doneStatusName,
-        StageName requiredPathStage,
+        IReadOnlyList<StageName> requiredPathStages,
         MonthLabel monthLabel,
         CreatedAfterDate? createdAfter = null,
         IReadOnlyList<IssueTypeName>? issueTypes = null,
+        string? customFieldName = null,
+        string? customFieldValue = null,
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null)
     {
@@ -39,10 +43,12 @@ public sealed record AppSettings
         ApiToken = apiToken;
         ProjectKey = projectKey;
         DoneStatusName = doneStatusName;
-        RequiredPathStage = requiredPathStage;
+        RequiredPathStages = requiredPathStages is null ? [] : [.. requiredPathStages];
         MonthLabel = monthLabel;
         CreatedAfter = createdAfter;
         IssueTypes = issueTypes is null ? [] : [.. issueTypes];
+        CustomFieldName = string.IsNullOrWhiteSpace(customFieldName) ? null : customFieldName.Trim();
+        CustomFieldValue = string.IsNullOrWhiteSpace(customFieldValue) ? null : customFieldValue.Trim();
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
     }
@@ -73,9 +79,9 @@ public sealed record AppSettings
     public StatusName DoneStatusName { get; }
 
     /// <summary>
-    /// Gets required path stage.
+    /// Gets required path stages.
     /// </summary>
-    public StageName RequiredPathStage { get; }
+    public IReadOnlyList<StageName> RequiredPathStages { get; }
 
     /// <summary>
     /// Gets month label.
@@ -91,6 +97,16 @@ public sealed record AppSettings
     /// Gets optional issue types filter.
     /// </summary>
     public IReadOnlyList<IssueTypeName> IssueTypes { get; }
+
+    /// <summary>
+    /// Gets optional custom field name for filtering.
+    /// </summary>
+    public string? CustomFieldName { get; }
+
+    /// <summary>
+    /// Gets optional custom field value for filtering.
+    /// </summary>
+    public string? CustomFieldValue { get; }
 
     /// <summary>
     /// Gets whether to exclude weekends from transition durations.

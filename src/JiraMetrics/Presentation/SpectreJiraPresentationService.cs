@@ -54,7 +54,17 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             AnsiConsole.MarkupLine($"[grey]Issue types:[/] {Markup.Escape(issueTypes)}");
         }
 
-        AnsiConsole.MarkupLine($"[grey]Required stage in path:[/] {Markup.Escape(settings.RequiredPathStage.Value)}");
+        if (!string.IsNullOrWhiteSpace(settings.CustomFieldName)
+            && !string.IsNullOrWhiteSpace(settings.CustomFieldValue))
+        {
+            AnsiConsole.MarkupLine(
+                $"[grey]Custom field filter:[/] {Markup.Escape(settings.CustomFieldName)} = {Markup.Escape(settings.CustomFieldValue)}");
+        }
+
+        var requiredStages = settings.RequiredPathStages.Count == 0
+            ? "-"
+            : string.Join(", ", settings.RequiredPathStages.Select(static stage => stage.Value));
+        AnsiConsole.MarkupLine($"[grey]Required stages in path:[/] {Markup.Escape(requiredStages)}");
     }
 
     /// <inheritdoc />
@@ -73,7 +83,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowNoIssuesLoaded() => AnsiConsole.MarkupLine("[red]No issues were loaded successfully.[/]");
 
     /// <inheritdoc />
-    public void ShowNoIssuesMatchedRequiredStage() => AnsiConsole.MarkupLine("[yellow]No issues matched the required stage in path.[/]");
+    public void ShowNoIssuesMatchedRequiredStage() => AnsiConsole.MarkupLine("[yellow]No issues matched the required stages in path.[/]");
 
     /// <inheritdoc />
     public void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName)

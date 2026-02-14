@@ -13,7 +13,7 @@ It helps detect bottlenecks and compare transition paths with P75 timing.
 3. Fetches issues that changed status to the configured done status since start of month.
 4. Loads each issue changelog and builds transition timelines.
 5. Optionally filters issues by configured Jira issue types.
-6. Filters issues by required stage presence in the transition path.
+6. Filters issues by required stages presence in the transition path.
 7. Groups issues by transition path.
 8. Calculates P75 transition duration per path.
 9. Renders output tables:
@@ -30,9 +30,11 @@ Application options are under the `Jira` object.
 - `ApiToken` (`string`, required): Jira API token used for authentication.
 - `ProjectKey` (`string`, required): Jira project key used in JQL filter.
 - `DoneStatusName` (`string`, required): Target done status name used in JQL filter.
-- `RequiredPathStage` (`string`, required): Stage that must be present in the issue transition path.
+- `RequiredPathStages` (`string[]`, required): Stages that must all be present in the issue transition path.
 - `IssueTypes` (`string[]`, optional): Allowed Jira issue types filter (for example `["Bug", "Story"]`). When omitted or empty, all issue types are included.
-- `MonthLabel` (`string`, optional): Label shown in the console filter summary (`yyyy-MM`); defaults to current UTC month when omitted.
+- `CustomFieldName` (`string`, optional): Custom field name used for filtering (for example `Team`). Applied only when both name and value are provided.
+- `CustomFieldValue` (`string`, optional): Custom field value used for filtering (for example `Import`). Applied only when both name and value are provided.
+- `MonthLabel` (`string`, optional): Month used to filter issues moved to done (`yyyy-MM`); defaults to current UTC month when omitted.
 - `CreatedAfter` (`string`, optional): Lower bound for issue creation date (`yyyy-MM-dd`); adds `created >= "<date>"` to JQL when provided.
 - `ExcludeWeekend` (`bool`, optional): When `true`, Saturday/Sunday time is excluded from transition durations; defaults to `false`.
 - `ExcludedDays` (`string[]`, optional): List of excluded dates (`dd.MM.yyyy` or `yyyy-MM-dd`); time spent on those days is excluded from transition durations.
@@ -47,8 +49,10 @@ Application options are under the `Jira` object.
     "ApiToken": "your-jira-api-token",
     "ProjectKey": "ABC",
     "DoneStatusName": "Done",
-    "RequiredPathStage": "Code Review",
+    "RequiredPathStages": ["Code Review", "QA"],
     "IssueTypes": ["Bug", "Story"],
+    "CustomFieldName": "Team",
+    "CustomFieldValue": "Import",
     "CreatedAfter": "2026-01-01",
     "MonthLabel": "2026-02",
     "ExcludeWeekend": false,

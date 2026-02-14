@@ -4,6 +4,8 @@ using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
 
+using System.Globalization;
+
 using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.API;
@@ -27,6 +29,9 @@ public sealed class JiraApiClient : IJiraApiClient
         var resolved = settings.Value ?? throw new ArgumentException("App settings value is required.", nameof(settings));
         _excludeWeekend = resolved.ExcludeWeekend;
         _excludedDays = new HashSet<DateOnly>(resolved.ExcludedDays);
+        _customFieldName = string.IsNullOrWhiteSpace(resolved.CustomFieldName) ? null : resolved.CustomFieldName.Trim();
+        _customFieldValue = string.IsNullOrWhiteSpace(resolved.CustomFieldValue) ? null : resolved.CustomFieldValue.Trim();
+        _monthLabel = resolved.MonthLabel;
     }
 
     /// <inheritdoc />
@@ -55,15 +60,23 @@ public sealed class JiraApiClient : IJiraApiClient
     {
         var escapedProject = EscapeJqlString(projectKey.Value);
         var escapedDoneStatus = EscapeJqlString(doneStatusName.Value);
+        var (monthStart, nextMonthStart) = GetMonthRange(_monthLabel);
         var clauses = new List<string>
         {
             $"project = \"{escapedProject}\"",
-            $"status CHANGED TO \"{escapedDoneStatus}\" AFTER startOfMonth()"
+            $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\""
         };
 
         if (createdAfter is { } createdAfterDate)
         {
             clauses.Add($"created >= \"{createdAfterDate}\"");
+        }
+
+        if (!string.IsNullOrWhiteSpace(_customFieldName) && !string.IsNullOrWhiteSpace(_customFieldValue))
+        {
+            var escapedName = EscapeJqlString(_customFieldName);
+            var escapedValue = EscapeJqlString(_customFieldValue);
+            clauses.Add($"\"{escapedName}\" = \"{escapedValue}\"");
         }
 
         var jql = $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
@@ -260,7 +273,25 @@ public sealed class JiraApiClient : IJiraApiClient
             .Replace("\"", "\\\"", StringComparison.Ordinal);
     }
 
+    private static (DateOnly Start, DateOnly EndExclusive) GetMonthRange(MonthLabel monthLabel)
+    {
+        if (!DateOnly.TryParseExact(
+                $"{monthLabel.Value}-01",
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var start))
+        {
+            throw new ArgumentException($"Invalid MonthLabel '{monthLabel.Value}'. Expected yyyy-MM.", nameof(monthLabel));
+        }
+
+        return (start, start.AddMonths(1));
+    }
+
     private readonly IJiraTransport _transport;
     private readonly bool _excludeWeekend;
     private readonly IReadOnlySet<DateOnly> _excludedDays;
+    private readonly string? _customFieldName;
+    private readonly string? _customFieldValue;
+    private readonly MonthLabel _monthLabel;
 }

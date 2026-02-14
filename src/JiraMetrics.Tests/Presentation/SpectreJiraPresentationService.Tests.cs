@@ -213,10 +213,12 @@ public sealed class SpectreJiraPresentationServiceTests
             new JiraApiToken("token"),
             new ProjectKey("AAA"),
             new StatusName("Done"),
-            new StageName("Code Review"),
+            [new StageName("Code Review")],
             new MonthLabel("2026-02"),
             null,
             [new IssueTypeName("Bug"), new IssueTypeName("Story")],
+            customFieldName: null,
+            customFieldValue: null,
             excludeWeekend: false);
 
         // Act

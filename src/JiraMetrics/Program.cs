@@ -36,12 +36,25 @@ builder.Services.AddSingleton(sp =>
     var createdAfter = string.IsNullOrWhiteSpace(source.CreatedAfter)
         ? (CreatedAfterDate?)null
         : new CreatedAfterDate(source.CreatedAfter);
+    StageName[] requiredPathStages = source.RequiredPathStages is null
+        ? []
+        : [.. source.RequiredPathStages
+            .Where(static stage => !string.IsNullOrWhiteSpace(stage))
+            .Select(static stage => new StageName(stage))
+            .DistinctBy(static stage => stage.Value, StringComparer.OrdinalIgnoreCase)];
+    if (requiredPathStages.Length == 0)
+    {
+        throw new InvalidOperationException("At least one RequiredPathStages entry must be configured.");
+    }
+
     IssueTypeName[] issueTypes = source.IssueTypes is null
         ? []
         : [.. source.IssueTypes
             .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
             .Select(static issueType => new IssueTypeName(issueType))
             .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
+    var customFieldName = string.IsNullOrWhiteSpace(source.CustomFieldName) ? null : source.CustomFieldName.Trim();
+    var customFieldValue = string.IsNullOrWhiteSpace(source.CustomFieldValue) ? null : source.CustomFieldValue.Trim();
     DateOnly[] excludedDays = source.ExcludedDays is null
         ? []
         : [.. source.ExcludedDays
@@ -55,10 +68,12 @@ builder.Services.AddSingleton(sp =>
         new JiraApiToken(source.ApiToken),
         new ProjectKey(source.ProjectKey),
         new StatusName(source.DoneStatusName),
-        new StageName(source.RequiredPathStage),
+        requiredPathStages,
         monthLabel,
         createdAfter,
         issueTypes,
+        customFieldName,
+        customFieldValue,
         source.ExcludeWeekend,
         excludedDays);
 

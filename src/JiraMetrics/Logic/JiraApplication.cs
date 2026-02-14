@@ -134,7 +134,7 @@ public sealed class JiraApplication : IJiraApplication
             return;
         }
 
-        var filteredIssues = _logicService.FilterIssuesByRequiredStage(issuesByType, _settings.RequiredPathStage);
+        var filteredIssues = _logicService.FilterIssuesByRequiredStage(issuesByType, _settings.RequiredPathStages);
         if (filteredIssues.Count == 0)
         {
             _presentationService.ShowNoIssuesMatchedRequiredStage();

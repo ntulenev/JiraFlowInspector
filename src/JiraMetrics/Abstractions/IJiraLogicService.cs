@@ -9,14 +9,14 @@ namespace JiraMetrics.Abstractions;
 public interface IJiraLogicService
 {
     /// <summary>
-    /// Filters issues by required stage in transition path.
+    /// Filters issues by required stages in transition path.
     /// </summary>
     /// <param name="issues">Issues.</param>
-    /// <param name="requiredPathStage">Required stage.</param>
+    /// <param name="requiredPathStages">Required stages.</param>
     /// <returns>Filtered issues.</returns>
     IReadOnlyList<IssueTimeline> FilterIssuesByRequiredStage(
         IReadOnlyList<IssueTimeline> issues,
-        StageName requiredPathStage);
+        IReadOnlyList<StageName> requiredPathStages);
 
     /// <summary>
     /// Filters issues by configured issue types.

@@ -20,7 +20,7 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStage = "Code Review",
+            RequiredPathStages = ["Code Review", "QA"],
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
             RetryCount = 0,
@@ -46,7 +46,7 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStage = "Code Review",
+            RequiredPathStages = ["Code Review"],
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
             RetryCount = 0
@@ -71,7 +71,7 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStage = "Code Review",
+            RequiredPathStages = ["Code Review"],
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026/02",
             RetryCount = 0
@@ -96,7 +96,7 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStage = "Code Review",
+            RequiredPathStages = ["Code Review"],
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
             RetryCount = 11
@@ -121,7 +121,7 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStage = "Code Review",
+            RequiredPathStages = ["Code Review"],
             CreatedAfter = "2026/01/15",
             MonthLabel = "2026-02",
             RetryCount = 0

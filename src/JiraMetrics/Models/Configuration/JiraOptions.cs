@@ -42,11 +42,11 @@ public sealed class JiraOptions
     public required string DoneStatusName { get; init; }
 
     /// <summary>
-    /// Gets or sets required stage name in path.
+    /// Gets or sets required stage names in path.
     /// </summary>
     [Required]
     [MinLength(1)]
-    public required string RequiredPathStage { get; init; }
+    public required IReadOnlyList<string> RequiredPathStages { get; init; }
 
     /// <summary>
     /// Gets or sets month label.
@@ -80,4 +80,14 @@ public sealed class JiraOptions
     /// Gets or sets optional list of excluded days in dd.MM.yyyy or yyyy-MM-dd format.
     /// </summary>
     public IReadOnlyList<string>? ExcludedDays { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional custom field name for filtering.
+    /// </summary>
+    public string? CustomFieldName { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional custom field value for filtering.
+    /// </summary>
+    public string? CustomFieldValue { get; init; }
 }

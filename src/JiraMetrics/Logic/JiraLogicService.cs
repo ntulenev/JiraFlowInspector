@@ -24,15 +24,22 @@ public sealed class JiraLogicService : IJiraLogicService
     /// Filters issues by required path stage.
     /// </summary>
     /// <param name="issues">Issues to filter.</param>
-    /// <param name="requiredPathStage">Required stage.</param>
+    /// <param name="requiredPathStages">Required stages.</param>
     /// <returns>Filtered issues.</returns>
     public IReadOnlyList<IssueTimeline> FilterIssuesByRequiredStage(
         IReadOnlyList<IssueTimeline> issues,
-        StageName requiredPathStage)
+        IReadOnlyList<StageName> requiredPathStages)
     {
         ArgumentNullException.ThrowIfNull(issues);
+        ArgumentNullException.ThrowIfNull(requiredPathStages);
 
-        return [.. issues.Where(issue => issue.Transitions.Any(requiredPathStage.IsUsedInTransition))];
+        if (requiredPathStages.Count == 0)
+        {
+            return issues;
+        }
+
+        return [.. issues.Where(issue =>
+            requiredPathStages.All(stage => issue.Transitions.Any(stage.IsUsedInTransition)))];
     }
 
     /// <summary>

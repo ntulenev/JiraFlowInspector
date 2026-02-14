@@ -35,7 +35,24 @@ public sealed class JiraLogicServiceTests
         IReadOnlyList<IssueTimeline> issues = null!;
 
         // Act
-        Action act = () => _ = service.FilterIssuesByRequiredStage(issues, new StageName("Code Review"));
+        Action act = () => _ = service.FilterIssuesByRequiredStage(issues, [new StageName("Code Review")]);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "FilterIssuesByRequiredStage throws when required stages are null")]
+    [Trait("Category", "Unit")]
+    public void FilterIssuesByRequiredStageWhenRequiredStagesAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var issues = new List<IssueTimeline>();
+        IReadOnlyList<StageName> requiredStages = null!;
+
+        // Act
+        Action act = () => _ = service.FilterIssuesByRequiredStage(issues, requiredStages);
 
         // Assert
         act.Should()
@@ -81,7 +98,9 @@ public sealed class JiraLogicServiceTests
             ]);
 
         // Act
-        var result = service.FilterIssuesByRequiredStage([matchingIssue, nonMatchingIssue], new StageName("Code Review"));
+        var result = service.FilterIssuesByRequiredStage(
+            [matchingIssue, nonMatchingIssue],
+            [new StageName("Code Review"), new StageName("Done")]);
 
         // Assert
         result.Should().ContainSingle();
