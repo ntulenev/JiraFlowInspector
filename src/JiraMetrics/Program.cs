@@ -67,6 +67,7 @@ builder.Services.AddHttpClient<IJiraTransport, JiraTransport>((sp, http) =>
     http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 });
 
+builder.Services.AddSingleton<ISerializer, SimpleJsonSerializer>();
 builder.Services.AddSingleton<IJiraRetryPolicy, JiraRetryPolicy>();
 builder.Services.AddTransient<IJiraApiClient, JiraApiClient>();
 builder.Services.AddTransient<IJiraAnalyticsService, JiraAnalyticsService>();

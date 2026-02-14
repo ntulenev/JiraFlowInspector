@@ -1,0 +1,24 @@
+using System.Text.Json;
+
+using JiraMetrics.Abstractions;
+
+namespace JiraMetrics.Transport;
+
+/// <summary>
+/// System.Text.Json based serializer implementation.
+/// </summary>
+public sealed class SimpleJsonSerializer : ISerializer
+{
+    /// <inheritdoc />
+    public T? Deserialize<T>(string json)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+
+        return JsonSerializer.Deserialize<T>(json, _jsonOptions);
+    }
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+}

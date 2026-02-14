@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using JiraMetrics.Abstractions;
 
 namespace JiraMetrics.Transport;
@@ -14,13 +12,16 @@ public sealed class JiraTransport : IJiraTransport
     /// </summary>
     /// <param name="http">HTTP client instance.</param>
     /// <param name="retryPolicy">Retry policy instance.</param>
-    public JiraTransport(HttpClient http, IJiraRetryPolicy retryPolicy)
+    /// <param name="serializer">Serializer instance.</param>
+    public JiraTransport(HttpClient http, IJiraRetryPolicy retryPolicy, ISerializer serializer)
     {
         ArgumentNullException.ThrowIfNull(http);
         ArgumentNullException.ThrowIfNull(retryPolicy);
+        ArgumentNullException.ThrowIfNull(serializer);
 
         _http = http;
         _retryPolicy = retryPolicy;
+        _serializer = serializer;
     }
 
     /// <inheritdoc />
@@ -39,7 +40,7 @@ public sealed class JiraTransport : IJiraTransport
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                    return JsonSerializer.Deserialize<TDto>(json, _jsonOptions);
+                    return _serializer.Deserialize<TDto>(json);
                 }
 
                 if (_retryPolicy.TryGetDelay(attempt + 1, response.StatusCode, null, out var delay))
@@ -61,11 +62,7 @@ public sealed class JiraTransport : IJiraTransport
         }
     }
 
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     private readonly HttpClient _http;
     private readonly IJiraRetryPolicy _retryPolicy;
+    private readonly ISerializer _serializer;
 }

@@ -25,9 +25,10 @@ public sealed class JiraTransportTests
         // Arrange
         HttpClient http = null!;
         var retryPolicy = new JiraRetryPolicy(Options.Create(CreateOptions()));
+        var serializer = new SimpleJsonSerializer();
 
         // Act
-        Action act = () => _ = new JiraTransport(http, retryPolicy);
+        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer);
 
         // Assert
         act.Should()
@@ -41,9 +42,27 @@ public sealed class JiraTransportTests
         // Arrange
         using var http = new HttpClient();
         IJiraRetryPolicy retryPolicy = null!;
+        var serializer = new SimpleJsonSerializer();
 
         // Act
-        Action act = () => _ = new JiraTransport(http, retryPolicy);
+        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when serializer is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenSerializerIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        using var http = new HttpClient();
+        var retryPolicy = new JiraRetryPolicy(Options.Create(CreateOptions()));
+        ISerializer serializer = null!;
+
+        // Act
+        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer);
 
         // Assert
         act.Should()
@@ -57,7 +76,10 @@ public sealed class JiraTransportTests
         // Arrange
         using var cts = new CancellationTokenSource();
         using var http = new HttpClient { BaseAddress = new Uri("https://example.test/") };
-        var transport = new JiraTransport(http, new JiraRetryPolicy(Options.Create(CreateOptions())));
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer());
         Uri url = null!;
 
         // Act
@@ -104,7 +126,10 @@ public sealed class JiraTransportTests
             .ReturnsAsync(response);
 
         using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
-        var transport = new JiraTransport(http, new JiraRetryPolicy(Options.Create(CreateOptions())));
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -143,7 +168,10 @@ public sealed class JiraTransportTests
             .ReturnsAsync(response);
 
         using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
-        var transport = new JiraTransport(http, new JiraRetryPolicy(Options.Create(CreateOptions())));
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -183,7 +211,10 @@ public sealed class JiraTransportTests
             .ReturnsAsync(response);
 
         using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
-        var transport = new JiraTransport(http, new JiraRetryPolicy(Options.Create(CreateOptions())));
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer());
 
         // Act
         Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -231,10 +262,13 @@ public sealed class JiraTransportTests
                     req.Method == HttpMethod.Get && req.RequestUri == requestUrl),
                 ItExpr.IsAny<CancellationToken>())
             .Callback(() => sendCalls++)
-            .ReturnsAsync(() => responses.Dequeue());
+            .ReturnsAsync(responses.Dequeue);
 
         using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
-        var transport = new JiraTransport(http, new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1))));
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1))),
+            new SimpleJsonSerializer());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -242,6 +276,54 @@ public sealed class JiraTransportTests
         // Assert
         sendCalls.Should().Be(2);
         result.Should().NotBeNull();
+    }
+
+    [Fact(DisplayName = "GetAsync uses injected serializer")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncUsesInjectedSerializer()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/myself");
+        var json = /*lang=json,strict*/ "{\"displayName\":\"Injected\"}";
+
+        var expected = new JiraCurrentUserResponse { DisplayName = "FromSerializer" };
+        var serializer = new Mock<ISerializer>(MockBehavior.Strict);
+        serializer
+            .Setup(s => s.Deserialize<JiraCurrentUserResponse>(It.IsAny<string>()))
+            .Returns(expected);
+
+        using var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get && req.RequestUri == requestUrl),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            serializer.Object);
+
+        // Act
+        var result = await transport.GetAsync<JiraCurrentUserResponse>(
+            new Uri("rest/api/3/myself", UriKind.Relative),
+            cts.Token);
+
+        // Assert
+        result.Should().BeSameAs(expected);
+        serializer.Verify(s => s.Deserialize<JiraCurrentUserResponse>(json), Times.Once);
     }
 
     private static JiraOptions CreateOptions(int retryCount = 0)
@@ -258,4 +340,5 @@ public sealed class JiraTransportTests
             RetryCount = retryCount
         };
     }
+
 }
