@@ -30,6 +30,25 @@ public readonly partial record struct MonthLabel
     public static MonthLabel CurrentUtc() => new(DateTimeOffset.UtcNow.ToString("yyyy-MM", CultureInfo.InvariantCulture));
 
     /// <summary>
+    /// Gets inclusive month start and exclusive month end range.
+    /// </summary>
+    /// <returns>Month range.</returns>
+    public (DateOnly Start, DateOnly EndExclusive) GetMonthRange()
+    {
+        if (!DateOnly.TryParseExact(
+                $"{Value}-01",
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var start))
+        {
+            throw new ArgumentException($"Invalid MonthLabel '{Value}'. Expected yyyy-MM.");
+        }
+
+        return (start, start.AddMonths(1));
+    }
+
+    /// <summary>
     /// Gets month label value.
     /// </summary>
     public string Value { get; }
