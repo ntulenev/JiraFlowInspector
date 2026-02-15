@@ -62,4 +62,19 @@ public sealed class MonthLabelTests
         // Assert
         monthLabel.Value.Should().MatchRegex("^\\d{4}-\\d{2}$");
     }
+
+    [Fact(DisplayName = "GetMonthRange returns month boundaries")]
+    [Trait("Category", "Unit")]
+    public void GetMonthRangeWhenCalledReturnsStartAndEndExclusive()
+    {
+        // Arrange
+        var monthLabel = new MonthLabel("2026-02");
+
+        // Act
+        var (start, endExclusive) = monthLabel.GetMonthRange();
+
+        // Assert
+        start.Should().Be(new DateOnly(2026, 2, 1));
+        endExclusive.Should().Be(new DateOnly(2026, 3, 1));
+    }
 }
