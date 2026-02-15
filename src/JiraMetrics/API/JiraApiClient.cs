@@ -1,10 +1,9 @@
 using JiraMetrics.Abstractions;
+using JiraMetrics.Helpers;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
-
-using System.Globalization;
 
 using Microsoft.Extensions.Options;
 
@@ -20,15 +19,19 @@ public sealed class JiraApiClient : IJiraApiClient
     /// </summary>
     /// <param name="transport">Jira transport instance.</param>
     /// <param name="settings">Application settings options.</param>
-    public JiraApiClient(IJiraTransport transport, IOptions<AppSettings> settings)
+    /// <param name="transitionBuilder">Transition builder instance.</param>
+    public JiraApiClient(
+        IJiraTransport transport,
+        IOptions<AppSettings> settings,
+        ITransitionBuilder transitionBuilder)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(transitionBuilder);
 
         _transport = transport;
+        _transitionBuilder = transitionBuilder;
         var resolved = settings.Value ?? throw new ArgumentException("App settings value is required.", nameof(settings));
-        _excludeWeekend = resolved.ExcludeWeekend;
-        _excludedDays = new HashSet<DateOnly>(resolved.ExcludedDays);
         _customFieldName = string.IsNullOrWhiteSpace(resolved.CustomFieldName) ? null : resolved.CustomFieldName.Trim();
         _customFieldValue = string.IsNullOrWhiteSpace(resolved.CustomFieldValue) ? null : resolved.CustomFieldValue.Trim();
         _monthLabel = resolved.MonthLabel;
@@ -58,9 +61,9 @@ public sealed class JiraApiClient : IJiraApiClient
         CreatedAfterDate? createdAfter,
         CancellationToken cancellationToken)
     {
-        var escapedProject = EscapeJqlString(projectKey.Value);
-        var escapedDoneStatus = EscapeJqlString(doneStatusName.Value);
-        var (monthStart, nextMonthStart) = GetMonthRange(_monthLabel);
+        var escapedProject = projectKey.Value.EscapeJqlString();
+        var escapedDoneStatus = doneStatusName.Value.EscapeJqlString();
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
         var clauses = new List<string>
         {
             $"project = \"{escapedProject}\"",
@@ -74,8 +77,8 @@ public sealed class JiraApiClient : IJiraApiClient
 
         if (!string.IsNullOrWhiteSpace(_customFieldName) && !string.IsNullOrWhiteSpace(_customFieldValue))
         {
-            var escapedName = EscapeJqlString(_customFieldName);
-            var escapedValue = EscapeJqlString(_customFieldValue);
+            var escapedName = _customFieldName.EscapeJqlString();
+            var escapedValue = _customFieldValue.EscapeJqlString();
             clauses.Add($"\"{escapedName}\" = \"{escapedValue}\"");
         }
 
@@ -146,7 +149,7 @@ public sealed class JiraApiClient : IJiraApiClient
             throw new InvalidOperationException("Issue created date is missing.");
         }
 
-        var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created, _excludeWeekend, _excludedDays);
+        var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created);
 
         var endTime = DateTimeOffset.UtcNow;
         if (!string.IsNullOrWhiteSpace(response.Fields.ResolutionDate)
@@ -171,11 +174,9 @@ public sealed class JiraApiClient : IJiraApiClient
             PathLabel.FromTransitions(transitions));
     }
 
-    private static List<TransitionEvent> ParseTransitions(
+    private IReadOnlyList<TransitionEvent> ParseTransitions(
         IReadOnlyList<JiraHistoryResponse> histories,
-        DateTimeOffset created,
-        bool excludeWeekend,
-        IReadOnlySet<DateOnly> excludedDays)
+        DateTimeOffset created)
     {
         var rawTransitions = new List<(DateTimeOffset At, StatusName From, StatusName To)>();
 
@@ -197,100 +198,11 @@ public sealed class JiraApiClient : IJiraApiClient
             }
         }
 
-        rawTransitions = [.. rawTransitions.OrderBy(static item => item.At)];
-
-        var transitions = new List<TransitionEvent>(rawTransitions.Count);
-        var previousAt = created;
-
-        foreach (var (At, From, To) in rawTransitions)
-        {
-            var at = At;
-            if (at < created)
-            {
-                at = created;
-            }
-
-            if (at < previousAt)
-            {
-                at = previousAt;
-            }
-
-            var sincePrevious = CalculateWorkingDuration(previousAt, at, excludeWeekend, excludedDays);
-            if (sincePrevious < TimeSpan.Zero)
-            {
-                sincePrevious = TimeSpan.Zero;
-            }
-
-            transitions.Add(new TransitionEvent(From, To, at, sincePrevious));
-            previousAt = at;
-        }
-
-        return transitions;
-    }
-
-    private static TimeSpan CalculateWorkingDuration(
-        DateTimeOffset start,
-        DateTimeOffset end,
-        bool excludeWeekend,
-        IReadOnlySet<DateOnly> excludedDays)
-    {
-        if (end <= start)
-        {
-            return TimeSpan.Zero;
-        }
-
-        if (!excludeWeekend && excludedDays.Count == 0)
-        {
-            return end - start;
-        }
-
-        var total = TimeSpan.Zero;
-        var cursor = start;
-
-        while (cursor < end)
-        {
-            var nextDay = new DateTimeOffset(cursor.Date.AddDays(1), cursor.Offset);
-            var segmentEnd = end < nextDay ? end : nextDay;
-
-            var isWeekend = cursor.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-            var isExcluded = excludedDays.Contains(DateOnly.FromDateTime(cursor.Date));
-
-            if ((!excludeWeekend || !isWeekend) && !isExcluded)
-            {
-                total += segmentEnd - cursor;
-            }
-
-            cursor = segmentEnd;
-        }
-
-        return total < TimeSpan.Zero ? TimeSpan.Zero : total;
-    }
-
-    private static string EscapeJqlString(string value)
-    {
-        return value
-            .Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("\"", "\\\"", StringComparison.Ordinal);
-    }
-
-    private static (DateOnly Start, DateOnly EndExclusive) GetMonthRange(MonthLabel monthLabel)
-    {
-        if (!DateOnly.TryParseExact(
-                $"{monthLabel.Value}-01",
-                "yyyy-MM-dd",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out var start))
-        {
-            throw new ArgumentException($"Invalid MonthLabel '{monthLabel.Value}'. Expected yyyy-MM.", nameof(monthLabel));
-        }
-
-        return (start, start.AddMonths(1));
+        return _transitionBuilder.BuildTransitions(rawTransitions, created);
     }
 
     private readonly IJiraTransport _transport;
-    private readonly bool _excludeWeekend;
-    private readonly IReadOnlySet<DateOnly> _excludedDays;
+    private readonly ITransitionBuilder _transitionBuilder;
     private readonly string? _customFieldName;
     private readonly string? _customFieldValue;
     private readonly MonthLabel _monthLabel;

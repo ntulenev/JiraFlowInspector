@@ -93,6 +93,7 @@ builder.Services.AddHttpClient<IJiraTransport, JiraTransport>((sp, http) =>
 
 builder.Services.AddSingleton<ISerializer, SimpleJsonSerializer>();
 builder.Services.AddSingleton<IJiraRetryPolicy, JiraRetryPolicy>();
+builder.Services.AddSingleton<ITransitionBuilder, TransitionBuilder>();
 builder.Services.AddTransient<IJiraApiClient, JiraApiClient>();
 builder.Services.AddTransient<IJiraAnalyticsService, JiraAnalyticsService>();
 builder.Services.AddTransient<IJiraLogicService, JiraLogicService>();
