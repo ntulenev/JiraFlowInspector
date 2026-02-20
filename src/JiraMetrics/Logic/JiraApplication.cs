@@ -16,6 +16,7 @@ public sealed class JiraApplication : IJiraApplication
     private readonly IJiraApiClient _apiClient;
     private readonly IJiraLogicService _logicService;
     private readonly IJiraPresentationService _presentationService;
+    private readonly IPdfReportRenderer _pdfReportRenderer;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraApplication"/> class.
@@ -24,17 +25,20 @@ public sealed class JiraApplication : IJiraApplication
     /// <param name="apiClient">Jira API client.</param>
     /// <param name="logicService">Domain logic service.</param>
     /// <param name="presentationService">Presentation service.</param>
+    /// <param name="pdfReportRenderer">PDF report renderer.</param>
     public JiraApplication(
         IOptions<AppSettings> settings,
         IJiraApiClient apiClient,
         IJiraLogicService logicService,
-        IJiraPresentationService presentationService)
+        IJiraPresentationService presentationService,
+        IPdfReportRenderer pdfReportRenderer)
     {
         ArgumentNullException.ThrowIfNull(settings);
         _settings = settings.Value ?? throw new ArgumentException("App settings value is required.", nameof(settings));
         _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
         _logicService = logicService ?? throw new ArgumentNullException(nameof(logicService));
         _presentationService = presentationService ?? throw new ArgumentNullException(nameof(presentationService));
+        _pdfReportRenderer = pdfReportRenderer ?? throw new ArgumentNullException(nameof(pdfReportRenderer));
     }
 
     /// <summary>
@@ -305,10 +309,11 @@ public sealed class JiraApplication : IJiraApplication
         _presentationService.ShowDoneIssuesTable(filteredIssues, _settings.DoneStatusName);
         _presentationService.ShowSpacer();
 
+        IReadOnlyList<IssueTimeline> filteredRejectedIssues = [];
         if (_settings.RejectStatusName is { } rejectStatus)
         {
             var rejectIssuesByType = _logicService.FilterIssuesByIssueTypes(rejectIssues, _settings.IssueTypes);
-            var filteredRejectedIssues = _logicService.FilterIssuesByRequiredStage(rejectIssuesByType, _settings.RequiredPathStages);
+            filteredRejectedIssues = _logicService.FilterIssuesByRequiredStage(rejectIssuesByType, _settings.RequiredPathStages);
             _presentationService.ShowRejectedIssuesTable(filteredRejectedIssues, rejectStatus);
             _presentationService.ShowSpacer();
         }
@@ -317,13 +322,33 @@ public sealed class JiraApplication : IJiraApplication
             .Where(static issue => issue.HasPullRequest)
             .ToList();
         var groups = _logicService.BuildPathGroups(groupedIssues);
-        _presentationService.ShowPathGroupsSummary(new PathGroupsSummary(
+        var pathGroupsSummary = new PathGroupsSummary(
             new ItemCount(issues.Count),
             new ItemCount(groupedIssues.Count),
             new ItemCount(failures.Count),
-            new ItemCount(groups.Count)));
+            new ItemCount(groups.Count));
+        _presentationService.ShowPathGroupsSummary(pathGroupsSummary);
         _presentationService.ShowSpacer();
         _presentationService.ShowPathGroups(groups);
+
+        _pdfReportRenderer.RenderReport(new JiraPdfReportData
+        {
+            Settings = _settings,
+            SearchIssueCount = new ItemCount(issueKeys.Count),
+            ReleaseIssues = releaseIssues,
+            BugCreatedThisMonth = bugCreatedThisMonth,
+            BugMovedToDoneThisMonth = bugMovedToDoneThisMonth,
+            BugRejectedThisMonth = bugRejectedThisMonth,
+            BugFinishedThisMonth = bugFinishedThisMonth,
+            BugOpenIssues = bugOpenIssues,
+            BugDoneIssues = bugDoneIssues,
+            BugRejectedIssues = bugRejectedIssues,
+            DoneIssues = filteredIssues,
+            RejectedIssues = filteredRejectedIssues,
+            PathSummary = pathGroupsSummary,
+            PathGroups = groups,
+            Failures = failures
+        });
 
         if (failures.Count > 0)
         {

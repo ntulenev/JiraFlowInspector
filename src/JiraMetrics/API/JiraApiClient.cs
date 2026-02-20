@@ -303,7 +303,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
     private static string BuildMovedToDoneClause(StatusName doneStatusName, DateOnly monthStart, DateOnly nextMonthStart)
     {
         var escapedDoneStatus = doneStatusName.Value.EscapeJqlString();
-        return $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\"";
+        return $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\" AND status = \"{escapedDoneStatus}\"";
     }
 
     private async Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken)

@@ -7,6 +7,7 @@ using JiraMetrics.API;
 using JiraMetrics.Logic;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
+using JiraMetrics.Presentation.Pdf;
 using JiraMetrics.Presentation;
 using JiraMetrics.Transport;
 
@@ -66,6 +67,7 @@ builder.Services.AddSingleton(sp =>
         ? (StatusName?)null
         : new StatusName(teamTasks.RejectStatusName);
     var releaseReport = ResolveReleaseReport(source.ReleaseReport);
+    var pdfReport = ResolvePdfReport(source.Pdf);
     DateOnly[] excludedDays = teamTasks.IssueTransitions?.ExcludedDays is null
         ? []
         : [.. teamTasks.IssueTransitions.ExcludedDays
@@ -89,7 +91,8 @@ builder.Services.AddSingleton(sp =>
         teamTasks.IssueTransitions?.ExcludeWeekend ?? false,
         excludedDays,
         bugIssueNames,
-        releaseReport);
+        releaseReport,
+        pdfReport);
 
     return Options.Create(settings);
 });
@@ -112,6 +115,9 @@ builder.Services.AddTransient<IJiraApiClient, JiraApiClient>();
 builder.Services.AddTransient<IJiraAnalyticsService, JiraAnalyticsService>();
 builder.Services.AddTransient<IJiraLogicService, JiraLogicService>();
 builder.Services.AddTransient<IJiraPresentationService, SpectreJiraPresentationService>();
+builder.Services.AddTransient<IPdfContentComposer, PdfContentComposer>();
+builder.Services.AddTransient<IPdfReportFileStore, PdfReportFileStore>();
+builder.Services.AddTransient<IPdfReportRenderer, QuestPdfReportRenderer>();
 builder.Services.AddTransient<IJiraApplication, JiraApplication>();
 
 using var host = builder.Build();
@@ -165,4 +171,14 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         source.ProjectLabel,
         source.ReleaseDateFieldName,
         source.ComponentsFieldName);
+}
+
+static PdfReportSettings ResolvePdfReport(PdfOptions? source)
+{
+    if (source is null)
+    {
+        return new PdfReportSettings();
+    }
+
+    return new PdfReportSettings(source.Enabled, source.OutputPath);
 }

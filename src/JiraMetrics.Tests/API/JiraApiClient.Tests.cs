@@ -325,6 +325,7 @@ public sealed class JiraApiClientTests
         count.Value.Should().Be(3);
         capturedUrl.Should().Contain("status");
         capturedUrl.Should().Contain("CHANGED");
+        capturedUrl.Should().Contain("status%20%3D%20%22Done%22");
         capturedUrl.Should().Contain("issuetype");
         capturedUrl.Should().Contain("Bug");
         capturedUrl.Should().NotContain("created%20%3E%3D");
@@ -430,6 +431,7 @@ public sealed class JiraApiClientTests
         issues[0].Title.Value.Should().Be("Done bug");
         issues[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 11, 10, 0, 0, TimeSpan.Zero));
         capturedUrl.Should().Contain("status");
+        capturedUrl.Should().Contain("status%20%3D%20%22Done%22");
         capturedUrl.Should().Contain("fields=key,summary,created");
     }
 

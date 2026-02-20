@@ -51,6 +51,9 @@ Application options are under the `Jira` object.
   Release report returns all issues from `ReleaseProjectKey` where `labels = ProjectLabel` and `ReleaseDateFieldName` is in selected `MonthLabel`.
   It also shows `Tasks` count per release issue: number of linked work items with relation text `is caused by`.
   When `ComponentsFieldName` is configured, release table also shows `Components` count per release issue.
+- `Pdf` (`object`, optional): Settings for PDF report generation.
+- `Pdf.Enabled` (`bool`, optional): Enables PDF export of the analytics report; defaults to `true`.
+- `Pdf.OutputPath` (`string`, optional): Output path for the PDF file (relative or absolute). Generated file name is suffixed with current date (for example `jiraflowinspector-report_20_02_2026.pdf`).
 - `TeamTasks.CustomFieldName` (`string`, optional): Custom field name used for filtering (for example `Team`). Applied only when both name and value are provided.
 - `TeamTasks.CustomFieldValue` (`string`, optional): Custom field value used for filtering (for example `Import`). Applied only when both name and value are provided.
 - `MonthLabel` (`string`, optional): Month used to filter issues moved to done (`yyyy-MM`); defaults to current UTC month when omitted.
@@ -85,6 +88,10 @@ Application options are under the `Jira` object.
       "ProjectLabel": "processing",
       "ReleaseDateFieldName": "Change completion date",
       "ComponentsFieldName": "Components"
+    },
+    "Pdf": {
+      "Enabled": true,
+      "OutputPath": "jiraflowinspector-report.pdf"
     },
     "CreatedAfter": "2026-01-01",
     "MonthLabel": "2026-02",

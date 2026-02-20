@@ -55,6 +55,11 @@ public sealed class JiraOptions
     /// Gets or sets optional release report settings.
     /// </summary>
     public ReleaseReportOptions? ReleaseReport { get; init; }
+
+    /// <summary>
+    /// Gets or sets PDF report settings.
+    /// </summary>
+    public PdfOptions Pdf { get; init; } = new();
 }
 
 /// <summary>

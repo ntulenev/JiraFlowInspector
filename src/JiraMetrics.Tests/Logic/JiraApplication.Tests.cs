@@ -21,9 +21,10 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         var presentation = new FakePresentationService();
+        var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -39,9 +40,10 @@ public sealed class JiraApplicationTests
         IJiraApiClient apiClient = null!;
         var logic = new JiraLogicService(new JiraAnalyticsService());
         var presentation = new FakePresentationService();
+        var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -57,9 +59,10 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         var presentation = new FakePresentationService();
+        var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -75,9 +78,10 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         IJiraLogicService logic = null!;
         var presentation = new FakePresentationService();
+        var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -93,9 +97,29 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         IJiraPresentationService presentation = null!;
+        var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation);
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when PDF report renderer is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenPdfReportRendererIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var settings = Options.Create(CreateSettings());
+        var apiClient = new FakeApiClient();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var presentation = new FakePresentationService();
+        IPdfReportRenderer pdfReportRenderer = null!;
+
+        // Act
+        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -115,7 +139,13 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(Options.Create(CreateSettings()), apiClient, logic, presentation);
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings()),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -140,7 +170,13 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(Options.Create(CreateSettings()), apiClient, logic, presentation);
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings()),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -162,7 +198,13 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(Options.Create(CreateSettings()), apiClient, logic, presentation);
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings()),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
 
         // Act
         Func<Task> act = () => app.RunAsync();
@@ -188,11 +230,13 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings([new IssueTypeName("Bug"), new IssueTypeName("Story")])),
             apiClient,
             logic,
-            presentation);
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -219,13 +263,15 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
                 bugIssueNames: [new IssueTypeName("Bug")])),
             apiClient,
             logic,
-            presentation);
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -256,6 +302,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
@@ -265,7 +312,8 @@ public sealed class JiraApplicationTests
                     "Change completion date"))),
             apiClient,
             logic,
-            presentation);
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -293,6 +341,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
@@ -303,7 +352,8 @@ public sealed class JiraApplicationTests
                     "Change completion date"))),
             apiClient,
             logic,
-            presentation);
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -355,7 +405,13 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])), apiClient, logic, presentation);
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -410,11 +466,13 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             apiClient,
             logic,
-            presentation);
+            presentation,
+            pdfReportRenderer);
 
         // Act
         await app.RunAsync();
@@ -426,6 +484,38 @@ public sealed class JiraApplicationTests
         presentation.PathGroupsSummary.Should().NotBeNull();
         presentation.PathGroupsSummary!.SuccessfulCount.Value.Should().Be(2);
         presentation.PathGroupsSummary.MatchedStageCount.Value.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "RunAsync renders PDF report after transition analysis")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenAnalysisCompletesRendersPdfReport()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task"))
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        pdfReportRenderer.ReportRendered.Should().BeTrue();
+        pdfReportRenderer.LastReportData.Should().NotBeNull();
+        pdfReportRenderer.LastReportData!.DoneIssues.Should().ContainSingle();
+        pdfReportRenderer.LastReportData.SearchIssueCount.Value.Should().Be(1);
     }
 
     private static AppSettings CreateSettings(
@@ -618,6 +708,19 @@ public sealed class JiraApplicationTests
                 IssueToReturn.PathLabel,
                 IssueToReturn.SubItemsCount,
                 IssueToReturn.HasPullRequest));
+        }
+    }
+
+    private sealed class FakePdfReportRenderer : IPdfReportRenderer
+    {
+        public bool ReportRendered { get; private set; }
+
+        public JiraPdfReportData? LastReportData { get; private set; }
+
+        public void RenderReport(JiraPdfReportData reportData)
+        {
+            ReportRendered = true;
+            LastReportData = reportData;
         }
     }
 

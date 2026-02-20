@@ -26,6 +26,7 @@ public sealed record AppSettings
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
+    /// <param name="pdfReport">PDF report settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -42,7 +43,8 @@ public sealed record AppSettings
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
-        ReleaseReportSettings? releaseReport = null)
+        ReleaseReportSettings? releaseReport = null,
+        PdfReportSettings? pdfReport = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -60,6 +62,7 @@ public sealed record AppSettings
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
         ReleaseReport = releaseReport;
+        PdfReport = pdfReport ?? new PdfReportSettings();
     }
 
     /// <summary>
@@ -121,6 +124,11 @@ public sealed record AppSettings
     /// Gets optional release report settings.
     /// </summary>
     public ReleaseReportSettings? ReleaseReport { get; }
+
+    /// <summary>
+    /// Gets PDF report settings.
+    /// </summary>
+    public PdfReportSettings PdfReport { get; }
 
     /// <summary>
     /// Gets optional custom field name for filtering.
