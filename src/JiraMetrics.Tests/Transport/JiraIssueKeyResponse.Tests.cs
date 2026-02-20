@@ -15,7 +15,11 @@ public sealed class JiraIssueKeyResponseTests
         // Arrange
         var dto = new JiraIssueKeyResponse
         {
-            Key = "AAA-1"
+            Key = "AAA-1",
+            Fields = new JiraIssueFieldsResponse
+            {
+                Summary = "Bug title"
+            }
         };
 
         // Act
@@ -23,6 +27,8 @@ public sealed class JiraIssueKeyResponseTests
 
         // Assert
         json.Should().Contain("\"key\":\"AAA-1\"");
+        json.Should().Contain("\"fields\"");
+        json.Should().Contain("\"summary\":\"Bug title\"");
     }
 }
 

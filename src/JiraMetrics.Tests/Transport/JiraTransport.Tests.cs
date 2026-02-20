@@ -335,7 +335,10 @@ public sealed class JiraTransportTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStages = ["Code Review"],
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review"]
+            },
             MonthLabel = "2026-02",
             RetryCount = retryCount
         };

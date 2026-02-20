@@ -36,28 +36,37 @@ builder.Services.AddSingleton(sp =>
     var createdAfter = string.IsNullOrWhiteSpace(source.CreatedAfter)
         ? (CreatedAfterDate?)null
         : new CreatedAfterDate(source.CreatedAfter);
-    StageName[] requiredPathStages = source.RequiredPathStages is null
+    StageName[] requiredPathStages = source.IssueTransitions?.RequiredPathStages is null
         ? []
-        : [.. source.RequiredPathStages
+        : [.. source.IssueTransitions.RequiredPathStages
             .Where(static stage => !string.IsNullOrWhiteSpace(stage))
             .Select(static stage => new StageName(stage))
             .DistinctBy(static stage => stage.Value, StringComparer.OrdinalIgnoreCase)];
     if (requiredPathStages.Length == 0)
     {
-        throw new InvalidOperationException("At least one RequiredPathStages entry must be configured.");
+        throw new InvalidOperationException("At least one IssueTransitions:RequiredPathStages entry must be configured.");
     }
 
-    IssueTypeName[] issueTypes = source.IssueTypes is null
+    IssueTypeName[] issueTypes = source.IssueTransitions?.IssueTypes is null
         ? []
-        : [.. source.IssueTypes
+        : [.. source.IssueTransitions.IssueTypes
+            .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
+            .Select(static issueType => new IssueTypeName(issueType))
+            .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
+    IssueTypeName[] bugIssueNames = source.BugRatio?.BugIssueNames is null
+        ? []
+        : [.. source.BugRatio.BugIssueNames
             .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
             .Select(static issueType => new IssueTypeName(issueType))
             .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
     var customFieldName = string.IsNullOrWhiteSpace(source.CustomFieldName) ? null : source.CustomFieldName.Trim();
     var customFieldValue = string.IsNullOrWhiteSpace(source.CustomFieldValue) ? null : source.CustomFieldValue.Trim();
-    DateOnly[] excludedDays = source.ExcludedDays is null
+    var rejectStatusName = string.IsNullOrWhiteSpace(source.RejectStatusName)
+        ? (StatusName?)null
+        : new StatusName(source.RejectStatusName);
+    DateOnly[] excludedDays = source.IssueTransitions?.ExcludedDays is null
         ? []
-        : [.. source.ExcludedDays
+        : [.. source.IssueTransitions.ExcludedDays
             .Where(static day => !string.IsNullOrWhiteSpace(day))
             .Select(static day => ParseExcludedDay(day.Trim()))
             .Distinct()];
@@ -68,14 +77,16 @@ builder.Services.AddSingleton(sp =>
         new JiraApiToken(source.ApiToken),
         new ProjectKey(source.ProjectKey),
         new StatusName(source.DoneStatusName),
+        rejectStatusName,
         requiredPathStages,
         monthLabel,
         createdAfter,
         issueTypes,
         customFieldName,
         customFieldValue,
-        source.ExcludeWeekend,
-        excludedDays);
+        source.IssueTransitions?.ExcludeWeekend ?? false,
+        excludedDays,
+        bugIssueNames);
 
     return Options.Create(settings);
 });

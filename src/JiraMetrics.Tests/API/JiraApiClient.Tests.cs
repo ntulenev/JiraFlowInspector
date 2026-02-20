@@ -247,6 +247,186 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().Contain("2026-02-01");
     }
 
+    [Fact(DisplayName = "GetIssueCountCreatedThisMonthAsync uses month range and bug issue type filter")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueCountCreatedThisMonthAsyncWhenCalledUsesCreatedAndIssueTypeClauses()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Total = 5,
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-01");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var count = await client.GetIssueCountCreatedThisMonthAsync(
+            new ProjectKey("AAA"),
+            [new IssueTypeName("Bug")],
+            cts.Token);
+
+        // Assert
+        count.Value.Should().Be(5);
+        capturedUrl.Should().Contain("created");
+        capturedUrl.Should().Contain("2026-01-01");
+        capturedUrl.Should().Contain("2026-02-01");
+        capturedUrl.Should().Contain("issuetype");
+        capturedUrl.Should().Contain("Bug");
+        capturedUrl.Should().Contain("maxResults=1");
+    }
+
+    [Fact(DisplayName = "GetIssueCountMovedToDoneThisMonthAsync does not add created-after filter")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueCountMovedToDoneThisMonthAsyncWhenCalledDoesNotAddCreatedClause()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Total = 3,
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var count = await client.GetIssueCountMovedToDoneThisMonthAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            [new IssueTypeName("Bug")],
+            cts.Token);
+
+        // Assert
+        count.Value.Should().Be(3);
+        capturedUrl.Should().Contain("status");
+        capturedUrl.Should().Contain("CHANGED");
+        capturedUrl.Should().Contain("issuetype");
+        capturedUrl.Should().Contain("Bug");
+        capturedUrl.Should().NotContain("created%20%3E%3D");
+        capturedUrl.Should().Contain("maxResults=1");
+    }
+
+    [Fact(DisplayName = "GetIssuesCreatedThisMonthAsync returns issue details with Jira id and title")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssuesCreatedThisMonthAsyncWhenCalledReturnsIssueDetails()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-1",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Open bug"
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-01");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var issues = await client.GetIssuesCreatedThisMonthAsync(
+            new ProjectKey("AAA"),
+            [new IssueTypeName("Bug")],
+            cts.Token);
+
+        // Assert
+        issues.Should().ContainSingle();
+        issues[0].Key.Value.Should().Be("AAA-1");
+        issues[0].Title.Value.Should().Be("Open bug");
+        capturedUrl.Should().Contain("created");
+        capturedUrl.Should().Contain("fields=key,summary");
+    }
+
+    [Fact(DisplayName = "GetIssuesMovedToDoneThisMonthAsync returns issue details")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssuesMovedToDoneThisMonthAsyncWhenCalledReturnsIssueDetails()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-2",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Done bug"
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var issues = await client.GetIssuesMovedToDoneThisMonthAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            [new IssueTypeName("Bug")],
+            cts.Token);
+
+        // Assert
+        issues.Should().ContainSingle();
+        issues[0].Key.Value.Should().Be("AAA-2");
+        issues[0].Title.Value.Should().Be("Done bug");
+        capturedUrl.Should().Contain("status");
+        capturedUrl.Should().Contain("fields=key,summary");
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync returns mapped timeline")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenResponseIsValidReturnsMappedTimeline()
@@ -471,6 +651,7 @@ public sealed class JiraApiClientTests
             new JiraApiToken("token"),
             new ProjectKey("AAA"),
             new StatusName("Done"),
+            null,
             [new StageName("Code Review")],
             new MonthLabel(monthLabel),
             createdAfter: null,

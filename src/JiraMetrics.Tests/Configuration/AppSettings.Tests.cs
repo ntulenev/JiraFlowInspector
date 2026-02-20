@@ -17,10 +17,12 @@ public sealed class AppSettingsTests
         var token = new JiraApiToken("token");
         var projectKey = new ProjectKey("AAA");
         var doneStatus = new StatusName("Done");
+        var rejectStatus = new StatusName("Reject");
         var requiredPathStages = new List<StageName> { new("Code Review"), new("QA") };
         var monthLabel = new MonthLabel("2026-02");
         var createdAfter = new CreatedAfterDate("2026-01-15");
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
+        var bugIssueNames = new List<IssueTypeName> { new("Bug") };
         var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };
         const string customFieldName = "Team";
         const string customFieldValue = "Import";
@@ -32,6 +34,7 @@ public sealed class AppSettingsTests
             token,
             projectKey,
             doneStatus,
+            rejectStatus,
             requiredPathStages,
             monthLabel,
             createdAfter,
@@ -39,7 +42,8 @@ public sealed class AppSettingsTests
             customFieldName,
             customFieldValue,
             excludeWeekend: true,
-            excludedDays: excludedDays);
+            excludedDays: excludedDays,
+            bugIssueNames: bugIssueNames);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -47,6 +51,7 @@ public sealed class AppSettingsTests
         settings.ApiToken.Should().Be(token);
         settings.ProjectKey.Should().Be(projectKey);
         settings.DoneStatusName.Should().Be(doneStatus);
+        settings.RejectStatusName.Should().Be(rejectStatus);
         settings.RequiredPathStages.Should().ContainInOrder(requiredPathStages);
         settings.MonthLabel.Should().Be(monthLabel);
         settings.CreatedAfter.Should().Be(createdAfter);
@@ -55,5 +60,6 @@ public sealed class AppSettingsTests
         settings.CustomFieldValue.Should().Be(customFieldValue);
         settings.ExcludeWeekend.Should().BeTrue();
         settings.ExcludedDays.Should().ContainInOrder(excludedDays);
+        settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
     }
 }

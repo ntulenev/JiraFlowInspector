@@ -20,11 +20,19 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStages = ["Code Review", "QA"],
+            RejectStatusName = "Reject",
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review", "QA"],
+                IssueTypes = ["Bug", "Story"]
+            },
+            BugRatio = new BugRatioOptions
+            {
+                BugIssueNames = ["Bug"]
+            },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
-            RetryCount = 0,
-            IssueTypes = ["Bug", "Story"]
+            RetryCount = 0
         };
 
         // Act
@@ -46,7 +54,10 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStages = ["Code Review"],
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review"]
+            },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
             RetryCount = 0
@@ -71,7 +82,10 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStages = ["Code Review"],
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review"]
+            },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026/02",
             RetryCount = 0
@@ -96,7 +110,10 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStages = ["Code Review"],
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review"]
+            },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
             RetryCount = 11
@@ -121,7 +138,10 @@ public sealed class JiraOptionsTests
             ApiToken = "token",
             ProjectKey = "AAA",
             DoneStatusName = "Done",
-            RequiredPathStages = ["Code Review"],
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review"]
+            },
             CreatedAfter = "2026/01/15",
             MonthLabel = "2026-02",
             RetryCount = 0

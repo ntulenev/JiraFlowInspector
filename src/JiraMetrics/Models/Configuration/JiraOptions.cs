@@ -42,11 +42,15 @@ public sealed class JiraOptions
     public required string DoneStatusName { get; init; }
 
     /// <summary>
-    /// Gets or sets required stage names in path.
+    /// Gets or sets optional rejected status name.
+    /// </summary>
+    public string? RejectStatusName { get; init; }
+
+    /// <summary>
+    /// Gets or sets issue transition settings.
     /// </summary>
     [Required]
-    [MinLength(1)]
-    public required IReadOnlyList<string> RequiredPathStages { get; init; }
+    public required IssueTransitionsOptions IssueTransitions { get; init; }
 
     /// <summary>
     /// Gets or sets month label.
@@ -67,6 +71,34 @@ public sealed class JiraOptions
     public int RetryCount { get; init; }
 
     /// <summary>
+    /// Gets or sets optional bug ratio settings.
+    /// </summary>
+    public BugRatioOptions? BugRatio { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional custom field name for filtering.
+    /// </summary>
+    public string? CustomFieldName { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional custom field value for filtering.
+    /// </summary>
+    public string? CustomFieldValue { get; init; }
+}
+
+/// <summary>
+/// Issue transition-related options.
+/// </summary>
+public sealed class IssueTransitionsOptions
+{
+    /// <summary>
+    /// Gets or sets required stage names in path.
+    /// </summary>
+    [Required]
+    [MinLength(1)]
+    public required IReadOnlyList<string> RequiredPathStages { get; init; }
+
+    /// <summary>
     /// Gets or sets optional issue types filter.
     /// </summary>
     public IReadOnlyList<string>? IssueTypes { get; init; }
@@ -80,14 +112,15 @@ public sealed class JiraOptions
     /// Gets or sets optional list of excluded days in dd.MM.yyyy or yyyy-MM-dd format.
     /// </summary>
     public IReadOnlyList<string>? ExcludedDays { get; init; }
+}
 
+/// <summary>
+/// Bug ratio options.
+/// </summary>
+public sealed class BugRatioOptions
+{
     /// <summary>
-    /// Gets or sets optional custom field name for filtering.
+    /// Gets or sets optional issue types that should be treated as bug-like issues.
     /// </summary>
-    public string? CustomFieldName { get; init; }
-
-    /// <summary>
-    /// Gets or sets optional custom field value for filtering.
-    /// </summary>
-    public string? CustomFieldValue { get; init; }
+    public IReadOnlyList<string>? BugIssueNames { get; init; }
 }

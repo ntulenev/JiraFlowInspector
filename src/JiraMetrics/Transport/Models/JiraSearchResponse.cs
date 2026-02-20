@@ -24,4 +24,10 @@ internal sealed class JiraSearchResponse
     /// </summary>
     [JsonPropertyName("nextPageToken")]
     public string? NextPageToken { get; init; }
+
+    /// <summary>
+    /// Gets total number of matched issues across all pages.
+    /// </summary>
+    [JsonPropertyName("total")]
+    public int Total { get; init; }
 }

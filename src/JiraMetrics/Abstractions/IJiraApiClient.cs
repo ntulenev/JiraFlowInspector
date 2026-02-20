@@ -30,6 +30,60 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads count of issues created during configured month and matching issue types.
+    /// </summary>
+    /// <param name="projectKey">Project key.</param>
+    /// <param name="issueTypes">Issue types to include.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching issue count.</returns>
+    Task<ItemCount> GetIssueCountCreatedThisMonthAsync(
+        ProjectKey projectKey,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads count of issues moved to done during configured month and matching issue types.
+    /// Created date is not restricted.
+    /// </summary>
+    /// <param name="projectKey">Project key.</param>
+    /// <param name="doneStatusName">Done status.</param>
+    /// <param name="issueTypes">Issue types to include.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching issue count.</returns>
+    Task<ItemCount> GetIssueCountMovedToDoneThisMonthAsync(
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads issues created during configured month and matching issue types.
+    /// </summary>
+    /// <param name="projectKey">Project key.</param>
+    /// <param name="issueTypes">Issue types to include.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching issues with key and title.</returns>
+    Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
+        ProjectKey projectKey,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads issues moved to done during configured month and matching issue types.
+    /// Created date is not restricted.
+    /// </summary>
+    /// <param name="projectKey">Project key.</param>
+    /// <param name="doneStatusName">Done status.</param>
+    /// <param name="issueTypes">Issue types to include.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching issues with key and title.</returns>
+    Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads full issue timeline for a specific issue key.
     /// </summary>
     /// <param name="issueKey">Issue key.</param>

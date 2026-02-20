@@ -57,6 +57,13 @@ public sealed class JiraApplication : IJiraApplication
         }
 
         IReadOnlyList<IssueKey> issueKeys;
+        ItemCount? bugCreatedThisMonth = null;
+        ItemCount? bugMovedToDoneThisMonth = null;
+        ItemCount? bugRejectedThisMonth = null;
+        ItemCount? bugFinishedThisMonth = null;
+        IReadOnlyList<IssueListItem> bugOpenIssues = [];
+        IReadOnlyList<IssueListItem> bugDoneIssues = [];
+        IReadOnlyList<IssueListItem> bugRejectedIssues = [];
         try
         {
             issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -64,6 +71,54 @@ public sealed class JiraApplication : IJiraApplication
                 _settings.DoneStatusName,
                 _settings.CreatedAfter,
                 cancellationToken).ConfigureAwait(false);
+
+            if (_settings.BugIssueNames.Count > 0)
+            {
+                _presentationService.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
+
+                var bugCreatedIssues = await _apiClient.GetIssuesCreatedThisMonthAsync(
+                    _settings.ProjectKey,
+                    _settings.BugIssueNames,
+                    cancellationToken).ConfigureAwait(false);
+                bugDoneIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
+                    _settings.ProjectKey,
+                    _settings.DoneStatusName,
+                    _settings.BugIssueNames,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (_settings.RejectStatusName is { } rejectStatusName)
+                {
+                    bugRejectedIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
+                        _settings.ProjectKey,
+                        rejectStatusName,
+                        _settings.BugIssueNames,
+                        cancellationToken).ConfigureAwait(false);
+                }
+
+                var bugDoneKeys = bugDoneIssues
+                    .Select(static issue => issue.Key.Value)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var bugRejectedKeys = bugRejectedIssues
+                    .Select(static issue => issue.Key.Value)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var bugFinishedKeys = bugDoneKeys
+                    .Union(bugRejectedKeys, StringComparer.OrdinalIgnoreCase)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                bugOpenIssues = [.. bugCreatedIssues
+                    .Where(issue => !bugFinishedKeys.Contains(issue.Key.Value))
+                    .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+                bugCreatedThisMonth = new ItemCount(bugCreatedIssues.Count);
+                bugMovedToDoneThisMonth = new ItemCount(bugDoneIssues.Count);
+                bugRejectedThisMonth = new ItemCount(bugRejectedIssues.Count);
+                bugFinishedThisMonth = new ItemCount(bugFinishedKeys.Count);
+
+                _presentationService.ShowBugRatioLoadingCompleted(
+                    bugCreatedThisMonth.Value,
+                    bugMovedToDoneThisMonth.Value,
+                    bugRejectedThisMonth.Value,
+                    bugFinishedThisMonth.Value);
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -81,6 +136,24 @@ public sealed class JiraApplication : IJiraApplication
             return;
         }
 
+        if (bugCreatedThisMonth.HasValue
+            && bugMovedToDoneThisMonth.HasValue
+            && bugRejectedThisMonth.HasValue
+            && bugFinishedThisMonth.HasValue)
+        {
+            _presentationService.ShowSpacer();
+            _presentationService.ShowBugRatio(
+                _settings.BugIssueNames,
+                bugCreatedThisMonth.Value,
+                bugMovedToDoneThisMonth.Value,
+                bugRejectedThisMonth.Value,
+                bugFinishedThisMonth.Value,
+                bugOpenIssues,
+                bugDoneIssues,
+                bugRejectedIssues);
+            _presentationService.ShowSpacer();
+        }
+
         _presentationService.ShowReportHeader(_settings, new ItemCount(issueKeys.Count));
 
         if (issueKeys.Count == 0)
@@ -88,6 +161,8 @@ public sealed class JiraApplication : IJiraApplication
             _presentationService.ShowNoIssuesMatchedFilter();
             return;
         }
+
+        _presentationService.ShowIssueLoadingStarted(new ItemCount(issueKeys.Count));
 
         var issues = new List<IssueTimeline>();
         var failures = new List<LoadFailure>();
@@ -117,6 +192,7 @@ public sealed class JiraApplication : IJiraApplication
             }
         }
 
+        _presentationService.ShowIssueLoadingCompleted(new ItemCount(issues.Count), new ItemCount(failures.Count));
         _presentationService.ShowSpacer();
 
         if (issues.Count == 0)

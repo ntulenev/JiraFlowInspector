@@ -15,6 +15,7 @@ public sealed record AppSettings
     /// <param name="apiToken">Jira API token.</param>
     /// <param name="projectKey">Jira project key.</param>
     /// <param name="doneStatusName">Done status name.</param>
+    /// <param name="rejectStatusName">Optional reject status name.</param>
     /// <param name="requiredPathStages">Required path stages.</param>
     /// <param name="monthLabel">Month label used in output.</param>
     /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
@@ -23,12 +24,14 @@ public sealed record AppSettings
     /// <param name="customFieldValue">Optional custom field value for filtering.</param>
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
+    /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
         JiraApiToken apiToken,
         ProjectKey projectKey,
         StatusName doneStatusName,
+        StatusName? rejectStatusName,
         IReadOnlyList<StageName> requiredPathStages,
         MonthLabel monthLabel,
         CreatedAfterDate? createdAfter = null,
@@ -36,13 +39,15 @@ public sealed record AppSettings
         string? customFieldName = null,
         string? customFieldValue = null,
         bool excludeWeekend = false,
-        IReadOnlyList<DateOnly>? excludedDays = null)
+        IReadOnlyList<DateOnly>? excludedDays = null,
+        IReadOnlyList<IssueTypeName>? bugIssueNames = null)
     {
         BaseUrl = baseUrl;
         Email = email;
         ApiToken = apiToken;
         ProjectKey = projectKey;
         DoneStatusName = doneStatusName;
+        RejectStatusName = rejectStatusName;
         RequiredPathStages = requiredPathStages is null ? [] : [.. requiredPathStages];
         MonthLabel = monthLabel;
         CreatedAfter = createdAfter;
@@ -51,6 +56,7 @@ public sealed record AppSettings
         CustomFieldValue = string.IsNullOrWhiteSpace(customFieldValue) ? null : customFieldValue.Trim();
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
+        BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
     }
 
     /// <summary>
@@ -79,6 +85,11 @@ public sealed record AppSettings
     public StatusName DoneStatusName { get; }
 
     /// <summary>
+    /// Gets optional reject status name.
+    /// </summary>
+    public StatusName? RejectStatusName { get; }
+
+    /// <summary>
     /// Gets required path stages.
     /// </summary>
     public IReadOnlyList<StageName> RequiredPathStages { get; }
@@ -97,6 +108,11 @@ public sealed record AppSettings
     /// Gets optional issue types filter.
     /// </summary>
     public IReadOnlyList<IssueTypeName> IssueTypes { get; }
+
+    /// <summary>
+    /// Gets optional issue types that should be treated as bug-like issues.
+    /// </summary>
+    public IReadOnlyList<IssueTypeName> BugIssueNames { get; }
 
     /// <summary>
     /// Gets optional custom field name for filtering.

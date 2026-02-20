@@ -45,6 +45,12 @@ public interface IJiraPresentationService
     void ShowNoIssuesMatchedFilter();
 
     /// <summary>
+    /// Shows issue timeline loading start message.
+    /// </summary>
+    /// <param name="totalIssues">Total issues to load.</param>
+    void ShowIssueLoadingStarted(ItemCount totalIssues);
+
+    /// <summary>
     /// Shows successful issue load line.
     /// </summary>
     /// <param name="issueKey">Issue key.</param>
@@ -55,6 +61,13 @@ public interface IJiraPresentationService
     /// </summary>
     /// <param name="issueKey">Issue key.</param>
     void ShowIssueFailed(IssueKey issueKey);
+
+    /// <summary>
+    /// Shows issue timeline loading completion message.
+    /// </summary>
+    /// <param name="loadedIssues">Successfully loaded issues.</param>
+    /// <param name="failedIssues">Failed issue loads.</param>
+    void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues);
 
     /// <summary>
     /// Shows spacer line.
@@ -83,6 +96,46 @@ public interface IJiraPresentationService
     /// </summary>
     /// <param name="summary">Summary counters.</param>
     void ShowPathGroupsSummary(PathGroupsSummary summary);
+
+    /// <summary>
+    /// Shows bug ratio loading start message.
+    /// </summary>
+    /// <param name="bugIssueNames">Issue types treated as bug-like issues.</param>
+    void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames);
+
+    /// <summary>
+    /// Shows bug ratio loading complete message.
+    /// </summary>
+    /// <param name="createdThisMonth">Count of created bug-like issues in month.</param>
+    /// <param name="movedToDoneThisMonth">Count of moved-to-done bug-like issues in month.</param>
+    /// <param name="rejectedThisMonth">Count of moved-to-rejected bug-like issues in month.</param>
+    /// <param name="finishedThisMonth">Count of finished bug-like issues in month (done + rejected).</param>
+    void ShowBugRatioLoadingCompleted(
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth);
+
+    /// <summary>
+    /// Shows bug ratio section.
+    /// </summary>
+    /// <param name="bugIssueNames">Issue types treated as bug-like issues.</param>
+    /// <param name="createdThisMonth">Count of created issues in month.</param>
+    /// <param name="movedToDoneThisMonth">Count of issues moved to done in month.</param>
+    /// <param name="rejectedThisMonth">Count of issues moved to rejected in month.</param>
+    /// <param name="finishedThisMonth">Count of finished issues in month (done + rejected).</param>
+    /// <param name="openIssues">Issues created this month and not moved to done/rejected this month.</param>
+    /// <param name="doneIssues">Issues moved to done this month.</param>
+    /// <param name="rejectedIssues">Issues moved to rejected this month.</param>
+    void ShowBugRatio(
+        IReadOnlyList<IssueTypeName> bugIssueNames,
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth,
+        IReadOnlyList<IssueListItem> openIssues,
+        IReadOnlyList<IssueListItem> doneIssues,
+        IReadOnlyList<IssueListItem> rejectedIssues);
 
     /// <summary>
     /// Shows path group details.

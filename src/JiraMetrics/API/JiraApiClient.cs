@@ -61,67 +61,90 @@ public sealed class JiraApiClient : IJiraApiClient
         CreatedAfterDate? createdAfter,
         CancellationToken cancellationToken)
     {
-        var escapedProject = projectKey.Value.EscapeJqlString();
-        var escapedDoneStatus = doneStatusName.Value.EscapeJqlString();
         var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
-        var clauses = new List<string>
-        {
-            $"project = \"{escapedProject}\"",
-            $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\""
-        };
+        var clauses = BuildProjectClauses(projectKey);
+        clauses.Add(BuildMovedToDoneClause(doneStatusName, monthStart, nextMonthStart));
 
         if (createdAfter is { } createdAfterDate)
         {
             clauses.Add($"created >= \"{createdAfterDate}\"");
         }
 
-        if (!string.IsNullOrWhiteSpace(_customFieldName) && !string.IsNullOrWhiteSpace(_customFieldValue))
-        {
-            var escapedName = _customFieldName.EscapeJqlString();
-            var escapedValue = _customFieldValue.EscapeJqlString();
-            clauses.Add($"\"{escapedName}\" = \"{escapedValue}\"");
-        }
-
         var jql = $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
 
-        var issueKeys = new List<IssueKey>();
-        const int pageSize = 100;
-        string? nextPageToken = null;
+        return await SearchIssueKeysAsync(jql, cancellationToken).ConfigureAwait(false);
+    }
 
-        while (true)
-        {
-            var searchUrl = $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=key&maxResults={pageSize}";
-            if (!string.IsNullOrWhiteSpace(nextPageToken))
-            {
-                searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
-            }
+    /// <inheritdoc />
+    public async Task<ItemCount> GetIssueCountCreatedThisMonthAsync(
+        ProjectKey projectKey,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(issueTypes);
 
-            var page = await _transport
-                .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
-                .ConfigureAwait(false);
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var clauses = BuildProjectClauses(projectKey);
+        clauses.Add($"created >= \"{monthStart:yyyy-MM-dd}\"");
+        clauses.Add($"created < \"{nextMonthStart:yyyy-MM-dd}\"");
+        AddIssueTypesClause(clauses, issueTypes);
 
-            if (page is null)
-            {
-                throw new InvalidOperationException("Jira search response is empty.");
-            }
+        var count = await GetIssueCountByJqlAsync(string.Join(" AND ", clauses), cancellationToken).ConfigureAwait(false);
+        return new ItemCount(count);
+    }
 
-            if (page.Issues.Count > 0)
-            {
-                issueKeys.AddRange(page.Issues
-                                       .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
-                                       .Select(static issue => new IssueKey(issue.Key!.Trim())));
-            }
+    /// <inheritdoc />
+    public async Task<ItemCount> GetIssueCountMovedToDoneThisMonthAsync(
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(issueTypes);
 
-            nextPageToken = page.NextPageToken;
-            if (page.Issues.Count == 0 || page.IsLast || string.IsNullOrWhiteSpace(nextPageToken))
-            {
-                break;
-            }
-        }
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var clauses = BuildProjectClauses(projectKey);
+        clauses.Add(BuildMovedToDoneClause(doneStatusName, monthStart, nextMonthStart));
+        AddIssueTypesClause(clauses, issueTypes);
 
-        return [.. issueKeys
-            .DistinctBy(static key => key.Value, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(static key => key.Value, StringComparer.OrdinalIgnoreCase)];
+        var count = await GetIssueCountByJqlAsync(string.Join(" AND ", clauses), cancellationToken).ConfigureAwait(false);
+        return new ItemCount(count);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
+        ProjectKey projectKey,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(issueTypes);
+
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var clauses = BuildProjectClauses(projectKey);
+        clauses.Add($"created >= \"{monthStart:yyyy-MM-dd}\"");
+        clauses.Add($"created < \"{nextMonthStart:yyyy-MM-dd}\"");
+        AddIssueTypesClause(clauses, issueTypes);
+
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
+        return await SearchIssueListItemsAsync(jql, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        IReadOnlyList<IssueTypeName> issueTypes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(issueTypes);
+
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var clauses = BuildProjectClauses(projectKey);
+        clauses.Add(BuildMovedToDoneClause(doneStatusName, monthStart, nextMonthStart));
+        AddIssueTypesClause(clauses, issueTypes);
+
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
+        return await SearchIssueListItemsAsync(jql, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -199,6 +222,150 @@ public sealed class JiraApiClient : IJiraApiClient
         }
 
         return _transitionBuilder.BuildTransitions(rawTransitions, created);
+    }
+
+    private List<string> BuildProjectClauses(ProjectKey projectKey)
+    {
+        var escapedProject = projectKey.Value.EscapeJqlString();
+        var clauses = new List<string>
+        {
+            $"project = \"{escapedProject}\""
+        };
+
+        if (!string.IsNullOrWhiteSpace(_customFieldName) && !string.IsNullOrWhiteSpace(_customFieldValue))
+        {
+            var escapedName = _customFieldName.EscapeJqlString();
+            var escapedValue = _customFieldValue.EscapeJqlString();
+            clauses.Add($"\"{escapedName}\" = \"{escapedValue}\"");
+        }
+
+        return clauses;
+    }
+
+    private static void AddIssueTypesClause(List<string> clauses, IReadOnlyList<IssueTypeName> issueTypes)
+    {
+        if (issueTypes.Count == 0)
+        {
+            return;
+        }
+
+        var escapedIssueTypes = issueTypes
+            .Select(static issueType => $"\"{issueType.Value.EscapeJqlString()}\"")
+            .ToArray();
+        var issueTypeClause = escapedIssueTypes.Length == 1
+            ? $"issuetype = {escapedIssueTypes[0]}"
+            : $"issuetype IN ({string.Join(", ", escapedIssueTypes)})";
+
+        clauses.Add(issueTypeClause);
+    }
+
+    private static string BuildMovedToDoneClause(StatusName doneStatusName, DateOnly monthStart, DateOnly nextMonthStart)
+    {
+        var escapedDoneStatus = doneStatusName.Value.EscapeJqlString();
+        return $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\"";
+    }
+
+    private async Task<IReadOnlyList<IssueKey>> SearchIssueKeysAsync(string jql, CancellationToken cancellationToken)
+    {
+        var issueKeys = new List<IssueKey>();
+        const int pageSize = 100;
+        string? nextPageToken = null;
+
+        while (true)
+        {
+            var searchUrl = $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=key&maxResults={pageSize}";
+            if (!string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
+            }
+
+            var page = await _transport
+                .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (page is null)
+            {
+                throw new InvalidOperationException("Jira search response is empty.");
+            }
+
+            if (page.Issues.Count > 0)
+            {
+                issueKeys.AddRange(page.Issues
+                    .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
+                    .Select(static issue => new IssueKey(issue.Key!.Trim())));
+            }
+
+            nextPageToken = page.NextPageToken;
+            if (page.Issues.Count == 0 || page.IsLast || string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                break;
+            }
+        }
+
+        return [.. issueKeys
+            .DistinctBy(static key => key.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static key => key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private async Task<IReadOnlyList<IssueListItem>> SearchIssueListItemsAsync(string jql, CancellationToken cancellationToken)
+    {
+        var issues = new List<IssueListItem>();
+        const int pageSize = 100;
+        string? nextPageToken = null;
+
+        while (true)
+        {
+            var searchUrl = $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=key,summary&maxResults={pageSize}";
+            if (!string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
+            }
+
+            var page = await _transport
+                .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (page is null)
+            {
+                throw new InvalidOperationException("Jira search response is empty.");
+            }
+
+            if (page.Issues.Count > 0)
+            {
+                issues.AddRange(page.Issues
+                    .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
+                    .Select(issue => new IssueListItem(
+                        new IssueKey(issue.Key!.Trim()),
+                        new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary))));
+            }
+
+            nextPageToken = page.NextPageToken;
+            if (page.Issues.Count == 0 || page.IsLast || string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                break;
+            }
+        }
+
+        return [.. issues
+            .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private async Task<int> GetIssueCountByJqlAsync(string jql, CancellationToken cancellationToken)
+    {
+        const int minAllowedPageSize = 1;
+        var searchUrl = $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=key&maxResults={minAllowedPageSize}";
+
+        var page = await _transport
+            .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (page is null)
+        {
+            throw new InvalidOperationException("Jira search response is empty.");
+        }
+
+        return page.Total > 0 ? page.Total : page.Issues.Count;
     }
 
     private readonly IJiraTransport _transport;

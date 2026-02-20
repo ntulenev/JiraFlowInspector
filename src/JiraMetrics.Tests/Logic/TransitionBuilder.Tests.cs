@@ -104,6 +104,7 @@ public sealed class TransitionBuilderTests
             new JiraApiToken("token"),
             new ProjectKey("AAA"),
             new StatusName("Done"),
+            null,
             [new StageName("Code Review")],
             new MonthLabel("2026-02"),
             createdAfter: null,

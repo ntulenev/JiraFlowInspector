@@ -71,10 +71,31 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowNoIssuesMatchedFilter() => AnsiConsole.MarkupLine("[yellow]No issues matched this filter.[/]");
 
     /// <inheritdoc />
-    public void ShowIssueLoaded(IssueKey issueKey) => AnsiConsole.MarkupLine($"[green]Loaded[/] {Markup.Escape(issueKey.Value)}");
+    public void ShowIssueLoadingStarted(ItemCount totalIssues)
+    {
+        _issueLoadTotal = totalIssues.Value;
+        _issueLoadProcessed = 0;
+        _issueLoadFailed = 0;
+        _issueLoadStep = Math.Max(1, _issueLoadTotal / 10);
+
+        AnsiConsole.MarkupLine($"[grey]Loading issue timelines:[/] 0/{_issueLoadTotal}");
+    }
 
     /// <inheritdoc />
-    public void ShowIssueFailed(IssueKey issueKey) => AnsiConsole.MarkupLine($"[red]Failed[/] {Markup.Escape(issueKey.Value)}");
+    public void ShowIssueLoaded(IssueKey issueKey)
+    {
+        UpdateIssueLoadProgress(wasFailure: false);
+    }
+
+    /// <inheritdoc />
+    public void ShowIssueFailed(IssueKey issueKey)
+    {
+        UpdateIssueLoadProgress(wasFailure: true);
+    }
+
+    /// <inheritdoc />
+    public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues) =>
+        AnsiConsole.MarkupLine($"[green]Issue loading completed:[/] loaded = {loadedIssues.Value}, failed = {failedIssues.Value}");
 
     /// <inheritdoc />
     public void ShowSpacer() => AnsiConsole.WriteLine();
@@ -134,6 +155,88 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         AnsiConsole.MarkupLine(
             $"[grey]Successful:[/] {summary.SuccessfulCount.Value}    [grey]Matched stage:[/] {summary.MatchedStageCount.Value}    [grey]Failed:[/] {summary.FailedCount.Value}    [grey]Path groups:[/] {summary.PathGroupCount.Value}");
+    }
+
+    /// <inheritdoc />
+    public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)
+    {
+        ArgumentNullException.ThrowIfNull(bugIssueNames);
+
+        var bugTypes = bugIssueNames.Count == 0
+            ? "-"
+            : string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
+        AnsiConsole.MarkupLine($"[grey]Loading bug ratio data for:[/] {Markup.Escape(bugTypes)}");
+    }
+
+    /// <inheritdoc />
+    public void ShowBugRatioLoadingCompleted(
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth)
+    {
+        AnsiConsole.MarkupLine(
+            $"[green]Bug ratio data loaded:[/] created = {createdThisMonth.Value}, done = {movedToDoneThisMonth.Value}, rejected = {rejectedThisMonth.Value}, finished = {finishedThisMonth.Value}");
+    }
+
+    /// <inheritdoc />
+    public void ShowBugRatio(
+        IReadOnlyList<IssueTypeName> bugIssueNames,
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth,
+        IReadOnlyList<IssueListItem> openIssues,
+        IReadOnlyList<IssueListItem> doneIssues,
+        IReadOnlyList<IssueListItem> rejectedIssues)
+    {
+        ArgumentNullException.ThrowIfNull(bugIssueNames);
+        ArgumentNullException.ThrowIfNull(openIssues);
+        ArgumentNullException.ThrowIfNull(doneIssues);
+        ArgumentNullException.ThrowIfNull(rejectedIssues);
+
+        if (bugIssueNames.Count == 0)
+        {
+            return;
+        }
+
+        var bugTypes = string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
+        var ratioText = createdThisMonth.Value == 0
+            ? "n/a"
+            : $"{finishedThisMonth.Value * 100.0 / createdThisMonth.Value:0.##}%";
+
+        AnsiConsole.MarkupLine("[bold]Bug ratio[/]");
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Metric[/]")
+            .AddColumn("[bold]Value[/]");
+
+        _ = table.AddRow("Bug issue types", Markup.Escape(bugTypes));
+        _ = table.AddRow("[red]Open this month[/]", $"[red]{openIssues.Count.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[green]Done this month[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[orange1]Rejected this month[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[deepskyblue1]Finished this month[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("Finished / Created", ratioText);
+
+        AnsiConsole.Write(table);
+
+        if (openIssues.Count == 0 && doneIssues.Count == 0 && rejectedIssues.Count == 0)
+        {
+            return;
+        }
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold]Bug ratio details[/]");
+        AnsiConsole.MarkupLine("[bold red]Open issues[/]");
+        RenderBugIssueDetailsTable(openIssues, "red");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold green]Done issues[/]");
+        RenderBugIssueDetailsTable(doneIssues, "green");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold orange1]Rejected issues[/]");
+        RenderBugIssueDetailsTable(rejectedIssues, "orange1");
     }
 
     /// <inheritdoc />
@@ -332,4 +435,57 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         6 => "gold1",
         _ => "grey82"
     };
+
+    private static void RenderBugIssueDetailsTable(IReadOnlyList<IssueListItem> issues, string titleColor)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+
+        if (issues.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No issues.[/]");
+            return;
+        }
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Jira ID[/]")
+            .AddColumn("[bold]Title[/]");
+
+        foreach (var issue in issues.OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            _ = table.AddRow(
+                Markup.Escape(issue.Key.Value),
+                $"[{titleColor}]{Markup.Escape(issue.Title.Truncate(new TextLength(120)).Value)}[/]");
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    private void UpdateIssueLoadProgress(bool wasFailure)
+    {
+        if (_issueLoadTotal <= 0)
+        {
+            return;
+        }
+
+        _issueLoadProcessed++;
+        if (wasFailure)
+        {
+            _issueLoadFailed++;
+        }
+
+        if (_issueLoadProcessed == _issueLoadTotal
+            || _issueLoadProcessed % _issueLoadStep == 0)
+        {
+            var percent = _issueLoadProcessed * 100.0 / _issueLoadTotal;
+            AnsiConsole.MarkupLine(
+                $"[grey]Loading issue timelines:[/] {_issueLoadProcessed}/{_issueLoadTotal} ({percent:0}%)  [grey]failed:[/] {_issueLoadFailed}");
+        }
+    }
+
+    private int _issueLoadTotal;
+    private int _issueLoadProcessed;
+    private int _issueLoadFailed;
+    private int _issueLoadStep = 1;
 }

@@ -202,7 +202,48 @@ public sealed class JiraApplicationTests
         presentation.DoneIssuesTableShown.Should().BeFalse();
     }
 
-    private static AppSettings CreateSettings(IReadOnlyList<IssueTypeName>? issueTypes = null)
+    [Fact(DisplayName = "RunAsync shows bug ratio section when bug issue names are configured")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenBugIssueNamesAreConfiguredShowsBugRatio()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Bug")),
+            CreatedThisMonthIssues = [new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Open bug"))],
+            MovedToDoneThisMonthIssues = [new IssueListItem(new IssueKey("AAA-1"), new IssueSummary("Done bug"))],
+            RejectedThisMonthIssues = [new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Rejected bug"))]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(
+                issueTypes: [new IssueTypeName("Bug")],
+                bugIssueNames: [new IssueTypeName("Bug")])),
+            apiClient,
+            logic,
+            presentation);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.CreatedThisMonthCountRequested.Should().BeFalse();
+        apiClient.MovedToDoneThisMonthCountRequested.Should().BeFalse();
+        apiClient.CreatedThisMonthIssuesRequested.Should().BeTrue();
+        apiClient.MovedToDoneThisMonthIssuesRequested.Should().BeTrue();
+        apiClient.RejectedThisMonthIssuesRequested.Should().BeTrue();
+        presentation.BugRatioLoadingStartedShown.Should().BeTrue();
+        presentation.BugRatioLoadingCompletedShown.Should().BeTrue();
+        presentation.BugRatioShown.Should().BeTrue();
+    }
+
+    private static AppSettings CreateSettings(
+        IReadOnlyList<IssueTypeName>? issueTypes = null,
+        IReadOnlyList<IssueTypeName>? bugIssueNames = null)
     {
         return new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -210,13 +251,15 @@ public sealed class JiraApplicationTests
             new JiraApiToken("token"),
             new ProjectKey("AAA"),
             new StatusName("Done"),
+            new StatusName("Reject"),
             [new StageName("Code Review")],
             new MonthLabel("2026-02"),
             null,
             issueTypes,
             customFieldName: null,
             customFieldValue: null,
-            excludeWeekend: false);
+            excludeWeekend: false,
+            bugIssueNames: bugIssueNames);
     }
 
     private static IssueTimeline CreateIssue(IssueKey key, IssueTypeName? issueType = null)
@@ -250,6 +293,26 @@ public sealed class JiraApplicationTests
 
         public bool ThrowOnAuth { get; set; }
 
+        public ItemCount CreatedThisMonthCount { get; set; } = new(0);
+
+        public ItemCount MovedToDoneThisMonthCount { get; set; } = new(0);
+
+        public IReadOnlyList<IssueListItem> CreatedThisMonthIssues { get; set; } = [];
+
+        public IReadOnlyList<IssueListItem> MovedToDoneThisMonthIssues { get; set; } = [];
+
+        public IReadOnlyList<IssueListItem> RejectedThisMonthIssues { get; set; } = [];
+
+        public bool CreatedThisMonthCountRequested { get; private set; }
+
+        public bool MovedToDoneThisMonthCountRequested { get; private set; }
+
+        public bool CreatedThisMonthIssuesRequested { get; private set; }
+
+        public bool MovedToDoneThisMonthIssuesRequested { get; private set; }
+
+        public bool RejectedThisMonthIssuesRequested { get; private set; }
+
         public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken)
         {
             if (ThrowOnAuth)
@@ -265,6 +328,50 @@ public sealed class JiraApplicationTests
             StatusName doneStatusName,
             CreatedAfterDate? createdAfter,
             CancellationToken cancellationToken) => Task.FromResult(IssueKeys);
+
+        public Task<ItemCount> GetIssueCountCreatedThisMonthAsync(
+            ProjectKey projectKey,
+            IReadOnlyList<IssueTypeName> issueTypes,
+            CancellationToken cancellationToken)
+        {
+            CreatedThisMonthCountRequested = true;
+            return Task.FromResult(CreatedThisMonthCount);
+        }
+
+        public Task<ItemCount> GetIssueCountMovedToDoneThisMonthAsync(
+            ProjectKey projectKey,
+            StatusName doneStatusName,
+            IReadOnlyList<IssueTypeName> issueTypes,
+            CancellationToken cancellationToken)
+        {
+            MovedToDoneThisMonthCountRequested = true;
+            return Task.FromResult(MovedToDoneThisMonthCount);
+        }
+
+        public Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
+            ProjectKey projectKey,
+            IReadOnlyList<IssueTypeName> issueTypes,
+            CancellationToken cancellationToken)
+        {
+            CreatedThisMonthIssuesRequested = true;
+            return Task.FromResult(CreatedThisMonthIssues);
+        }
+
+        public Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
+            ProjectKey projectKey,
+            StatusName doneStatusName,
+            IReadOnlyList<IssueTypeName> issueTypes,
+            CancellationToken cancellationToken)
+        {
+            if (string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase))
+            {
+                RejectedThisMonthIssuesRequested = true;
+                return Task.FromResult(RejectedThisMonthIssues);
+            }
+
+            MovedToDoneThisMonthIssuesRequested = true;
+            return Task.FromResult(MovedToDoneThisMonthIssues);
+        }
 
         public Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
         {
@@ -300,6 +407,12 @@ public sealed class JiraApplicationTests
 
         public bool FailuresShown { get; private set; }
 
+        public bool BugRatioShown { get; private set; }
+
+        public bool BugRatioLoadingStartedShown { get; private set; }
+
+        public bool BugRatioLoadingCompletedShown { get; private set; }
+
         public void ShowAuthenticationStarted()
         {
         }
@@ -320,11 +433,19 @@ public sealed class JiraApplicationTests
 
         public void ShowNoIssuesMatchedFilter() => NoIssuesMatchedFilterShown = true;
 
+        public void ShowIssueLoadingStarted(ItemCount totalIssues)
+        {
+        }
+
         public void ShowIssueLoaded(IssueKey issueKey)
         {
         }
 
         public void ShowIssueFailed(IssueKey issueKey)
+        {
+        }
+
+        public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues)
         {
         }
 
@@ -345,6 +466,24 @@ public sealed class JiraApplicationTests
         public void ShowPathGroupsSummary(PathGroupsSummary summary)
         {
         }
+
+        public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames) => BugRatioLoadingStartedShown = true;
+
+        public void ShowBugRatioLoadingCompleted(
+            ItemCount createdThisMonth,
+            ItemCount movedToDoneThisMonth,
+            ItemCount rejectedThisMonth,
+            ItemCount finishedThisMonth) => BugRatioLoadingCompletedShown = true;
+
+        public void ShowBugRatio(
+            IReadOnlyList<IssueTypeName> bugIssueNames,
+            ItemCount createdThisMonth,
+            ItemCount movedToDoneThisMonth,
+            ItemCount rejectedThisMonth,
+            ItemCount finishedThisMonth,
+            IReadOnlyList<IssueListItem> openIssues,
+            IReadOnlyList<IssueListItem> doneIssues,
+            IReadOnlyList<IssueListItem> rejectedIssues) => BugRatioShown = true;
 
         public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
         {

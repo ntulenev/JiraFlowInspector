@@ -31,7 +31,8 @@ public sealed class JiraSearchResponseTests
         {
             Issues = [new JiraIssueKeyResponse { Key = "AAA-1" }],
             IsLast = true,
-            NextPageToken = "token"
+            NextPageToken = "token",
+            Total = 42
         };
 
         // Act
@@ -42,6 +43,7 @@ public sealed class JiraSearchResponseTests
         json.Should().Contain("\"key\":\"AAA-1\"");
         json.Should().Contain("\"isLast\":true");
         json.Should().Contain("\"nextPageToken\":\"token\"");
+        json.Should().Contain("\"total\":42");
     }
 }
 
