@@ -23,6 +23,7 @@ public sealed class AppSettingsTests
         var createdAfter = new CreatedAfterDate("2026-01-15");
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
         var bugIssueNames = new List<IssueTypeName> { new("Bug") };
+        var releaseReport = new ReleaseReportSettings(new ProjectKey("RLS"), "Processing", "Change completion date");
         var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };
         const string customFieldName = "Team";
         const string customFieldValue = "Import";
@@ -43,7 +44,8 @@ public sealed class AppSettingsTests
             customFieldValue,
             excludeWeekend: true,
             excludedDays: excludedDays,
-            bugIssueNames: bugIssueNames);
+            bugIssueNames: bugIssueNames,
+            releaseReport: releaseReport);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -61,5 +63,6 @@ public sealed class AppSettingsTests
         settings.ExcludeWeekend.Should().BeTrue();
         settings.ExcludedDays.Should().ContainInOrder(excludedDays);
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
+        settings.ReleaseReport.Should().Be(releaseReport);
     }
 }

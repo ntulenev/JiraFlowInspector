@@ -76,6 +76,11 @@ public sealed class JiraOptions
     public BugRatioOptions? BugRatio { get; init; }
 
     /// <summary>
+    /// Gets or sets optional release report settings.
+    /// </summary>
+    public ReleaseReportOptions? ReleaseReport { get; init; }
+
+    /// <summary>
     /// Gets or sets optional custom field name for filtering.
     /// </summary>
     public string? CustomFieldName { get; init; }
@@ -123,4 +128,30 @@ public sealed class BugRatioOptions
     /// Gets or sets optional issue types that should be treated as bug-like issues.
     /// </summary>
     public IReadOnlyList<string>? BugIssueNames { get; init; }
+}
+
+/// <summary>
+/// Release report options.
+/// </summary>
+public sealed class ReleaseReportOptions
+{
+    /// <summary>
+    /// Gets or sets release project key.
+    /// </summary>
+    public string? ReleaseProjectKey { get; init; }
+
+    /// <summary>
+    /// Gets or sets project label used in release search.
+    /// </summary>
+    public string? ProjectLabel { get; init; }
+
+    /// <summary>
+    /// Gets or sets release date field name.
+    /// </summary>
+    public string? ReleaseDateFieldName { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional components field name.
+    /// </summary>
+    public string? ComponentsFieldName { get; init; }
 }

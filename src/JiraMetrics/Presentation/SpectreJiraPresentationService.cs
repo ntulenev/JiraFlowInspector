@@ -121,13 +121,19 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         var table = new Table()
             .RoundedBorder()
             .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
             .AddColumn("[bold]Issue[/]")
             .AddColumn("[bold]Type[/]")
             .AddColumn("[bold]Summary[/]")
-            .AddColumn("[bold]Last Done At[/]");
+            .AddColumn("[bold]Done At[/]");
 
-        foreach (var issue in issues.OrderBy(x => x.Key.Value, StringComparer.OrdinalIgnoreCase))
+        var orderedIssues = issues
+            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var i = 0; i < orderedIssues.Count; i++)
         {
+            var issue = orderedIssues[i];
             var lastDoneAt = issue.Transitions
                 .Where(x => string.Equals(x.To.Value, doneStatusName.Value, StringComparison.OrdinalIgnoreCase))
                 .Select(x => (DateTimeOffset?)x.At)
@@ -139,6 +145,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 : "-";
 
             _ = table.AddRow(
+                (i + 1).ToString(CultureInfo.InvariantCulture),
                 Markup.Escape(issue.Key.Value),
                 Markup.Escape(issue.IssueType.Value),
                 Markup.Escape(issue.Summary.Truncate(new TextLength(120)).Value),
@@ -155,6 +162,73 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         AnsiConsole.MarkupLine(
             $"[grey]Successful:[/] {summary.SuccessfulCount.Value}    [grey]Matched stage:[/] {summary.MatchedStageCount.Value}    [grey]Failed:[/] {summary.FailedCount.Value}    [grey]Path groups:[/] {summary.PathGroupCount.Value}");
+    }
+
+    /// <inheritdoc />
+    public void ShowReleaseReport(
+        ReleaseReportSettings settings,
+        MonthLabel monthLabel,
+        IReadOnlyList<ReleaseIssueItem> releases)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(releases);
+
+        AnsiConsole.MarkupLine("[bold]Release report[/]");
+        AnsiConsole.MarkupLine(
+            $"[grey]Project:[/] {Markup.Escape(settings.ReleaseProjectKey.Value)}    [grey]Label:[/] {Markup.Escape(settings.ProjectLabel)}    [grey]Month:[/] {Markup.Escape(monthLabel.Value)}");
+        if (!string.IsNullOrWhiteSpace(settings.ComponentsFieldName))
+        {
+            AnsiConsole.MarkupLine($"[grey]Components field:[/] {Markup.Escape(settings.ComponentsFieldName)}");
+        }
+
+        if (releases.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No releases found for selected month.[/]");
+            return;
+        }
+
+        var includeComponents = !string.IsNullOrWhiteSpace(settings.ComponentsFieldName);
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
+            .AddColumn("[bold]Release Date[/]")
+            .AddColumn("[bold]Jira ID[/]")
+            .AddColumn("[bold]Tasks[/]");
+
+        if (includeComponents)
+        {
+            _ = table.AddColumn("[bold]Components[/]");
+        }
+
+        _ = table.AddColumn("[bold]Title[/]");
+
+        var orderedReleases = releases
+            .OrderBy(static release => release.ReleaseDate)
+            .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var i = 0; i < orderedReleases.Count; i++)
+        {
+            var release = orderedReleases[i];
+            var row = new List<string>
+            {
+                (i + 1).ToString(CultureInfo.InvariantCulture),
+                release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                Markup.Escape(release.Key.Value),
+                release.Tasks.ToString(CultureInfo.InvariantCulture)
+            };
+            if (includeComponents)
+            {
+                row.Add(release.Components.ToString(CultureInfo.InvariantCulture));
+            }
+
+            row.Add(Markup.Escape(release.Title.Truncate(new TextLength(120)).Value));
+            _ = table.AddRow([.. row]);
+        }
+
+        AnsiConsole.Write(table);
     }
 
     /// <inheritdoc />
@@ -306,12 +380,17 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         var table = new Table()
             .RoundedBorder()
             .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
             .AddColumn("[bold]Issue[/]")
             .AddColumn("[bold]Reason[/]");
 
-        foreach (var failure in failures)
+        for (var i = 0; i < failures.Count; i++)
         {
-            _ = table.AddRow(Markup.Escape(failure.IssueKey.Value), Markup.Escape(failure.Reason.Value));
+            var failure = failures[i];
+            _ = table.AddRow(
+                (i + 1).ToString(CultureInfo.InvariantCulture),
+                Markup.Escape(failure.IssueKey.Value),
+                Markup.Escape(failure.Reason.Value));
         }
 
         AnsiConsole.Write(table);
@@ -449,12 +528,19 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         var table = new Table()
             .RoundedBorder()
             .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
             .AddColumn("[bold]Jira ID[/]")
             .AddColumn("[bold]Title[/]");
 
-        foreach (var issue in issues.OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase))
+        var orderedIssues = issues
+            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var i = 0; i < orderedIssues.Count; i++)
         {
+            var issue = orderedIssues[i];
             _ = table.AddRow(
+                (i + 1).ToString(CultureInfo.InvariantCulture),
                 Markup.Escape(issue.Key.Value),
                 $"[{titleColor}]{Markup.Escape(issue.Title.Truncate(new TextLength(120)).Value)}[/]");
         }

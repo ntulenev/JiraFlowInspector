@@ -25,6 +25,7 @@ public sealed record AppSettings
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="releaseReport">Optional release report settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -40,7 +41,8 @@ public sealed record AppSettings
         string? customFieldValue = null,
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
-        IReadOnlyList<IssueTypeName>? bugIssueNames = null)
+        IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        ReleaseReportSettings? releaseReport = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -57,6 +59,7 @@ public sealed record AppSettings
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
+        ReleaseReport = releaseReport;
     }
 
     /// <summary>
@@ -113,6 +116,11 @@ public sealed record AppSettings
     /// Gets optional issue types that should be treated as bug-like issues.
     /// </summary>
     public IReadOnlyList<IssueTypeName> BugIssueNames { get; }
+
+    /// <summary>
+    /// Gets optional release report settings.
+    /// </summary>
+    public ReleaseReportSettings? ReleaseReport { get; }
 
     /// <summary>
     /// Gets optional custom field name for filtering.

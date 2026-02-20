@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace JiraMetrics.Transport.Models;
@@ -30,4 +31,16 @@ internal sealed class JiraIssueFieldsResponse
     /// </summary>
     [JsonPropertyName("issuetype")]
     public JiraIssueTypeResponse? IssueType { get; init; }
+
+    /// <summary>
+    /// Gets issue links.
+    /// </summary>
+    [JsonPropertyName("issuelinks")]
+    public IReadOnlyList<JiraIssueLinkResponse> IssueLinks { get; init; } = [];
+
+    /// <summary>
+    /// Gets additional fields payload (for custom fields).
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalFields { get; init; }
 }

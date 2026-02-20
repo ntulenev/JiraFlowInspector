@@ -147,6 +147,7 @@ public sealed class SpectreJiraPresentationServiceTests
 
         // Assert
         output.Should().Contain("Failed issues");
+        output.Should().Contain("#");
         output.Should().Contain("AAA-1");
         output.Should().Contain("boom");
     }
@@ -197,6 +198,7 @@ public sealed class SpectreJiraPresentationServiceTests
         });
 
         // Assert
+        output.Should().Contain("#");
         output.Should().Contain("Type");
         output.Should().Contain("Bug");
     }
@@ -269,6 +271,7 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Rejected issues");
         output.Should().Contain("Jira ID");
         output.Should().Contain("Title");
+        output.Should().Contain("#");
         output.Should().Contain("AAA-1");
         output.Should().Contain("AAA-2");
         output.Should().Contain("AAA-3");
@@ -297,6 +300,68 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("done = 2");
         output.Should().Contain("rejected = 1");
         output.Should().Contain("finished = 3");
+    }
+
+    [Fact(DisplayName = "ShowReleaseReport writes release table")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReleaseReportWhenCalledWritesReleaseRows()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new ReleaseReportSettings(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date");
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReleaseReport(
+                settings,
+                new MonthLabel("2026-02"),
+                [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release 1"), new DateOnly(2026, 2, 14), 3)]);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Release report");
+        output.Should().Contain("#");
+        output.Should().Contain("Release Date");
+        output.Should().Contain("Tasks");
+        output.Should().Contain("RLS-1");
+        output.Should().Contain("Release 1");
+        output.Should().Contain("3");
+        output.Should().Contain("2026-02-14");
+        output.Should().NotContain("Components field:");
+    }
+
+    [Fact(DisplayName = "ShowReleaseReport writes components column when configured")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReleaseReportWhenComponentsFieldIsConfiguredWritesComponents()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new ReleaseReportSettings(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            "Components");
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReleaseReport(
+                settings,
+                new MonthLabel("2026-02"),
+                [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release 1"), new DateOnly(2026, 2, 14), 3, 2)]);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Components field:");
+        output.Should().Contain("Components");
+        output.Should().Contain("Tasks");
+        output.Should().Contain("2");
     }
 
     [Fact(DisplayName = "Issue loading progress does not print Jira IDs")]

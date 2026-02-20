@@ -241,9 +241,44 @@ public sealed class JiraApplicationTests
         presentation.BugRatioShown.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "RunAsync shows release report section when release report is configured")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenReleaseReportIsConfiguredShowsReleaseReport()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task")),
+            ReleaseIssues = [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release item"), new DateOnly(2026, 2, 14))]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(
+                issueTypes: [new IssueTypeName("Task")],
+                releaseReport: new ReleaseReportSettings(
+                    new ProjectKey("RLS"),
+                    "Processing",
+                    "Change completion date"))),
+            apiClient,
+            logic,
+            presentation);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.ReleaseIssuesRequested.Should().BeTrue();
+        presentation.ReleaseReportShown.Should().BeTrue();
+    }
+
     private static AppSettings CreateSettings(
         IReadOnlyList<IssueTypeName>? issueTypes = null,
-        IReadOnlyList<IssueTypeName>? bugIssueNames = null)
+        IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        ReleaseReportSettings? releaseReport = null)
     {
         return new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -259,7 +294,8 @@ public sealed class JiraApplicationTests
             customFieldName: null,
             customFieldValue: null,
             excludeWeekend: false,
-            bugIssueNames: bugIssueNames);
+            bugIssueNames: bugIssueNames,
+            releaseReport: releaseReport);
     }
 
     private static IssueTimeline CreateIssue(IssueKey key, IssueTypeName? issueType = null)
@@ -303,6 +339,8 @@ public sealed class JiraApplicationTests
 
         public IReadOnlyList<IssueListItem> RejectedThisMonthIssues { get; set; } = [];
 
+        public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; set; } = [];
+
         public bool CreatedThisMonthCountRequested { get; private set; }
 
         public bool MovedToDoneThisMonthCountRequested { get; private set; }
@@ -312,6 +350,8 @@ public sealed class JiraApplicationTests
         public bool MovedToDoneThisMonthIssuesRequested { get; private set; }
 
         public bool RejectedThisMonthIssuesRequested { get; private set; }
+
+        public bool ReleaseIssuesRequested { get; private set; }
 
         public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken)
         {
@@ -373,6 +413,17 @@ public sealed class JiraApplicationTests
             return Task.FromResult(MovedToDoneThisMonthIssues);
         }
 
+        public Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
+            ProjectKey releaseProjectKey,
+            string projectLabel,
+            string releaseDateFieldName,
+            string? componentsFieldName,
+            CancellationToken cancellationToken)
+        {
+            ReleaseIssuesRequested = true;
+            return Task.FromResult(ReleaseIssues);
+        }
+
         public Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
         {
             if (FailIssueKeys.Contains(issueKey))
@@ -412,6 +463,8 @@ public sealed class JiraApplicationTests
         public bool BugRatioLoadingStartedShown { get; private set; }
 
         public bool BugRatioLoadingCompletedShown { get; private set; }
+
+        public bool ReleaseReportShown { get; private set; }
 
         public void ShowAuthenticationStarted()
         {
@@ -466,6 +519,11 @@ public sealed class JiraApplicationTests
         public void ShowPathGroupsSummary(PathGroupsSummary summary)
         {
         }
+
+        public void ShowReleaseReport(
+            ReleaseReportSettings settings,
+            MonthLabel monthLabel,
+            IReadOnlyList<ReleaseIssueItem> releases) => ReleaseReportShown = true;
 
         public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames) => BugRatioLoadingStartedShown = true;
 

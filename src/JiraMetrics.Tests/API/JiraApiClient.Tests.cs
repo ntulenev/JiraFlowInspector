@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FluentAssertions;
 
 using JiraMetrics.Abstractions;
@@ -425,6 +427,265 @@ public sealed class JiraApiClientTests
         issues[0].Title.Value.Should().Be("Done bug");
         capturedUrl.Should().Contain("status");
         capturedUrl.Should().Contain("fields=key,summary");
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenCalledReturnsReleaseIssues()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-14\"");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-1",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Release item",
+                        IssueLinks =
+                        [
+                            new JiraIssueLinkResponse
+                            {
+                                Type = new JiraIssueLinkTypeResponse
+                                {
+                                    Inward = "is caused by",
+                                    Outward = "causes"
+                                },
+                                InwardIssue = new JiraIssueLinkIssueResponse
+                                {
+                                    Key = "ADF-100"
+                                }
+                            },
+                            new JiraIssueLinkResponse
+                            {
+                                Type = new JiraIssueLinkTypeResponse
+                                {
+                                    Inward = "is caused by"
+                                },
+                                InwardIssue = new JiraIssueLinkIssueResponse
+                                {
+                                    Key = "ADF-101"
+                                }
+                            },
+                            new JiraIssueLinkResponse
+                            {
+                                Type = new JiraIssueLinkTypeResponse
+                                {
+                                    Inward = "relates to"
+                                },
+                                InwardIssue = new JiraIssueLinkIssueResponse
+                                {
+                                    Key = "ADF-999"
+                                }
+                            }
+                        ],
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            null,
+            cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-1");
+        releases[0].Title.Value.Should().Be("Release item");
+        releases[0].ReleaseDate.Should().Be(new DateOnly(2026, 2, 14));
+        releases[0].Tasks.Should().Be(2);
+        capturedSearchUrl.Should().Contain("project");
+        capturedSearchUrl.Should().Contain("RLS");
+        capturedSearchUrl.Should().Contain("labels");
+        capturedSearchUrl.Should().Contain("Processing");
+        capturedSearchUrl.Should().Contain("Change%20completion%20date");
+        capturedSearchUrl.Should().Contain("customfield_12345");
+        capturedSearchUrl.Should().Contain("issuelinks");
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync parses datetime release field values")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenReleaseDateIsDateTimeParsesDatePart()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-14T23:10:00+02:00\"");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-2",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Release with timestamp",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            null,
+            cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-2");
+        releases[0].ReleaseDate.Should().Be(new DateOnly(2026, 2, 14));
+        releases[0].Tasks.Should().Be(0);
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync counts components when components field is configured")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenComponentsFieldIsConfiguredCountsComponents()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            },
+            new()
+            {
+                Id = "customfield_77777",
+                Name = "Component/s"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-14\"");
+        using var componentsJson = JsonDocument.Parse("[{\"value\":\"ADF PostgreSQL Database\"},{\"value\":\"Flux\"}]");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-3",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Release with components",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
+                            ["customfield_77777"] = componentsJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            "Components",
+            cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-3");
+        releases[0].Components.Should().Be(2);
+        capturedSearchUrl.Should().Contain("customfield_12345");
+        capturedSearchUrl.Should().Contain("customfield_77777");
+        capturedSearchUrl.Should().Contain("components");
     }
 
     [Fact(DisplayName = "GetIssueTimelineAsync returns mapped timeline")]

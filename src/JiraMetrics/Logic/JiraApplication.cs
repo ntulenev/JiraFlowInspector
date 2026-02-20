@@ -64,6 +64,7 @@ public sealed class JiraApplication : IJiraApplication
         IReadOnlyList<IssueListItem> bugOpenIssues = [];
         IReadOnlyList<IssueListItem> bugDoneIssues = [];
         IReadOnlyList<IssueListItem> bugRejectedIssues = [];
+        IReadOnlyList<ReleaseIssueItem> releaseIssues = [];
         try
         {
             issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -119,6 +120,16 @@ public sealed class JiraApplication : IJiraApplication
                     bugRejectedThisMonth.Value,
                     bugFinishedThisMonth.Value);
             }
+
+            if (_settings.ReleaseReport is { } releaseReport)
+            {
+                releaseIssues = await _apiClient.GetReleaseIssuesForMonthAsync(
+                    releaseReport.ReleaseProjectKey,
+                    releaseReport.ProjectLabel,
+                    releaseReport.ReleaseDateFieldName,
+                    releaseReport.ComponentsFieldName,
+                    cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -151,6 +162,12 @@ public sealed class JiraApplication : IJiraApplication
                 bugOpenIssues,
                 bugDoneIssues,
                 bugRejectedIssues);
+            _presentationService.ShowSpacer();
+        }
+
+        if (_settings.ReleaseReport is { } releaseReportSettings)
+        {
+            _presentationService.ShowReleaseReport(releaseReportSettings, _settings.MonthLabel, releaseIssues);
             _presentationService.ShowSpacer();
         }
 

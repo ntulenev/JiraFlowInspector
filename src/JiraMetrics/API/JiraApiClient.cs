@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text.Json;
+
 using JiraMetrics.Abstractions;
 using JiraMetrics.Helpers;
 using JiraMetrics.Models;
@@ -148,6 +151,41 @@ public sealed class JiraApiClient : IJiraApiClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
+        ProjectKey releaseProjectKey,
+        string projectLabel,
+        string releaseDateFieldName,
+        string? componentsFieldName,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
+        ArgumentException.ThrowIfNullOrWhiteSpace(releaseDateFieldName);
+
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var fieldId = await ResolveFieldIdAsync(releaseDateFieldName, cancellationToken).ConfigureAwait(false);
+        var componentsFieldId = await TryResolveFieldIdAsync(componentsFieldName, cancellationToken).ConfigureAwait(false);
+        var escapedProject = releaseProjectKey.Value.EscapeJqlString();
+        var escapedLabel = projectLabel.EscapeJqlString();
+        var escapedFieldName = releaseDateFieldName.EscapeJqlString();
+        var clauses = new List<string>
+        {
+            $"project = \"{escapedProject}\"",
+            $"labels = \"{escapedLabel}\"",
+            $"\"{escapedFieldName}\" >= \"{monthStart:yyyy-MM-dd}\"",
+            $"\"{escapedFieldName}\" < \"{nextMonthStart:yyyy-MM-dd}\""
+        };
+
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedFieldName}\" ASC, key ASC";
+        return await SearchReleaseIssueItemsAsync(
+            jql,
+            fieldId,
+            releaseDateFieldName,
+            componentsFieldId,
+            componentsFieldName,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public async Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
     {
         var response = await _transport
@@ -265,6 +303,83 @@ public sealed class JiraApiClient : IJiraApiClient
         return $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\"";
     }
 
+    private async Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken)
+    {
+        var fieldId = await TryResolveFieldIdAsync(fieldName, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(fieldId))
+        {
+            throw new InvalidOperationException($"Release date field '{fieldName}' was not found.");
+        }
+
+        return fieldId;
+    }
+
+    private async Task<string?> TryResolveFieldIdAsync(string? fieldName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(fieldName))
+        {
+            return null;
+        }
+
+        var trimmedFieldName = fieldName.Trim();
+
+        var response = await _transport
+            .GetAsync<List<JiraFieldResponse>>(new Uri("rest/api/3/field", UriKind.Relative), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response is null)
+        {
+            throw new InvalidOperationException("Jira fields response is empty.");
+        }
+
+        var candidates = response
+            .Where(static field => !string.IsNullOrWhiteSpace(field.Id))
+            .ToList();
+
+        var idMatch = candidates.FirstOrDefault(field =>
+            string.Equals(field.Id!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(idMatch?.Id))
+        {
+            return idMatch.Id.Trim();
+        }
+
+        var exactNameMatches = candidates
+            .Where(field =>
+                !string.IsNullOrWhiteSpace(field.Name)
+                && string.Equals(field.Name!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (exactNameMatches.Count > 0)
+        {
+            var preferredExactName = exactNameMatches
+                .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
+                .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
+                .First();
+            return preferredExactName.Id!.Trim();
+        }
+
+        var normalizedTarget = NormalizeFieldName(trimmedFieldName);
+        if (string.IsNullOrEmpty(normalizedTarget))
+        {
+            return null;
+        }
+
+        var normalizedMatches = candidates
+            .Where(field =>
+                !string.IsNullOrWhiteSpace(field.Name)
+                && string.Equals(NormalizeFieldName(field.Name), normalizedTarget, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (normalizedMatches.Count > 0)
+        {
+            var preferredNormalized = normalizedMatches
+                .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
+                .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
+                .First();
+            return preferredNormalized.Id!.Trim();
+        }
+
+        return null;
+    }
+
     private async Task<IReadOnlyList<IssueKey>> SearchIssueKeysAsync(string jql, CancellationToken cancellationToken)
     {
         var issueKeys = new List<IssueKey>();
@@ -349,6 +464,315 @@ public sealed class JiraApiClient : IJiraApiClient
         return [.. issues
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private async Task<IReadOnlyList<ReleaseIssueItem>> SearchReleaseIssueItemsAsync(
+        string jql,
+        string releaseFieldId,
+        string releaseDateFieldName,
+        string? componentsFieldId,
+        string? componentsFieldName,
+        CancellationToken cancellationToken)
+    {
+        var issues = new List<ReleaseIssueItem>();
+        const int pageSize = 100;
+        string? nextPageToken = null;
+
+        while (true)
+        {
+            var fields = new List<string>
+            {
+                "key",
+                "summary",
+                "issuelinks",
+                Uri.EscapeDataString(releaseFieldId)
+            };
+            if (!string.IsNullOrWhiteSpace(componentsFieldId))
+            {
+                fields.Add(Uri.EscapeDataString(componentsFieldId));
+            }
+            if (!string.IsNullOrWhiteSpace(componentsFieldId) || !string.IsNullOrWhiteSpace(componentsFieldName))
+            {
+                const string standardComponentsFieldId = "components";
+                if (!fields.Contains(standardComponentsFieldId, StringComparer.OrdinalIgnoreCase))
+                {
+                    fields.Add(standardComponentsFieldId);
+                }
+            }
+
+            var searchUrl =
+                $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields={string.Join(",", fields)}&maxResults={pageSize}";
+            if (!string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
+            }
+
+            var page = await _transport
+                .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (page is null)
+            {
+                throw new InvalidOperationException("Jira search response is empty.");
+            }
+
+            if (page.Issues.Count > 0)
+            {
+                issues.AddRange(page.Issues
+                    .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
+                    .Select(issue =>
+                    {
+                        var releaseDate = TryParseReleaseDate(issue.Fields, releaseFieldId, releaseDateFieldName);
+                        var tasks = CountCausedByLinkedTasks(issue.Fields);
+                        var components = CountComponents(issue.Fields, componentsFieldId, componentsFieldName);
+                        return (
+                            key: new IssueKey(issue.Key!.Trim()),
+                            title: new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary),
+                            releaseDate,
+                            tasks,
+                            components);
+                    })
+                    .Where(static item => item.releaseDate.HasValue)
+                    .Select(item => new ReleaseIssueItem(
+                        item.key,
+                        item.title,
+                        item.releaseDate!.Value,
+                        item.tasks,
+                        item.components)));
+            }
+
+            nextPageToken = page.NextPageToken;
+            if (page.Issues.Count == 0 || page.IsLast || string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                break;
+            }
+        }
+
+        return [.. issues
+            .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static issue => issue.ReleaseDate)
+            .ThenBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static DateOnly? TryParseReleaseDate(JiraIssueFieldsResponse? fields, string releaseFieldId, string releaseDateFieldName)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return null;
+        }
+
+        if (!TryGetAdditionalFieldValue(fields.AdditionalFields, releaseFieldId, releaseDateFieldName, out var rawDate))
+        {
+            return null;
+        }
+
+        if (rawDate.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (rawDate.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var value = rawDate.GetString();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        {
+            return date;
+        }
+
+        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var timestamp))
+        {
+            return DateOnly.FromDateTime(timestamp.UtcDateTime);
+        }
+
+        return null;
+    }
+
+    private static int CountComponents(
+        JiraIssueFieldsResponse? fields,
+        string? componentsFieldId,
+        string? componentsFieldName)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return 0;
+        }
+
+        if (TryGetAdditionalFieldValue(fields.AdditionalFields, componentsFieldId, componentsFieldName, out var rawComponents))
+        {
+            var resolvedFieldCount = CountComponentsFromRaw(rawComponents);
+            if (resolvedFieldCount > 0)
+            {
+                return resolvedFieldCount;
+            }
+        }
+
+        if (fields.AdditionalFields.TryGetValue("components", out var standardComponents))
+        {
+            return CountComponentsFromRaw(standardComponents);
+        }
+
+        return 0;
+    }
+
+    private static int CountCausedByLinkedTasks(JiraIssueFieldsResponse? fields)
+    {
+        const string causedByRelation = "is caused by";
+
+        if (fields?.IssueLinks.Count is not > 0)
+        {
+            return 0;
+        }
+
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var link in fields.IssueLinks)
+        {
+            if (link?.Type is not { } linkType)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(linkType.Inward)
+                && string.Equals(linkType.Inward.Trim(), causedByRelation, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(link.InwardIssue?.Key))
+            {
+                _ = keys.Add(link.InwardIssue.Key.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(linkType.Outward)
+                && string.Equals(linkType.Outward.Trim(), causedByRelation, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(link.OutwardIssue?.Key))
+            {
+                _ = keys.Add(link.OutwardIssue.Key.Trim());
+            }
+        }
+
+        return keys.Count;
+    }
+
+    private static bool TryGetAdditionalFieldValue(
+        Dictionary<string, JsonElement> additionalFields,
+        string? fieldId,
+        string? fieldName,
+        out JsonElement value)
+    {
+        if (!string.IsNullOrWhiteSpace(fieldId) && additionalFields.TryGetValue(fieldId, out value))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(fieldName) && additionalFields.TryGetValue(fieldName, out value))
+        {
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static string? TryGetComponentValue(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString();
+            return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (value.TryGetProperty("value", out var rawValue) && rawValue.ValueKind == JsonValueKind.String)
+        {
+            var text = rawValue.GetString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text.Trim();
+            }
+        }
+
+        if (value.TryGetProperty("name", out var rawName) && rawName.ValueKind == JsonValueKind.String)
+        {
+            var text = rawName.GetString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text.Trim();
+            }
+        }
+
+        if (value.TryGetProperty("id", out var rawId) && rawId.ValueKind == JsonValueKind.String)
+        {
+            var text = rawId.GetString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeFieldName(string value) =>
+        new([.. value
+            .Where(static ch => char.IsLetterOrDigit(ch))
+            .Select(static ch => char.ToLowerInvariant(ch))]);
+
+    private static bool IsCustomFieldId(string fieldId) =>
+        fieldId.StartsWith("customfield_", StringComparison.OrdinalIgnoreCase);
+
+    private static int CountComponentsFromRaw(JsonElement rawComponents)
+    {
+        if (rawComponents.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return 0;
+        }
+
+        if (rawComponents.ValueKind == JsonValueKind.Array)
+        {
+            var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in rawComponents.EnumerateArray())
+            {
+                var value = TryGetComponentValue(item);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    _ = values.Add(value);
+                }
+            }
+
+            return values.Count;
+        }
+
+        if (rawComponents.ValueKind == JsonValueKind.String)
+        {
+            var raw = rawComponents.GetString();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return 0;
+            }
+
+            return raw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(static item => item.Trim())
+                .Where(static item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+        }
+
+        if (rawComponents.ValueKind == JsonValueKind.Object)
+        {
+            return string.IsNullOrWhiteSpace(TryGetComponentValue(rawComponents)) ? 0 : 1;
+        }
+
+        return 0;
     }
 
     private async Task<int> GetIssueCountByJqlAsync(string jql, CancellationToken cancellationToken)

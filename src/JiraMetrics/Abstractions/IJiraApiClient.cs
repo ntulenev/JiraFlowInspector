@@ -84,6 +84,22 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads release issues for configured month.
+    /// </summary>
+    /// <param name="releaseProjectKey">Release project key.</param>
+    /// <param name="projectLabel">Project label filter.</param>
+    /// <param name="releaseDateFieldName">Release date field name.</param>
+    /// <param name="componentsFieldName">Optional components field name.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Release issues in selected month.</returns>
+    Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
+        ProjectKey releaseProjectKey,
+        string projectLabel,
+        string releaseDateFieldName,
+        string? componentsFieldName,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads full issue timeline for a specific issue key.
     /// </summary>
     /// <param name="issueKey">Issue key.</param>

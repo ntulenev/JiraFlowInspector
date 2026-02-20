@@ -64,6 +64,7 @@ builder.Services.AddSingleton(sp =>
     var rejectStatusName = string.IsNullOrWhiteSpace(source.RejectStatusName)
         ? (StatusName?)null
         : new StatusName(source.RejectStatusName);
+    var releaseReport = ResolveReleaseReport(source.ReleaseReport);
     DateOnly[] excludedDays = source.IssueTransitions?.ExcludedDays is null
         ? []
         : [.. source.IssueTransitions.ExcludedDays
@@ -86,7 +87,8 @@ builder.Services.AddSingleton(sp =>
         customFieldValue,
         source.IssueTransitions?.ExcludeWeekend ?? false,
         excludedDays,
-        bugIssueNames);
+        bugIssueNames,
+        releaseReport);
 
     return Options.Create(settings);
 });
@@ -129,4 +131,37 @@ static DateOnly ParseExcludedDay(string value)
     }
 
     throw new FormatException($"Invalid excluded day '{value}'. Expected dd.MM.yyyy or yyyy-MM-dd.");
+}
+
+static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
+{
+    if (source is null)
+    {
+        return null;
+    }
+
+    var hasAnyValue =
+        !string.IsNullOrWhiteSpace(source.ReleaseProjectKey)
+        || !string.IsNullOrWhiteSpace(source.ProjectLabel)
+        || !string.IsNullOrWhiteSpace(source.ReleaseDateFieldName)
+        || !string.IsNullOrWhiteSpace(source.ComponentsFieldName);
+
+    if (!hasAnyValue)
+    {
+        return null;
+    }
+
+    if (string.IsNullOrWhiteSpace(source.ReleaseProjectKey)
+        || string.IsNullOrWhiteSpace(source.ProjectLabel)
+        || string.IsNullOrWhiteSpace(source.ReleaseDateFieldName))
+    {
+        throw new InvalidOperationException(
+            "ReleaseReport requires ReleaseProjectKey, ProjectLabel, and ReleaseDateFieldName when configured.");
+    }
+
+    return new ReleaseReportSettings(
+        new ProjectKey(source.ReleaseProjectKey),
+        source.ProjectLabel,
+        source.ReleaseDateFieldName,
+        source.ComponentsFieldName);
 }

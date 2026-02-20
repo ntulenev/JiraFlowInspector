@@ -98,6 +98,17 @@ public interface IJiraPresentationService
     void ShowPathGroupsSummary(PathGroupsSummary summary);
 
     /// <summary>
+    /// Shows release report section.
+    /// </summary>
+    /// <param name="settings">Release report settings.</param>
+    /// <param name="monthLabel">Selected month label.</param>
+    /// <param name="releases">Release issues in month.</param>
+    void ShowReleaseReport(
+        ReleaseReportSettings settings,
+        MonthLabel monthLabel,
+        IReadOnlyList<ReleaseIssueItem> releases);
+
+    /// <summary>
     /// Shows bug ratio loading start message.
     /// </summary>
     /// <param name="bugIssueNames">Issue types treated as bug-like issues.</param>

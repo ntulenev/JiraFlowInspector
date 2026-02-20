@@ -19,6 +19,7 @@ It helps detect bottlenecks and compare transition paths with P75 timing.
 9. Renders output tables:
    - Issues moved to done
    - Bug ratio (optional)
+   - Release report (optional)
    - Path groups with P75 timeline
    - Failure report (if any)
 
@@ -40,6 +41,15 @@ Application options are under the `Jira` object.
 - `BugRatio` (`object`, optional): Settings for bug-ratio report section.
 - `BugRatio.BugIssueNames` (`string[]`, optional): Issue types treated as bugs (for example `["Bug"]`). When configured, report prints bug counts created in the selected month, moved to done, moved to rejected, and finished (`done + rejected`) in the selected month.
   Bug ratio section also prints three details tables (`Open issues`, `Done issues`, `Rejected issues`) with `Jira ID` and `Title`.
+- `ReleaseReport` (`object`, optional): Settings for release report section.
+- `ReleaseReport.ReleaseProjectKey` (`string`, optional): Jira project key where release issues are stored (for example `RLS`).
+- `ReleaseReport.ProjectLabel` (`string`, optional): Label used to select release issues in release project.
+- `ReleaseReport.ReleaseDateFieldName` (`string`, optional): Jira field display name that stores release date (for example `Change completion date`).
+- `ReleaseReport.ComponentsFieldName` (`string`, optional): Optional Jira field display name used to count components per release issue.
+  All three `ReleaseReport` fields must be provided together when `ReleaseReport` is configured.
+  Release report returns all issues from `ReleaseProjectKey` where `labels = ProjectLabel` and `ReleaseDateFieldName` is in selected `MonthLabel`.
+  It also shows `Tasks` count per release issue: number of linked work items with relation text `is caused by`.
+  When `ComponentsFieldName` is configured, release table also shows `Components` count per release issue.
 - `CustomFieldName` (`string`, optional): Custom field name used for filtering (for example `Team`). Applied only when both name and value are provided.
 - `CustomFieldValue` (`string`, optional): Custom field value used for filtering (for example `Import`). Applied only when both name and value are provided.
 - `MonthLabel` (`string`, optional): Month used to filter issues moved to done (`yyyy-MM`); defaults to current UTC month when omitted.
@@ -64,6 +74,12 @@ Application options are under the `Jira` object.
     },
     "BugRatio": {
       "BugIssueNames": ["Bug"]
+    },
+    "ReleaseReport": {
+      "ReleaseProjectKey": "RLS",
+      "ProjectLabel": "processing",
+      "ReleaseDateFieldName": "Change completion date",
+      "ComponentsFieldName": "Components"
     },
     "CustomFieldName": "Team",
     "CustomFieldValue": "Import",
