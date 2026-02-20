@@ -33,6 +33,12 @@ internal sealed class JiraIssueFieldsResponse
     public JiraIssueTypeResponse? IssueType { get; init; }
 
     /// <summary>
+    /// Gets issue status.
+    /// </summary>
+    [JsonPropertyName("status")]
+    public JiraIssueStatusResponse? Status { get; init; }
+
+    /// <summary>
     /// Gets issue links.
     /// </summary>
     [JsonPropertyName("issuelinks")]

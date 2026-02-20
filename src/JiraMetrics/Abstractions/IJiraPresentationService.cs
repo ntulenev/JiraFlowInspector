@@ -167,6 +167,17 @@ public interface IJiraPresentationService
         IReadOnlyList<IssueListItem> rejectedIssues);
 
     /// <summary>
+    /// Shows issue counts grouped by status and issue type, excluding done/rejected statuses.
+    /// </summary>
+    /// <param name="statusSummaries">Issue counts by status and issue type.</param>
+    /// <param name="doneStatusName">Done status name excluded from metric.</param>
+    /// <param name="rejectStatusName">Optional reject status name excluded from metric.</param>
+    void ShowOpenIssuesByStatusSummary(
+        IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
+        StatusName doneStatusName,
+        StatusName? rejectStatusName);
+
+    /// <summary>
     /// Shows path group details.
     /// </summary>
     /// <param name="groups">Path groups.</param>

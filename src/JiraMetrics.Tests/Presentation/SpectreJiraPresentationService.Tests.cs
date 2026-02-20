@@ -499,6 +499,63 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("-");
     }
 
+    [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes status and issue type breakdown")]
+    [Trait("Category", "Unit")]
+    public async Task ShowOpenIssuesByStatusSummaryWhenCalledWritesGroupedCounts()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowOpenIssuesByStatusSummary(
+                [
+                    new StatusIssueTypeSummary(
+                        new StatusName("QA"),
+                        new ItemCount(25),
+                        [
+                            new IssueTypeCountSummary(new IssueTypeName("UserStory"), new ItemCount(20)),
+                            new IssueTypeCountSummary(new IssueTypeName("SubTask"), new ItemCount(5))
+                        ])
+                ],
+                new StatusName("Done"),
+                new StatusName("Reject"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("General statistics");
+        output.Should().Contain("Statuses excluded:");
+        output.Should().Contain("Done, Reject");
+        output.Should().Contain("Status");
+        output.Should().Contain("Issues");
+        output.Should().Contain("Breakdown by type");
+        output.Should().Contain("QA");
+        output.Should().Contain("25");
+        output.Should().Contain("UserStory - 20");
+        output.Should().Contain("SubTask - 5");
+    }
+
+    [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes empty state when no data")]
+    [Trait("Category", "Unit")]
+    public async Task ShowOpenIssuesByStatusSummaryWhenNoItemsWritesEmptyState()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowOpenIssuesByStatusSummary([], new StatusName("Done"), new StatusName("Reject"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("General statistics");
+        output.Should().Contain("No issues outside excluded statuses.");
+    }
+
     [Fact(DisplayName = "Issue loading progress does not print Jira IDs")]
     [Trait("Category", "Unit")]
     public async Task ShowIssueLoadingProgressWhenCalledDoesNotPrintIssueIds()

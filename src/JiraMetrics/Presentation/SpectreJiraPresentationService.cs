@@ -392,6 +392,57 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
+    public void ShowOpenIssuesByStatusSummary(
+        IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
+        StatusName doneStatusName,
+        StatusName? rejectStatusName)
+    {
+        ArgumentNullException.ThrowIfNull(statusSummaries);
+
+        var excludedStatuses = rejectStatusName is { } rejectStatus
+            ? $"{doneStatusName.Value}, {rejectStatus.Value}"
+            : doneStatusName.Value;
+
+        AnsiConsole.MarkupLine("[bold]General statistics[/]");
+        AnsiConsole.MarkupLine($"[grey]Statuses excluded:[/] {Markup.Escape(excludedStatuses)}");
+
+        if (statusSummaries.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No issues outside excluded statuses.[/]");
+            return;
+        }
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Status[/]")
+            .AddColumn("[bold]Issues[/]")
+            .AddColumn("[bold]Breakdown by type[/]");
+
+        foreach (var statusSummary in statusSummaries
+                     .OrderByDescending(static summary => summary.Count.Value)
+                     .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            var issueTypeBreakdown = statusSummary.IssueTypes.Count == 0
+                ? "-"
+                : string.Join(
+                    Environment.NewLine,
+                    statusSummary.IssueTypes
+                        .OrderByDescending(static summary => summary.Count.Value)
+                        .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)
+                        .Select(summary =>
+                            $"{summary.IssueType.Value} - {summary.Count.Value.ToString(CultureInfo.InvariantCulture)}"));
+
+            _ = table.AddRow(
+                Markup.Escape(statusSummary.Status.Value),
+                statusSummary.Count.Value.ToString(CultureInfo.InvariantCulture),
+                Markup.Escape(issueTypeBreakdown));
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    /// <inheritdoc />
     public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
     {
         ArgumentNullException.ThrowIfNull(groups);

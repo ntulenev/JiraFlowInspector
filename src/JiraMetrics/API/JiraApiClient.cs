@@ -152,6 +152,20 @@ public sealed partial class JiraApiClient : IJiraApiClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        StatusName? rejectStatusName,
+        CancellationToken cancellationToken)
+    {
+        var clauses = BuildProjectClauses(projectKey);
+        clauses.Add(BuildExcludedStatusesClause(doneStatusName, rejectStatusName));
+
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY status ASC, key ASC";
+        return await SearchIssueCountsByStatusAndTypeAsync(jql, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
         ProjectKey releaseProjectKey,
         string projectLabel,
@@ -304,6 +318,24 @@ public sealed partial class JiraApiClient : IJiraApiClient
     {
         var escapedDoneStatus = doneStatusName.Value.EscapeJqlString();
         return $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\" AND status = \"{escapedDoneStatus}\"";
+    }
+
+    private static string BuildExcludedStatusesClause(StatusName doneStatusName, StatusName? rejectStatusName)
+    {
+        var statusesToExclude = new List<string>
+        {
+            $"\"{doneStatusName.Value.EscapeJqlString()}\""
+        };
+
+        if (rejectStatusName is { } rejectStatus
+            && !string.Equals(doneStatusName.Value, rejectStatus.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            statusesToExclude.Add($"\"{rejectStatus.Value.EscapeJqlString()}\"");
+        }
+
+        return statusesToExclude.Count == 1
+            ? $"status != {statusesToExclude[0]}"
+            : $"status NOT IN ({string.Join(", ", statusesToExclude)})";
     }
 
     private async Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken)
@@ -468,6 +500,79 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return [.. issues
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private async Task<IReadOnlyList<StatusIssueTypeSummary>> SearchIssueCountsByStatusAndTypeAsync(
+        string jql,
+        CancellationToken cancellationToken)
+    {
+        var countsByStatus = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+        const int pageSize = 100;
+        string? nextPageToken = null;
+
+        while (true)
+        {
+            var searchUrl =
+                $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=status,issuetype&maxResults={pageSize}";
+            if (!string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
+            }
+
+            var page = await _transport
+                .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (page is null)
+            {
+                throw new InvalidOperationException("Jira search response is empty.");
+            }
+
+            if (page.Issues.Count > 0)
+            {
+                foreach (var issue in page.Issues)
+                {
+                    var statusName = StatusName.FromNullable(issue.Fields?.Status?.Name).Value;
+                    var issueTypeName = IssueTypeName.FromNullable(issue.Fields?.IssueType?.Name).Value;
+
+                    if (!countsByStatus.TryGetValue(statusName, out var issueTypeCounts))
+                    {
+                        issueTypeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                        countsByStatus[statusName] = issueTypeCounts;
+                    }
+
+                    issueTypeCounts[issueTypeName] = issueTypeCounts.TryGetValue(issueTypeName, out var count)
+                        ? count + 1
+                        : 1;
+                }
+            }
+
+            nextPageToken = page.NextPageToken;
+            if (page.Issues.Count == 0 || page.IsLast || string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                break;
+            }
+        }
+
+        return [.. countsByStatus
+            .Select(static statusGroup =>
+            {
+                var issueTypeSummaries = statusGroup.Value
+                    .Select(static issueTypeGroup => new IssueTypeCountSummary(
+                        IssueTypeName.FromNullable(issueTypeGroup.Key),
+                        new ItemCount(issueTypeGroup.Value)))
+                    .OrderByDescending(static summary => summary.Count.Value)
+                    .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+                var totalCount = issueTypeSummaries.Sum(static summary => summary.Count.Value);
+
+                return new StatusIssueTypeSummary(
+                    StatusName.FromNullable(statusGroup.Key),
+                    new ItemCount(totalCount),
+                    issueTypeSummaries);
+            })
+            .OrderByDescending(static summary => summary.Count.Value)
+            .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase)];
     }
 
     private static DateTimeOffset? ParseIssueCreatedAt(string? rawCreated)

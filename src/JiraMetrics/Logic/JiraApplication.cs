@@ -72,6 +72,7 @@ public sealed class JiraApplication : IJiraApplication
         IReadOnlyList<IssueListItem> bugOpenIssues = [];
         IReadOnlyList<IssueListItem> bugDoneIssues = [];
         IReadOnlyList<IssueListItem> bugRejectedIssues = [];
+        IReadOnlyList<StatusIssueTypeSummary> openIssuesByStatus = [];
         IReadOnlyList<ReleaseIssueItem> releaseIssues = [];
         try
         {
@@ -99,6 +100,12 @@ public sealed class JiraApplication : IJiraApplication
                     releaseReport.ComponentsFieldName,
                     cancellationToken).ConfigureAwait(false);
             }
+
+            openIssuesByStatus = await _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+                _settings.ProjectKey,
+                _settings.DoneStatusName,
+                _settings.RejectStatusName,
+                cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException ex)
         {
@@ -209,10 +216,27 @@ public sealed class JiraApplication : IJiraApplication
         }
 
         _presentationService.ShowReportHeader(_settings, new ItemCount(issueKeys.Count));
+        var openIssuesSummaryShown = false;
+
+        void ShowOpenIssuesSummary()
+        {
+            if (openIssuesSummaryShown)
+            {
+                return;
+            }
+
+            _presentationService.ShowOpenIssuesByStatusSummary(
+                openIssuesByStatus,
+                _settings.DoneStatusName,
+                _settings.RejectStatusName);
+            _presentationService.ShowSpacer();
+            openIssuesSummaryShown = true;
+        }
 
         if (issueKeys.Count == 0)
         {
             _presentationService.ShowNoIssuesMatchedFilter();
+            ShowOpenIssuesSummary();
             return;
         }
 
@@ -287,6 +311,7 @@ public sealed class JiraApplication : IJiraApplication
         {
             _presentationService.ShowNoIssuesLoaded();
             _presentationService.ShowFailures(failures);
+            ShowOpenIssuesSummary();
             return;
         }
 
@@ -295,6 +320,7 @@ public sealed class JiraApplication : IJiraApplication
         {
             _presentationService.ShowNoIssuesMatchedFilter();
             _presentationService.ShowFailures(failures);
+            ShowOpenIssuesSummary();
             return;
         }
 
@@ -303,6 +329,7 @@ public sealed class JiraApplication : IJiraApplication
         {
             _presentationService.ShowNoIssuesMatchedRequiredStage();
             _presentationService.ShowFailures(failures);
+            ShowOpenIssuesSummary();
             return;
         }
 
@@ -330,6 +357,7 @@ public sealed class JiraApplication : IJiraApplication
         _presentationService.ShowPathGroupsSummary(pathGroupsSummary);
         _presentationService.ShowSpacer();
         _presentationService.ShowPathGroups(groups);
+        ShowOpenIssuesSummary();
 
         _pdfReportRenderer.RenderReport(new JiraPdfReportData
         {
@@ -343,6 +371,7 @@ public sealed class JiraApplication : IJiraApplication
             BugOpenIssues = bugOpenIssues,
             BugDoneIssues = bugDoneIssues,
             BugRejectedIssues = bugRejectedIssues,
+            OpenIssuesByStatus = openIssuesByStatus,
             DoneIssues = filteredIssues,
             RejectedIssues = filteredRejectedIssues,
             PathSummary = pathGroupsSummary,

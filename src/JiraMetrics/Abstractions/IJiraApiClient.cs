@@ -84,6 +84,21 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads issue counts grouped by status and issue type, excluding done/rejected statuses.
+    /// Issue type filter from settings is not applied.
+    /// </summary>
+    /// <param name="projectKey">Project key.</param>
+    /// <param name="doneStatusName">Done status to exclude.</param>
+    /// <param name="rejectStatusName">Optional reject status to exclude.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Issue counts grouped by status and issue type.</returns>
+    Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        StatusName? rejectStatusName,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads release issues for configured month.
     /// </summary>
     /// <param name="releaseProjectKey">Release project key.</param>

@@ -59,6 +59,11 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<IssueListItem> BugRejectedIssues { get; init; } = [];
 
     /// <summary>
+    /// Gets or sets issue counts grouped by status and issue type outside done/rejected statuses.
+    /// </summary>
+    public IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus { get; init; } = [];
+
+    /// <summary>
     /// Gets or sets issues moved to done this month.
     /// </summary>
     public IReadOnlyList<IssueTimeline> DoneIssues { get; init; } = [];

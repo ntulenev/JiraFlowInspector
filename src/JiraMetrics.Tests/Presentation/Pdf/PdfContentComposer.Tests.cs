@@ -126,6 +126,16 @@ public sealed class PdfContentComposerTests
             BugOpenIssues = [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Open bug"))],
             BugDoneIssues = [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Done bug"))],
             BugRejectedIssues = [],
+            OpenIssuesByStatus =
+            [
+                new StatusIssueTypeSummary(
+                    new StatusName("QA"),
+                    new ItemCount(2),
+                    [
+                        new IssueTypeCountSummary(new IssueTypeName("UserStory"), new ItemCount(1)),
+                        new IssueTypeCountSummary(new IssueTypeName("SubTask"), new ItemCount(1))
+                    ])
+            ],
             DoneIssues = [issue],
             RejectedIssues = [],
             PathSummary = summary,

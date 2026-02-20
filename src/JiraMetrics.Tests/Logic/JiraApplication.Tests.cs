@@ -518,6 +518,50 @@ public sealed class JiraApplicationTests
         pdfReportRenderer.LastReportData.SearchIssueCount.Value.Should().Be(1);
     }
 
+    [Fact(DisplayName = "RunAsync shows open issues by status summary after path groups")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenAnalysisCompletesShowsOpenIssuesSummaryAtEnd()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task")),
+            OpenIssuesByStatus =
+            [
+                new StatusIssueTypeSummary(
+                    new StatusName("QA"),
+                    new ItemCount(3),
+                    [
+                        new IssueTypeCountSummary(new IssueTypeName("UserStory"), new ItemCount(2)),
+                        new IssueTypeCountSummary(new IssueTypeName("SubTask"), new ItemCount(1))
+                    ])
+            ]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.OpenIssuesByStatusRequested.Should().BeTrue();
+        presentation.OpenIssuesByStatusShown.Should().BeTrue();
+        var pathGroupsIndex = presentation.Calls.IndexOf("PathGroups");
+        var openIssuesSummaryIndex = presentation.Calls.IndexOf("OpenIssuesByStatusSummary");
+        pathGroupsIndex.Should().BeGreaterThanOrEqualTo(0);
+        openIssuesSummaryIndex.Should().BeGreaterThan(pathGroupsIndex);
+    }
+
     private static AppSettings CreateSettings(
         IReadOnlyList<IssueTypeName>? issueTypes = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
@@ -585,6 +629,8 @@ public sealed class JiraApplicationTests
 
         public IReadOnlyList<IssueListItem> RejectedThisMonthIssues { get; set; } = [];
 
+        public IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus { get; set; } = [];
+
         public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; set; } = [];
 
         public bool CreatedThisMonthCountRequested { get; private set; }
@@ -596,6 +642,8 @@ public sealed class JiraApplicationTests
         public bool MovedToDoneThisMonthIssuesRequested { get; private set; }
 
         public bool RejectedThisMonthIssuesRequested { get; private set; }
+
+        public bool OpenIssuesByStatusRequested { get; private set; }
 
         public bool ReleaseIssuesRequested { get; private set; }
 
@@ -668,6 +716,16 @@ public sealed class JiraApplicationTests
         {
             ReleaseIssuesRequested = true;
             return Task.FromResult(ReleaseIssues);
+        }
+
+        public Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+            ProjectKey projectKey,
+            StatusName doneStatusName,
+            StatusName? rejectStatusName,
+            CancellationToken cancellationToken)
+        {
+            OpenIssuesByStatusRequested = true;
+            return Task.FromResult(OpenIssuesByStatus);
         }
 
         public Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
@@ -745,6 +803,8 @@ public sealed class JiraApplicationTests
         public bool BugRatioLoadingCompletedShown { get; private set; }
 
         public bool ReleaseReportShown { get; private set; }
+
+        public bool OpenIssuesByStatusShown { get; private set; }
 
         public IReadOnlyList<IssueTimeline> DoneIssues { get; private set; } = [];
 
@@ -863,6 +923,16 @@ public sealed class JiraApplicationTests
 
         public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
         {
+            Calls.Add("PathGroups");
+        }
+
+        public void ShowOpenIssuesByStatusSummary(
+            IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
+            StatusName doneStatusName,
+            StatusName? rejectStatusName)
+        {
+            OpenIssuesByStatusShown = true;
+            Calls.Add("OpenIssuesByStatusSummary");
         }
 
         public void ShowFailures(IReadOnlyList<LoadFailure> failures)

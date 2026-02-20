@@ -435,6 +435,132 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().Contain("fields=key,summary,created");
     }
 
+    [Fact(DisplayName = "GetIssueCountsByStatusExcludingDoneAndRejectAsync groups counts by status and type")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueCountsByStatusExcludingDoneAndRejectAsyncWhenCalledReturnsGroupedCounts()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-1",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        IssueType = new JiraIssueTypeResponse { Name = "UserStory" },
+                        Status = new JiraIssueStatusResponse { Name = "QA" }
+                    }
+                },
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-2",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        IssueType = new JiraIssueTypeResponse { Name = "UserStory" },
+                        Status = new JiraIssueStatusResponse { Name = "QA" }
+                    }
+                },
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-3",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        IssueType = new JiraIssueTypeResponse { Name = "SubTask" },
+                        Status = new JiraIssueStatusResponse { Name = "QA" }
+                    }
+                },
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-4",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        IssueType = new JiraIssueTypeResponse { Name = "Task" },
+                        Status = new JiraIssueStatusResponse { Name = "In Progress" }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(customFieldName: "Team", customFieldValue: "Import");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var result = await client.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            new StatusName("Reject"),
+            cts.Token);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].Status.Value.Should().Be("QA");
+        result[0].Count.Value.Should().Be(3);
+        result[0].IssueTypes.Should().HaveCount(2);
+        result[0].IssueTypes[0].IssueType.Value.Should().Be("UserStory");
+        result[0].IssueTypes[0].Count.Value.Should().Be(2);
+        result[0].IssueTypes[1].IssueType.Value.Should().Be("SubTask");
+        result[0].IssueTypes[1].Count.Value.Should().Be(1);
+        result[1].Status.Value.Should().Be("In Progress");
+        result[1].Count.Value.Should().Be(1);
+        capturedUrl.Should().Contain("status%20NOT%20IN");
+        capturedUrl.Should().Contain("Done");
+        capturedUrl.Should().Contain("Reject");
+        capturedUrl.Should().Contain("Team");
+        capturedUrl.Should().Contain("Import");
+        capturedUrl.Should().Contain("fields=status,issuetype");
+        capturedUrl.Should().NotContain("issuetype%20IN");
+    }
+
+    [Fact(DisplayName = "GetIssueCountsByStatusExcludingDoneAndRejectAsync uses status not-equals when reject is missing")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueCountsByStatusExcludingDoneAndRejectAsyncWhenRejectIsNullUsesStatusNotEqualsClause()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var result = await client.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            rejectStatusName: null,
+            cts.Token);
+
+        // Assert
+        result.Should().BeEmpty();
+        capturedUrl.Should().Contain("status%20%21%3D%20%22Done%22");
+        capturedUrl.Should().NotContain("status%20NOT%20IN");
+    }
+
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
     [Trait("Category", "Unit")]
     public async Task GetReleaseIssuesForMonthAsyncWhenCalledReturnsReleaseIssues()
