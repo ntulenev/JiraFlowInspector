@@ -2,65 +2,210 @@
 
 <img src="FlowLogo.png" alt="logo" width="250">
 
-JiraFlowInspector is a console analytics utility for tracking Jira issue transition flow.
-It helps detect bottlenecks and compare transition paths with P75 timing.
+JiraFlowInspector is a console analytics utility for Jira workflows.
+It analyzes how issues move across statuses, highlights bug/release metrics, and can export the same report to PDF.
 
+## Features
 
+- Jira Cloud authentication with `Email` + `ApiToken`.
+- Transition analytics for issues moved to `Done` in a selected month.
+- Optional reject flow support (`RejectStatusName`).
+- Optional bug ratio report with open/done/rejected/finished metrics.
+- Optional release report by label and custom release date field.
+- P75 transition timing per path group.
+- Timeline diagrams in console and PDF.
+- Optional exclusion of weekends and specific calendar days from duration calculation.
+- Optional custom field filter (for team-level filtering).
+- Optional retry policy for transient Jira API failures.
+- Optional PDF export (QuestPDF), including clickable Jira links.
 
-## How the service works
-1. Loads configuration from `appsettings.json` (`Jira` section).
-2. Authenticates against Jira Cloud API using basic auth (`Email` + `ApiToken`).
-3. Fetches issues that changed status to the configured done status since start of month.
-4. Loads each issue changelog and builds transition timelines.
-5. Optionally filters issues by configured Jira issue types.
-6. Filters issues by required stages presence in the transition path.
-7. Groups issues by transition path.
-8. Calculates P75 transition duration per path.
-9. Renders output tables:
-   - Issues moved to done
-   - Bug ratio (optional)
-   - Release report (optional)
-   - Path groups with P75 timeline
-   - Failure report (if any)
+## What The App Does
 
-## appsettings.json parameters
-### `Jira` section
-Application options are under the `Jira` object.
+1. Loads `Jira` settings from `appsettings.json`.
+2. Authenticates with Jira.
+3. Resolves reporting period from `MonthLabel` (or current UTC month if omitted).
+4. Loads keys for issues that:
+   `status CHANGED TO "<DoneStatusName>"` in month range
+   and currently have `status = "<DoneStatusName>"`.
+5. Optionally loads keys for `RejectStatusName` with the same final-status rule.
+6. Optionally loads release issues for the month.
+7. Optionally loads bug-ratio datasets.
+8. Loads changelogs for selected issues and builds transition timelines.
+9. Applies issue-type and required-stage filters.
+10. Shows console sections.
+11. Optionally writes PDF report.
 
-- `BaseUrl` (`string`, required): Jira base URL (for example `https://your-company.atlassian.net`).
-- `Email` (`string`, required): Jira account email used for authentication.
-- `ApiToken` (`string`, required): Jira API token used for authentication.
-- `TeamTasks` (`object`, required): Settings for team task analytics.
-- `TeamTasks.ProjectKey` (`string`, required): Jira project key used in JQL filter.
-- `TeamTasks.DoneStatusName` (`string`, required): Target done status name used in JQL filter.
-- `TeamTasks.RejectStatusName` (`string`, optional): Status name treated as rejected in bug ratio calculations (for example `Reject`).
-- `TeamTasks.IssueTransitions` (`object`, required): Settings for transition-path analytics.
-- `TeamTasks.IssueTransitions.RequiredPathStages` (`string[]`, required): Stages that must all be present in the issue transition path.
-- `TeamTasks.IssueTransitions.IssueTypes` (`string[]`, optional): Allowed Jira issue types filter (for example `["Bug", "Story"]`). When omitted or empty, all issue types are included.
-- `TeamTasks.IssueTransitions.ExcludeWeekend` (`bool`, optional): When `true`, Saturday/Sunday time is excluded from transition durations; defaults to `false`.
-- `TeamTasks.IssueTransitions.ExcludedDays` (`string[]`, optional): List of excluded dates (`dd.MM.yyyy` or `yyyy-MM-dd`); time spent on those days is excluded from transition durations.
-- `TeamTasks.BugRatio` (`object`, optional): Settings for bug-ratio report section.
-- `TeamTasks.BugRatio.BugIssueNames` (`string[]`, optional): Issue types treated as bugs (for example `["Bug"]`). When configured, report prints bug counts created in the selected month, moved to done, moved to rejected, and finished (`done + rejected`) in the selected month.
-  Bug ratio section also prints three details tables (`Open issues`, `Done issues`, `Rejected issues`) with `Jira ID` and `Title`.
-- `ReleaseReport` (`object`, optional): Settings for release report section.
-- `ReleaseReport.ReleaseProjectKey` (`string`, optional): Jira project key where release issues are stored (for example `RLS`).
-- `ReleaseReport.ProjectLabel` (`string`, optional): Label used to select release issues in release project.
-- `ReleaseReport.ReleaseDateFieldName` (`string`, optional): Jira field display name that stores release date (for example `Change completion date`).
-- `ReleaseReport.ComponentsFieldName` (`string`, optional): Optional Jira field display name used to count components per release issue.
-  All three `ReleaseReport` fields must be provided together when `ReleaseReport` is configured.
-  Release report returns all issues from `ReleaseProjectKey` where `labels = ProjectLabel` and `ReleaseDateFieldName` is in selected `MonthLabel`.
-  It also shows `Tasks` count per release issue: number of linked work items with relation text `is caused by`.
-  When `ComponentsFieldName` is configured, release table also shows `Components` count per release issue.
-- `Pdf` (`object`, optional): Settings for PDF report generation.
-- `Pdf.Enabled` (`bool`, optional): Enables PDF export of the analytics report; defaults to `true`.
-- `Pdf.OutputPath` (`string`, optional): Output path for the PDF file (relative or absolute). Generated file name is suffixed with current date (for example `jiraflowinspector-report_20_02_2026.pdf`).
-- `TeamTasks.CustomFieldName` (`string`, optional): Custom field name used for filtering (for example `Team`). Applied only when both name and value are provided.
-- `TeamTasks.CustomFieldValue` (`string`, optional): Custom field value used for filtering (for example `Import`). Applied only when both name and value are provided.
-- `MonthLabel` (`string`, optional): Month used to filter issues moved to done (`yyyy-MM`); defaults to current UTC month when omitted.
-- `CreatedAfter` (`string`, optional): Lower bound for issue creation date (`yyyy-MM-dd`); adds `created >= "<date>"` to JQL when provided.
-- `RetryCount` (`int`, optional): Number of retries for transient Jira API failures (`0..10`, default `0`).
+## Important Behavior Rules
 
-## Example configuration
+- Final status is required for done/rejected searches:
+  issues that were moved to Done (or Reject) and later reopened are excluded.
+- `CreatedAfter` applies to transition analytics key search only.
+- `CustomFieldName` + `CustomFieldValue` are applied only when both are provided.
+- Required stages use case-insensitive substring matching against both transition `From` and `To` statuses.
+- Path grouping for transition analytics is built only from issues with detected code activity (`HasPullRequest = true`).
+
+## Report Sections
+
+### Console Output
+
+- Report context:
+  month, optional created-after date.
+- Release report (optional):
+  all releases in `MonthLabel` by `ProjectLabel`, with tasks/components counts.
+- Bug ratio (optional):
+  open/done/rejected/finished counts and finished/created rate.
+- Bug ratio details (optional):
+  separate tables for Open, Done, Rejected issues.
+- Transition analysis:
+  done table, optional rejected table.
+- Path group summary:
+  successful, matched stage, failed, path groups.
+- Path groups:
+  path, issue list, timeline diagram, P75 transition table.
+- Failed issues table (when any request fails per issue).
+
+All list tables include `#` index column.
+
+### PDF Output
+
+When `Jira:Pdf:Enabled` is `true`, PDF includes:
+
+- Header (`Jira Analytics`, generation timestamp, project, done status, month, optional created-after/custom-field filter).
+- Release report (if configured).
+- Bug ratio (if configured) and bug detail tables.
+- Transition analysis tables (Done and optional Rejected).
+- Path groups summary.
+- Path groups with timeline diagrams and P75 tables.
+- Failed issues (if any).
+
+Jira issue identifiers are clickable links in PDF sections:
+release table, bug detail tables, done/rejected tables, path-group issue list, and failures table.
+
+## Metrics Logic
+
+### Transition Analytics
+
+- Source set:
+  issues moved to `DoneStatusName` during month and currently in that status.
+- If `RejectStatusName` configured:
+  rejected source set is loaded similarly.
+- Issue types are filtered after loading timelines.
+- Required path stages are enforced after issue-type filtering.
+- Path groups are built from filtered issues with code activity only.
+- P75 is calculated per transition index within each path group.
+
+### Bug Ratio
+
+`BugIssueNames` defines which issue types are treated as bugs.
+
+- Open this month:
+  bug issues created in month and not in finished set.
+- Done this month:
+  bug issues moved to `DoneStatusName` in month and currently in done status.
+- Rejected this month:
+  bug issues moved to `RejectStatusName` in month and currently in rejected status.
+- Finished this month:
+  union of Done and Rejected issue keys.
+- Finished / Created:
+  `finished / created * 100`.
+
+### Release Report
+
+Release query uses:
+
+- `project = ReleaseProjectKey`
+- `labels = ProjectLabel`
+- `ReleaseDateFieldName` in `MonthLabel` range.
+
+Per release row:
+
+- `Tasks`:
+  count of linked work items with relation text `is caused by` (both inward/outward links).
+- `Components`:
+  count from configured components field; fallback to standard Jira `components`.
+  Supports array/string/object custom-field payloads.
+- `0` task/component values are displayed as `-`.
+
+## Duration Calculation
+
+Transition durations come from time between consecutive status changes.
+
+- If `ExcludeWeekend = true`, Saturday/Sunday time is removed.
+- Any date in `ExcludedDays` is removed.
+- Supported date formats in `ExcludedDays`:
+  `dd.MM.yyyy` and `yyyy-MM-dd`.
+
+## Pull Request Detection
+
+Code activity (`HasPullRequest`) is detected from issue additional fields by searching for pull request data.
+The detector checks:
+
+- default development field (`customfield_10800`);
+- other additional fields;
+- patterns containing `pullrequest` and optional count markers.
+
+## Configuration (`appsettings.json`)
+
+All options live under `Jira`.
+
+- `BaseUrl` (`string`, required):
+  Jira base URL, for example `https://company.atlassian.net`.
+- `Email` (`string`, required):
+  Jira account email.
+- `ApiToken` (`string`, required):
+  Jira API token.
+- `TeamTasks` (`object`, required):
+  transition and bug report settings.
+- `TeamTasks.ProjectKey` (`string`, required):
+  project used for transition and bug queries.
+- `TeamTasks.DoneStatusName` (`string`, required):
+  done status name.
+- `TeamTasks.RejectStatusName` (`string`, optional):
+  rejected status name.
+- `TeamTasks.CustomFieldName` (`string`, optional):
+  custom field name for filtering.
+- `TeamTasks.CustomFieldValue` (`string`, optional):
+  custom field value for filtering.
+- `TeamTasks.IssueTransitions` (`object`, required):
+  transition analysis settings.
+- `TeamTasks.IssueTransitions.RequiredPathStages` (`string[]`, required, at least one):
+  all stages must be present in issue transition path.
+- `TeamTasks.IssueTransitions.IssueTypes` (`string[]`, optional):
+  allowed issue types for transition analysis.
+- `TeamTasks.IssueTransitions.ExcludeWeekend` (`bool`, optional, default `false`):
+  exclude weekend time from durations.
+- `TeamTasks.IssueTransitions.ExcludedDays` (`string[]`, optional):
+  exact days excluded from durations.
+- `TeamTasks.BugRatio` (`object`, optional):
+  bug ratio settings.
+- `TeamTasks.BugRatio.BugIssueNames` (`string[]`, optional):
+  issue types treated as bug-like.
+- `ReleaseReport` (`object`, optional):
+  release report settings.
+- `ReleaseReport.ReleaseProjectKey` (`string`, required when `ReleaseReport` used):
+  project containing release issues.
+- `ReleaseReport.ProjectLabel` (`string`, required when `ReleaseReport` used):
+  label filter for releases.
+- `ReleaseReport.ReleaseDateFieldName` (`string`, required when `ReleaseReport` used):
+  Jira field display name storing release date.
+- `ReleaseReport.ComponentsFieldName` (`string`, optional):
+  Jira field name for components counting.
+- `Pdf` (`object`, optional):
+  PDF settings.
+- `Pdf.Enabled` (`bool`, optional, default `true`):
+  enables PDF generation.
+- `Pdf.OutputPath` (`string`, optional, default `jiraflowinspector-report.pdf`):
+  output file path.
+  Actual file name gets date suffix `_<dd_MM_yyyy>` before extension.
+- `MonthLabel` (`string`, optional, format `yyyy-MM`):
+  reporting month, defaults to current UTC month.
+- `CreatedAfter` (`string`, optional, format `yyyy-MM-dd`):
+  created-date lower bound for transition source query.
+- `RetryCount` (`int`, optional, range `0..10`, default `0`):
+  retry attempts for transient transport failures.
+
+## Example Configuration
+
 ```json
 {
   "Jira": {
@@ -68,24 +213,27 @@ Application options are under the `Jira` object.
     "Email": "your-email@company.com",
     "ApiToken": "your-jira-api-token",
     "TeamTasks": {
-      "ProjectKey": "ABC",
+      "ProjectKey": "AAA",
       "DoneStatusName": "Done",
       "RejectStatusName": "Reject",
       "IssueTransitions": {
-        "RequiredPathStages": ["Code Review", "QA"],
-        "IssueTypes": ["Bug", "Story"],
-        "ExcludeWeekend": false,
-        "ExcludedDays": ["10.01.2026", "05.02.2026"]
+        "RequiredPathStages": [ "Code Review", "Release Candidate" ],
+        "IssueTypes": [ "Task", "Bug", "Subtask" ],
+        "ExcludeWeekend": true,
+        "ExcludedDays": [
+          "01.01.2026",
+          "02.01.2026"
+        ]
       },
       "BugRatio": {
-        "BugIssueNames": ["Bug"]
+        "BugIssueNames": [ "Bug" ]
       },
       "CustomFieldName": "Team",
-      "CustomFieldValue": "Import"
+      "CustomFieldValue": "Team1"
     },
     "ReleaseReport": {
       "ReleaseProjectKey": "RLS",
-      "ProjectLabel": "processing",
+      "ProjectLabel": "AAA",
       "ReleaseDateFieldName": "Change completion date",
       "ComponentsFieldName": "Components"
     },
@@ -95,11 +243,28 @@ Application options are under the `Jira` object.
     },
     "CreatedAfter": "2026-01-01",
     "MonthLabel": "2026-02",
-    "RetryCount": 2
+    "RetryCount": 0
   }
 }
 ```
 
-## Output
+## Build And Run
+
+Prerequisite: .NET SDK with support for `net10.0`.
+
+```bash
+dotnet restore src/JiraMetrics.slnx
+dotnet run --project src/JiraMetrics/JiraMetrics.csproj
+```
+
+Run tests:
+
+```bash
+dotnet test src/JiraMetrics.slnx
+```
+
+
+## Output Screenshot
 
 <img src="Screenshot.png" alt="Output">
+
