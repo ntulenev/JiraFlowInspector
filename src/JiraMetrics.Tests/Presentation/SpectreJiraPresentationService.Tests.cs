@@ -243,8 +243,11 @@ public sealed class SpectreJiraPresentationServiceTests
         // Assert
         output.Should().Contain("#");
         output.Should().Contain("Type");
-        output.Should().Contain("Sub-items");
+        output.Should().Contain("Sub-ite");
         output.Should().Contain("Code");
+        output.Should().Contain("Created");
+        output.Should().Contain("Done At");
+        output.Should().Contain("Days at");
         output.Should().Contain("Bug");
         output.Should().Contain("3");
         output.Should().Contain("+");
@@ -360,8 +363,61 @@ public sealed class SpectreJiraPresentationServiceTests
 
         // Assert
         output.Should().Contain("Issues moved to Rejected this month");
+        output.Should().Contain("Created");
         output.Should().Contain("Rejected At");
+        output.Should().Contain("Days at");
         output.Should().Contain("AAA-9");
+    }
+
+    [Fact(DisplayName = "ShowDoneDaysAtWork75PerType writes days-at-work percentile table")]
+    [Trait("Category", "Unit")]
+    public async Task ShowDoneDaysAtWork75PerTypeWhenCalledWritesRows()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowDoneDaysAtWork75PerType(
+                [
+                    new IssueTypeWorkDays75Summary(
+                        new IssueTypeName("Task"),
+                        new ItemCount(4),
+                        TimeSpan.FromDays(2.5))
+                ],
+                new StatusName("Done"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Days at Work 75P per type");
+        output.Should().Contain("Done");
+        output.Should().Contain("Type");
+        output.Should().Contain("Issues");
+        output.Should().Contain("Days at Work 75P");
+        output.Should().Contain("Task");
+        output.Should().Contain("4");
+        output.Should().Contain("2.5");
+    }
+
+    [Fact(DisplayName = "ShowDoneDaysAtWork75PerType writes empty state when there is no data")]
+    [Trait("Category", "Unit")]
+    public async Task ShowDoneDaysAtWork75PerTypeWhenNoItemsWritesNoData()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowDoneDaysAtWork75PerType([], new StatusName("Done"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Days at Work 75P per type");
+        output.Should().Contain("No data.");
     }
 
     [Fact(DisplayName = "ShowRejectedIssuesTable writes empty state when list is empty")]

@@ -562,6 +562,39 @@ public sealed class JiraApplicationTests
         openIssuesSummaryIndex.Should().BeGreaterThan(pathGroupsIndex);
     }
 
+    [Fact(DisplayName = "RunAsync shows done days-at-work 75P report after done issues table")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenAnalysisCompletesShowsDoneDaysAtWork75PerTypeAfterDoneTable()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task"))
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        presentation.DoneDaysAtWork75PerTypeShown.Should().BeTrue();
+        var doneTableIndex = presentation.Calls.IndexOf("DoneIssuesTable");
+        var p75ByTypeIndex = presentation.Calls.IndexOf("DoneDaysAtWork75PerType");
+        doneTableIndex.Should().BeGreaterThanOrEqualTo(0);
+        p75ByTypeIndex.Should().BeGreaterThan(doneTableIndex);
+    }
+
     [Fact(DisplayName = "RunAsync does not load or show open issues summary when general statistics are disabled")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenGeneralStatisticsAreDisabledSkipsOpenIssuesSummary()
@@ -851,6 +884,8 @@ public sealed class JiraApplicationTests
 
         public bool OpenIssuesByStatusShown { get; private set; }
 
+        public bool DoneDaysAtWork75PerTypeShown { get; private set; }
+
         public IReadOnlyList<IssueTimeline> DoneIssues { get; private set; } = [];
 
         public IReadOnlyList<IssueTimeline> RejectedIssues { get; private set; } = [];
@@ -909,6 +944,15 @@ public sealed class JiraApplicationTests
         {
             DoneIssues = [.. issues];
             DoneIssuesTableShown = issues.Count > 0;
+            Calls.Add("DoneIssuesTable");
+        }
+
+        public void ShowDoneDaysAtWork75PerType(
+            IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
+            StatusName doneStatusName)
+        {
+            DoneDaysAtWork75PerTypeShown = true;
+            Calls.Add("DoneDaysAtWork75PerType");
         }
 
         public void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName)

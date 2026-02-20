@@ -99,6 +99,15 @@ public interface IJiraPresentationService
     void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName);
 
     /// <summary>
+    /// Shows days-at-work P75 grouped by issue type for done issues.
+    /// </summary>
+    /// <param name="summaries">P75 summaries per issue type.</param>
+    /// <param name="doneStatusName">Done status name used as completion point.</param>
+    void ShowDoneDaysAtWork75PerType(
+        IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
+        StatusName doneStatusName);
+
+    /// <summary>
     /// Shows table with issues moved to reject.
     /// </summary>
     /// <param name="issues">Issues.</param>

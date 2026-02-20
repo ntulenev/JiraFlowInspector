@@ -341,7 +341,11 @@ public sealed class JiraApplication : IJiraApplication
             return;
         }
 
+        var doneDaysAtWork75PerType = _logicService.BuildDaysAtWork75PerType(filteredIssues, _settings.DoneStatusName);
+
         _presentationService.ShowDoneIssuesTable(filteredIssues, _settings.DoneStatusName);
+        _presentationService.ShowSpacer();
+        _presentationService.ShowDoneDaysAtWork75PerType(doneDaysAtWork75PerType, _settings.DoneStatusName);
         _presentationService.ShowSpacer();
 
         IReadOnlyList<IssueTimeline> filteredRejectedIssues = [];
@@ -381,6 +385,7 @@ public sealed class JiraApplication : IJiraApplication
             BugRejectedIssues = bugRejectedIssues,
             OpenIssuesByStatus = openIssuesByStatus,
             DoneIssues = filteredIssues,
+            DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
             RejectedIssues = filteredRejectedIssues,
             PathSummary = pathGroupsSummary,
             PathGroups = groups,

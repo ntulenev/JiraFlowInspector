@@ -69,6 +69,11 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<IssueTimeline> DoneIssues { get; init; } = [];
 
     /// <summary>
+    /// Gets or sets days-at-work P75 grouped by issue type for done issues.
+    /// </summary>
+    public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; init; } = [];
+
+    /// <summary>
     /// Gets or sets issues moved to rejected this month.
     /// </summary>
     public IReadOnlyList<IssueTimeline> RejectedIssues { get; init; } = [];

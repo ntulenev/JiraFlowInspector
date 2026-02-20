@@ -286,7 +286,11 @@ public sealed class PdfContentComposer : IPdfContentComposer
             "Issues moved to Done this month",
             reportData.DoneIssues,
             reportData.Settings.BaseUrl,
-            reportData.Settings.DoneStatusName);
+            reportData.Settings.DoneStatusName,
+            "Done At",
+            includeCreatedAt: true,
+            includeDaysAtWork: true);
+        ComposeDoneDaysAtWork75PerTypeSection(column, reportData.DoneDaysAtWork75PerType, reportData.Settings.DoneStatusName);
 
         if (reportData.Settings.RejectStatusName is { } rejectStatusName)
         {
@@ -295,7 +299,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 "Issues moved to Rejected this month",
                 reportData.RejectedIssues,
                 reportData.Settings.BaseUrl,
-                rejectStatusName);
+                rejectStatusName,
+                "Rejected At",
+                includeCreatedAt: true,
+                includeDaysAtWork: true);
         }
     }
 
@@ -304,7 +311,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
         string title,
         IReadOnlyList<IssueTimeline> issues,
         JiraBaseUrl baseUrl,
-        StatusName targetStatusName)
+        StatusName targetStatusName,
+        string atColumnTitle,
+        bool includeCreatedAt = false,
+        bool includeDaysAtWork = false)
     {
         _ = column.Item().Text(title).Bold();
 
@@ -327,8 +337,17 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 columns.ConstantColumn(74);
                 columns.ConstantColumn(64);
                 columns.ConstantColumn(44);
-                columns.ConstantColumn(90);
                 columns.RelativeColumn(4);
+                if (includeCreatedAt)
+                {
+                    columns.ConstantColumn(82);
+                }
+
+                columns.ConstantColumn(90);
+                if (includeDaysAtWork)
+                {
+                    columns.ConstantColumn(68);
+                }
             });
 
             table.Header(header =>
@@ -338,8 +357,17 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Type");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Sub-items");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Code");
-                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("At");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Summary");
+                if (includeCreatedAt)
+                {
+                    _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Created At");
+                }
+
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text(atColumnTitle);
+                if (includeDaysAtWork)
+                {
+                    _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Days at work");
+                }
             });
 
             for (var i = 0; i < orderedIssues.Length; i++)
@@ -355,8 +383,66 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.IssueType.Value);
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.SubItemsCount.ToString(CultureInfo.InvariantCulture));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.HasPullRequest ? "+" : string.Empty);
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(BuildLastStatusAtText(issue, targetStatusName));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Summary.Truncate(new TextLength(140)).Value);
+                if (includeCreatedAt)
+                {
+                    _ = table.Cell()
+                        .Element(PdfPresentationHelpers.StyleBodyCell)
+                        .Text(issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                }
+
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(BuildLastStatusAtText(issue, targetStatusName));
+                if (includeDaysAtWork)
+                {
+                    _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(BuildWorkDaysAtText(issue, targetStatusName));
+                }
+            }
+        });
+    }
+
+    private static void ComposeDoneDaysAtWork75PerTypeSection(
+        ColumnDescriptor column,
+        IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
+        StatusName doneStatusName)
+    {
+        _ = column.Item().Text($"Days at Work 75P per type (moved to {doneStatusName.Value})").Bold();
+        if (summaries.Count == 0)
+        {
+            _ = column.Item().Text("No data.").FontColor(Colors.Grey.Darken1);
+            return;
+        }
+
+        var orderedSummaries = summaries
+            .OrderByDescending(static item => item.DaysAtWorkP75)
+            .ThenByDescending(static item => item.IssueCount.Value)
+            .ThenBy(static item => item.IssueType.Value, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        column.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.RelativeColumn(2f);
+                columns.RelativeColumn(1f);
+                columns.RelativeColumn(1.4f);
+            });
+
+            table.Header(header =>
+            {
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Type");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Days at Work 75P");
+            });
+
+            foreach (var summary in orderedSummaries)
+            {
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(summary.IssueType.Value);
+                _ = table.Cell()
+                    .Element(PdfPresentationHelpers.StyleBodyCell)
+                    .Text(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture));
+                _ = table.Cell()
+                    .Element(PdfPresentationHelpers.StyleBodyCell)
+                    .Text(summary.DaysAtWorkP75.TotalDays.ToString("0.##", CultureInfo.InvariantCulture));
             }
         });
     }
@@ -674,6 +760,26 @@ public sealed class PdfContentComposer : IPdfContentComposer
         return lastTimestamp.HasValue
             ? lastTimestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
             : "-";
+    }
+
+    private static string BuildWorkDaysAtText(IssueTimeline issue, StatusName targetStatusName)
+    {
+        var targetTransitionIndex = issue.Transitions
+            .Select(static (transition, index) => (transition, index))
+            .Where(item => string.Equals(item.transition.To.Value, targetStatusName.Value, StringComparison.OrdinalIgnoreCase))
+            .Select(static item => item.index)
+            .DefaultIfEmpty(-1)
+            .Max();
+        if (targetTransitionIndex < 0)
+        {
+            return "-";
+        }
+
+        var workDuration = issue.Transitions
+            .Take(targetTransitionIndex + 1)
+            .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
+
+        return workDuration.TotalDays.ToString("0.##", CultureInfo.InvariantCulture);
     }
 }
 

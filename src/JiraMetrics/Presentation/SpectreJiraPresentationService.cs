@@ -137,7 +137,9 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]Sub-items[/]")
             .AddColumn("[bold]Code[/]")
             .AddColumn("[bold]Summary[/]")
-            .AddColumn("[bold]Done At[/]");
+            .AddColumn("[bold]Created At[/]")
+            .AddColumn("[bold]Done At[/]")
+            .AddColumn("[bold]Days at work[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -155,6 +157,8 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             var lastDoneAtText = lastDoneAt.HasValue
                 ? lastDoneAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : "-";
+            var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+            var daysAtWorkText = BuildWorkDaysAtText(issue, doneStatusName);
             var codeText = issue.HasPullRequest ? "[green]+[/]" : string.Empty;
 
             _ = table.AddRow(
@@ -164,7 +168,44 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 issue.SubItemsCount.ToString(CultureInfo.InvariantCulture),
                 codeText,
                 Markup.Escape(issue.Summary.Truncate(new TextLength(120)).Value),
-                Markup.Escape(lastDoneAtText));
+                Markup.Escape(createdAtText),
+                Markup.Escape(lastDoneAtText),
+                Markup.Escape(daysAtWorkText));
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    /// <inheritdoc />
+    public void ShowDoneDaysAtWork75PerType(
+        IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
+        StatusName doneStatusName)
+    {
+        ArgumentNullException.ThrowIfNull(summaries);
+
+        AnsiConsole.MarkupLine($"[bold]Days at Work 75P per type (moved to {Markup.Escape(doneStatusName.Value)})[/]");
+        if (summaries.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No data.[/]");
+            return;
+        }
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Type[/]")
+            .AddColumn("[bold]Issues[/]")
+            .AddColumn("[bold]Days at Work 75P[/]");
+
+        foreach (var summary in summaries
+                     .OrderByDescending(static item => item.DaysAtWorkP75)
+                     .ThenByDescending(static item => item.IssueCount.Value)
+                     .ThenBy(static item => item.IssueType.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            _ = table.AddRow(
+                Markup.Escape(summary.IssueType.Value),
+                summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture),
+                summary.DaysAtWorkP75.TotalDays.ToString("0.##", CultureInfo.InvariantCulture));
         }
 
         AnsiConsole.Write(table);
@@ -190,7 +231,9 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]Issue[/]")
             .AddColumn("[bold]Type[/]")
             .AddColumn("[bold]Summary[/]")
-            .AddColumn("[bold]Rejected At[/]");
+            .AddColumn("[bold]Created At[/]")
+            .AddColumn("[bold]Rejected At[/]")
+            .AddColumn("[bold]Days at work[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -208,13 +251,17 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             var lastRejectAtText = lastRejectAt.HasValue
                 ? lastRejectAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : "-";
+            var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+            var daysAtWorkText = BuildWorkDaysAtText(issue, rejectStatusName);
 
             _ = table.AddRow(
                 (i + 1).ToString(CultureInfo.InvariantCulture),
                 Markup.Escape(issue.Key.Value),
                 Markup.Escape(issue.IssueType.Value),
                 Markup.Escape(issue.Summary.Truncate(new TextLength(120)).Value),
-                Markup.Escape(lastRejectAtText));
+                Markup.Escape(createdAtText),
+                Markup.Escape(lastRejectAtText),
+                Markup.Escape(daysAtWorkText));
         }
 
         AnsiConsole.Write(table);
@@ -726,4 +773,24 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     private int _issueLoadProcessed;
     private int _issueLoadFailed;
     private int _issueLoadStep = 1;
+
+    private static string BuildWorkDaysAtText(IssueTimeline issue, StatusName targetStatusName)
+    {
+        var targetTransitionIndex = issue.Transitions
+            .Select(static (transition, index) => (transition, index))
+            .Where(item => string.Equals(item.transition.To.Value, targetStatusName.Value, StringComparison.OrdinalIgnoreCase))
+            .Select(static item => item.index)
+            .DefaultIfEmpty(-1)
+            .Max();
+        if (targetTransitionIndex < 0)
+        {
+            return "-";
+        }
+
+        var workDuration = issue.Transitions
+            .Take(targetTransitionIndex + 1)
+            .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
+
+        return workDuration.TotalDays.ToString("0.##", CultureInfo.InvariantCulture);
+    }
 }
