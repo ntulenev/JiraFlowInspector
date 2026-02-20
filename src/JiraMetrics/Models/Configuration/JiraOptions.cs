@@ -28,6 +28,41 @@ public sealed class JiraOptions
     public required string ApiToken { get; init; }
 
     /// <summary>
+    /// Gets or sets team-tasks analytics settings.
+    /// </summary>
+    [Required]
+    public required TeamTasksOptions TeamTasks { get; init; }
+
+    /// <summary>
+    /// Gets or sets month label.
+    /// </summary>
+    [RegularExpression(@"^\d{4}-\d{2}$")]
+    public string? MonthLabel { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional lower bound for issue creation date in yyyy-MM-dd format.
+    /// </summary>
+    [RegularExpression(@"^\d{4}-\d{2}-\d{2}$")]
+    public string? CreatedAfter { get; init; }
+
+    /// <summary>
+    /// Gets or sets number of retries for transient Jira API errors.
+    /// </summary>
+    [Range(0, 10)]
+    public int RetryCount { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional release report settings.
+    /// </summary>
+    public ReleaseReportOptions? ReleaseReport { get; init; }
+}
+
+/// <summary>
+/// Team tasks options.
+/// </summary>
+public sealed class TeamTasksOptions
+{
+    /// <summary>
     /// Gets or sets Jira project key.
     /// </summary>
     [Required]
@@ -53,32 +88,9 @@ public sealed class JiraOptions
     public required IssueTransitionsOptions IssueTransitions { get; init; }
 
     /// <summary>
-    /// Gets or sets month label.
-    /// </summary>
-    [RegularExpression(@"^\d{4}-\d{2}$")]
-    public string? MonthLabel { get; init; }
-
-    /// <summary>
-    /// Gets or sets optional lower bound for issue creation date in yyyy-MM-dd format.
-    /// </summary>
-    [RegularExpression(@"^\d{4}-\d{2}-\d{2}$")]
-    public string? CreatedAfter { get; init; }
-
-    /// <summary>
-    /// Gets or sets number of retries for transient Jira API errors.
-    /// </summary>
-    [Range(0, 10)]
-    public int RetryCount { get; init; }
-
-    /// <summary>
     /// Gets or sets optional bug ratio settings.
     /// </summary>
     public BugRatioOptions? BugRatio { get; init; }
-
-    /// <summary>
-    /// Gets or sets optional release report settings.
-    /// </summary>
-    public ReleaseReportOptions? ReleaseReport { get; init; }
 
     /// <summary>
     /// Gets or sets optional custom field name for filtering.

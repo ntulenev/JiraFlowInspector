@@ -12,10 +12,12 @@ public sealed record IssueListItem
     /// </summary>
     /// <param name="key">Issue key.</param>
     /// <param name="title">Issue title.</param>
-    public IssueListItem(IssueKey key, IssueSummary title)
+    /// <param name="createdAt">Optional issue creation timestamp.</param>
+    public IssueListItem(IssueKey key, IssueSummary title, DateTimeOffset? createdAt = null)
     {
         Key = key;
         Title = title;
+        CreatedAt = createdAt;
     }
 
     /// <summary>
@@ -27,4 +29,9 @@ public sealed record IssueListItem
     /// Gets issue title.
     /// </summary>
     public IssueSummary Title { get; }
+
+    /// <summary>
+    /// Gets optional issue creation timestamp.
+    /// </summary>
+    public DateTimeOffset? CreatedAt { get; }
 }

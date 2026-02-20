@@ -18,6 +18,8 @@ public sealed record IssueTimeline
     /// <param name="transitions">Status transition events.</param>
     /// <param name="pathKey">Machine-readable path key.</param>
     /// <param name="pathLabel">Human-readable path label.</param>
+    /// <param name="subItemsCount">Number of sub-items.</param>
+    /// <param name="hasPullRequest">Whether issue has linked pull request(s).</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="endTime"/> is earlier than <paramref name="created"/>.</exception>
     public IssueTimeline(
         IssueKey key,
@@ -27,7 +29,9 @@ public sealed record IssueTimeline
         DateTimeOffset endTime,
         IReadOnlyList<TransitionEvent> transitions,
         PathKey pathKey,
-        PathLabel pathLabel)
+        PathLabel pathLabel,
+        int subItemsCount = 0,
+        bool hasPullRequest = false)
     {
         Key = key;
         IssueType = issueType;
@@ -37,10 +41,17 @@ public sealed record IssueTimeline
         Transitions = transitions ?? throw new ArgumentNullException(nameof(transitions));
         PathKey = pathKey;
         PathLabel = pathLabel;
+        SubItemsCount = subItemsCount;
+        HasPullRequest = hasPullRequest;
 
         if (EndTime < Created)
         {
             throw new ArgumentException("End time cannot be earlier than created time.", nameof(endTime));
+        }
+
+        if (SubItemsCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(subItemsCount), "Sub-items count cannot be negative.");
         }
     }
 
@@ -83,4 +94,14 @@ public sealed record IssueTimeline
     /// Gets human-readable path label.
     /// </summary>
     public PathLabel PathLabel { get; }
+
+    /// <summary>
+    /// Gets number of sub-items.
+    /// </summary>
+    public int SubItemsCount { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the issue has pull request(s).
+    /// </summary>
+    public bool HasPullRequest { get; }
 }

@@ -333,11 +333,14 @@ public sealed class JiraTransportTests
             BaseUrl = new Uri("https://example.test/", UriKind.Absolute),
             Email = "user@example.test",
             ApiToken = "token",
-            ProjectKey = "AAA",
-            DoneStatusName = "Done",
-            IssueTransitions = new IssueTransitionsOptions
+            TeamTasks = new TeamTasksOptions
             {
-                RequiredPathStages = ["Code Review"]
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
             },
             MonthLabel = "2026-02",
             RetryCount = retryCount

@@ -30,44 +30,45 @@ builder.Services
 builder.Services.AddSingleton(sp =>
 {
     var source = sp.GetRequiredService<IOptions<JiraOptions>>().Value;
+    var teamTasks = source.TeamTasks ?? throw new InvalidOperationException("TeamTasks section is required.");
     var monthLabel = string.IsNullOrWhiteSpace(source.MonthLabel)
         ? MonthLabel.CurrentUtc()
         : new MonthLabel(source.MonthLabel);
     var createdAfter = string.IsNullOrWhiteSpace(source.CreatedAfter)
         ? (CreatedAfterDate?)null
         : new CreatedAfterDate(source.CreatedAfter);
-    StageName[] requiredPathStages = source.IssueTransitions?.RequiredPathStages is null
+    StageName[] requiredPathStages = teamTasks.IssueTransitions?.RequiredPathStages is null
         ? []
-        : [.. source.IssueTransitions.RequiredPathStages
+        : [.. teamTasks.IssueTransitions.RequiredPathStages
             .Where(static stage => !string.IsNullOrWhiteSpace(stage))
             .Select(static stage => new StageName(stage))
             .DistinctBy(static stage => stage.Value, StringComparer.OrdinalIgnoreCase)];
     if (requiredPathStages.Length == 0)
     {
-        throw new InvalidOperationException("At least one IssueTransitions:RequiredPathStages entry must be configured.");
+        throw new InvalidOperationException("At least one TeamTasks:IssueTransitions:RequiredPathStages entry must be configured.");
     }
 
-    IssueTypeName[] issueTypes = source.IssueTransitions?.IssueTypes is null
+    IssueTypeName[] issueTypes = teamTasks.IssueTransitions?.IssueTypes is null
         ? []
-        : [.. source.IssueTransitions.IssueTypes
+        : [.. teamTasks.IssueTransitions.IssueTypes
             .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
             .Select(static issueType => new IssueTypeName(issueType))
             .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
-    IssueTypeName[] bugIssueNames = source.BugRatio?.BugIssueNames is null
+    IssueTypeName[] bugIssueNames = teamTasks.BugRatio?.BugIssueNames is null
         ? []
-        : [.. source.BugRatio.BugIssueNames
+        : [.. teamTasks.BugRatio.BugIssueNames
             .Where(static issueType => !string.IsNullOrWhiteSpace(issueType))
             .Select(static issueType => new IssueTypeName(issueType))
             .DistinctBy(static issueType => issueType.Value, StringComparer.OrdinalIgnoreCase)];
-    var customFieldName = string.IsNullOrWhiteSpace(source.CustomFieldName) ? null : source.CustomFieldName.Trim();
-    var customFieldValue = string.IsNullOrWhiteSpace(source.CustomFieldValue) ? null : source.CustomFieldValue.Trim();
-    var rejectStatusName = string.IsNullOrWhiteSpace(source.RejectStatusName)
+    var customFieldName = string.IsNullOrWhiteSpace(teamTasks.CustomFieldName) ? null : teamTasks.CustomFieldName.Trim();
+    var customFieldValue = string.IsNullOrWhiteSpace(teamTasks.CustomFieldValue) ? null : teamTasks.CustomFieldValue.Trim();
+    var rejectStatusName = string.IsNullOrWhiteSpace(teamTasks.RejectStatusName)
         ? (StatusName?)null
-        : new StatusName(source.RejectStatusName);
+        : new StatusName(teamTasks.RejectStatusName);
     var releaseReport = ResolveReleaseReport(source.ReleaseReport);
-    DateOnly[] excludedDays = source.IssueTransitions?.ExcludedDays is null
+    DateOnly[] excludedDays = teamTasks.IssueTransitions?.ExcludedDays is null
         ? []
-        : [.. source.IssueTransitions.ExcludedDays
+        : [.. teamTasks.IssueTransitions.ExcludedDays
             .Where(static day => !string.IsNullOrWhiteSpace(day))
             .Select(static day => ParseExcludedDay(day.Trim()))
             .Distinct()];
@@ -76,8 +77,8 @@ builder.Services.AddSingleton(sp =>
         new JiraBaseUrl(source.BaseUrl.ToString()),
         new JiraEmail(source.Email),
         new JiraApiToken(source.ApiToken),
-        new ProjectKey(source.ProjectKey),
-        new StatusName(source.DoneStatusName),
+        new ProjectKey(teamTasks.ProjectKey),
+        new StatusName(teamTasks.DoneStatusName),
         rejectStatusName,
         requiredPathStages,
         monthLabel,
@@ -85,7 +86,7 @@ builder.Services.AddSingleton(sp =>
         issueTypes,
         customFieldName,
         customFieldValue,
-        source.IssueTransitions?.ExcludeWeekend ?? false,
+        teamTasks.IssueTransitions?.ExcludeWeekend ?? false,
         excludedDays,
         bugIssueNames,
         releaseReport);

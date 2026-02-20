@@ -18,17 +18,20 @@ public sealed class JiraOptionsTests
             BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
             Email = "user@example.com",
             ApiToken = "token",
-            ProjectKey = "AAA",
-            DoneStatusName = "Done",
-            RejectStatusName = "Reject",
-            IssueTransitions = new IssueTransitionsOptions
+            TeamTasks = new TeamTasksOptions
             {
-                RequiredPathStages = ["Code Review", "QA"],
-                IssueTypes = ["Bug", "Story"]
-            },
-            BugRatio = new BugRatioOptions
-            {
-                BugIssueNames = ["Bug"]
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                RejectStatusName = "Reject",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review", "QA"],
+                    IssueTypes = ["Bug", "Story"]
+                },
+                BugRatio = new BugRatioOptions
+                {
+                    BugIssueNames = ["Bug"]
+                }
             },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
@@ -52,11 +55,14 @@ public sealed class JiraOptionsTests
             BaseUrl = null!,
             Email = "user@example.com",
             ApiToken = "token",
-            ProjectKey = "AAA",
-            DoneStatusName = "Done",
-            IssueTransitions = new IssueTransitionsOptions
+            TeamTasks = new TeamTasksOptions
             {
-                RequiredPathStages = ["Code Review"]
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
             },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
@@ -80,11 +86,14 @@ public sealed class JiraOptionsTests
             BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
             Email = "user@example.com",
             ApiToken = "token",
-            ProjectKey = "AAA",
-            DoneStatusName = "Done",
-            IssueTransitions = new IssueTransitionsOptions
+            TeamTasks = new TeamTasksOptions
             {
-                RequiredPathStages = ["Code Review"]
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
             },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026/02",
@@ -108,11 +117,14 @@ public sealed class JiraOptionsTests
             BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
             Email = "user@example.com",
             ApiToken = "token",
-            ProjectKey = "AAA",
-            DoneStatusName = "Done",
-            IssueTransitions = new IssueTransitionsOptions
+            TeamTasks = new TeamTasksOptions
             {
-                RequiredPathStages = ["Code Review"]
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
             },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
@@ -136,11 +148,14 @@ public sealed class JiraOptionsTests
             BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
             Email = "user@example.com",
             ApiToken = "token",
-            ProjectKey = "AAA",
-            DoneStatusName = "Done",
-            IssueTransitions = new IssueTransitionsOptions
+            TeamTasks = new TeamTasksOptions
             {
-                RequiredPathStages = ["Code Review"]
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
             },
             CreatedAfter = "2026/01/15",
             MonthLabel = "2026-02",

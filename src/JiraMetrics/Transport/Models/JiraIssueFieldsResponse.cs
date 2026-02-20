@@ -39,6 +39,12 @@ internal sealed class JiraIssueFieldsResponse
     public IReadOnlyList<JiraIssueLinkResponse> IssueLinks { get; init; } = [];
 
     /// <summary>
+    /// Gets issue sub-tasks.
+    /// </summary>
+    [JsonPropertyName("subtasks")]
+    public IReadOnlyList<JiraSubtaskResponse> Subtasks { get; init; } = [];
+
+    /// <summary>
     /// Gets additional fields payload (for custom fields).
     /// </summary>
     [JsonExtensionData]

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 using JiraMetrics.Abstractions;
 using JiraMetrics.Helpers;
@@ -15,7 +16,7 @@ namespace JiraMetrics.API;
 /// <summary>
 /// Jira REST API client implementation.
 /// </summary>
-public sealed class JiraApiClient : IJiraApiClient
+public sealed partial class JiraApiClient : IJiraApiClient
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraApiClient"/> class.
@@ -232,7 +233,9 @@ public sealed class JiraApiClient : IJiraApiClient
             endTime,
             transitions,
             PathKey.FromTransitions(transitions),
-            PathLabel.FromTransitions(transitions));
+            PathLabel.FromTransitions(transitions),
+            response.Fields.Subtasks.Count,
+            HasPullRequest(response.Fields));
     }
 
     private IReadOnlyList<TransitionEvent> ParseTransitions(
@@ -430,7 +433,7 @@ public sealed class JiraApiClient : IJiraApiClient
 
         while (true)
         {
-            var searchUrl = $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=key,summary&maxResults={pageSize}";
+            var searchUrl = $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields=key,summary,created&maxResults={pageSize}";
             if (!string.IsNullOrWhiteSpace(nextPageToken))
             {
                 searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
@@ -451,7 +454,8 @@ public sealed class JiraApiClient : IJiraApiClient
                     .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
                     .Select(issue => new IssueListItem(
                         new IssueKey(issue.Key!.Trim()),
-                        new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary))));
+                        new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary),
+                        ParseIssueCreatedAt(issue.Fields?.Created))));
             }
 
             nextPageToken = page.NextPageToken;
@@ -464,6 +468,18 @@ public sealed class JiraApiClient : IJiraApiClient
         return [.. issues
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static DateTimeOffset? ParseIssueCreatedAt(string? rawCreated)
+    {
+        if (string.IsNullOrWhiteSpace(rawCreated))
+        {
+            return null;
+        }
+
+        return DateTimeOffset.TryParse(rawCreated, CultureInfo.InvariantCulture, DateTimeStyles.None, out var created)
+            ? created
+            : null;
     }
 
     private async Task<IReadOnlyList<ReleaseIssueItem>> SearchReleaseIssueItemsAsync(
@@ -658,6 +674,76 @@ public sealed class JiraApiClient : IJiraApiClient
         return keys.Count;
     }
 
+    private static bool HasPullRequest(JiraIssueFieldsResponse fields)
+    {
+        ArgumentNullException.ThrowIfNull(fields);
+
+        if (fields.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return false;
+        }
+
+        const string defaultDevelopmentFieldId = "customfield_10800";
+
+        if (fields.AdditionalFields.TryGetValue(defaultDevelopmentFieldId, out var defaultDevelopmentField)
+            && HasPullRequestInRawValue(defaultDevelopmentField))
+        {
+            return true;
+        }
+
+        foreach (var rawValue in fields.AdditionalFields.Values)
+        {
+            if (HasPullRequestInRawValue(rawValue))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasPullRequestInRawValue(JsonElement rawValue)
+    {
+        if (rawValue.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return false;
+        }
+
+        var rawText = rawValue.ValueKind == JsonValueKind.String
+            ? rawValue.GetString()
+            : rawValue.GetRawText();
+        if (string.IsNullOrWhiteSpace(rawText))
+        {
+            return false;
+        }
+
+        if (rawText.IndexOf("pullrequest", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return false;
+        }
+
+        var matches = PullRequestCountPattern().Matches(rawText);
+        if (matches.Count == 0)
+        {
+            return true;
+        }
+
+        foreach (Match match in matches)
+        {
+            if (!int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+            {
+                continue;
+            }
+
+            if (count > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool TryGetAdditionalFieldValue(
         Dictionary<string, JsonElement> additionalFields,
         string? fieldId,
@@ -797,4 +883,7 @@ public sealed class JiraApiClient : IJiraApiClient
     private readonly string? _customFieldName;
     private readonly string? _customFieldValue;
     private readonly MonthLabel _monthLabel;
+
+    [GeneratedRegex(@"(?:stateCount|count)\s*""?\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase)]
+    private static partial Regex PullRequestCountPattern();
 }

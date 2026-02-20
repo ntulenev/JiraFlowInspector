@@ -44,6 +44,47 @@ public sealed class SpectreJiraPresentationServiceTests
             .Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "ShowReportPeriodContext writes month first and created-after when provided")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReportPeriodContextWhenCreatedAfterProvidedWritesMonthThenCreatedAfter()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReportPeriodContext(new MonthLabel("2026-02"), new CreatedAfterDate("2026-01-01"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        var monthIndex = output.IndexOf("Month label:", StringComparison.Ordinal);
+        var createdAfterIndex = output.IndexOf("Created after:", StringComparison.Ordinal);
+        monthIndex.Should().BeGreaterThanOrEqualTo(0);
+        createdAfterIndex.Should().BeGreaterThanOrEqualTo(0);
+        monthIndex.Should().BeLessThan(createdAfterIndex);
+    }
+
+    [Fact(DisplayName = "ShowReportPeriodContext writes only month when created-after is missing")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReportPeriodContextWhenCreatedAfterMissingWritesOnlyMonth()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReportPeriodContext(new MonthLabel("2026-02"), null);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Month label:");
+        output.Should().NotContain("Created after:");
+    }
+
     [Fact(DisplayName = "ShowDoneIssuesTable throws when issues are null")]
     [Trait("Category", "Unit")]
     public void ShowDoneIssuesTableWhenIssuesAreNullThrowsArgumentNullException()
@@ -188,7 +229,9 @@ public sealed class SpectreJiraPresentationServiceTests
             DateTimeOffset.UtcNow,
             transitions,
             new PathKey("OPEN->DONE"),
-            new PathLabel("Open -> Done"));
+            new PathLabel("Open -> Done"),
+            3,
+            true);
 
         // Act
         var output = await RunWithTestConsoleAsync(console =>
@@ -200,7 +243,11 @@ public sealed class SpectreJiraPresentationServiceTests
         // Assert
         output.Should().Contain("#");
         output.Should().Contain("Type");
+        output.Should().Contain("Sub-items");
+        output.Should().Contain("Code");
         output.Should().Contain("Bug");
+        output.Should().Contain("3");
+        output.Should().Contain("+");
     }
 
     [Fact(DisplayName = "ShowReportHeader writes issue type filter when configured")]
@@ -248,18 +295,22 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowBugRatio(
                 [new IssueTypeName("Bug")],
+                "ADF Team",
+                "Processing",
                 new ItemCount(8),
                 new ItemCount(4),
                 new ItemCount(1),
                 new ItemCount(5),
-                [new IssueListItem(new IssueKey("AAA-1"), new IssueSummary("Open issue"))],
-                [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Done issue"))],
+                [new IssueListItem(new IssueKey("AAA-1"), new IssueSummary("Open issue"), new DateTimeOffset(2026, 2, 3, 10, 0, 0, TimeSpan.Zero))],
+                [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Done issue"), new DateTimeOffset(2026, 2, 5, 10, 0, 0, TimeSpan.Zero))],
                 [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Rejected issue"))]);
             return Task.FromResult(console.Output);
         });
 
         // Assert
         output.Should().Contain("Bug ratio");
+        output.Should().Contain("Filtered by:");
+        output.Should().Contain("ADF Team = Processing");
         output.Should().NotContain("Created this month");
         output.Should().Contain("Open this month");
         output.Should().Contain("Done this month");
@@ -270,11 +321,66 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Done issues");
         output.Should().Contain("Rejected issues");
         output.Should().Contain("Jira ID");
+        output.Should().Contain("Creation Date");
         output.Should().Contain("Title");
         output.Should().Contain("#");
         output.Should().Contain("AAA-1");
         output.Should().Contain("AAA-2");
         output.Should().Contain("AAA-3");
+        output.Should().Contain("2026-02-03");
+        output.Should().Contain("2026-02-05");
+    }
+
+    [Fact(DisplayName = "ShowRejectedIssuesTable writes reject issues table")]
+    [Trait("Category", "Unit")]
+    public async Task ShowRejectedIssuesTableWhenCalledWritesRejectRows()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var transitions = new List<TransitionEvent>
+        {
+            new(new StatusName("Open"), new StatusName("Reject"), DateTimeOffset.UtcNow, TimeSpan.FromHours(2))
+        };
+        var issue = new IssueTimeline(
+            new IssueKey("AAA-9"),
+            new IssueTypeName("Task"),
+            new IssueSummary("Reject me"),
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow,
+            transitions,
+            new PathKey("OPEN->REJECT"),
+            new PathLabel("Open -> Reject"));
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowRejectedIssuesTable([issue], new StatusName("Reject"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Issues moved to Rejected this month");
+        output.Should().Contain("Rejected At");
+        output.Should().Contain("AAA-9");
+    }
+
+    [Fact(DisplayName = "ShowRejectedIssuesTable writes empty state when list is empty")]
+    [Trait("Category", "Unit")]
+    public async Task ShowRejectedIssuesTableWhenListIsEmptyWritesNoIssues()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowRejectedIssuesTable([], new StatusName("Reject"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Issues moved to Rejected this month");
+        output.Should().Contain("No issues");
     }
 
     [Fact(DisplayName = "ShowBugRatioLoadingStarted and completed write loader lines")]
@@ -325,6 +431,8 @@ public sealed class SpectreJiraPresentationServiceTests
 
         // Assert
         output.Should().Contain("Release report");
+        output.Should().Contain("All releases by label");
+        output.Should().Contain("Processing");
         output.Should().Contain("#");
         output.Should().Contain("Release Date");
         output.Should().Contain("Tasks");
@@ -362,6 +470,33 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Components");
         output.Should().Contain("Tasks");
         output.Should().Contain("2");
+    }
+
+    [Fact(DisplayName = "ShowReleaseReport renders dash for zero tasks and components")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReleaseReportWhenCountsAreZeroRendersDash()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new ReleaseReportSettings(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            "Components");
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReleaseReport(
+                settings,
+                new MonthLabel("2026-02"),
+                [new ReleaseIssueItem(new IssueKey("RLS-2"), new IssueSummary("Release 2"), new DateOnly(2026, 2, 15), 0, 0)]);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("RLS-2");
+        output.Should().Contain("-");
     }
 
     [Fact(DisplayName = "Issue loading progress does not print Jira IDs")]

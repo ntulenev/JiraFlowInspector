@@ -56,7 +56,11 @@ public sealed class JiraApplication : IJiraApplication
             throw;
         }
 
+        _presentationService.ShowReportPeriodContext(_settings.MonthLabel, _settings.CreatedAfter);
+        _presentationService.ShowSpacer();
+
         IReadOnlyList<IssueKey> issueKeys;
+        IReadOnlyList<IssueKey> rejectIssueKeys = [];
         ItemCount? bugCreatedThisMonth = null;
         ItemCount? bugMovedToDoneThisMonth = null;
         ItemCount? bugRejectedThisMonth = null;
@@ -73,7 +77,51 @@ public sealed class JiraApplication : IJiraApplication
                 _settings.CreatedAfter,
                 cancellationToken).ConfigureAwait(false);
 
-            if (_settings.BugIssueNames.Count > 0)
+            if (_settings.RejectStatusName is { } rejectStatusName)
+            {
+                rejectIssueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
+                    _settings.ProjectKey,
+                    rejectStatusName,
+                    _settings.CreatedAfter,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            if (_settings.ReleaseReport is { } releaseReport)
+            {
+                releaseIssues = await _apiClient.GetReleaseIssuesForMonthAsync(
+                    releaseReport.ReleaseProjectKey,
+                    releaseReport.ProjectLabel,
+                    releaseReport.ReleaseDateFieldName,
+                    releaseReport.ComponentsFieldName,
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            return;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            return;
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            return;
+        }
+
+        if (_settings.ReleaseReport is { } releaseReportSettings)
+        {
+            _presentationService.ShowSpacer();
+            _presentationService.ShowReleaseReport(releaseReportSettings, _settings.MonthLabel, releaseIssues);
+            _presentationService.ShowSpacer();
+        }
+
+        if (_settings.BugIssueNames.Count > 0)
+        {
+            try
             {
                 _presentationService.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
 
@@ -120,31 +168,21 @@ public sealed class JiraApplication : IJiraApplication
                     bugRejectedThisMonth.Value,
                     bugFinishedThisMonth.Value);
             }
-
-            if (_settings.ReleaseReport is { } releaseReport)
+            catch (HttpRequestException ex)
             {
-                releaseIssues = await _apiClient.GetReleaseIssuesForMonthAsync(
-                    releaseReport.ReleaseProjectKey,
-                    releaseReport.ProjectLabel,
-                    releaseReport.ReleaseDateFieldName,
-                    releaseReport.ComponentsFieldName,
-                    cancellationToken).ConfigureAwait(false);
+                _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+                return;
             }
-        }
-        catch (HttpRequestException ex)
-        {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
-        }
-        catch (System.Text.Json.JsonException ex)
-        {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
+            catch (InvalidOperationException ex)
+            {
+                _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+                return;
+            }
+            catch (System.Text.Json.JsonException ex)
+            {
+                _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+                return;
+            }
         }
 
         if (bugCreatedThisMonth.HasValue
@@ -152,9 +190,10 @@ public sealed class JiraApplication : IJiraApplication
             && bugRejectedThisMonth.HasValue
             && bugFinishedThisMonth.HasValue)
         {
-            _presentationService.ShowSpacer();
             _presentationService.ShowBugRatio(
                 _settings.BugIssueNames,
+                _settings.CustomFieldName,
+                _settings.CustomFieldValue,
                 bugCreatedThisMonth.Value,
                 bugMovedToDoneThisMonth.Value,
                 bugRejectedThisMonth.Value,
@@ -162,12 +201,6 @@ public sealed class JiraApplication : IJiraApplication
                 bugOpenIssues,
                 bugDoneIssues,
                 bugRejectedIssues);
-            _presentationService.ShowSpacer();
-        }
-
-        if (_settings.ReleaseReport is { } releaseReportSettings)
-        {
-            _presentationService.ShowReleaseReport(releaseReportSettings, _settings.MonthLabel, releaseIssues);
             _presentationService.ShowSpacer();
         }
 
@@ -182,6 +215,8 @@ public sealed class JiraApplication : IJiraApplication
         _presentationService.ShowIssueLoadingStarted(new ItemCount(issueKeys.Count));
 
         var issues = new List<IssueTimeline>();
+        var rejectIssues = new List<IssueTimeline>();
+        var loadedIssuesByKey = new Dictionary<string, IssueTimeline>(StringComparer.OrdinalIgnoreCase);
         var failures = new List<LoadFailure>();
 
         foreach (var issueKey in issueKeys)
@@ -190,6 +225,7 @@ public sealed class JiraApplication : IJiraApplication
             {
                 var issue = await _apiClient.GetIssueTimelineAsync(issueKey, cancellationToken).ConfigureAwait(false);
                 issues.Add(issue);
+                loadedIssuesByKey[issue.Key.Value] = issue;
                 _presentationService.ShowIssueLoaded(issueKey);
             }
             catch (HttpRequestException ex)
@@ -206,6 +242,37 @@ public sealed class JiraApplication : IJiraApplication
             {
                 failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
                 _presentationService.ShowIssueFailed(issueKey);
+            }
+        }
+
+        if (_settings.RejectStatusName is not null && rejectIssueKeys.Count > 0)
+        {
+            foreach (var issueKey in rejectIssueKeys)
+            {
+                if (loadedIssuesByKey.TryGetValue(issueKey.Value, out var loadedIssue))
+                {
+                    rejectIssues.Add(loadedIssue);
+                    continue;
+                }
+
+                try
+                {
+                    var issue = await _apiClient.GetIssueTimelineAsync(issueKey, cancellationToken).ConfigureAwait(false);
+                    rejectIssues.Add(issue);
+                    loadedIssuesByKey[issue.Key.Value] = issue;
+                }
+                catch (HttpRequestException ex)
+                {
+                    failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                }
+                catch (InvalidOperationException ex)
+                {
+                    failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                }
+                catch (System.Text.Json.JsonException ex)
+                {
+                    failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                }
             }
         }
 
@@ -238,10 +305,21 @@ public sealed class JiraApplication : IJiraApplication
         _presentationService.ShowDoneIssuesTable(filteredIssues, _settings.DoneStatusName);
         _presentationService.ShowSpacer();
 
-        var groups = _logicService.BuildPathGroups(filteredIssues);
+        if (_settings.RejectStatusName is { } rejectStatus)
+        {
+            var rejectIssuesByType = _logicService.FilterIssuesByIssueTypes(rejectIssues, _settings.IssueTypes);
+            var filteredRejectedIssues = _logicService.FilterIssuesByRequiredStage(rejectIssuesByType, _settings.RequiredPathStages);
+            _presentationService.ShowRejectedIssuesTable(filteredRejectedIssues, rejectStatus);
+            _presentationService.ShowSpacer();
+        }
+
+        var groupedIssues = filteredIssues
+            .Where(static issue => issue.HasPullRequest)
+            .ToList();
+        var groups = _logicService.BuildPathGroups(groupedIssues);
         _presentationService.ShowPathGroupsSummary(new PathGroupsSummary(
             new ItemCount(issues.Count),
-            new ItemCount(filteredIssues.Count),
+            new ItemCount(groupedIssues.Count),
             new ItemCount(failures.Count),
             new ItemCount(groups.Count)));
         _presentationService.ShowSpacer();

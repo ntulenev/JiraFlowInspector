@@ -54,6 +54,31 @@ public sealed class IssueTimelineTests
             .Throw<ArgumentException>();
     }
 
+    [Fact(DisplayName = "Constructor throws when sub-items count is negative")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenSubItemsCountIsNegativeThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        var created = DateTimeOffset.UtcNow.AddHours(-1);
+        var endTime = DateTimeOffset.UtcNow;
+
+        // Act
+        Action act = () => _ = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            endTime,
+            [],
+            new PathKey("OPEN->DONE"),
+            new PathLabel("Open -> Done"),
+            -1);
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentOutOfRangeException>();
+    }
+
     [Fact(DisplayName = "Constructor sets properties")]
     [Trait("Category", "Unit")]
     public void ConstructorWhenArgumentsAreValidSetsProperties()
@@ -86,5 +111,7 @@ public sealed class IssueTimelineTests
         issue.Transitions.Should().BeSameAs(transitions);
         issue.PathKey.Value.Should().Be("OPEN->DONE");
         issue.PathLabel.Value.Should().Be("Open -> Done");
+        issue.SubItemsCount.Should().Be(0);
+        issue.HasPullRequest.Should().BeFalse();
     }
 }

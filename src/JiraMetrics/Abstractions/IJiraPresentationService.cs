@@ -27,6 +27,13 @@ public interface IJiraPresentationService
     void ShowAuthenticationFailed(ErrorMessage errorMessage);
 
     /// <summary>
+    /// Shows top-level period context (month and optional created-after).
+    /// </summary>
+    /// <param name="monthLabel">Selected month label.</param>
+    /// <param name="createdAfter">Optional created-after date.</param>
+    void ShowReportPeriodContext(MonthLabel monthLabel, CreatedAfterDate? createdAfter);
+
+    /// <summary>
     /// Shows issue search failure message.
     /// </summary>
     /// <param name="errorMessage">Error message.</param>
@@ -92,6 +99,13 @@ public interface IJiraPresentationService
     void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName);
 
     /// <summary>
+    /// Shows table with issues moved to reject.
+    /// </summary>
+    /// <param name="issues">Issues.</param>
+    /// <param name="rejectStatusName">Reject status name.</param>
+    void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName);
+
+    /// <summary>
     /// Shows path group summary counters.
     /// </summary>
     /// <param name="summary">Summary counters.</param>
@@ -131,6 +145,8 @@ public interface IJiraPresentationService
     /// Shows bug ratio section.
     /// </summary>
     /// <param name="bugIssueNames">Issue types treated as bug-like issues.</param>
+    /// <param name="customFieldName">Optional custom field name used for filtering.</param>
+    /// <param name="customFieldValue">Optional custom field value used for filtering.</param>
     /// <param name="createdThisMonth">Count of created issues in month.</param>
     /// <param name="movedToDoneThisMonth">Count of issues moved to done in month.</param>
     /// <param name="rejectedThisMonth">Count of issues moved to rejected in month.</param>
@@ -140,6 +156,8 @@ public interface IJiraPresentationService
     /// <param name="rejectedIssues">Issues moved to rejected this month.</param>
     void ShowBugRatio(
         IReadOnlyList<IssueTypeName> bugIssueNames,
+        string? customFieldName,
+        string? customFieldValue,
         ItemCount createdThisMonth,
         ItemCount movedToDoneThisMonth,
         ItemCount rejectedThisMonth,

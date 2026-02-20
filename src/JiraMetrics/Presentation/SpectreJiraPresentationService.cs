@@ -29,6 +29,16 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowAuthenticationFailed(ErrorMessage errorMessage) => AnsiConsole.MarkupLine($"[red]Auth failed:[/] {Markup.Escape(errorMessage.Value)}");
 
     /// <inheritdoc />
+    public void ShowReportPeriodContext(MonthLabel monthLabel, CreatedAfterDate? createdAfter)
+    {
+        AnsiConsole.MarkupLine($"[grey]Month label:[/] {Markup.Escape(monthLabel.Value)}");
+        if (createdAfter is { } value)
+        {
+            AnsiConsole.MarkupLine($"[grey]Created after:[/] {Markup.Escape(value.ToString())}");
+        }
+    }
+
+    /// <inheritdoc />
     public void ShowIssueSearchFailed(ErrorMessage errorMessage) => AnsiConsole.MarkupLine($"[red]Failed to load issues:[/] {Markup.Escape(errorMessage.Value)}");
 
     /// <inheritdoc />
@@ -58,7 +68,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             && !string.IsNullOrWhiteSpace(settings.CustomFieldValue))
         {
             AnsiConsole.MarkupLine(
-                $"[grey]Custom field filter:[/] {Markup.Escape(settings.CustomFieldName)} = {Markup.Escape(settings.CustomFieldValue)}");
+                $"[grey]Filtered by:[/] {Markup.Escape(settings.CustomFieldName)} = {Markup.Escape(settings.CustomFieldValue)}");
         }
 
         var requiredStages = settings.RequiredPathStages.Count == 0
@@ -124,6 +134,8 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]#[/]")
             .AddColumn("[bold]Issue[/]")
             .AddColumn("[bold]Type[/]")
+            .AddColumn("[bold]Sub-items[/]")
+            .AddColumn("[bold]Code[/]")
             .AddColumn("[bold]Summary[/]")
             .AddColumn("[bold]Done At[/]");
 
@@ -143,13 +155,66 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             var lastDoneAtText = lastDoneAt.HasValue
                 ? lastDoneAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : "-";
+            var codeText = issue.HasPullRequest ? "[green]+[/]" : string.Empty;
+
+            _ = table.AddRow(
+                (i + 1).ToString(CultureInfo.InvariantCulture),
+                Markup.Escape(issue.Key.Value),
+                Markup.Escape(issue.IssueType.Value),
+                issue.SubItemsCount.ToString(CultureInfo.InvariantCulture),
+                codeText,
+                Markup.Escape(issue.Summary.Truncate(new TextLength(120)).Value),
+                Markup.Escape(lastDoneAtText));
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    /// <inheritdoc />
+    public void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+
+        AnsiConsole.MarkupLine("[bold]Issues moved to Rejected this month[/]");
+
+        if (issues.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No issues[/]");
+            return;
+        }
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
+            .AddColumn("[bold]Issue[/]")
+            .AddColumn("[bold]Type[/]")
+            .AddColumn("[bold]Summary[/]")
+            .AddColumn("[bold]Rejected At[/]");
+
+        var orderedIssues = issues
+            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var i = 0; i < orderedIssues.Count; i++)
+        {
+            var issue = orderedIssues[i];
+            var lastRejectAt = issue.Transitions
+                .Where(x => string.Equals(x.To.Value, rejectStatusName.Value, StringComparison.OrdinalIgnoreCase))
+                .Select(x => (DateTimeOffset?)x.At)
+                .OrderByDescending(x => x)
+                .FirstOrDefault();
+
+            var lastRejectAtText = lastRejectAt.HasValue
+                ? lastRejectAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+                : "-";
 
             _ = table.AddRow(
                 (i + 1).ToString(CultureInfo.InvariantCulture),
                 Markup.Escape(issue.Key.Value),
                 Markup.Escape(issue.IssueType.Value),
                 Markup.Escape(issue.Summary.Truncate(new TextLength(120)).Value),
-                Markup.Escape(lastDoneAtText));
+                Markup.Escape(lastRejectAtText));
         }
 
         AnsiConsole.Write(table);
@@ -174,6 +239,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         ArgumentNullException.ThrowIfNull(releases);
 
         AnsiConsole.MarkupLine("[bold]Release report[/]");
+        AnsiConsole.MarkupLine($"[bold red]All releases by label \"{Markup.Escape(settings.ProjectLabel)}\"[/]");
         AnsiConsole.MarkupLine(
             $"[grey]Project:[/] {Markup.Escape(settings.ReleaseProjectKey.Value)}    [grey]Label:[/] {Markup.Escape(settings.ProjectLabel)}    [grey]Month:[/] {Markup.Escape(monthLabel.Value)}");
         if (!string.IsNullOrWhiteSpace(settings.ComponentsFieldName))
@@ -217,11 +283,15 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 (i + 1).ToString(CultureInfo.InvariantCulture),
                 release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 Markup.Escape(release.Key.Value),
-                release.Tasks.ToString(CultureInfo.InvariantCulture)
+                release.Tasks == 0
+                    ? "-"
+                    : release.Tasks.ToString(CultureInfo.InvariantCulture)
             };
             if (includeComponents)
             {
-                row.Add(release.Components.ToString(CultureInfo.InvariantCulture));
+                row.Add(release.Components == 0
+                    ? "-"
+                    : release.Components.ToString(CultureInfo.InvariantCulture));
             }
 
             row.Add(Markup.Escape(release.Title.Truncate(new TextLength(120)).Value));
@@ -256,6 +326,8 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     /// <inheritdoc />
     public void ShowBugRatio(
         IReadOnlyList<IssueTypeName> bugIssueNames,
+        string? customFieldName,
+        string? customFieldValue,
         ItemCount createdThisMonth,
         ItemCount movedToDoneThisMonth,
         ItemCount rejectedThisMonth,
@@ -280,6 +352,12 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             : $"{finishedThisMonth.Value * 100.0 / createdThisMonth.Value:0.##}%";
 
         AnsiConsole.MarkupLine("[bold]Bug ratio[/]");
+        if (!string.IsNullOrWhiteSpace(customFieldName)
+            && !string.IsNullOrWhiteSpace(customFieldValue))
+        {
+            AnsiConsole.MarkupLine(
+                $"[grey]Filtered by:[/] {Markup.Escape(customFieldName)} = {Markup.Escape(customFieldValue)}");
+        }
 
         var table = new Table()
             .RoundedBorder()
@@ -304,13 +382,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Bug ratio details[/]");
         AnsiConsole.MarkupLine("[bold red]Open issues[/]");
-        RenderBugIssueDetailsTable(openIssues, "red");
+        RenderBugIssueDetailsTable(openIssues, "red", includeCreationDate: true);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold green]Done issues[/]");
-        RenderBugIssueDetailsTable(doneIssues, "green");
+        RenderBugIssueDetailsTable(doneIssues, "green", includeCreationDate: true);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold orange1]Rejected issues[/]");
-        RenderBugIssueDetailsTable(rejectedIssues, "orange1");
+        RenderBugIssueDetailsTable(rejectedIssues, "orange1", includeCreationDate: false);
     }
 
     /// <inheritdoc />
@@ -515,7 +593,10 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         _ => "grey82"
     };
 
-    private static void RenderBugIssueDetailsTable(IReadOnlyList<IssueListItem> issues, string titleColor)
+    private static void RenderBugIssueDetailsTable(
+        IReadOnlyList<IssueListItem> issues,
+        string titleColor,
+        bool includeCreationDate)
     {
         ArgumentNullException.ThrowIfNull(issues);
 
@@ -529,8 +610,14 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .RoundedBorder()
             .BorderColor(Color.Grey)
             .AddColumn("[bold]#[/]")
-            .AddColumn("[bold]Jira ID[/]")
-            .AddColumn("[bold]Title[/]");
+            .AddColumn("[bold]Jira ID[/]");
+
+        if (includeCreationDate)
+        {
+            _ = table.AddColumn("[bold]Creation Date[/]");
+        }
+
+        _ = table.AddColumn("[bold]Title[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -539,10 +626,21 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         for (var i = 0; i < orderedIssues.Count; i++)
         {
             var issue = orderedIssues[i];
-            _ = table.AddRow(
+            var row = new List<string>
+            {
                 (i + 1).ToString(CultureInfo.InvariantCulture),
-                Markup.Escape(issue.Key.Value),
-                $"[{titleColor}]{Markup.Escape(issue.Title.Truncate(new TextLength(120)).Value)}[/]");
+                Markup.Escape(issue.Key.Value)
+            };
+            if (includeCreationDate)
+            {
+                var createdAtText = issue.CreatedAt.HasValue
+                    ? issue.CreatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                    : "-";
+                row.Add(Markup.Escape(createdAtText));
+            }
+
+            row.Add($"[{titleColor}]{Markup.Escape(issue.Title.Truncate(new TextLength(120)).Value)}[/]");
+            _ = table.AddRow([.. row]);
         }
 
         AnsiConsole.Write(table);

@@ -348,7 +348,8 @@ public sealed class JiraApiClientTests
                     Key = "AAA-1",
                     Fields = new JiraIssueFieldsResponse
                     {
-                        Summary = "Open bug"
+                        Summary = "Open bug",
+                        Created = "2026-01-10T09:00:00Z"
                     }
                 }
             ],
@@ -376,8 +377,9 @@ public sealed class JiraApiClientTests
         issues.Should().ContainSingle();
         issues[0].Key.Value.Should().Be("AAA-1");
         issues[0].Title.Value.Should().Be("Open bug");
+        issues[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 10, 9, 0, 0, TimeSpan.Zero));
         capturedUrl.Should().Contain("created");
-        capturedUrl.Should().Contain("fields=key,summary");
+        capturedUrl.Should().Contain("fields=key,summary,created");
     }
 
     [Fact(DisplayName = "GetIssuesMovedToDoneThisMonthAsync returns issue details")]
@@ -397,7 +399,8 @@ public sealed class JiraApiClientTests
                     Key = "AAA-2",
                     Fields = new JiraIssueFieldsResponse
                     {
-                        Summary = "Done bug"
+                        Summary = "Done bug",
+                        Created = "2026-01-11T10:00:00Z"
                     }
                 }
             ],
@@ -425,8 +428,9 @@ public sealed class JiraApiClientTests
         issues.Should().ContainSingle();
         issues[0].Key.Value.Should().Be("AAA-2");
         issues[0].Title.Value.Should().Be("Done bug");
+        issues[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 11, 10, 0, 0, TimeSpan.Zero));
         capturedUrl.Should().Contain("status");
-        capturedUrl.Should().Contain("fields=key,summary");
+        capturedUrl.Should().Contain("fields=key,summary,created");
     }
 
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
@@ -694,6 +698,7 @@ public sealed class JiraApiClientTests
     {
         // Arrange
         using var cts = new CancellationTokenSource();
+        var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":1}}}").RootElement.Clone();
 
         var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
         transport
@@ -708,7 +713,16 @@ public sealed class JiraApiClientTests
                     Summary = "Fix bug",
                     IssueType = new JiraIssueTypeResponse { Name = "Story" },
                     Created = "2026-02-01T10:00:00Z",
-                    ResolutionDate = "2026-02-01T12:00:00Z"
+                    ResolutionDate = "2026-02-01T12:00:00Z",
+                    AdditionalFields = new Dictionary<string, JsonElement>
+                    {
+                        ["customfield_10800"] = developmentField
+                    },
+                    Subtasks =
+                    [
+                        new JiraSubtaskResponse { Key = "AAA-2" },
+                        new JiraSubtaskResponse { Key = "AAA-3" }
+                    ]
                 },
                 Changelog = new JiraChangelogResponse
                 {
@@ -734,7 +748,51 @@ public sealed class JiraApiClientTests
         issue.Summary.Value.Should().Be("Fix bug");
         issue.PathKey.Value.Should().Be("OPEN->DONE");
         issue.PathLabel.Value.Should().Be("Open -> Done");
+        issue.SubItemsCount.Should().Be(2);
+        issue.HasPullRequest.Should().BeTrue();
         issue.Transitions.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "GetIssueTimelineAsync sets no pull request flag when development pullrequest count is zero")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenDevelopmentPullRequestCountIsZeroSetsNoPullRequestFlag()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":0}}}").RootElement.Clone();
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraIssueResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraIssueResponse
+            {
+                Key = "AAA-1",
+                Fields = new JiraIssueFieldsResponse
+                {
+                    Summary = "Fix bug",
+                    IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                    Created = "2026-02-01T10:00:00Z",
+                    ResolutionDate = "2026-02-01T12:00:00Z",
+                    AdditionalFields = new Dictionary<string, JsonElement>
+                    {
+                        ["customfield_10800"] = developmentField
+                    }
+                },
+                Changelog = new JiraChangelogResponse
+                {
+                    Histories = []
+                }
+            });
+
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
+
+        // Assert
+        issue.HasPullRequest.Should().BeFalse();
     }
 
     [Fact(DisplayName = "GetIssueTimelineAsync excludes weekends when configured")]
