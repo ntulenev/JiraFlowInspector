@@ -46,6 +46,7 @@ public sealed class AppSettingsTests
             excludeWeekend: true,
             excludedDays: excludedDays,
             bugIssueNames: bugIssueNames,
+            showGeneralStatistics: false,
             releaseReport: releaseReport,
             pdfReport: pdfReport);
 
@@ -65,7 +66,30 @@ public sealed class AppSettingsTests
         settings.ExcludeWeekend.Should().BeTrue();
         settings.ExcludedDays.Should().ContainInOrder(excludedDays);
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
+        settings.ShowGeneralStatistics.Should().BeFalse();
         settings.ReleaseReport.Should().Be(releaseReport);
         settings.PdfReport.Should().Be(pdfReport);
+    }
+
+    [Fact(DisplayName = "Constructor enables general statistics by default")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenShowGeneralStatisticsIsNotProvidedUsesTrue()
+    {
+        // Arrange
+        var requiredPathStages = new List<StageName> { new("Code Review") };
+
+        // Act
+        var settings = new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            new StatusName("Reject"),
+            requiredPathStages,
+            new MonthLabel("2026-02"));
+
+        // Assert
+        settings.ShowGeneralStatistics.Should().BeTrue();
     }
 }

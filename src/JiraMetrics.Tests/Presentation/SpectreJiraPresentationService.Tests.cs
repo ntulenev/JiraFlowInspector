@@ -526,6 +526,9 @@ public sealed class SpectreJiraPresentationServiceTests
 
         // Assert
         output.Should().Contain("General statistics");
+        output.Should().Contain("Data as of:");
+        output.Should().Contain("Scope:");
+        output.Should().Contain("all not finished tasks");
         output.Should().Contain("Statuses excluded:");
         output.Should().Contain("Done, Reject");
         output.Should().Contain("Status");
@@ -553,6 +556,9 @@ public sealed class SpectreJiraPresentationServiceTests
 
         // Assert
         output.Should().Contain("General statistics");
+        output.Should().Contain("Data as of:");
+        output.Should().Contain("Scope:");
+        output.Should().Contain("all not finished tasks");
         output.Should().Contain("No issues outside excluded statuses.");
     }
 

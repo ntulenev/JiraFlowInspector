@@ -91,6 +91,7 @@ builder.Services.AddSingleton(sp =>
         teamTasks.IssueTransitions?.ExcludeWeekend ?? false,
         excludedDays,
         bugIssueNames,
+        teamTasks.ShowGeneralStatistics,
         releaseReport,
         pdfReport);
 

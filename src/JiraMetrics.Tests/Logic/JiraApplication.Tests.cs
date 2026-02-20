@@ -562,10 +562,54 @@ public sealed class JiraApplicationTests
         openIssuesSummaryIndex.Should().BeGreaterThan(pathGroupsIndex);
     }
 
+    [Fact(DisplayName = "RunAsync does not load or show open issues summary when general statistics are disabled")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenGeneralStatisticsAreDisabledSkipsOpenIssuesSummary()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task")),
+            OpenIssuesByStatus =
+            [
+                new StatusIssueTypeSummary(
+                    new StatusName("QA"),
+                    new ItemCount(2),
+                    [new IssueTypeCountSummary(new IssueTypeName("UserStory"), new ItemCount(2))])
+            ]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(
+                issueTypes: [new IssueTypeName("Task")],
+                showGeneralStatistics: false)),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.OpenIssuesByStatusRequested.Should().BeFalse();
+        presentation.OpenIssuesByStatusShown.Should().BeFalse();
+        presentation.Calls.Should().NotContain("OpenIssuesByStatusSummary");
+        pdfReportRenderer.LastReportData.Should().NotBeNull();
+        pdfReportRenderer.LastReportData!.Settings.ShowGeneralStatistics.Should().BeFalse();
+        pdfReportRenderer.LastReportData.OpenIssuesByStatus.Should().BeEmpty();
+    }
+
     private static AppSettings CreateSettings(
         IReadOnlyList<IssueTypeName>? issueTypes = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
-        ReleaseReportSettings? releaseReport = null)
+        ReleaseReportSettings? releaseReport = null,
+        bool showGeneralStatistics = true)
     {
         return new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -582,6 +626,7 @@ public sealed class JiraApplicationTests
             customFieldValue: null,
             excludeWeekend: false,
             bugIssueNames: bugIssueNames,
+            showGeneralStatistics: showGeneralStatistics,
             releaseReport: releaseReport);
     }
 

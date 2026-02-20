@@ -169,6 +169,28 @@ public sealed class JiraOptionsTests
         results.Should().Contain(result => result.MemberNames.Contains("CreatedAfter"));
     }
 
+    [Fact(DisplayName = "TeamTasksOptions enables general statistics by default")]
+    [Trait("Category", "Unit")]
+    public void TeamTasksOptionsWhenCreatedWithoutFlagUsesTrue()
+    {
+        // Arrange
+        var options = new TeamTasksOptions
+        {
+            ProjectKey = "AAA",
+            DoneStatusName = "Done",
+            IssueTransitions = new IssueTransitionsOptions
+            {
+                RequiredPathStages = ["Code Review"]
+            }
+        };
+
+        // Act
+        var showGeneralStatistics = options.ShowGeneralStatistics;
+
+        // Assert
+        showGeneralStatistics.Should().BeTrue();
+    }
+
     private static List<ValidationResult> Validate(JiraOptions options)
     {
         var results = new List<ValidationResult>();

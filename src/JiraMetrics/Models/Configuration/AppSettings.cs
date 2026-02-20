@@ -25,6 +25,7 @@ public sealed record AppSettings
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
     public AppSettings(
@@ -43,6 +44,7 @@ public sealed record AppSettings
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
         PdfReportSettings? pdfReport = null)
     {
@@ -61,6 +63,7 @@ public sealed record AppSettings
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
+        ShowGeneralStatistics = showGeneralStatistics;
         ReleaseReport = releaseReport;
         PdfReport = pdfReport ?? new PdfReportSettings();
     }
@@ -119,6 +122,11 @@ public sealed record AppSettings
     /// Gets optional issue types that should be treated as bug-like issues.
     /// </summary>
     public IReadOnlyList<IssueTypeName> BugIssueNames { get; }
+
+    /// <summary>
+    /// Gets whether to show general statistics section.
+    /// </summary>
+    public bool ShowGeneralStatistics { get; }
 
     /// <summary>
     /// Gets optional release report settings.

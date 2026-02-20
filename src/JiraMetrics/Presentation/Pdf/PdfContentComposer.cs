@@ -466,7 +466,15 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
     private static void ComposeOpenIssuesByStatusSection(ColumnDescriptor column, JiraPdfReportData reportData)
     {
+        if (!reportData.Settings.ShowGeneralStatistics)
+        {
+            return;
+        }
+
         _ = column.Item().Text("General statistics").Bold().FontSize(12);
+        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        _ = column.Item().Text("Data as of: " + generatedAt).FontColor(Colors.Grey.Darken1);
+        _ = column.Item().Text("Scope: all not finished tasks").FontColor(Colors.Grey.Darken1);
 
         var excludedStatuses = reportData.Settings.RejectStatusName is { } rejectStatus
             ? $"{reportData.Settings.DoneStatusName.Value}, {rejectStatus.Value}"

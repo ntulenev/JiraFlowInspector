@@ -1106,7 +1106,8 @@ public sealed class JiraApiClientTests
             customFieldName: customFieldName,
             customFieldValue: customFieldValue,
             excludeWeekend: excludeWeekend,
-            excludedDays: excludedDays);
+            excludedDays: excludedDays,
+            showGeneralStatistics: true);
 
         return Options.Create(settings);
     }

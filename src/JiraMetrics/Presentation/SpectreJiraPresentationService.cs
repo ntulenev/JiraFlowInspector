@@ -402,8 +402,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         var excludedStatuses = rejectStatusName is { } rejectStatus
             ? $"{doneStatusName.Value}, {rejectStatus.Value}"
             : doneStatusName.Value;
+        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
 
         AnsiConsole.MarkupLine("[bold]General statistics[/]");
+        AnsiConsole.MarkupLine($"[grey]Data as of:[/] {Markup.Escape(generatedAt)}");
+        AnsiConsole.MarkupLine("[grey]Scope:[/] all not finished tasks");
         AnsiConsole.MarkupLine($"[grey]Statuses excluded:[/] {Markup.Escape(excludedStatuses)}");
 
         if (statusSummaries.Count == 0)

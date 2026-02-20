@@ -106,6 +106,11 @@ public sealed class TeamTasksOptions
     /// Gets or sets optional custom field value for filtering.
     /// </summary>
     public string? CustomFieldValue { get; init; }
+
+    /// <summary>
+    /// Gets or sets whether general statistics should be shown.
+    /// </summary>
+    public bool ShowGeneralStatistics { get; init; } = true;
 }
 
 /// <summary>

@@ -101,11 +101,14 @@ public sealed class JiraApplication : IJiraApplication
                     cancellationToken).ConfigureAwait(false);
             }
 
-            openIssuesByStatus = await _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
-                _settings.ProjectKey,
-                _settings.DoneStatusName,
-                _settings.RejectStatusName,
-                cancellationToken).ConfigureAwait(false);
+            if (_settings.ShowGeneralStatistics)
+            {
+                openIssuesByStatus = await _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+                    _settings.ProjectKey,
+                    _settings.DoneStatusName,
+                    _settings.RejectStatusName,
+                    cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (HttpRequestException ex)
         {
@@ -221,6 +224,11 @@ public sealed class JiraApplication : IJiraApplication
         void ShowOpenIssuesSummary()
         {
             if (openIssuesSummaryShown)
+            {
+                return;
+            }
+
+            if (!_settings.ShowGeneralStatistics)
             {
                 return;
             }
