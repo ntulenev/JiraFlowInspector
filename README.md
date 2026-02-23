@@ -265,4 +265,14 @@ dotnet test src/JiraMetrics.slnx
 
 ## Output Screenshot
 
-<img src="Screenshot.png" alt="Output">
+>For demonstration purposes, the program output shown in the screenshots uses synthetic data to avoid exposing information from real repositories and users.
+
+
+### Console
+<img src="Jira1.png" alt="Output1">
+<img src="Jira2.png" alt="Output2">
+
+### PDF
+<img src="Jira3.png" alt="Output3">
+<img src="Jira4.png" alt="Output4">
+<img src="Jira5.png" alt="Output5">
