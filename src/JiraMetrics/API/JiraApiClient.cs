@@ -786,17 +786,13 @@ public sealed partial class JiraApiClient : IJiraApiClient
     {
         ArgumentNullException.ThrowIfNull(fields);
 
-        if (string.IsNullOrEmpty(pullRequestFieldName))
-        {
-            return false;
-        }
-
         if (fields.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
             return false;
         }
 
-        if (fields.AdditionalFields.TryGetValue(pullRequestFieldName, out var configuredPullRequestField)
+        if (!string.IsNullOrWhiteSpace(pullRequestFieldName)
+            && fields.AdditionalFields.TryGetValue(pullRequestFieldName, out var configuredPullRequestField)
             && HasPullRequestInRawValue(configuredPullRequestField))
         {
             return true;

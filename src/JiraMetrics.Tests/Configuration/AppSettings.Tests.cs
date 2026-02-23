@@ -73,4 +73,23 @@ public sealed class AppSettingsTests
         settings.PdfReport.Should().Be(pdfReport);
         settings.PullRequestFieldName.Should().Be(pullRequestFieldName);
     }
+
+    [Fact(DisplayName = "Constructor keeps pull request field name unset when value is not provided")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenPullRequestFieldNameIsMissingKeepsNull()
+    {
+        // Act
+        var settings = new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            [new StageName("Code Review")],
+            new MonthLabel("2026-02"));
+
+        // Assert
+        settings.PullRequestFieldName.Should().BeNull();
+    }
 }

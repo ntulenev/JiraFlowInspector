@@ -966,6 +966,49 @@ public sealed class JiraApiClientTests
         issue.HasPullRequest.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "GetIssueTimelineAsync detects pull request when pull request field name is not configured")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenPullRequestFieldNameIsMissingScansAllAdditionalFields()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":1}}}").RootElement.Clone();
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraIssueResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraIssueResponse
+            {
+                Key = "AAA-1",
+                Fields = new JiraIssueFieldsResponse
+                {
+                    Summary = "Fix bug",
+                    IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                    Created = "2026-02-01T10:00:00Z",
+                    ResolutionDate = "2026-02-01T12:00:00Z",
+                    AdditionalFields = new Dictionary<string, JsonElement>
+                    {
+                        ["customfield_55555"] = developmentField
+                    }
+                },
+                Changelog = new JiraChangelogResponse
+                {
+                    Histories = []
+                }
+            });
+
+        var settings = CreateSettings(pullRequestFieldName: null);
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
+
+        // Assert
+        issue.HasPullRequest.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync excludes weekends when configured")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenExcludeWeekendIsTrueSkipsWeekendHours()
