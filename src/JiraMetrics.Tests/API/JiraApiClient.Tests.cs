@@ -923,6 +923,49 @@ public sealed class JiraApiClientTests
         issue.HasPullRequest.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "GetIssueTimelineAsync uses configured pull request field name")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenPullRequestFieldNameIsConfiguredUsesConfiguredField()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":1}}}").RootElement.Clone();
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraIssueResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraIssueResponse
+            {
+                Key = "AAA-1",
+                Fields = new JiraIssueFieldsResponse
+                {
+                    Summary = "Fix bug",
+                    IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                    Created = "2026-02-01T10:00:00Z",
+                    ResolutionDate = "2026-02-01T12:00:00Z",
+                    AdditionalFields = new Dictionary<string, JsonElement>
+                    {
+                        ["customfield_99999"] = developmentField
+                    }
+                },
+                Changelog = new JiraChangelogResponse
+                {
+                    Histories = []
+                }
+            });
+
+        var settings = CreateSettings(pullRequestFieldName: "customfield_99999");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var issue = await client.GetIssueTimelineAsync(new IssueKey("AAA-1"), cts.Token);
+
+        // Assert
+        issue.HasPullRequest.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync excludes weekends when configured")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenExcludeWeekendIsTrueSkipsWeekendHours()
@@ -1090,7 +1133,8 @@ public sealed class JiraApiClientTests
         IReadOnlyList<DateOnly>? excludedDays = null,
         string? customFieldName = null,
         string? customFieldValue = null,
-        string monthLabel = "2026-02")
+        string monthLabel = "2026-02",
+        string? pullRequestFieldName = null)
     {
         var settings = new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -1107,7 +1151,8 @@ public sealed class JiraApiClientTests
             customFieldValue: customFieldValue,
             excludeWeekend: excludeWeekend,
             excludedDays: excludedDays,
-            showGeneralStatistics: true);
+            showGeneralStatistics: true,
+            pullRequestFieldName: pullRequestFieldName);
 
         return Options.Create(settings);
     }

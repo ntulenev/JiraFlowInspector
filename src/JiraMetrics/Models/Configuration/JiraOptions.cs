@@ -52,6 +52,11 @@ public sealed class JiraOptions
     public int RetryCount { get; init; }
 
     /// <summary>
+    /// Gets or sets pull request field name or id used for code-activity detection.
+    /// </summary>
+    public string? PullRequestFieldName { get; init; }
+
+    /// <summary>
     /// Gets or sets optional release report settings.
     /// </summary>
     public ReleaseReportOptions? ReleaseReport { get; init; }

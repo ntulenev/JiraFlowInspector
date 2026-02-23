@@ -138,11 +138,7 @@ Transition durations come from time between consecutive status changes.
 ## Pull Request Detection
 
 Code activity (`HasPullRequest`) is detected from issue additional fields by searching for pull request data.
-The detector checks:
-
-- default development field (`customfield_10800`);
-- other additional fields;
-- patterns containing `pullrequest` and optional count markers.
+The detector checks configured pull request field (`PullRequestFieldName`);
 
 ## Configuration (`appsettings.json`)
 
@@ -154,6 +150,8 @@ All options live under `Jira`.
   Jira account email.
 - `ApiToken` (`string`, required):
   Jira API token.
+- `PullRequestFieldName` (`string`, optional):
+  Jira field for detecting pull request activity.
 - `TeamTasks` (`object`, required):
   transition and bug report settings.
 - `TeamTasks.ProjectKey` (`string`, required):
@@ -212,6 +210,7 @@ All options live under `Jira`.
     "BaseUrl": "https://your-company.atlassian.net",
     "Email": "your-email@company.com",
     "ApiToken": "your-jira-api-token",
+    "PullRequestFieldName": "customfield_123",
     "TeamTasks": {
       "ProjectKey": "AAA",
       "DoneStatusName": "Done",
@@ -267,4 +266,3 @@ dotnet test src/JiraMetrics.slnx
 ## Output Screenshot
 
 <img src="Screenshot.png" alt="Output">
-

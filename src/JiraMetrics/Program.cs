@@ -93,7 +93,8 @@ builder.Services.AddSingleton(sp =>
         bugIssueNames,
         teamTasks.ShowGeneralStatistics,
         releaseReport,
-        pdfReport);
+        pdfReport,
+        source.PullRequestFieldName);
 
     return Options.Create(settings);
 });

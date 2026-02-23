@@ -39,6 +39,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
         _customFieldName = string.IsNullOrWhiteSpace(resolved.CustomFieldName) ? null : resolved.CustomFieldName.Trim();
         _customFieldValue = string.IsNullOrWhiteSpace(resolved.CustomFieldValue) ? null : resolved.CustomFieldValue.Trim();
         _monthLabel = resolved.MonthLabel;
+        _pullRequestFieldName = resolved.PullRequestFieldName;
     }
 
     /// <inheritdoc />
@@ -249,7 +250,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
             PathKey.FromTransitions(transitions),
             PathLabel.FromTransitions(transitions),
             response.Fields.Subtasks.Count,
-            HasPullRequest(response.Fields));
+            HasPullRequest(response.Fields, _pullRequestFieldName));
     }
 
     private IReadOnlyList<TransitionEvent> ParseTransitions(
@@ -537,7 +538,9 @@ public sealed partial class JiraApiClient : IJiraApiClient
 
                     if (!countsByStatus.TryGetValue(statusName, out var issueTypeCounts))
                     {
+#pragma warning disable IDE0028 // Simplify collection initialization
                         issueTypeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+#pragma warning restore IDE0028 // Simplify collection initialization
                         countsByStatus[statusName] = issueTypeCounts;
                     }
 
@@ -779,19 +782,22 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return keys.Count;
     }
 
-    private static bool HasPullRequest(JiraIssueFieldsResponse fields)
+    private static bool HasPullRequest(JiraIssueFieldsResponse fields, string pullRequestFieldName)
     {
         ArgumentNullException.ThrowIfNull(fields);
+
+        if (string.IsNullOrEmpty(pullRequestFieldName))
+        {
+            return false;
+        }
 
         if (fields.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
             return false;
         }
 
-        const string defaultDevelopmentFieldId = "customfield_10800";
-
-        if (fields.AdditionalFields.TryGetValue(defaultDevelopmentFieldId, out var defaultDevelopmentField)
-            && HasPullRequestInRawValue(defaultDevelopmentField))
+        if (fields.AdditionalFields.TryGetValue(pullRequestFieldName, out var configuredPullRequestField)
+            && HasPullRequestInRawValue(configuredPullRequestField))
         {
             return true;
         }
@@ -988,6 +994,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
     private readonly string? _customFieldName;
     private readonly string? _customFieldValue;
     private readonly MonthLabel _monthLabel;
+    private readonly string _pullRequestFieldName;
 
     [GeneratedRegex(@"(?:stateCount|count)\s*""?\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex PullRequestCountPattern();

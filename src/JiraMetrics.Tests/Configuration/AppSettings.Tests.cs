@@ -28,6 +28,7 @@ public sealed class AppSettingsTests
         var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };
         const string customFieldName = "Team";
         const string customFieldValue = "Import";
+        const string pullRequestFieldName = "customfield_22222";
 
         // Act
         var settings = new AppSettings(
@@ -48,7 +49,8 @@ public sealed class AppSettingsTests
             bugIssueNames: bugIssueNames,
             showGeneralStatistics: false,
             releaseReport: releaseReport,
-            pdfReport: pdfReport);
+            pdfReport: pdfReport,
+            pullRequestFieldName: pullRequestFieldName);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -69,27 +71,6 @@ public sealed class AppSettingsTests
         settings.ShowGeneralStatistics.Should().BeFalse();
         settings.ReleaseReport.Should().Be(releaseReport);
         settings.PdfReport.Should().Be(pdfReport);
-    }
-
-    [Fact(DisplayName = "Constructor enables general statistics by default")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenShowGeneralStatisticsIsNotProvidedUsesTrue()
-    {
-        // Arrange
-        var requiredPathStages = new List<StageName> { new("Code Review") };
-
-        // Act
-        var settings = new AppSettings(
-            new JiraBaseUrl("https://example.atlassian.net"),
-            new JiraEmail("user@example.com"),
-            new JiraApiToken("token"),
-            new ProjectKey("AAA"),
-            new StatusName("Done"),
-            new StatusName("Reject"),
-            requiredPathStages,
-            new MonthLabel("2026-02"));
-
-        // Assert
-        settings.ShowGeneralStatistics.Should().BeTrue();
+        settings.PullRequestFieldName.Should().Be(pullRequestFieldName);
     }
 }

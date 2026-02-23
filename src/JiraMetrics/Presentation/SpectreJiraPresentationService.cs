@@ -92,16 +92,10 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
-    public void ShowIssueLoaded(IssueKey issueKey)
-    {
-        UpdateIssueLoadProgress(wasFailure: false);
-    }
+    public void ShowIssueLoaded(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: false);
 
     /// <inheritdoc />
-    public void ShowIssueFailed(IssueKey issueKey)
-    {
-        UpdateIssueLoadProgress(wasFailure: true);
-    }
+    public void ShowIssueFailed(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: true);
 
     /// <inheritdoc />
     public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues) =>

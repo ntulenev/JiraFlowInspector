@@ -28,6 +28,7 @@ public sealed record AppSettings
     /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
+    /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -46,7 +47,8 @@ public sealed record AppSettings
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
         bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
-        PdfReportSettings? pdfReport = null)
+        PdfReportSettings? pdfReport = null,
+        string? pullRequestFieldName = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -66,6 +68,9 @@ public sealed record AppSettings
         ShowGeneralStatistics = showGeneralStatistics;
         ReleaseReport = releaseReport;
         PdfReport = pdfReport ?? new PdfReportSettings();
+        PullRequestFieldName = string.IsNullOrWhiteSpace(pullRequestFieldName)
+            ? null!
+            : pullRequestFieldName.Trim();
     }
 
     /// <summary>
@@ -157,4 +162,9 @@ public sealed record AppSettings
     /// Gets optional list of excluded days.
     /// </summary>
     public IReadOnlyList<DateOnly> ExcludedDays { get; }
+
+    /// <summary>
+    /// Gets pull request field name or id used for code-activity detection.
+    /// </summary>
+    public string PullRequestFieldName { get; }
 }
