@@ -119,8 +119,10 @@ Release query uses:
 
 Per release row:
 
+- `Status`:
+  current Jira issue status.
 - `Tasks`:
-  count of linked work items with relation text `is caused by` (both inward/outward links).
+  count of all linked work items (both inward/outward links).
 - `Components`:
   count from configured components field; fallback to standard Jira `components`.
   Supports array/string/object custom-field payloads.

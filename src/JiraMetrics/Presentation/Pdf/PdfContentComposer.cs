@@ -79,11 +79,12 @@ public sealed class PdfContentComposer : IPdfContentComposer
             {
                 columns.ConstantColumn(26);
                 columns.ConstantColumn(82);
-                columns.ConstantColumn(76);
-                columns.ConstantColumn(56);
+                columns.ConstantColumn(72);
+                columns.ConstantColumn(86);
+                columns.ConstantColumn(52);
                 if (includeComponents)
                 {
-                    columns.ConstantColumn(76);
+                    columns.ConstantColumn(72);
                 }
 
                 columns.RelativeColumn(4);
@@ -94,6 +95,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("#");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Release Date");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Jira ID");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Status");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Tasks");
                 if (includeComponents)
                 {
@@ -114,6 +116,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     .Hyperlink(releaseIssueUrl)
                     .DefaultTextStyle(static style => style.FontColor(Colors.Blue.Darken2).Underline())
                     .Text(release.Key.Value);
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.Status.Value);
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
                     .Text(release.Tasks == 0 ? "-" : release.Tasks.ToString(CultureInfo.InvariantCulture));

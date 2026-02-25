@@ -608,6 +608,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
             {
                 "key",
                 "summary",
+                "status",
                 "issuelinks",
                 Uri.EscapeDataString(releaseFieldId)
             };
@@ -647,12 +648,14 @@ public sealed partial class JiraApiClient : IJiraApiClient
                     .Select(issue =>
                     {
                         var releaseDate = TryParseReleaseDate(issue.Fields, releaseFieldId, releaseDateFieldName);
-                        var tasks = CountCausedByLinkedTasks(issue.Fields);
+                        var status = StatusName.FromNullable(issue.Fields?.Status?.Name);
+                        var tasks = CountAllLinkedTasks(issue.Fields);
                         var components = CountComponents(issue.Fields, componentsFieldId, componentsFieldName);
                         return (
                             key: new IssueKey(issue.Key!.Trim()),
                             title: new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary),
                             releaseDate,
+                            status,
                             tasks,
                             components);
                     })
@@ -662,7 +665,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         item.title,
                         item.releaseDate!.Value,
                         item.tasks,
-                        item.components)));
+                        item.components,
+                        item.status)));
             }
 
             nextPageToken = page.NextPageToken;
@@ -746,10 +750,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return 0;
     }
 
-    private static int CountCausedByLinkedTasks(JiraIssueFieldsResponse? fields)
+    private static int CountAllLinkedTasks(JiraIssueFieldsResponse? fields)
     {
-        const string causedByRelation = "is caused by";
-
         if (fields?.IssueLinks.Count is not > 0)
         {
             return 0;
@@ -759,21 +761,17 @@ public sealed partial class JiraApiClient : IJiraApiClient
 
         foreach (var link in fields.IssueLinks)
         {
-            if (link?.Type is not { } linkType)
+            if (link is null)
             {
                 continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(linkType.Inward)
-                && string.Equals(linkType.Inward.Trim(), causedByRelation, StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(link.InwardIssue?.Key))
+            if (!string.IsNullOrWhiteSpace(link.InwardIssue?.Key))
             {
                 _ = keys.Add(link.InwardIssue.Key.Trim());
             }
 
-            if (!string.IsNullOrWhiteSpace(linkType.Outward)
-                && string.Equals(linkType.Outward.Trim(), causedByRelation, StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(link.OutwardIssue?.Key))
+            if (!string.IsNullOrWhiteSpace(link.OutwardIssue?.Key))
             {
                 _ = keys.Add(link.OutwardIssue.Key.Trim());
             }

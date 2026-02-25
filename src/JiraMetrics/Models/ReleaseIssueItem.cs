@@ -13,9 +13,16 @@ public sealed record ReleaseIssueItem
     /// <param name="key">Issue key.</param>
     /// <param name="title">Issue title.</param>
     /// <param name="releaseDate">Release date.</param>
-    /// <param name="tasks">Count of linked work items with relation "is caused by".</param>
+    /// <param name="tasks">Count of linked work items.</param>
     /// <param name="components">Count of components for configured components field.</param>
-    public ReleaseIssueItem(IssueKey key, IssueSummary title, DateOnly releaseDate, int tasks = 0, int components = 0)
+    /// <param name="status">Current issue status.</param>
+    public ReleaseIssueItem(
+        IssueKey key,
+        IssueSummary title,
+        DateOnly releaseDate,
+        int tasks = 0,
+        int components = 0,
+        StatusName? status = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(tasks);
         ArgumentOutOfRangeException.ThrowIfNegative(components);
@@ -25,6 +32,7 @@ public sealed record ReleaseIssueItem
         ReleaseDate = releaseDate;
         Tasks = tasks;
         Components = components;
+        Status = status ?? StatusName.Unknown;
     }
 
     /// <summary>
@@ -43,7 +51,12 @@ public sealed record ReleaseIssueItem
     public DateOnly ReleaseDate { get; }
 
     /// <summary>
-    /// Gets count of linked work items with relation "is caused by".
+    /// Gets current issue status.
+    /// </summary>
+    public StatusName Status { get; }
+
+    /// <summary>
+    /// Gets count of linked work items.
     /// </summary>
     public int Tasks { get; }
 

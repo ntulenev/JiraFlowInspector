@@ -589,6 +589,7 @@ public sealed class JiraApiClientTests
                     Fields = new JiraIssueFieldsResponse
                     {
                         Summary = "Release item",
+                        Status = new JiraIssueStatusResponse { Name = "Ready for Prod" },
                         IssueLinks =
                         [
                             new JiraIssueLinkResponse
@@ -665,13 +666,15 @@ public sealed class JiraApiClientTests
         releases[0].Key.Value.Should().Be("RLS-1");
         releases[0].Title.Value.Should().Be("Release item");
         releases[0].ReleaseDate.Should().Be(new DateOnly(2026, 2, 14));
-        releases[0].Tasks.Should().Be(2);
+        releases[0].Status.Value.Should().Be("Ready for Prod");
+        releases[0].Tasks.Should().Be(3);
         capturedSearchUrl.Should().Contain("project");
         capturedSearchUrl.Should().Contain("RLS");
         capturedSearchUrl.Should().Contain("labels");
         capturedSearchUrl.Should().Contain("Processing");
         capturedSearchUrl.Should().Contain("Change%20completion%20date");
         capturedSearchUrl.Should().Contain("customfield_12345");
+        capturedSearchUrl.Should().Contain("status");
         capturedSearchUrl.Should().Contain("issuelinks");
     }
 
@@ -739,6 +742,7 @@ public sealed class JiraApiClientTests
         releases.Should().ContainSingle();
         releases[0].Key.Value.Should().Be("RLS-2");
         releases[0].ReleaseDate.Should().Be(new DateOnly(2026, 2, 14));
+        releases[0].Status.Should().Be(StatusName.Unknown);
         releases[0].Tasks.Should().Be(0);
     }
 
@@ -776,6 +780,7 @@ public sealed class JiraApiClientTests
                     Fields = new JiraIssueFieldsResponse
                     {
                         Summary = "Release with components",
+                        Status = new JiraIssueStatusResponse { Name = "Released" },
                         AdditionalFields = new Dictionary<string, JsonElement>
                         {
                             ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
@@ -814,9 +819,11 @@ public sealed class JiraApiClientTests
         // Assert
         releases.Should().ContainSingle();
         releases[0].Key.Value.Should().Be("RLS-3");
+        releases[0].Status.Value.Should().Be("Released");
         releases[0].Components.Should().Be(2);
         capturedSearchUrl.Should().Contain("customfield_12345");
         capturedSearchUrl.Should().Contain("customfield_77777");
+        capturedSearchUrl.Should().Contain("status");
         capturedSearchUrl.Should().Contain("components");
     }
 

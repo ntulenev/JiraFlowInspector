@@ -302,6 +302,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]#[/]")
             .AddColumn("[bold]Release Date[/]")
             .AddColumn("[bold]Jira ID[/]")
+            .AddColumn("[bold]Status[/]")
             .AddColumn("[bold]Tasks[/]");
 
         if (includeComponents)
@@ -324,6 +325,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 (i + 1).ToString(CultureInfo.InvariantCulture),
                 release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 Markup.Escape(release.Key.Value),
+                Markup.Escape(release.Status.Value),
                 release.Tasks == 0
                     ? "-"
                     : release.Tasks.ToString(CultureInfo.InvariantCulture)

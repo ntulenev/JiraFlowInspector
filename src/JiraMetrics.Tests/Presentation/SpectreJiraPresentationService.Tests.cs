@@ -481,7 +481,12 @@ public sealed class SpectreJiraPresentationServiceTests
             service.ShowReleaseReport(
                 settings,
                 new MonthLabel("2026-02"),
-                [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release 1"), new DateOnly(2026, 2, 14), 3)]);
+                [new ReleaseIssueItem(
+                    new IssueKey("RLS-1"),
+                    new IssueSummary("Release 1"),
+                    new DateOnly(2026, 2, 14),
+                    tasks: 3,
+                    status: new StatusName("Ready for Prod"))]);
             return Task.FromResult(console.Output);
         });
 
@@ -491,9 +496,11 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Processing");
         output.Should().Contain("#");
         output.Should().Contain("Release Date");
+        output.Should().Contain("Status");
         output.Should().Contain("Tasks");
         output.Should().Contain("RLS-1");
         output.Should().Contain("Release 1");
+        output.Should().Contain("Ready for Prod");
         output.Should().Contain("3");
         output.Should().Contain("2026-02-14");
         output.Should().NotContain("Components field:");
@@ -517,14 +524,22 @@ public sealed class SpectreJiraPresentationServiceTests
             service.ShowReleaseReport(
                 settings,
                 new MonthLabel("2026-02"),
-                [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release 1"), new DateOnly(2026, 2, 14), 3, 2)]);
+                [new ReleaseIssueItem(
+                    new IssueKey("RLS-1"),
+                    new IssueSummary("Release 1"),
+                    new DateOnly(2026, 2, 14),
+                    tasks: 3,
+                    components: 2,
+                    status: new StatusName("In QA"))]);
             return Task.FromResult(console.Output);
         });
 
         // Assert
         output.Should().Contain("Components field:");
         output.Should().Contain("Components");
+        output.Should().Contain("Status");
         output.Should().Contain("Tasks");
+        output.Should().Contain("In QA");
         output.Should().Contain("2");
     }
 
@@ -546,12 +561,19 @@ public sealed class SpectreJiraPresentationServiceTests
             service.ShowReleaseReport(
                 settings,
                 new MonthLabel("2026-02"),
-                [new ReleaseIssueItem(new IssueKey("RLS-2"), new IssueSummary("Release 2"), new DateOnly(2026, 2, 15), 0, 0)]);
+                [new ReleaseIssueItem(
+                    new IssueKey("RLS-2"),
+                    new IssueSummary("Release 2"),
+                    new DateOnly(2026, 2, 15),
+                    tasks: 0,
+                    components: 0,
+                    status: new StatusName("Open"))]);
             return Task.FromResult(console.Output);
         });
 
         // Assert
         output.Should().Contain("RLS-2");
+        output.Should().Contain("Open");
         output.Should().Contain("-");
     }
 
