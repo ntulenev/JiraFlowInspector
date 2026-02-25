@@ -16,13 +16,15 @@ public sealed record ReleaseIssueItem
     /// <param name="tasks">Count of linked work items.</param>
     /// <param name="components">Count of components for configured components field.</param>
     /// <param name="status">Current issue status.</param>
+    /// <param name="componentNames">Component names for configured components field.</param>
     public ReleaseIssueItem(
         IssueKey key,
         IssueSummary title,
         DateOnly releaseDate,
         int tasks = 0,
         int components = 0,
-        StatusName? status = null)
+        StatusName? status = null,
+        IReadOnlyList<string>? componentNames = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(tasks);
         ArgumentOutOfRangeException.ThrowIfNegative(components);
@@ -33,6 +35,13 @@ public sealed record ReleaseIssueItem
         Tasks = tasks;
         Components = components;
         Status = status ?? StatusName.Unknown;
+        ComponentNames = componentNames is null
+            ? []
+            : [.. componentNames
+                .Where(static value => !string.IsNullOrWhiteSpace(value))
+                .Select(static value => value.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static value => value, StringComparer.OrdinalIgnoreCase)];
     }
 
     /// <summary>
@@ -64,4 +73,9 @@ public sealed record ReleaseIssueItem
     /// Gets count of components for configured components field.
     /// </summary>
     public int Components { get; }
+
+    /// <summary>
+    /// Gets component names for configured components field.
+    /// </summary>
+    public IReadOnlyList<string> ComponentNames { get; }
 }

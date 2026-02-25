@@ -268,6 +268,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         AnsiConsole.MarkupLine(
             $"[grey]Successful:[/] {summary.SuccessfulCount.Value}    [grey]Matched stage:[/] {summary.MatchedStageCount.Value}    [grey]Failed:[/] {summary.FailedCount.Value}    [grey]Path groups:[/] {summary.PathGroupCount.Value}");
+        AnsiConsole.MarkupLine("[grey]Filter:[/] only tasks with code artefacts (pull request activity).");
     }
 
     /// <inheritdoc />
@@ -342,6 +343,38 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         }
 
         AnsiConsole.Write(table);
+
+        if (!includeComponents)
+        {
+            return;
+        }
+
+        var componentSummaries = BuildComponentReleaseSummaries(orderedReleases);
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold]Components release table[/]");
+        if (componentSummaries.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]No components data.[/]");
+            return;
+        }
+
+        var componentsTable = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
+            .AddColumn("[bold]Component name[/]")
+            .AddColumn("[bold]Release counts[/]");
+
+        for (var i = 0; i < componentSummaries.Count; i++)
+        {
+            var (componentName, releaseCount) = componentSummaries[i];
+            _ = componentsTable.AddRow(
+                (i + 1).ToString(CultureInfo.InvariantCulture),
+                Markup.Escape(componentName),
+                releaseCount.ToString(CultureInfo.InvariantCulture));
+        }
+
+        AnsiConsole.Write(componentsTable);
     }
 
     /// <inheritdoc />
@@ -788,5 +821,32 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
 
         return workDuration.TotalDays.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static IReadOnlyList<(string componentName, int releaseCount)> BuildComponentReleaseSummaries(
+        IReadOnlyList<ReleaseIssueItem> releases)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var release in releases)
+        {
+            foreach (var componentName in release.ComponentNames)
+            {
+                if (string.IsNullOrWhiteSpace(componentName))
+                {
+                    continue;
+                }
+
+                var normalized = componentName.Trim();
+                counts[normalized] = counts.TryGetValue(normalized, out var currentCount)
+                    ? currentCount + 1
+                    : 1;
+            }
+        }
+
+        return [.. counts
+            .Select(static pair => (componentName: pair.Key, releaseCount: pair.Value))
+            .OrderByDescending(static pair => pair.releaseCount)
+            .ThenBy(static pair => pair.componentName, StringComparer.OrdinalIgnoreCase)];
     }
 }

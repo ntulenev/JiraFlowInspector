@@ -59,7 +59,8 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Transition analysis:
   done table, optional rejected table.
 - Path group summary:
-  successful, matched stage, failed, path groups.
+  successful, matched stage, failed, path groups, and filter note
+  that only tasks with code artefacts are included.
 - Path groups:
   path, issue list, timeline diagram, P75 transition table.
 - Failed issues table (when any request fails per issue).
@@ -127,6 +128,12 @@ Per release row:
   count from configured components field; fallback to standard Jira `components`.
   Supports array/string/object custom-field payloads.
 - `0` task/component values are displayed as `-`.
+
+When `ReleaseReport.ComponentsFieldName` is configured, report also shows
+`Components release table` after the release table with:
+
+- `Component name`
+- `Release counts` (ordered descending)
 
 ## Duration Calculation
 

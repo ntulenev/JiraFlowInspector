@@ -668,6 +668,7 @@ public sealed class JiraApiClientTests
         releases[0].ReleaseDate.Should().Be(new DateOnly(2026, 2, 14));
         releases[0].Status.Value.Should().Be("Ready for Prod");
         releases[0].Tasks.Should().Be(3);
+        releases[0].ComponentNames.Should().BeEmpty();
         capturedSearchUrl.Should().Contain("project");
         capturedSearchUrl.Should().Contain("RLS");
         capturedSearchUrl.Should().Contain("labels");
@@ -744,6 +745,7 @@ public sealed class JiraApiClientTests
         releases[0].ReleaseDate.Should().Be(new DateOnly(2026, 2, 14));
         releases[0].Status.Should().Be(StatusName.Unknown);
         releases[0].Tasks.Should().Be(0);
+        releases[0].ComponentNames.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync counts components when components field is configured")]
@@ -821,6 +823,7 @@ public sealed class JiraApiClientTests
         releases[0].Key.Value.Should().Be("RLS-3");
         releases[0].Status.Value.Should().Be("Released");
         releases[0].Components.Should().Be(2);
+        releases[0].ComponentNames.Should().ContainInOrder("ADF PostgreSQL Database", "Flux");
         capturedSearchUrl.Should().Contain("customfield_12345");
         capturedSearchUrl.Should().Contain("customfield_77777");
         capturedSearchUrl.Should().Contain("status");

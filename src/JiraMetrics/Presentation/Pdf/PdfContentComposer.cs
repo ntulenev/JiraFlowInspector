@@ -130,6 +130,46 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.Title.Truncate(new TextLength(140)).Value);
             }
         });
+
+        if (!includeComponents)
+        {
+            return;
+        }
+
+        var componentSummaries = BuildComponentReleaseSummaries(orderedReleases);
+        _ = column.Item().Text("Components release table").Bold();
+        if (componentSummaries.Count == 0)
+        {
+            _ = column.Item().Text("No components data.").FontColor(Colors.Grey.Darken1);
+            return;
+        }
+
+        column.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.ConstantColumn(26);
+                columns.RelativeColumn(3);
+                columns.RelativeColumn(1);
+            });
+
+            table.Header(header =>
+            {
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("#");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Component name");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Release counts");
+            });
+
+            for (var i = 0; i < componentSummaries.Count; i++)
+            {
+                var (componentName, releaseCount) = componentSummaries[i];
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(componentName);
+                _ = table.Cell()
+                    .Element(PdfPresentationHelpers.StyleBodyCell)
+                    .Text(releaseCount.ToString(CultureInfo.InvariantCulture));
+            }
+        });
     }
 
     private static void ComposeBugRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
@@ -453,6 +493,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
     private static void ComposePathSummarySection(ColumnDescriptor column, PathGroupsSummary summary)
     {
         _ = column.Item().Text("Path groups summary").Bold().FontSize(12);
+        _ = column.Item().Text("Filter: only tasks with code artefacts (pull request activity).").FontColor(Colors.Grey.Darken1);
 
         column.Item().Table(table =>
         {
@@ -707,6 +748,33 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         return [.. stageDurations
             .Select(static segment => (float)Math.Max(0.001, Math.Max(0.0, segment.duration.TotalSeconds)))];
+    }
+
+    private static IReadOnlyList<(string componentName, int releaseCount)> BuildComponentReleaseSummaries(
+        IReadOnlyList<ReleaseIssueItem> releases)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var release in releases)
+        {
+            foreach (var componentName in release.ComponentNames)
+            {
+                if (string.IsNullOrWhiteSpace(componentName))
+                {
+                    continue;
+                }
+
+                var normalized = componentName.Trim();
+                counts[normalized] = counts.TryGetValue(normalized, out var currentCount)
+                    ? currentCount + 1
+                    : 1;
+            }
+        }
+
+        return [.. counts
+            .Select(static pair => (componentName: pair.Key, releaseCount: pair.Value))
+            .OrderByDescending(static pair => pair.releaseCount)
+            .ThenBy(static pair => pair.componentName, StringComparer.OrdinalIgnoreCase)];
     }
 
     private static void ComposeFailuresSection(

@@ -117,6 +117,32 @@ public sealed class SpectreJiraPresentationServiceTests
             .Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "ShowPathGroupsSummary writes code artefacts filter info")]
+    [Trait("Category", "Unit")]
+    public async Task ShowPathGroupsSummaryWhenCalledWritesFilterInfo()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowPathGroupsSummary(
+                new PathGroupsSummary(
+                    new ItemCount(10),
+                    new ItemCount(8),
+                    new ItemCount(2),
+                    new ItemCount(3)));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Successful:");
+        output.Should().Contain("Path groups:");
+        output.Should().Contain("Filter:");
+        output.Should().Contain("only tasks with code artefacts");
+    }
+
     [Fact(DisplayName = "ShowPathGroups throws when groups are null")]
     [Trait("Category", "Unit")]
     public void ShowPathGroupsWhenGroupsAreNullThrowsArgumentNullException()
@@ -504,6 +530,7 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("3");
         output.Should().Contain("2026-02-14");
         output.Should().NotContain("Components field:");
+        output.Should().NotContain("Components release table");
     }
 
     [Fact(DisplayName = "ShowReleaseReport writes components column when configured")]
@@ -524,13 +551,24 @@ public sealed class SpectreJiraPresentationServiceTests
             service.ShowReleaseReport(
                 settings,
                 new MonthLabel("2026-02"),
-                [new ReleaseIssueItem(
-                    new IssueKey("RLS-1"),
-                    new IssueSummary("Release 1"),
-                    new DateOnly(2026, 2, 14),
-                    tasks: 3,
-                    components: 2,
-                    status: new StatusName("In QA"))]);
+                [
+                    new ReleaseIssueItem(
+                        new IssueKey("RLS-1"),
+                        new IssueSummary("Release 1"),
+                        new DateOnly(2026, 2, 14),
+                        tasks: 3,
+                        components: 2,
+                        status: new StatusName("In QA"),
+                        componentNames: ["Flux", "ADF PostgreSQL Database"]),
+                    new ReleaseIssueItem(
+                        new IssueKey("RLS-2"),
+                        new IssueSummary("Release 2"),
+                        new DateOnly(2026, 2, 20),
+                        tasks: 1,
+                        components: 1,
+                        status: new StatusName("Done"),
+                        componentNames: ["Flux"])
+                ]);
             return Task.FromResult(console.Output);
         });
 
@@ -541,6 +579,22 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Tasks");
         output.Should().Contain("In QA");
         output.Should().Contain("2");
+        output.Should().Contain("Components release table");
+        output.Should().Contain("Component name");
+        output.Should().Contain("Release counts");
+        output.Should().Contain("Flux");
+        output.Should().Contain("ADF PostgreSQL Database");
+
+        var fluxIndex = output.IndexOf("Flux", StringComparison.Ordinal);
+        var adfIndex = output.IndexOf("ADF PostgreSQL Database", StringComparison.Ordinal);
+        fluxIndex.Should().BeGreaterThanOrEqualTo(0);
+        adfIndex.Should().BeGreaterThanOrEqualTo(0);
+        fluxIndex.Should().BeLessThan(adfIndex);
+
+        var componentsSectionIndex = output.IndexOf("Components release table", StringComparison.Ordinal);
+        componentsSectionIndex.Should().BeGreaterThanOrEqualTo(0);
+        var componentsSection = output[componentsSectionIndex..];
+        componentsSection.Should().Contain("#");
     }
 
     [Fact(DisplayName = "ShowReleaseReport renders dash for zero tasks and components")]
@@ -567,7 +621,8 @@ public sealed class SpectreJiraPresentationServiceTests
                     new DateOnly(2026, 2, 15),
                     tasks: 0,
                     components: 0,
-                    status: new StatusName("Open"))]);
+                    status: new StatusName("Open"),
+                    componentNames: [])]);
             return Task.FromResult(console.Output);
         });
 
@@ -575,6 +630,8 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("RLS-2");
         output.Should().Contain("Open");
         output.Should().Contain("-");
+        output.Should().Contain("Components release table");
+        output.Should().Contain("No components data.");
     }
 
     [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes status and issue type breakdown")]

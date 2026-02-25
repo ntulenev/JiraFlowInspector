@@ -650,14 +650,16 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         var releaseDate = TryParseReleaseDate(issue.Fields, releaseFieldId, releaseDateFieldName);
                         var status = StatusName.FromNullable(issue.Fields?.Status?.Name);
                         var tasks = CountAllLinkedTasks(issue.Fields);
-                        var components = CountComponents(issue.Fields, componentsFieldId, componentsFieldName);
+                        var componentNames = ResolveComponentNames(issue.Fields, componentsFieldId, componentsFieldName);
+                        var components = componentNames.Count;
                         return (
                             key: new IssueKey(issue.Key!.Trim()),
                             title: new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary),
                             releaseDate,
                             status,
                             tasks,
-                            components);
+                            components,
+                            componentNames);
                     })
                     .Where(static item => item.releaseDate.HasValue)
                     .Select(item => new ReleaseIssueItem(
@@ -666,7 +668,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         item.releaseDate!.Value,
                         item.tasks,
                         item.components,
-                        item.status)));
+                        item.status,
+                        item.componentNames)));
             }
 
             nextPageToken = page.NextPageToken;
@@ -723,31 +726,31 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return null;
     }
 
-    private static int CountComponents(
+    private static IReadOnlyList<string> ResolveComponentNames(
         JiraIssueFieldsResponse? fields,
         string? componentsFieldId,
         string? componentsFieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
-            return 0;
+            return [];
         }
 
         if (TryGetAdditionalFieldValue(fields.AdditionalFields, componentsFieldId, componentsFieldName, out var rawComponents))
         {
-            var resolvedFieldCount = CountComponentsFromRaw(rawComponents);
-            if (resolvedFieldCount > 0)
+            var resolvedValues = ParseComponentValues(rawComponents);
+            if (resolvedValues.Count > 0)
             {
-                return resolvedFieldCount;
+                return resolvedValues;
             }
         }
 
         if (fields.AdditionalFields.TryGetValue("components", out var standardComponents))
         {
-            return CountComponentsFromRaw(standardComponents);
+            return ParseComponentValues(standardComponents);
         }
 
-        return 0;
+        return [];
     }
 
     private static int CountAllLinkedTasks(JiraIssueFieldsResponse? fields)
@@ -920,16 +923,17 @@ public sealed partial class JiraApiClient : IJiraApiClient
     private static bool IsCustomFieldId(string fieldId) =>
         fieldId.StartsWith("customfield_", StringComparison.OrdinalIgnoreCase);
 
-    private static int CountComponentsFromRaw(JsonElement rawComponents)
+    private static IReadOnlyList<string> ParseComponentValues(JsonElement rawComponents)
     {
         if (rawComponents.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
-            return 0;
+            return [];
         }
+
+        var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         if (rawComponents.ValueKind == JsonValueKind.Array)
         {
-            var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var item in rawComponents.EnumerateArray())
             {
                 var value = TryGetComponentValue(item);
@@ -939,7 +943,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                 }
             }
 
-            return values.Count;
+            return [.. values.OrderBy(static value => value, StringComparer.OrdinalIgnoreCase)];
         }
 
         if (rawComponents.ValueKind == JsonValueKind.String)
@@ -947,23 +951,29 @@ public sealed partial class JiraApiClient : IJiraApiClient
             var raw = rawComponents.GetString();
             if (string.IsNullOrWhiteSpace(raw))
             {
-                return 0;
+                return [];
             }
 
-            return raw
+            return [.. raw
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(static item => item.Trim())
                 .Where(static item => !string.IsNullOrWhiteSpace(item))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Count();
+                .OrderBy(static item => item, StringComparer.OrdinalIgnoreCase)];
         }
 
         if (rawComponents.ValueKind == JsonValueKind.Object)
         {
-            return string.IsNullOrWhiteSpace(TryGetComponentValue(rawComponents)) ? 0 : 1;
+            var value = TryGetComponentValue(rawComponents);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                _ = values.Add(value);
+            }
+
+            return [.. values.OrderBy(static item => item, StringComparer.OrdinalIgnoreCase)];
         }
 
-        return 0;
+        return [];
     }
 
     private async Task<int> GetIssueCountByJqlAsync(string jql, CancellationToken cancellationToken)
