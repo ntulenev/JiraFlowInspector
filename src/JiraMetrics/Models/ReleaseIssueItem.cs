@@ -17,6 +17,7 @@ public sealed record ReleaseIssueItem
     /// <param name="components">Count of components for configured components field.</param>
     /// <param name="status">Current issue status.</param>
     /// <param name="componentNames">Component names for configured components field.</param>
+    /// <param name="isHotFix">Whether this release is marked as emergency hot-fix release.</param>
     public ReleaseIssueItem(
         IssueKey key,
         IssueSummary title,
@@ -24,7 +25,8 @@ public sealed record ReleaseIssueItem
         int tasks = 0,
         int components = 0,
         StatusName? status = null,
-        IReadOnlyList<string>? componentNames = null)
+        IReadOnlyList<string>? componentNames = null,
+        bool isHotFix = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(tasks);
         ArgumentOutOfRangeException.ThrowIfNegative(components);
@@ -42,6 +44,7 @@ public sealed record ReleaseIssueItem
                 .Select(static value => value.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(static value => value, StringComparer.OrdinalIgnoreCase)];
+        IsHotFix = isHotFix;
     }
 
     /// <summary>
@@ -78,4 +81,9 @@ public sealed record ReleaseIssueItem
     /// Gets component names for configured components field.
     /// </summary>
     public IReadOnlyList<string> ComponentNames { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether this release is marked as emergency hot-fix release.
+    /// </summary>
+    public bool IsHotFix { get; }
 }

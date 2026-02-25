@@ -490,6 +490,24 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("finished = 3");
     }
 
+    [Fact(DisplayName = "ShowReleaseReportLoadingStarted writes loader line")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReleaseReportLoadingStartedWhenCalledWritesOutput()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReleaseReportLoadingStarted();
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Loading release report data...");
+    }
+
     [Fact(DisplayName = "ShowReleaseReport writes release table")]
     [Trait("Category", "Unit")]
     public async Task ShowReleaseReportWhenCalledWritesReleaseRows()
@@ -520,6 +538,8 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Release report");
         output.Should().Contain("All releases by label");
         output.Should().Contain("Processing");
+        output.Should().Contain("Hot-fix markers:");
+        output.Should().Contain("Change type = Emergency");
         output.Should().Contain("#");
         output.Should().Contain("Release Date");
         output.Should().Contain("Status");
@@ -529,6 +549,10 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Ready for Prod");
         output.Should().Contain("3");
         output.Should().Contain("2026-02-14");
+        output.Should().Contain("Total releases:");
+        output.Should().Contain("Hotfix count:");
+        output.Should().Contain("1");
+        output.Should().Contain("0");
         output.Should().NotContain("Components field:");
         output.Should().NotContain("Components release table");
     }
@@ -574,6 +598,7 @@ public sealed class SpectreJiraPresentationServiceTests
 
         // Assert
         output.Should().Contain("Components field:");
+        output.Should().Contain("Hot-fix markers:");
         output.Should().Contain("Components");
         output.Should().Contain("Status");
         output.Should().Contain("Tasks");
@@ -582,6 +607,8 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Components release table");
         output.Should().Contain("Component name");
         output.Should().Contain("Release counts");
+        output.Should().Contain("Total releases:");
+        output.Should().Contain("Hotfix count:");
         output.Should().Contain("Flux");
         output.Should().Contain("ADF PostgreSQL Database");
 
@@ -632,6 +659,8 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("-");
         output.Should().Contain("Components release table");
         output.Should().Contain("No components data.");
+        output.Should().Contain("Total releases:");
+        output.Should().Contain("Hotfix count:");
     }
 
     [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes status and issue type breakdown")]

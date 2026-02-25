@@ -659,6 +659,10 @@ public sealed class JiraApiClientTests
             "Processing",
             "Change completion date",
             null,
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            },
             cts.Token);
 
         // Assert
@@ -669,6 +673,7 @@ public sealed class JiraApiClientTests
         releases[0].Status.Value.Should().Be("Ready for Prod");
         releases[0].Tasks.Should().Be(3);
         releases[0].ComponentNames.Should().BeEmpty();
+        releases[0].IsHotFix.Should().BeFalse();
         capturedSearchUrl.Should().Contain("project");
         capturedSearchUrl.Should().Contain("RLS");
         capturedSearchUrl.Should().Contain("labels");
@@ -737,6 +742,10 @@ public sealed class JiraApiClientTests
             "Processing",
             "Change completion date",
             null,
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            },
             cts.Token);
 
         // Assert
@@ -746,6 +755,7 @@ public sealed class JiraApiClientTests
         releases[0].Status.Should().Be(StatusName.Unknown);
         releases[0].Tasks.Should().Be(0);
         releases[0].ComponentNames.Should().BeEmpty();
+        releases[0].IsHotFix.Should().BeFalse();
     }
 
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync counts components when components field is configured")]
@@ -816,6 +826,10 @@ public sealed class JiraApiClientTests
             "Processing",
             "Change completion date",
             "Components",
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            },
             cts.Token);
 
         // Assert
@@ -824,10 +838,178 @@ public sealed class JiraApiClientTests
         releases[0].Status.Value.Should().Be("Released");
         releases[0].Components.Should().Be(2);
         releases[0].ComponentNames.Should().ContainInOrder("ADF PostgreSQL Database", "Flux");
+        releases[0].IsHotFix.Should().BeFalse();
         capturedSearchUrl.Should().Contain("customfield_12345");
         capturedSearchUrl.Should().Contain("customfield_77777");
         capturedSearchUrl.Should().Contain("status");
         capturedSearchUrl.Should().Contain("components");
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync marks release as hot-fix when configured field matches value")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenHotFixFieldMatchesMarksReleaseAsHotFix()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            },
+            new()
+            {
+                Id = "customfield_88888",
+                Name = "Change type"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-16\"");
+        using var hotFixJson = JsonDocument.Parse("{\"value\":\"Emergency\"}");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-4",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Emergency release",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
+                            ["customfield_88888"] = hotFixJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            componentsFieldName: null,
+            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            },
+            cancellationToken: cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-4");
+        releases[0].IsHotFix.Should().BeTrue();
+        capturedSearchUrl.Should().Contain("customfield_88888");
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync marks release as hot-fix when any configured rule matches")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenAnyHotFixRuleMatchesMarksReleaseAsHotFix()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            },
+            new()
+            {
+                Id = "customfield_88888",
+                Name = "Change type"
+            },
+            new()
+            {
+                Id = "customfield_99999",
+                Name = "Change reason"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-16\"");
+        using var changeReasonJson = JsonDocument.Parse("{\"value\":\"Mitigation\"}");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-5",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Mitigation release",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
+                            ["customfield_99999"] = changeReasonJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            componentsFieldName: null,
+            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"],
+                ["Change reason"] = ["Repair", "Mitigation"]
+            },
+            cancellationToken: cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-5");
+        releases[0].IsHotFix.Should().BeTrue();
+        capturedSearchUrl.Should().Contain("customfield_88888");
+        capturedSearchUrl.Should().Contain("customfield_99999");
     }
 
     [Fact(DisplayName = "GetIssueTimelineAsync returns mapped timeline")]

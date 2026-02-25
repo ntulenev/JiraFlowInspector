@@ -59,10 +59,15 @@ public sealed class PdfContentComposer : IPdfContentComposer
             .Text($"All releases by label \"{releaseReport.ProjectLabel}\"")
             .Bold()
             .FontColor(Colors.Red.Darken2);
+        _ = column
+            .Item()
+            .Text($"Hot-fix markers: {BuildHotFixRulesText(releaseReport.HotFixRules)}")
+            .FontColor(Colors.Grey.Darken1);
 
         if (reportData.ReleaseIssues.Count == 0)
         {
             _ = column.Item().Text("No releases found for selected month.").FontColor(Colors.Grey.Darken1);
+            _ = column.Item().Text("Total releases: 0    Hotfix count: 0").FontColor(Colors.Grey.Darken1);
             return;
         }
 
@@ -72,6 +77,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
             .OrderBy(static release => release.ReleaseDate)
             .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        var hotFixCount = orderedReleases.Count(static release => release.IsHotFix);
 
         column.Item().Table(table =>
         {
@@ -109,27 +115,104 @@ public sealed class PdfContentComposer : IPdfContentComposer
             {
                 var release = orderedReleases[i];
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                if (release.IsHotFix)
+                {
+                    var hotFixColor = Colors.Red.Darken2;
+                    table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                    {
+                        _ = text.Span(release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).FontColor(hotFixColor);
+                    });
+                }
+                else
+                {
+                    _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                }
                 var releaseIssueUrl = PdfPresentationHelpers.BuildIssueBrowseUrl(jiraBaseUrl, release.Key);
-                _ = table.Cell()
-                    .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Hyperlink(releaseIssueUrl)
-                    .DefaultTextStyle(static style => style.FontColor(Colors.Blue.Darken2).Underline())
-                    .Text(release.Key.Value);
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.Status.Value);
-                _ = table.Cell()
-                    .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(release.Tasks == 0 ? "-" : release.Tasks.ToString(CultureInfo.InvariantCulture));
-                if (includeComponents)
+                if (release.IsHotFix)
+                {
+                    var hotFixLinkColor = Colors.Red.Darken2;
+                    _ = table.Cell()
+                        .Element(PdfPresentationHelpers.StyleBodyCell)
+                        .Hyperlink(releaseIssueUrl)
+                        .DefaultTextStyle(style => style.FontColor(hotFixLinkColor).Underline())
+                        .Text(release.Key.Value);
+                }
+                else
                 {
                     _ = table.Cell()
                         .Element(PdfPresentationHelpers.StyleBodyCell)
-                        .Text(release.Components == 0 ? "-" : release.Components.ToString(CultureInfo.InvariantCulture));
+                        .Hyperlink(releaseIssueUrl)
+                        .DefaultTextStyle(static style => style.FontColor(Colors.Blue.Darken2).Underline())
+                        .Text(release.Key.Value);
                 }
 
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.Title.Truncate(new TextLength(140)).Value);
+                if (release.IsHotFix)
+                {
+                    var hotFixStatusColor = Colors.Red.Darken2;
+                    table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                    {
+                        _ = text.Span(release.Status.Value).FontColor(hotFixStatusColor);
+                    });
+                }
+                else
+                {
+                    _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(release.Status.Value);
+                }
+
+                var tasksText = release.Tasks == 0 ? "-" : release.Tasks.ToString(CultureInfo.InvariantCulture);
+                if (release.IsHotFix)
+                {
+                    var hotFixTasksColor = Colors.Red.Darken2;
+                    table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                    {
+                        _ = text.Span(tasksText).FontColor(hotFixTasksColor);
+                    });
+                }
+                else
+                {
+                    _ = table.Cell()
+                        .Element(PdfPresentationHelpers.StyleBodyCell)
+                        .Text(tasksText);
+                }
+                if (includeComponents)
+                {
+                    var componentsText = release.Components == 0 ? "-" : release.Components.ToString(CultureInfo.InvariantCulture);
+                    if (release.IsHotFix)
+                    {
+                        var hotFixComponentsColor = Colors.Red.Darken2;
+                        table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                        {
+                            _ = text.Span(componentsText).FontColor(hotFixComponentsColor);
+                        });
+                    }
+                    else
+                    {
+                        _ = table.Cell()
+                            .Element(PdfPresentationHelpers.StyleBodyCell)
+                            .Text(componentsText);
+                    }
+                }
+
+                var titleText = release.Title.Truncate(new TextLength(140)).Value;
+                if (release.IsHotFix)
+                {
+                    var hotFixTitleColor = Colors.Red.Darken2;
+                    table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                    {
+                        _ = text.Span(titleText).FontColor(hotFixTitleColor);
+                    });
+                }
+                else
+                {
+                    _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(titleText);
+                }
             }
         });
+
+        _ = column
+            .Item()
+            .Text($"Total releases: {orderedReleases.Length}    Hotfix count: {hotFixCount}")
+            .FontColor(Colors.Grey.Darken1);
 
         if (!includeComponents)
         {
@@ -246,6 +329,15 @@ public sealed class PdfContentComposer : IPdfContentComposer
             REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: false);
+    }
+
+    private static string BuildHotFixRulesText(IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules)
+    {
+        return string.Join(
+            "; ",
+            hotFixRules
+                .OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(static pair => $"{pair.Key} = {string.Join(", ", pair.Value)}"));
     }
 
     private static void ComposeIssueListItemsSection(

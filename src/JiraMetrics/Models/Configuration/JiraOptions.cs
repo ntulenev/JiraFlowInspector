@@ -181,4 +181,9 @@ public sealed class ReleaseReportOptions
     /// Gets or sets optional components field name.
     /// </summary>
     public string? ComponentsFieldName { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional hot-fix marker rules in format <c>field name -&gt; values</c>.
+    /// </summary>
+    public Dictionary<string, string[]>? HotFixRules { get; init; }
 }

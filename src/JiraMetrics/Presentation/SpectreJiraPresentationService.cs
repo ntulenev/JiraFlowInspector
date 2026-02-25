@@ -272,6 +272,9 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
+    public void ShowReleaseReportLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading release report data...[/]");
+
+    /// <inheritdoc />
     public void ShowReleaseReport(
         ReleaseReportSettings settings,
         MonthLabel monthLabel,
@@ -288,10 +291,22 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         {
             AnsiConsole.MarkupLine($"[grey]Components field:[/] {Markup.Escape(settings.ComponentsFieldName)}");
         }
+        AnsiConsole.MarkupLine("[grey]Hot-fix markers:[/]");
+        foreach (var (fieldName, values) in settings.HotFixRules
+            .OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var valuesText = string.Join(", ", values);
+            AnsiConsole.MarkupLine($"[grey]-[/] {Markup.Escape(fieldName)} = {Markup.Escape(valuesText)}");
+        }
+
+        var totalReleases = releases.Count;
+        var hotFixCount = releases.Count(static release => release.IsHotFix);
 
         if (releases.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No releases found for selected month.[/]");
+            AnsiConsole.MarkupLine(
+                $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}");
             return;
         }
 
@@ -321,28 +336,32 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         for (var i = 0; i < orderedReleases.Count; i++)
         {
             var release = orderedReleases[i];
+            var tasksText = release.Tasks == 0
+                ? "-"
+                : release.Tasks.ToString(CultureInfo.InvariantCulture);
             var row = new List<string>
             {
                 (i + 1).ToString(CultureInfo.InvariantCulture),
-                release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                Markup.Escape(release.Key.Value),
-                Markup.Escape(release.Status.Value),
-                release.Tasks == 0
-                    ? "-"
-                    : release.Tasks.ToString(CultureInfo.InvariantCulture)
+                FormatReleaseCell(release.ReleaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), release.IsHotFix),
+                FormatReleaseCell(release.Key.Value, release.IsHotFix),
+                FormatReleaseCell(release.Status.Value, release.IsHotFix),
+                FormatReleaseCell(tasksText, release.IsHotFix)
             };
             if (includeComponents)
             {
-                row.Add(release.Components == 0
+                var componentsText = release.Components == 0
                     ? "-"
-                    : release.Components.ToString(CultureInfo.InvariantCulture));
+                    : release.Components.ToString(CultureInfo.InvariantCulture);
+                row.Add(FormatReleaseCell(componentsText, release.IsHotFix));
             }
 
-            row.Add(Markup.Escape(release.Title.Truncate(new TextLength(120)).Value));
+            row.Add(FormatReleaseCell(release.Title.Truncate(new TextLength(120)).Value, release.IsHotFix));
             _ = table.AddRow([.. row]);
         }
 
         AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine(
+            $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}");
 
         if (!includeComponents)
         {
@@ -848,5 +867,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .Select(static pair => (componentName: pair.Key, releaseCount: pair.Value))
             .OrderByDescending(static pair => pair.releaseCount)
             .ThenBy(static pair => pair.componentName, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static string FormatReleaseCell(string value, bool isHotFix)
+    {
+        var escaped = Markup.Escape(value);
+        return isHotFix ? $"[red]{escaped}[/]" : escaped;
     }
 }

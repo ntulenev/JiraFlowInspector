@@ -121,6 +121,11 @@ public interface IJiraPresentationService
     void ShowPathGroupsSummary(PathGroupsSummary summary);
 
     /// <summary>
+    /// Shows release report loading start message.
+    /// </summary>
+    void ShowReleaseReportLoadingStarted();
+
+    /// <summary>
     /// Shows release report section.
     /// </summary>
     /// <param name="settings">Release report settings.</param>

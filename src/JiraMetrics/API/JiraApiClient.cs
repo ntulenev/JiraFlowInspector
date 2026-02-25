@@ -172,14 +172,17 @@ public sealed partial class JiraApiClient : IJiraApiClient
         string projectLabel,
         string releaseDateFieldName,
         string? componentsFieldName,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseDateFieldName);
+        ArgumentNullException.ThrowIfNull(hotFixRules);
 
         var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
         var fieldId = await ResolveFieldIdAsync(releaseDateFieldName, cancellationToken).ConfigureAwait(false);
         var componentsFieldId = await TryResolveFieldIdAsync(componentsFieldName, cancellationToken).ConfigureAwait(false);
+        var resolvedHotFixRules = await ResolveHotFixRulesAsync(hotFixRules, cancellationToken).ConfigureAwait(false);
         var escapedProject = releaseProjectKey.Value.EscapeJqlString();
         var escapedLabel = projectLabel.EscapeJqlString();
         var escapedFieldName = releaseDateFieldName.EscapeJqlString();
@@ -198,6 +201,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
             releaseDateFieldName,
             componentsFieldId,
             componentsFieldName,
+            resolvedHotFixRules,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -416,6 +420,55 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return null;
     }
 
+    private async Task<IReadOnlyList<ResolvedHotFixRule>> ResolveHotFixRulesAsync(
+        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
+        CancellationToken cancellationToken)
+    {
+        var normalizedRules = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (rawFieldName, rawValues) in hotFixRules)
+        {
+            if (string.IsNullOrWhiteSpace(rawFieldName) || rawValues is null)
+            {
+                continue;
+            }
+
+            var fieldName = rawFieldName.Trim();
+            if (!normalizedRules.TryGetValue(fieldName, out var values))
+            {
+                values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                normalizedRules[fieldName] = values;
+            }
+
+            foreach (var rawValue in rawValues)
+            {
+                if (!string.IsNullOrWhiteSpace(rawValue))
+                {
+                    _ = values.Add(rawValue.Trim());
+                }
+            }
+
+            if (values.Count == 0)
+            {
+                _ = normalizedRules.Remove(fieldName);
+            }
+        }
+
+        if (normalizedRules.Count == 0)
+        {
+            throw new InvalidOperationException("Hot-fix marker rules are empty.");
+        }
+
+        var resolvedRules = new List<ResolvedHotFixRule>(normalizedRules.Count);
+        foreach (var (fieldName, values) in normalizedRules.OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var fieldId = await TryResolveFieldIdAsync(fieldName, cancellationToken).ConfigureAwait(false);
+            resolvedRules.Add(new ResolvedHotFixRule(fieldName, fieldId, values));
+        }
+
+        return resolvedRules;
+    }
+
     private async Task<IReadOnlyList<IssueKey>> SearchIssueKeysAsync(string jql, CancellationToken cancellationToken)
     {
         var issueKeys = new List<IssueKey>();
@@ -596,6 +649,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
         string releaseDateFieldName,
         string? componentsFieldId,
         string? componentsFieldName,
+        IReadOnlyList<ResolvedHotFixRule> hotFixRules,
         CancellationToken cancellationToken)
     {
         var issues = new List<ReleaseIssueItem>();
@@ -615,6 +669,13 @@ public sealed partial class JiraApiClient : IJiraApiClient
             if (!string.IsNullOrWhiteSpace(componentsFieldId))
             {
                 fields.Add(Uri.EscapeDataString(componentsFieldId));
+            }
+            foreach (var hotFixFieldId in hotFixRules
+                .Select(static rule => rule.FieldId)
+                .Where(static fieldId => !string.IsNullOrWhiteSpace(fieldId))
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                fields.Add(Uri.EscapeDataString(hotFixFieldId!));
             }
             if (!string.IsNullOrWhiteSpace(componentsFieldId) || !string.IsNullOrWhiteSpace(componentsFieldName))
             {
@@ -652,6 +713,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         var tasks = CountAllLinkedTasks(issue.Fields);
                         var componentNames = ResolveComponentNames(issue.Fields, componentsFieldId, componentsFieldName);
                         var components = componentNames.Count;
+                        var isHotFix = IsHotFixRelease(issue.Fields, hotFixRules);
                         return (
                             key: new IssueKey(issue.Key!.Trim()),
                             title: new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary),
@@ -659,7 +721,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
                             status,
                             tasks,
                             components,
-                            componentNames);
+                            componentNames,
+                            isHotFix);
                     })
                     .Where(static item => item.releaseDate.HasValue)
                     .Select(item => new ReleaseIssueItem(
@@ -669,7 +732,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         item.tasks,
                         item.components,
                         item.status,
-                        item.componentNames)));
+                        item.componentNames,
+                        item.isHotFix)));
             }
 
             nextPageToken = page.NextPageToken;
@@ -781,6 +845,33 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         return keys.Count;
+    }
+
+    private static bool IsHotFixRelease(
+        JiraIssueFieldsResponse? fields,
+        IReadOnlyList<ResolvedHotFixRule> hotFixRules)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0 || hotFixRules.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var hotFixRule in hotFixRules)
+        {
+            if (!TryGetAdditionalFieldValue(fields.AdditionalFields, hotFixRule.FieldId, hotFixRule.FieldName, out var rawValue))
+            {
+                continue;
+            }
+
+            var matchesRule = ParseRawFieldValues(rawValue)
+                .Any(hotFixRule.Values.Contains);
+            if (matchesRule)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool HasPullRequest(JiraIssueFieldsResponse fields, string pullRequestFieldName)
@@ -915,6 +1006,83 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return null;
     }
 
+    private static IReadOnlyList<string> ParseRawFieldValues(JsonElement rawValue)
+    {
+        if (rawValue.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return [];
+        }
+
+        if (rawValue.ValueKind == JsonValueKind.Array)
+        {
+            var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in rawValue.EnumerateArray())
+            {
+                var parsed = TryGetFieldValue(item);
+                if (!string.IsNullOrWhiteSpace(parsed))
+                {
+                    _ = values.Add(parsed.Trim());
+                }
+            }
+
+            return [.. values.OrderBy(static value => value, StringComparer.OrdinalIgnoreCase)];
+        }
+
+        var resolved = TryGetFieldValue(rawValue);
+        if (string.IsNullOrWhiteSpace(resolved))
+        {
+            return [];
+        }
+
+        return [resolved.Trim()];
+    }
+
+    private static string? TryGetFieldValue(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            var text = value.GetString();
+            return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+
+        if (value.ValueKind == JsonValueKind.Object)
+        {
+            if (value.TryGetProperty("value", out var rawValue) && rawValue.ValueKind == JsonValueKind.String)
+            {
+                var text = rawValue.GetString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text.Trim();
+                }
+            }
+
+            if (value.TryGetProperty("name", out var rawName) && rawName.ValueKind == JsonValueKind.String)
+            {
+                var text = rawName.GetString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text.Trim();
+                }
+            }
+
+            if (value.TryGetProperty("id", out var rawId) && rawId.ValueKind == JsonValueKind.String)
+            {
+                var text = rawId.GetString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text.Trim();
+                }
+            }
+        }
+
+        if (value.ValueKind is JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False)
+        {
+            return value.GetRawText();
+        }
+
+        return null;
+    }
+
     private static string NormalizeFieldName(string value) =>
         new([.. value
             .Where(static ch => char.IsLetterOrDigit(ch))
@@ -992,6 +1160,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
 
         return page.Total > 0 ? page.Total : page.Issues.Count;
     }
+
+    private sealed record ResolvedHotFixRule(string FieldName, string? FieldId, HashSet<string> Values);
 
     private readonly IJiraTransport _transport;
     private readonly ITransitionBuilder _transitionBuilder;

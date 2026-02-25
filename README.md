@@ -128,6 +128,11 @@ Per release row:
   count from configured components field; fallback to standard Jira `components`.
   Supports array/string/object custom-field payloads.
 - `0` task/component values are displayed as `-`.
+- Release totals:
+  `Total releases` and `Hotfix count` are shown after release table.
+- Hot-fix detection:
+  uses `HotFixRules` dictionary (`field -> values[]`).
+  If release matches any configured rule, release row fields are rendered in red.
 
 When `ReleaseReport.ComponentsFieldName` is configured, report also shows
 `Components release table` after the release table with:
@@ -197,6 +202,9 @@ All options live under `Jira`.
   Jira field display name storing release date.
 - `ReleaseReport.ComponentsFieldName` (`string`, optional):
   Jira field name for components counting.
+- `ReleaseReport.HotFixRules` (`object`, optional, default `{ "Change type": ["Emergency"] }`):
+  hot-fix rules dictionary where key is Jira field name and value is list of accepted marker values.
+  Issue is treated as hot-fix when any rule matches.
 - `Pdf` (`object`, optional):
   PDF settings.
 - `Pdf.Enabled` (`bool`, optional, default `true`):
@@ -243,7 +251,11 @@ All options live under `Jira`.
       "ReleaseProjectKey": "RLS",
       "ProjectLabel": "AAA",
       "ReleaseDateFieldName": "Change completion date",
-      "ComponentsFieldName": "Components"
+      "ComponentsFieldName": "Components",
+      "HotFixRules": {
+        "Change type": [ "Emergency" ],
+        "Change reason": [ "Repair", "Mitigation" ]
+      }
     },
     "Pdf": {
       "Enabled": true,

@@ -93,11 +93,14 @@ public sealed class JiraApplication : IJiraApplication
 
             if (_settings.ReleaseReport is { } releaseReport)
             {
+                _presentationService.ShowReleaseReportLoadingStarted();
+
                 releaseIssues = await _apiClient.GetReleaseIssuesForMonthAsync(
                     releaseReport.ReleaseProjectKey,
                     releaseReport.ProjectLabel,
                     releaseReport.ReleaseDateFieldName,
                     releaseReport.ComponentsFieldName,
+                    releaseReport.HotFixRules,
                     cancellationToken).ConfigureAwait(false);
             }
 

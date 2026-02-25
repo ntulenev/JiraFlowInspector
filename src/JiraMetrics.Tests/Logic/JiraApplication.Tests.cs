@@ -320,6 +320,7 @@ public sealed class JiraApplicationTests
 
         // Assert
         apiClient.ReleaseIssuesRequested.Should().BeTrue();
+        presentation.ReleaseReportLoadingStartedShown.Should().BeTrue();
         presentation.ReleaseReportShown.Should().BeTrue();
     }
 
@@ -359,17 +360,20 @@ public sealed class JiraApplicationTests
         await app.RunAsync();
 
         // Assert
+        var releaseLoadingStartIndex = presentation.Calls.IndexOf("ReleaseReportLoadingStarted");
         var releaseIndex = presentation.Calls.IndexOf("ReleaseReport");
         var periodContextIndex = presentation.Calls.IndexOf("ReportPeriodContext");
         var bugRatioLoadingStartIndex = presentation.Calls.IndexOf("BugRatioLoadingStarted");
         var bugRatioIndex = presentation.Calls.IndexOf("BugRatio");
         var headerIndex = presentation.Calls.IndexOf("ReportHeader");
         periodContextIndex.Should().BeGreaterThanOrEqualTo(0);
+        releaseLoadingStartIndex.Should().BeGreaterThanOrEqualTo(0);
         releaseIndex.Should().BeGreaterThanOrEqualTo(0);
         bugRatioLoadingStartIndex.Should().BeGreaterThanOrEqualTo(0);
         bugRatioIndex.Should().BeGreaterThanOrEqualTo(0);
         headerIndex.Should().BeGreaterThanOrEqualTo(0);
-        periodContextIndex.Should().BeLessThan(releaseIndex);
+        periodContextIndex.Should().BeLessThan(releaseLoadingStartIndex);
+        releaseLoadingStartIndex.Should().BeLessThan(releaseIndex);
         releaseIndex.Should().BeLessThan(bugRatioLoadingStartIndex);
         releaseIndex.Should().BeLessThan(bugRatioIndex);
         releaseIndex.Should().BeLessThan(headerIndex);
@@ -790,6 +794,7 @@ public sealed class JiraApplicationTests
             string projectLabel,
             string releaseDateFieldName,
             string? componentsFieldName,
+            IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
             CancellationToken cancellationToken)
         {
             ReleaseIssuesRequested = true;
@@ -881,6 +886,8 @@ public sealed class JiraApplicationTests
         public bool BugRatioLoadingCompletedShown { get; private set; }
 
         public bool ReleaseReportShown { get; private set; }
+
+        public bool ReleaseReportLoadingStartedShown { get; private set; }
 
         public bool OpenIssuesByStatusShown { get; private set; }
 
@@ -976,6 +983,12 @@ public sealed class JiraApplicationTests
         {
             ReleaseReportShown = true;
             Calls.Add("ReleaseReport");
+        }
+
+        public void ShowReleaseReportLoadingStarted()
+        {
+            ReleaseReportLoadingStartedShown = true;
+            Calls.Add("ReleaseReportLoadingStarted");
         }
 
         public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)

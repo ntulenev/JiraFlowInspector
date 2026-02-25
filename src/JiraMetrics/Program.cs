@@ -153,7 +153,8 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         !string.IsNullOrWhiteSpace(source.ReleaseProjectKey)
         || !string.IsNullOrWhiteSpace(source.ProjectLabel)
         || !string.IsNullOrWhiteSpace(source.ReleaseDateFieldName)
-        || !string.IsNullOrWhiteSpace(source.ComponentsFieldName);
+        || !string.IsNullOrWhiteSpace(source.ComponentsFieldName)
+        || source.HotFixRules is { Count: > 0 };
 
     if (!hasAnyValue)
     {
@@ -172,7 +173,11 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         new ProjectKey(source.ReleaseProjectKey),
         source.ProjectLabel,
         source.ReleaseDateFieldName,
-        source.ComponentsFieldName);
+        source.ComponentsFieldName,
+        source.HotFixRules?.ToDictionary(
+            static pair => pair.Key,
+            static pair => (IReadOnlyList<string>)(pair.Value ?? []),
+            StringComparer.OrdinalIgnoreCase));
 }
 
 static PdfReportSettings ResolvePdfReport(PdfOptions? source)

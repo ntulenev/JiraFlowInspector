@@ -105,6 +105,7 @@ public interface IJiraApiClient
     /// <param name="projectLabel">Project label filter.</param>
     /// <param name="releaseDateFieldName">Release date field name.</param>
     /// <param name="componentsFieldName">Optional components field name.</param>
+    /// <param name="hotFixRules">Hot-fix marker rules in format <c>field name -&gt; values</c>.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Release issues in selected month.</returns>
     Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
@@ -112,6 +113,7 @@ public interface IJiraApiClient
         string projectLabel,
         string releaseDateFieldName,
         string? componentsFieldName,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
         CancellationToken cancellationToken);
 
     /// <summary>
