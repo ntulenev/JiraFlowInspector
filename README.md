@@ -127,9 +127,11 @@ Per release row:
 - `Components`:
   count from configured components field; fallback to standard Jira `components`.
   Supports array/string/object custom-field payloads.
+- `Rollback type`:
+  payload from configured rollback field; if empty then `-`.
 - `0` task/component values are displayed as `-`.
 - Release totals:
-  `Total releases` and `Hotfix count` are shown after release table.
+  `Total releases`, `Hotfix count`, and `Rollbacks count` are shown after release table.
 - Hot-fix detection:
   uses `HotFixRules` dictionary (`field -> values[]`).
   If release matches any configured rule, release row fields are rendered in red.
@@ -202,6 +204,8 @@ All options live under `Jira`.
   Jira field display name storing release date.
 - `ReleaseReport.ComponentsFieldName` (`string`, optional):
   Jira field name for components counting.
+- `ReleaseReport.RollbackFieldName` (`string`, optional, default `Rollback type`):
+  Jira field name for rollback payload in release table.
 - `ReleaseReport.HotFixRules` (`object`, optional, default `{ "Change type": ["Emergency"] }`):
   hot-fix rules dictionary where key is Jira field name and value is list of accepted marker values.
   Issue is treated as hot-fix when any rule matches.
@@ -252,6 +256,7 @@ All options live under `Jira`.
       "ProjectLabel": "AAA",
       "ReleaseDateFieldName": "Change completion date",
       "ComponentsFieldName": "Components",
+      "RollbackFieldName": "Rollback type",
       "HotFixRules": {
         "Change type": [ "Emergency" ],
         "Change reason": [ "Repair", "Mitigation" ]

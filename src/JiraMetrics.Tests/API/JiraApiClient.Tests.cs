@@ -663,6 +663,7 @@ public sealed class JiraApiClientTests
             {
                 ["Change type"] = ["Emergency"]
             },
+            "Rollback type",
             cts.Token);
 
         // Assert
@@ -746,6 +747,7 @@ public sealed class JiraApiClientTests
             {
                 ["Change type"] = ["Emergency"]
             },
+            "Rollback type",
             cts.Token);
 
         // Assert
@@ -830,6 +832,7 @@ public sealed class JiraApiClientTests
             {
                 ["Change type"] = ["Emergency"]
             },
+            "Rollback type",
             cts.Token);
 
         // Assert
@@ -843,6 +846,87 @@ public sealed class JiraApiClientTests
         capturedSearchUrl.Should().Contain("customfield_77777");
         capturedSearchUrl.Should().Contain("status");
         capturedSearchUrl.Should().Contain("components");
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync maps rollback payload when rollback field contains value")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenRollbackFieldContainsValueMapsRollbackPayload()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            },
+            new()
+            {
+                Id = "customfield_66666",
+                Name = "Rollback type"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-17\"");
+        using var rollbackJson = JsonDocument.Parse("{\"value\":\"Full rollback\"}");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-6",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Rollback release",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
+                            ["customfield_66666"] = rollbackJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            componentsFieldName: null,
+            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            },
+            rollbackFieldName: "Rollback type",
+            cancellationToken: cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-6");
+        releases[0].RollbackType.Should().Be("Full rollback");
+        capturedSearchUrl.Should().Contain("customfield_66666");
     }
 
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync marks release as hot-fix when configured field matches value")]
@@ -916,6 +1000,7 @@ public sealed class JiraApiClientTests
             {
                 ["Change type"] = ["Emergency"]
             },
+            rollbackFieldName: "Rollback type",
             cancellationToken: cts.Token);
 
         // Assert
@@ -1002,6 +1087,7 @@ public sealed class JiraApiClientTests
                 ["Change type"] = ["Emergency"],
                 ["Change reason"] = ["Repair", "Mitigation"]
             },
+            rollbackFieldName: "Rollback type",
             cancellationToken: cts.Token);
 
         // Assert

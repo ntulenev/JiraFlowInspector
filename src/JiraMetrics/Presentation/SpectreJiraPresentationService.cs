@@ -301,12 +301,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         var totalReleases = releases.Count;
         var hotFixCount = releases.Count(static release => release.IsHotFix);
+        var rollbackCount = releases.Count(static release => !string.IsNullOrWhiteSpace(release.RollbackType));
 
         if (releases.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No releases found for selected month.[/]");
             AnsiConsole.MarkupLine(
-                $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}");
+                $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}    [grey]Rollbacks count:[/] {rollbackCount}");
             return;
         }
 
@@ -326,6 +327,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             _ = table.AddColumn("[bold]Components[/]");
         }
 
+        _ = table.AddColumn(new TableColumn("[bold]Rollback type[/]").NoWrap());
         _ = table.AddColumn("[bold]Title[/]");
 
         var orderedReleases = releases
@@ -355,13 +357,17 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 row.Add(FormatReleaseCell(componentsText, release.IsHotFix));
             }
 
+            var rollbackText = string.IsNullOrWhiteSpace(release.RollbackType)
+                ? "-"
+                : release.RollbackType;
+            row.Add(FormatReleaseCell(rollbackText, release.IsHotFix));
             row.Add(FormatReleaseCell(release.Title.Truncate(new TextLength(120)).Value, release.IsHotFix));
             _ = table.AddRow([.. row]);
         }
 
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine(
-            $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}");
+            $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}    [grey]Rollbacks count:[/] {rollbackCount}");
 
         if (!includeComponents)
         {

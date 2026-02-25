@@ -67,7 +67,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
         if (reportData.ReleaseIssues.Count == 0)
         {
             _ = column.Item().Text("No releases found for selected month.").FontColor(Colors.Grey.Darken1);
-            _ = column.Item().Text("Total releases: 0    Hotfix count: 0").FontColor(Colors.Grey.Darken1);
+            _ = column.Item().Text("Total releases: 0    Hotfix count: 0    Rollbacks count: 0").FontColor(Colors.Grey.Darken1);
             return;
         }
 
@@ -78,6 +78,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
             .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var hotFixCount = orderedReleases.Count(static release => release.IsHotFix);
+        var rollbackCount = orderedReleases.Count(static release => !string.IsNullOrWhiteSpace(release.RollbackType));
 
         column.Item().Table(table =>
         {
@@ -93,6 +94,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     columns.ConstantColumn(72);
                 }
 
+                columns.ConstantColumn(96);
                 columns.RelativeColumn(4);
             });
 
@@ -108,6 +110,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Components");
                 }
 
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Rollback type");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Title");
             });
 
@@ -193,6 +196,20 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     }
                 }
 
+                var rollbackText = string.IsNullOrWhiteSpace(release.RollbackType) ? "-" : release.RollbackType;
+                if (release.IsHotFix)
+                {
+                    var hotFixRollbackColor = Colors.Red.Darken2;
+                    table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                    {
+                        _ = text.Span(rollbackText).FontColor(hotFixRollbackColor);
+                    });
+                }
+                else
+                {
+                    _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(rollbackText);
+                }
+
                 var titleText = release.Title.Truncate(new TextLength(140)).Value;
                 if (release.IsHotFix)
                 {
@@ -211,7 +228,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         _ = column
             .Item()
-            .Text($"Total releases: {orderedReleases.Length}    Hotfix count: {hotFixCount}")
+            .Text($"Total releases: {orderedReleases.Length}    Hotfix count: {hotFixCount}    Rollbacks count: {rollbackCount}")
             .FontColor(Colors.Grey.Darken1);
 
         if (!includeComponents)

@@ -186,4 +186,9 @@ public sealed class ReleaseReportOptions
     /// Gets or sets optional hot-fix marker rules in format <c>field name -&gt; values</c>.
     /// </summary>
     public Dictionary<string, string[]>? HotFixRules { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional rollback field name.
+    /// </summary>
+    public string? RollbackFieldName { get; init; }
 }

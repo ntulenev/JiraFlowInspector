@@ -154,7 +154,8 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         || !string.IsNullOrWhiteSpace(source.ProjectLabel)
         || !string.IsNullOrWhiteSpace(source.ReleaseDateFieldName)
         || !string.IsNullOrWhiteSpace(source.ComponentsFieldName)
-        || source.HotFixRules is { Count: > 0 };
+        || source.HotFixRules is { Count: > 0 }
+        || !string.IsNullOrWhiteSpace(source.RollbackFieldName);
 
     if (!hasAnyValue)
     {
@@ -177,7 +178,8 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         source.HotFixRules?.ToDictionary(
             static pair => pair.Key,
             static pair => (IReadOnlyList<string>)(pair.Value ?? []),
-            StringComparer.OrdinalIgnoreCase));
+            StringComparer.OrdinalIgnoreCase),
+        source.RollbackFieldName);
 }
 
 static PdfReportSettings ResolvePdfReport(PdfOptions? source)

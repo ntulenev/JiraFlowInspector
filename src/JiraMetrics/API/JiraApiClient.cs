@@ -173,16 +173,19 @@ public sealed partial class JiraApiClient : IJiraApiClient
         string releaseDateFieldName,
         string? componentsFieldName,
         IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
+        string rollbackFieldName,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseDateFieldName);
         ArgumentNullException.ThrowIfNull(hotFixRules);
+        ArgumentException.ThrowIfNullOrWhiteSpace(rollbackFieldName);
 
         var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
         var fieldId = await ResolveFieldIdAsync(releaseDateFieldName, cancellationToken).ConfigureAwait(false);
         var componentsFieldId = await TryResolveFieldIdAsync(componentsFieldName, cancellationToken).ConfigureAwait(false);
         var resolvedHotFixRules = await ResolveHotFixRulesAsync(hotFixRules, cancellationToken).ConfigureAwait(false);
+        var rollbackFieldId = await TryResolveFieldIdAsync(rollbackFieldName, cancellationToken).ConfigureAwait(false);
         var escapedProject = releaseProjectKey.Value.EscapeJqlString();
         var escapedLabel = projectLabel.EscapeJqlString();
         var escapedFieldName = releaseDateFieldName.EscapeJqlString();
@@ -202,6 +205,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
             componentsFieldId,
             componentsFieldName,
             resolvedHotFixRules,
+            rollbackFieldId,
+            rollbackFieldName,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -650,6 +655,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
         string? componentsFieldId,
         string? componentsFieldName,
         IReadOnlyList<ResolvedHotFixRule> hotFixRules,
+        string? rollbackFieldId,
+        string rollbackFieldName,
         CancellationToken cancellationToken)
     {
         var issues = new List<ReleaseIssueItem>();
@@ -676,6 +683,10 @@ public sealed partial class JiraApiClient : IJiraApiClient
                 .Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 fields.Add(Uri.EscapeDataString(hotFixFieldId!));
+            }
+            if (!string.IsNullOrWhiteSpace(rollbackFieldId))
+            {
+                fields.Add(Uri.EscapeDataString(rollbackFieldId));
             }
             if (!string.IsNullOrWhiteSpace(componentsFieldId) || !string.IsNullOrWhiteSpace(componentsFieldName))
             {
@@ -713,6 +724,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         var tasks = CountAllLinkedTasks(issue.Fields);
                         var componentNames = ResolveComponentNames(issue.Fields, componentsFieldId, componentsFieldName);
                         var components = componentNames.Count;
+                        var rollbackType = ResolveRollbackPayload(issue.Fields, rollbackFieldId, rollbackFieldName);
                         var isHotFix = IsHotFixRelease(issue.Fields, hotFixRules);
                         return (
                             key: new IssueKey(issue.Key!.Trim()),
@@ -722,6 +734,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                             tasks,
                             components,
                             componentNames,
+                            rollbackType,
                             isHotFix);
                     })
                     .Where(static item => item.releaseDate.HasValue)
@@ -733,6 +746,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         item.components,
                         item.status,
                         item.componentNames,
+                        item.rollbackType,
                         item.isHotFix)));
             }
 
@@ -872,6 +886,38 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         return false;
+    }
+
+    private static string? ResolveRollbackPayload(
+        JiraIssueFieldsResponse? fields,
+        string? rollbackFieldId,
+        string rollbackFieldName)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return null;
+        }
+
+        if (!TryGetAdditionalFieldValue(fields.AdditionalFields, rollbackFieldId, rollbackFieldName, out var rawRollback))
+        {
+            return null;
+        }
+
+        if (rawRollback.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        var parsedValues = ParseRawFieldValues(rawRollback);
+        if (parsedValues.Count > 0)
+        {
+            return string.Join(", ", parsedValues);
+        }
+
+        var rawPayload = rawRollback.ValueKind == JsonValueKind.String
+            ? rawRollback.GetString()
+            : rawRollback.GetRawText();
+        return string.IsNullOrWhiteSpace(rawPayload) ? null : rawPayload.Trim();
     }
 
     private static bool HasPullRequest(JiraIssueFieldsResponse fields, string pullRequestFieldName)

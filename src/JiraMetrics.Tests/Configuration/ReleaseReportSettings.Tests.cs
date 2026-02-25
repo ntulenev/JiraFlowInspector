@@ -21,6 +21,7 @@ public sealed class ReleaseReportSettingsTests
         settings.HotFixRules.Should().ContainSingle();
         settings.HotFixRules.Should().ContainKey("Change type");
         settings.HotFixRules["Change type"].Should().BeEquivalentTo(["Emergency"]);
+        settings.RollbackFieldName.Should().Be("Rollback type");
     }
 
     [Fact(DisplayName = "Constructor uses configured hot-fix marker rules")]
@@ -37,11 +38,13 @@ public sealed class ReleaseReportSettingsTests
             {
                 ["Change type"] = ["Emergency"],
                 ["Change reason"] = ["Repair", "Mitigation"]
-            });
+            },
+            rollbackFieldName: "Rollback category");
 
         // Assert
         settings.HotFixRules.Should().HaveCount(2);
         settings.HotFixRules["Change type"].Should().BeEquivalentTo(["Emergency"]);
         settings.HotFixRules["Change reason"].Should().BeEquivalentTo(["Mitigation", "Repair"]);
+        settings.RollbackFieldName.Should().Be("Rollback category");
     }
 }

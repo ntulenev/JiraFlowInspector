@@ -544,13 +544,17 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Release Date");
         output.Should().Contain("Status");
         output.Should().Contain("Tasks");
+        output.Should().Contain("Rollback");
+        output.Should().Contain("type");
         output.Should().Contain("RLS-1");
         output.Should().Contain("Release 1");
-        output.Should().Contain("Ready for Prod");
+        output.Should().Contain("Ready for");
+        output.Should().Contain("Prod");
         output.Should().Contain("3");
         output.Should().Contain("2026-02-14");
         output.Should().Contain("Total releases:");
         output.Should().Contain("Hotfix count:");
+        output.Should().Contain("Rollbacks count:");
         output.Should().Contain("1");
         output.Should().Contain("0");
         output.Should().NotContain("Components field:");
@@ -583,7 +587,8 @@ public sealed class SpectreJiraPresentationServiceTests
                         tasks: 3,
                         components: 2,
                         status: new StatusName("In QA"),
-                        componentNames: ["Flux", "ADF PostgreSQL Database"]),
+                        componentNames: ["Flux", "ADF PostgreSQL Database"],
+                        rollbackType: "Full rollback"),
                     new ReleaseIssueItem(
                         new IssueKey("RLS-2"),
                         new IssueSummary("Release 2"),
@@ -609,6 +614,9 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Release counts");
         output.Should().Contain("Total releases:");
         output.Should().Contain("Hotfix count:");
+        output.Should().Contain("Rollbacks count:");
+        output.Should().Contain("Full");
+        output.Should().Contain("rollback");
         output.Should().Contain("Flux");
         output.Should().Contain("ADF PostgreSQL Database");
 
@@ -661,6 +669,7 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("No components data.");
         output.Should().Contain("Total releases:");
         output.Should().Contain("Hotfix count:");
+        output.Should().Contain("Rollbacks count:");
     }
 
     [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes status and issue type breakdown")]

@@ -795,6 +795,7 @@ public sealed class JiraApplicationTests
             string releaseDateFieldName,
             string? componentsFieldName,
             IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
+            string rollbackFieldName,
             CancellationToken cancellationToken)
         {
             ReleaseIssuesRequested = true;

@@ -9,6 +9,7 @@ public sealed record ReleaseReportSettings
 {
     private const string DEFAULT_HOT_FIX_FIELD_NAME = "Change type";
     private const string DEFAULT_HOT_FIX_FIELD_VALUE = "Emergency";
+    private const string DEFAULT_ROLLBACK_FIELD_NAME = "Rollback type";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ReleaseReportSettings"/> class.
@@ -18,12 +19,14 @@ public sealed record ReleaseReportSettings
     /// <param name="releaseDateFieldName">Release date field name.</param>
     /// <param name="componentsFieldName">Optional components field name.</param>
     /// <param name="hotFixRules">Optional hot-fix marker rules in format <c>field name -&gt; values</c>. Defaults to <c>Change type -&gt; Emergency</c>.</param>
+    /// <param name="rollbackFieldName">Optional rollback marker field name. Defaults to <c>Rollback type</c>.</param>
     public ReleaseReportSettings(
         ProjectKey releaseProjectKey,
         string projectLabel,
         string releaseDateFieldName,
         string? componentsFieldName = null,
-        IReadOnlyDictionary<string, IReadOnlyList<string>>? hotFixRules = null)
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? hotFixRules = null,
+        string? rollbackFieldName = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseDateFieldName);
@@ -33,6 +36,7 @@ public sealed record ReleaseReportSettings
         ReleaseDateFieldName = releaseDateFieldName.Trim();
         ComponentsFieldName = string.IsNullOrWhiteSpace(componentsFieldName) ? null : componentsFieldName.Trim();
         HotFixRules = NormalizeHotFixRules(hotFixRules);
+        RollbackFieldName = string.IsNullOrWhiteSpace(rollbackFieldName) ? DEFAULT_ROLLBACK_FIELD_NAME : rollbackFieldName.Trim();
     }
 
     /// <summary>
@@ -59,6 +63,11 @@ public sealed record ReleaseReportSettings
     /// Gets hot-fix marker rules in format <c>field name -&gt; values</c>.
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> HotFixRules { get; }
+
+    /// <summary>
+    /// Gets rollback field name.
+    /// </summary>
+    public string RollbackFieldName { get; }
 
     private static Dictionary<string, IReadOnlyList<string>> NormalizeHotFixRules(
         IReadOnlyDictionary<string, IReadOnlyList<string>>? source)

@@ -101,6 +101,7 @@ public sealed class JiraApplication : IJiraApplication
                     releaseReport.ReleaseDateFieldName,
                     releaseReport.ComponentsFieldName,
                     releaseReport.HotFixRules,
+                    releaseReport.RollbackFieldName,
                     cancellationToken).ConfigureAwait(false);
             }
 
