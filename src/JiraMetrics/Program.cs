@@ -123,9 +123,22 @@ builder.Services.AddTransient<IPdfReportRenderer, QuestPdfReportRenderer>();
 builder.Services.AddTransient<IJiraApplication, JiraApplication>();
 
 using var host = builder.Build();
+await host.StartAsync().ConfigureAwait(false);
 
+var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 var app = host.Services.GetRequiredService<IJiraApplication>();
-await app.RunAsync(CancellationToken.None).ConfigureAwait(false);
+
+try
+{
+    await app.RunAsync(lifetime.ApplicationStopping).ConfigureAwait(false);
+}
+catch (OperationCanceledException) when (lifetime.ApplicationStopping.IsCancellationRequested)
+{
+}
+finally
+{
+    await host.StopAsync(CancellationToken.None).ConfigureAwait(false);
+}
 
 static DateOnly ParseExcludedDay(string value)
 {
