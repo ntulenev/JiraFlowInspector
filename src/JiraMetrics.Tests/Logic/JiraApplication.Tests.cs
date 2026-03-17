@@ -379,6 +379,59 @@ public sealed class JiraApplicationTests
         releaseIndex.Should().BeLessThan(headerIndex);
     }
 
+    [Fact(DisplayName = "RunAsync shows global incidents report after release report")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenReleaseAndGlobalIncidentsAreConfiguredShowsGlobalIncidentsAfterRelease()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task")),
+            ReleaseIssues = [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release item"), new DateOnly(2026, 2, 14))],
+            GlobalIncidents =
+            [
+                new GlobalIncidentItem(
+                    new IssueKey("INC-1"),
+                    new IssueSummary("ADF disabled"),
+                    new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero))
+            ]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(
+                issueTypes: [new IssueTypeName("Task")],
+                releaseReport: new ReleaseReportSettings(
+                    new ProjectKey("RLS"),
+                    "ADF",
+                    "Change completion date"),
+                globalIncidentsReport: new GlobalIncidentsReportSettings(searchPhrase: "ADF disab"))),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.ReleaseIssuesRequested.Should().BeTrue();
+        apiClient.GlobalIncidentsRequested.Should().BeTrue();
+        presentation.ReleaseReportShown.Should().BeTrue();
+        presentation.GlobalIncidentsReportShown.Should().BeTrue();
+        var releaseIndex = presentation.Calls.IndexOf("ReleaseReport");
+        var globalIncidentsIndex = presentation.Calls.IndexOf("GlobalIncidentsReport");
+        releaseIndex.Should().BeGreaterThanOrEqualTo(0);
+        globalIncidentsIndex.Should().BeGreaterThan(releaseIndex);
+        pdfReportRenderer.LastReportData.Should().NotBeNull();
+        pdfReportRenderer.LastReportData!.GlobalIncidents.Should().ContainSingle();
+    }
+
     [Fact(DisplayName = "RunAsync shows rejected issues table when reject status is configured")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenRejectStatusIsConfiguredShowsRejectedIssuesTable()
@@ -646,6 +699,7 @@ public sealed class JiraApplicationTests
         IReadOnlyList<IssueTypeName>? issueTypes = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
         ReleaseReportSettings? releaseReport = null,
+        GlobalIncidentsReportSettings? globalIncidentsReport = null,
         bool showGeneralStatistics = true)
     {
         return new AppSettings(
@@ -664,7 +718,8 @@ public sealed class JiraApplicationTests
             excludeWeekend: false,
             bugIssueNames: bugIssueNames,
             showGeneralStatistics: showGeneralStatistics,
-            releaseReport: releaseReport);
+            releaseReport: releaseReport,
+            globalIncidentsReport: globalIncidentsReport);
     }
 
     private static IssueTimeline CreateIssue(IssueKey key, IssueTypeName? issueType = null)
@@ -715,6 +770,8 @@ public sealed class JiraApplicationTests
 
         public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; set; } = [];
 
+        public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; set; } = [];
+
         public bool CreatedThisMonthCountRequested { get; private set; }
 
         public bool MovedToDoneThisMonthCountRequested { get; private set; }
@@ -728,6 +785,8 @@ public sealed class JiraApplicationTests
         public bool OpenIssuesByStatusRequested { get; private set; }
 
         public bool ReleaseIssuesRequested { get; private set; }
+
+        public bool GlobalIncidentsRequested { get; private set; }
 
         public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken)
         {
@@ -800,6 +859,14 @@ public sealed class JiraApplicationTests
         {
             ReleaseIssuesRequested = true;
             return Task.FromResult(ReleaseIssues);
+        }
+
+        public Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
+            GlobalIncidentsReportSettings settings,
+            CancellationToken cancellationToken)
+        {
+            GlobalIncidentsRequested = true;
+            return Task.FromResult(GlobalIncidents);
         }
 
         public Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
@@ -889,6 +956,10 @@ public sealed class JiraApplicationTests
         public bool ReleaseReportShown { get; private set; }
 
         public bool ReleaseReportLoadingStartedShown { get; private set; }
+
+        public bool GlobalIncidentsReportShown { get; private set; }
+
+        public bool GlobalIncidentsReportLoadingStartedShown { get; private set; }
 
         public bool OpenIssuesByStatusShown { get; private set; }
 
@@ -990,6 +1061,21 @@ public sealed class JiraApplicationTests
         {
             ReleaseReportLoadingStartedShown = true;
             Calls.Add("ReleaseReportLoadingStarted");
+        }
+
+        public void ShowGlobalIncidentsReportLoadingStarted()
+        {
+            GlobalIncidentsReportLoadingStartedShown = true;
+            Calls.Add("GlobalIncidentsReportLoadingStarted");
+        }
+
+        public void ShowGlobalIncidentsReport(
+            GlobalIncidentsReportSettings settings,
+            MonthLabel monthLabel,
+            IReadOnlyList<GlobalIncidentItem> incidents)
+        {
+            GlobalIncidentsReportShown = true;
+            Calls.Add("GlobalIncidentsReport");
         }
 
         public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)

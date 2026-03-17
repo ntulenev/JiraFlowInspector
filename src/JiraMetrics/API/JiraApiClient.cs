@@ -211,6 +211,50 @@ public sealed partial class JiraApiClient : IJiraApiClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
+        GlobalIncidentsReportSettings settings,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var startFieldId = await ResolveFieldIdAsync(settings.IncidentStartFieldName, cancellationToken).ConfigureAwait(false);
+        var recoveryFieldId = await TryResolveFieldIdAsync(settings.IncidentRecoveryFieldName, cancellationToken).ConfigureAwait(false);
+        var impactFieldId = await TryResolveFieldIdAsync(settings.ImpactFieldName, cancellationToken).ConfigureAwait(false);
+        var urgencyFieldId = await TryResolveFieldIdAsync(settings.UrgencyFieldName, cancellationToken).ConfigureAwait(false);
+        var additionalFieldIds = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var additionalFieldName in settings.AdditionalFieldNames)
+        {
+            additionalFieldIds[additionalFieldName] = await TryResolveFieldIdAsync(additionalFieldName, cancellationToken).ConfigureAwait(false);
+        }
+
+        var escapedNamespace = settings.Namespace.EscapeJqlString();
+        var escapedStartFieldName = settings.IncidentStartFieldName.EscapeJqlString();
+        var clauses = new List<string>
+        {
+            $"project = \"{escapedNamespace}\"",
+            $"\"{escapedStartFieldName}\" >= \"{monthStart:yyyy-MM-dd}\"",
+            $"\"{escapedStartFieldName}\" < \"{nextMonthStart:yyyy-MM-dd}\""
+        };
+        AddTextSearchClauses(clauses, settings.SearchPhrase);
+
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedStartFieldName}\" ASC, key ASC";
+
+        return await SearchGlobalIncidentItemsAsync(
+            jql,
+            startFieldId,
+            settings.IncidentStartFieldName,
+            recoveryFieldId,
+            settings.IncidentRecoveryFieldName,
+            impactFieldId,
+            settings.ImpactFieldName,
+            urgencyFieldId,
+            settings.UrgencyFieldName,
+            additionalFieldIds,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public async Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
     {
         var response = await _transport
@@ -348,6 +392,28 @@ public sealed partial class JiraApiClient : IJiraApiClient
             : $"status NOT IN ({string.Join(", ", statusesToExclude)})";
     }
 
+    private static void AddTextSearchClauses(List<string> clauses, string? searchPhrase)
+    {
+        if (string.IsNullOrWhiteSpace(searchPhrase))
+        {
+            return;
+        }
+
+        var terms = searchPhrase
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(static term => term.Trim().Trim('"', '\''))
+            .Where(static term => !string.IsNullOrWhiteSpace(term))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        foreach (var term in terms)
+        {
+            var escapedTerm = term.EscapeJqlString();
+            var pattern = escapedTerm.EndsWith('*') ? escapedTerm : escapedTerm + "*";
+            clauses.Add($"text ~ \"{pattern}\"");
+        }
+    }
+
     private async Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken)
     {
         var fieldId = await TryResolveFieldIdAsync(fieldName, cancellationToken).ConfigureAwait(false);
@@ -367,19 +433,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         var trimmedFieldName = fieldName.Trim();
-
-        var response = await _transport
-            .GetAsync<List<JiraFieldResponse>>(new Uri("rest/api/3/field", UriKind.Relative), cancellationToken)
-            .ConfigureAwait(false);
-
-        if (response is null)
-        {
-            throw new InvalidOperationException("Jira fields response is empty.");
-        }
-
-        var candidates = response
-            .Where(static field => !string.IsNullOrWhiteSpace(field.Id))
-            .ToList();
+        var candidates = await GetFieldsAsync(cancellationToken).ConfigureAwait(false);
 
         var idMatch = candidates.FirstOrDefault(field =>
             string.Equals(field.Id!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase));
@@ -423,6 +477,26 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         return null;
+    }
+
+    private async Task<IReadOnlyList<JiraFieldResponse>> GetFieldsAsync(CancellationToken cancellationToken)
+    {
+        if (_cachedFields is not null)
+        {
+            return _cachedFields;
+        }
+
+        var response = await _transport
+            .GetAsync<List<JiraFieldResponse>>(new Uri("rest/api/3/field", UriKind.Relative), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response is null)
+        {
+            throw new InvalidOperationException("Jira fields response is empty.");
+        }
+
+        _cachedFields = [.. response.Where(static field => !string.IsNullOrWhiteSpace(field.Id))];
+        return _cachedFields;
     }
 
     private async Task<IReadOnlyList<ResolvedHotFixRule>> ResolveHotFixRulesAsync(
@@ -646,6 +720,100 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return DateTimeOffset.TryParse(rawCreated, CultureInfo.InvariantCulture, DateTimeStyles.None, out var created)
             ? created
             : null;
+    }
+
+    private async Task<IReadOnlyList<GlobalIncidentItem>> SearchGlobalIncidentItemsAsync(
+        string jql,
+        string incidentStartFieldId,
+        string incidentStartFieldName,
+        string? incidentRecoveryFieldId,
+        string incidentRecoveryFieldName,
+        string? impactFieldId,
+        string impactFieldName,
+        string? urgencyFieldId,
+        string urgencyFieldName,
+        IReadOnlyDictionary<string, string?> additionalFieldIds,
+        CancellationToken cancellationToken)
+    {
+        var incidents = new List<GlobalIncidentItem>();
+        const int pageSize = 100;
+        string? nextPageToken = null;
+
+        while (true)
+        {
+            var fields = new List<string>
+            {
+                "key",
+                "summary",
+                Uri.EscapeDataString(incidentStartFieldId)
+            };
+            AddFieldIdIfNeeded(fields, incidentRecoveryFieldId);
+            AddFieldIdIfNeeded(fields, impactFieldId);
+            AddFieldIdIfNeeded(fields, urgencyFieldId);
+            foreach (var additionalFieldId in additionalFieldIds.Values)
+            {
+                AddFieldIdIfNeeded(fields, additionalFieldId);
+            }
+
+            var searchUrl =
+                $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}&fields={string.Join(",", fields)}&maxResults={pageSize}";
+            if (!string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                searchUrl += $"&nextPageToken={Uri.EscapeDataString(nextPageToken)}";
+            }
+
+            var page = await _transport
+                .GetAsync<JiraSearchResponse>(new Uri(searchUrl, UriKind.Relative), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (page is null)
+            {
+                throw new InvalidOperationException("Jira search response is empty.");
+            }
+
+            if (page.Issues.Count > 0)
+            {
+                incidents.AddRange(page.Issues
+                    .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
+                    .Select(issue =>
+                    {
+                        var startedAt = TryParseConfiguredDateTimeField(issue.Fields, incidentStartFieldId, incidentStartFieldName);
+                        if (!startedAt.HasValue)
+                        {
+                            return null;
+                        }
+
+                        var recoveredAt = TryParseConfiguredDateTimeField(
+                            issue.Fields,
+                            incidentRecoveryFieldId,
+                            incidentRecoveryFieldName);
+                        var impact = ResolveFieldDisplayValue(issue.Fields, impactFieldId, impactFieldName);
+                        var urgency = ResolveFieldDisplayValue(issue.Fields, urgencyFieldId, urgencyFieldName);
+                        var additionalFields = ResolveAdditionalFieldValues(issue.Fields, additionalFieldIds);
+                        return new GlobalIncidentItem(
+                            new IssueKey(issue.Key!.Trim()),
+                            new IssueSummary(string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary),
+                            startedAt,
+                            recoveredAt,
+                            impact,
+                            urgency,
+                            additionalFields);
+                    })
+                    .Where(static item => item is not null)
+                    .Cast<GlobalIncidentItem>());
+            }
+
+            nextPageToken = page.NextPageToken;
+            if (page.Issues.Count == 0 || page.IsLast || string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                break;
+            }
+        }
+
+        return [.. incidents
+            .DistinctBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static incident => incident.IncidentStartUtc)
+            .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)];
     }
 
     private async Task<IReadOnlyList<ReleaseIssueItem>> SearchReleaseIssueItemsAsync(
@@ -947,6 +1115,14 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return false;
     }
 
+    private static void AddFieldIdIfNeeded(List<string> fields, string? fieldId)
+    {
+        if (!string.IsNullOrWhiteSpace(fieldId))
+        {
+            fields.Add(Uri.EscapeDataString(fieldId));
+        }
+    }
+
     private static bool HasPullRequestInRawValue(JsonElement rawValue)
     {
         if (rawValue.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
@@ -1119,6 +1295,12 @@ public sealed partial class JiraApiClient : IJiraApiClient
                     return text.Trim();
                 }
             }
+
+            var adfText = TryExtractAtlassianDocumentText(value);
+            if (!string.IsNullOrWhiteSpace(adfText))
+            {
+                return adfText;
+            }
         }
 
         if (value.ValueKind is JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False)
@@ -1127,6 +1309,154 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         return null;
+    }
+
+    private static string? TryExtractAtlassianDocumentText(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (!value.TryGetProperty("type", out var typeElement)
+            || typeElement.ValueKind != JsonValueKind.String
+            || !string.Equals(typeElement.GetString(), "doc", StringComparison.OrdinalIgnoreCase)
+            || !value.TryGetProperty("content", out var contentElement)
+            || contentElement.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var fragments = new List<string>();
+        AppendAtlassianDocumentText(contentElement, fragments);
+        var text = string.Join(" ", fragments.Where(static fragment => !string.IsNullOrWhiteSpace(fragment))).Trim();
+        return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
+    private static void AppendAtlassianDocumentText(JsonElement value, List<string> fragments)
+    {
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in value.EnumerateArray())
+            {
+                AppendAtlassianDocumentText(item, fragments);
+            }
+
+            return;
+        }
+
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        if (value.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String)
+        {
+            var text = textElement.GetString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                fragments.Add(text.Trim());
+            }
+        }
+
+        if (value.TryGetProperty("content", out var contentElement) && contentElement.ValueKind == JsonValueKind.Array)
+        {
+            AppendAtlassianDocumentText(contentElement, fragments);
+        }
+    }
+
+    private static DateTimeOffset? TryParseConfiguredDateTimeField(
+        JiraIssueFieldsResponse? fields,
+        string? fieldId,
+        string? fieldName)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return null;
+        }
+
+        if (!TryGetAdditionalFieldValue(fields.AdditionalFields, fieldId, fieldName, out var rawDateTime))
+        {
+            return null;
+        }
+
+        var resolvedValues = ParseRawFieldValues(rawDateTime);
+        if (resolvedValues.Count == 0 || string.IsNullOrWhiteSpace(resolvedValues[0]))
+        {
+            return null;
+        }
+        var resolvedValue = resolvedValues[0];
+
+        if (DateTimeOffset.TryParseExact(
+                resolvedValue,
+                "yyyy-MM-dd HH:mm",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var exactUtcDateTime))
+        {
+            return exactUtcDateTime;
+        }
+
+        if (DateTimeOffset.TryParse(
+                resolvedValue,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var parsedDateTime))
+        {
+            return parsedDateTime;
+        }
+
+        if (DateOnly.TryParse(resolvedValue, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateOnly))
+        {
+            return new DateTimeOffset(dateOnly.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        }
+
+        return null;
+    }
+
+    private static string? ResolveFieldDisplayValue(
+        JiraIssueFieldsResponse? fields,
+        string? fieldId,
+        string? fieldName)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return null;
+        }
+
+        if (!TryGetAdditionalFieldValue(fields.AdditionalFields, fieldId, fieldName, out var rawValue))
+        {
+            return null;
+        }
+
+        var parsedValues = ParseRawFieldValues(rawValue);
+        if (parsedValues.Count > 0)
+        {
+            return string.Join(", ", parsedValues);
+        }
+
+        var rawPayload = rawValue.ValueKind == JsonValueKind.String
+            ? rawValue.GetString()
+            : rawValue.GetRawText();
+        return string.IsNullOrWhiteSpace(rawPayload) ? null : rawPayload.Trim();
+    }
+
+    private static Dictionary<string, string?> ResolveAdditionalFieldValues(
+        JiraIssueFieldsResponse? fields,
+        IReadOnlyDictionary<string, string?> additionalFieldIds)
+    {
+        if (additionalFieldIds.Count == 0)
+        {
+            return new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (fieldName, fieldId) in additionalFieldIds)
+        {
+            values[fieldName] = ResolveFieldDisplayValue(fields, fieldId, fieldName);
+        }
+
+        return values;
     }
 
     private static string NormalizeFieldName(string value) =>
@@ -1215,6 +1545,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
     private readonly string? _customFieldValue;
     private readonly MonthLabel _monthLabel;
     private readonly string _pullRequestFieldName;
+    private IReadOnlyList<JiraFieldResponse>? _cachedFields;
 
     [GeneratedRegex(@"(?:stateCount|count)\s*""?\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase)]
     private static partial Regex PullRequestCountPattern();

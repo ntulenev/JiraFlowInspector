@@ -275,6 +275,9 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowReleaseReportLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading release report data...[/]");
 
     /// <inheritdoc />
+    public void ShowGlobalIncidentsReportLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading global incidents report data...[/]");
+
+    /// <inheritdoc />
     public void ShowReleaseReport(
         ReleaseReportSettings settings,
         MonthLabel monthLabel,
@@ -400,6 +403,91 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         }
 
         AnsiConsole.Write(componentsTable);
+    }
+
+    /// <inheritdoc />
+    public void ShowGlobalIncidentsReport(
+        GlobalIncidentsReportSettings settings,
+        MonthLabel monthLabel,
+        IReadOnlyList<GlobalIncidentItem> incidents)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(incidents);
+
+        AnsiConsole.MarkupLine("[bold]Global incidents report[/]");
+        AnsiConsole.MarkupLine(
+            $"[grey]Namespace:[/] {Markup.Escape(settings.Namespace)}    [grey]Month:[/] {Markup.Escape(monthLabel.Value)}");
+        if (!string.IsNullOrWhiteSpace(settings.SearchPhrase))
+        {
+            AnsiConsole.MarkupLine($"[grey]Search phrase:[/] {Markup.Escape(settings.SearchPhrase)}");
+        }
+
+        if (settings.AdditionalFieldNames.Count > 0)
+        {
+            var additionalFields = string.Join(", ", settings.AdditionalFieldNames);
+            AnsiConsole.MarkupLine($"[grey]Additional fields:[/] {Markup.Escape(additionalFields)}");
+        }
+
+        if (incidents.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No incidents found for selected month.[/]");
+            return;
+        }
+
+        var includeAdditionalFields = settings.AdditionalFieldNames.Count > 0;
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]#[/]")
+            .AddColumn("[bold]Jira ID[/]")
+            .AddColumn("[bold]Title[/]")
+            .AddColumn("[bold]Incident Start UTC[/]")
+            .AddColumn("[bold]Incident Recovery UTC[/]")
+            .AddColumn("[bold]Duration[/]")
+            .AddColumn("[bold]Impact[/]")
+            .AddColumn("[bold]Urgency[/]");
+
+        if (includeAdditionalFields)
+        {
+            _ = table.AddColumn("[bold]Additional fields[/]");
+        }
+
+        var orderedIncidents = incidents
+            .OrderBy(static incident => incident.IncidentStartUtc)
+            .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        for (var i = 0; i < orderedIncidents.Count; i++)
+        {
+            var incident = orderedIncidents[i];
+            var row = new List<string>
+            {
+                (i + 1).ToString(CultureInfo.InvariantCulture),
+                Markup.Escape(incident.Key.Value),
+                Markup.Escape(incident.Title.Truncate(new TextLength(120)).Value),
+                Markup.Escape(FormatIncidentDateTimeUtc(incident.IncidentStartUtc)),
+                Markup.Escape(FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc)),
+                Markup.Escape(FormatIncidentDuration(incident.Duration)),
+                Markup.Escape(incident.Impact ?? "-"),
+                Markup.Escape(incident.Urgency ?? "-")
+            };
+
+            if (includeAdditionalFields)
+            {
+                var additionalFields = incident.AdditionalFields.Count == 0
+                    ? "-"
+                    : string.Join(
+                        Environment.NewLine,
+                        incident.AdditionalFields.Select(static pair => $"{pair.Key}: {pair.Value}"));
+                row.Add(Markup.Escape(additionalFields));
+            }
+
+            _ = table.AddRow([.. row]);
+        }
+
+        AnsiConsole.Write(table);
+        var totalDuration = SumIncidentDurations(orderedIncidents);
+        AnsiConsole.MarkupLine($"[grey]Total duration:[/] {Markup.Escape(FormatIncidentDuration(totalDuration))}");
     }
 
     /// <inheritdoc />
@@ -846,6 +934,58 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
 
         return workDuration.TotalDays.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatIncidentDateTimeUtc(DateTimeOffset? value) =>
+        value.HasValue
+            ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            : "-";
+
+    private static string FormatIncidentDuration(TimeSpan? duration)
+    {
+        if (!duration.HasValue)
+        {
+            return "-";
+        }
+
+        var value = duration.Value;
+        if (value < TimeSpan.Zero)
+        {
+            return "-";
+        }
+
+        var totalMinutes = (int)Math.Round(value.TotalMinutes, MidpointRounding.AwayFromZero);
+        var days = totalMinutes / (24 * 60);
+        var hours = totalMinutes % (24 * 60) / 60;
+        var minutes = totalMinutes % 60;
+
+        if (days > 0)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0}d {1}h {2}m", days, hours, minutes);
+        }
+
+        if (hours > 0)
+        {
+            return string.Format(CultureInfo.InvariantCulture, "{0}h {1}m", hours, minutes);
+        }
+
+        return string.Format(CultureInfo.InvariantCulture, "{0}m", minutes);
+    }
+
+    private static TimeSpan? SumIncidentDurations(IReadOnlyList<GlobalIncidentItem> incidents)
+    {
+        var durations = incidents
+            .Select(static incident => incident.Duration)
+            .Where(static duration => duration.HasValue && duration.Value >= TimeSpan.Zero)
+            .Select(static duration => duration!.Value)
+            .ToList();
+
+        if (durations.Count == 0)
+        {
+            return null;
+        }
+
+        return durations.Aggregate(TimeSpan.Zero, static (sum, duration) => sum + duration);
     }
 
     private static IReadOnlyList<(string componentName, int releaseCount)> BuildComponentReleaseSummaries(

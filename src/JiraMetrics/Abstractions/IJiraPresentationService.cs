@@ -126,6 +126,11 @@ public interface IJiraPresentationService
     void ShowReleaseReportLoadingStarted();
 
     /// <summary>
+    /// Shows global incidents report loading start message.
+    /// </summary>
+    void ShowGlobalIncidentsReportLoadingStarted();
+
+    /// <summary>
     /// Shows release report section.
     /// </summary>
     /// <param name="settings">Release report settings.</param>
@@ -135,6 +140,17 @@ public interface IJiraPresentationService
         ReleaseReportSettings settings,
         MonthLabel monthLabel,
         IReadOnlyList<ReleaseIssueItem> releases);
+
+    /// <summary>
+    /// Shows global incidents report section.
+    /// </summary>
+    /// <param name="settings">Global incidents report settings.</param>
+    /// <param name="monthLabel">Selected month label.</param>
+    /// <param name="incidents">Incident issues in month.</param>
+    void ShowGlobalIncidentsReport(
+        GlobalIncidentsReportSettings settings,
+        MonthLabel monthLabel,
+        IReadOnlyList<GlobalIncidentItem> incidents);
 
     /// <summary>
     /// Shows bug ratio loading start message.

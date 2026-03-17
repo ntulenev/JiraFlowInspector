@@ -74,6 +74,7 @@ public sealed class JiraApplication : IJiraApplication
         IReadOnlyList<IssueListItem> bugRejectedIssues = [];
         IReadOnlyList<StatusIssueTypeSummary> openIssuesByStatus = [];
         IReadOnlyList<ReleaseIssueItem> releaseIssues = [];
+        IReadOnlyList<GlobalIncidentItem> globalIncidents = [];
         try
         {
             issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -105,6 +106,15 @@ public sealed class JiraApplication : IJiraApplication
                     cancellationToken).ConfigureAwait(false);
             }
 
+            if (_settings.GlobalIncidentsReport is { } globalIncidentsReport)
+            {
+                _presentationService.ShowGlobalIncidentsReportLoadingStarted();
+
+                globalIncidents = await _apiClient
+                    .GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             if (_settings.ShowGeneralStatistics)
             {
                 openIssuesByStatus = await _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
@@ -134,6 +144,15 @@ public sealed class JiraApplication : IJiraApplication
         {
             _presentationService.ShowSpacer();
             _presentationService.ShowReleaseReport(releaseReportSettings, _settings.MonthLabel, releaseIssues);
+            _presentationService.ShowSpacer();
+        }
+
+        if (_settings.GlobalIncidentsReport is { } globalIncidentsReportSettings)
+        {
+            _presentationService.ShowGlobalIncidentsReport(
+                globalIncidentsReportSettings,
+                _settings.MonthLabel,
+                globalIncidents);
             _presentationService.ShowSpacer();
         }
 
@@ -380,6 +399,7 @@ public sealed class JiraApplication : IJiraApplication
             Settings = _settings,
             SearchIssueCount = new ItemCount(issueKeys.Count),
             ReleaseIssues = releaseIssues,
+            GlobalIncidents = globalIncidents,
             BugCreatedThisMonth = bugCreatedThisMonth,
             BugMovedToDoneThisMonth = bugMovedToDoneThisMonth,
             BugRejectedThisMonth = bugRejectedThisMonth,

@@ -33,6 +33,12 @@ public sealed class JiraOptionsTests
                     BugIssueNames = ["Bug"]
                 }
             },
+            GlobalIncidents = new GlobalIncidentsReportOptions
+            {
+                Namespace = "Incidents",
+                SearchPhrase = "ADF disab",
+                AdditionalFieldNames = ["Business Impact"]
+            },
             CreatedAfter = "2026-01-15",
             MonthLabel = "2026-02",
             RetryCount = 0

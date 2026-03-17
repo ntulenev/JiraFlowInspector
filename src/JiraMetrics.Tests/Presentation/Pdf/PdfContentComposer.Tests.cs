@@ -81,6 +81,10 @@ public sealed class PdfContentComposerTests
                 new ProjectKey("RLS"),
                 "ADF",
                 "Change completion date"),
+            globalIncidentsReport: new GlobalIncidentsReportSettings(
+                namespaceName: "Incidents",
+                searchPhrase: "ADF disab",
+                additionalFieldNames: ["Business Impact"]),
             pdfReport: new PdfReportSettings(true, "report.pdf"));
 
         var transitions = new List<TransitionEvent>
@@ -118,6 +122,20 @@ public sealed class PdfContentComposerTests
                     new DateOnly(2026, 2, 10),
                     tasks: 3,
                     components: 2)
+            ],
+            GlobalIncidents =
+            [
+                new GlobalIncidentItem(
+                    new IssueKey("INC-1"),
+                    new IssueSummary("ADF disabled"),
+                    new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero),
+                    impact: "Significant / Large",
+                    urgency: "High",
+                    additionalFields: new Dictionary<string, string?>
+                    {
+                        ["Business Impact"] = "Live feed unavailable"
+                    })
             ],
             BugCreatedThisMonth = new ItemCount(2),
             BugMovedToDoneThisMonth = new ItemCount(1),

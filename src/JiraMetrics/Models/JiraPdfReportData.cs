@@ -24,6 +24,11 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; init; } = [];
 
     /// <summary>
+    /// Gets or sets incidents for selected month.
+    /// </summary>
+    public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; init; } = [];
+
+    /// <summary>
     /// Gets or sets bug issue count created in month.
     /// </summary>
     public ItemCount? BugCreatedThisMonth { get; init; }

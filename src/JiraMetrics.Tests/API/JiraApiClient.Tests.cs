@@ -1098,6 +1098,112 @@ public sealed class JiraApiClientTests
         capturedSearchUrl.Should().Contain("customfield_99999");
     }
 
+    [Fact(DisplayName = "GetGlobalIncidentsForMonthAsync uses namespace and search phrase terms")]
+    [Trait("Category", "Unit")]
+    public async Task GetGlobalIncidentsForMonthAsyncWhenSearchPhraseIsConfiguredAddsNamespaceAndTextClauses()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_14851",
+                Name = "Incident Start date/time UTC"
+            },
+            new()
+            {
+                Id = "customfield_14852",
+                Name = "Incident Recovery date/time UTC"
+            },
+            new()
+            {
+                Id = "customfield_10802",
+                Name = "Impact"
+            },
+            new()
+            {
+                Id = "customfield_10847",
+                Name = "Urgency"
+            },
+            new()
+            {
+                Id = "customfield_11348",
+                Name = "Business Impact"
+            }
+        };
+
+        using var incidentStartJson = JsonDocument.Parse("\"2026-02-12 10:00\"");
+        using var incidentRecoveryJson = JsonDocument.Parse("\"2026-02-12 10:49\"");
+        using var impactJson = JsonDocument.Parse("{\"value\":\"Significant / Large\"}");
+        using var urgencyJson = JsonDocument.Parse("{\"value\":\"High\"}");
+        using var businessImpactJson = JsonDocument.Parse("{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"ADF live feed unavailable\"}]}]}");
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "INC-11861",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "SB2 - ADF disabled 10/03/2026",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_14851"] = incidentStartJson.RootElement.Clone(),
+                            ["customfield_14852"] = incidentRecoveryJson.RootElement.Clone(),
+                            ["customfield_10802"] = impactJson.RootElement.Clone(),
+                            ["customfield_10847"] = urgencyJson.RootElement.Clone(),
+                            ["customfield_11348"] = businessImpactJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var incidents = await client.GetGlobalIncidentsForMonthAsync(
+            new GlobalIncidentsReportSettings(
+                namespaceName: "Incidents",
+                searchPhrase: "ADF disab",
+                additionalFieldNames: ["Business Impact"]),
+            cts.Token);
+
+        // Assert
+        incidents.Should().ContainSingle();
+        incidents[0].Key.Value.Should().Be("INC-11861");
+        incidents[0].Impact.Should().Be("Significant / Large");
+        incidents[0].Urgency.Should().Be("High");
+        incidents[0].Duration.Should().Be(TimeSpan.FromMinutes(49));
+        incidents[0].AdditionalFields.Should().ContainKey("Business Impact");
+        incidents[0].AdditionalFields["Business Impact"].Should().Be("ADF live feed unavailable");
+        capturedSearchUrl.Should().Contain("project%20%3D%20%22Incidents%22");
+        capturedSearchUrl.Should().Contain("text%20~%20%22ADF%2A%22");
+        capturedSearchUrl.Should().Contain("text%20~%20%22disab%2A%22");
+        capturedSearchUrl.Should().Contain("customfield_14851");
+        capturedSearchUrl.Should().Contain("customfield_11348");
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync returns mapped timeline")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenResponseIsValidReturnsMappedTimeline()

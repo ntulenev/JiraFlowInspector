@@ -67,6 +67,7 @@ builder.Services.AddSingleton(sp =>
         ? (StatusName?)null
         : new StatusName(teamTasks.RejectStatusName);
     var releaseReport = ResolveReleaseReport(source.ReleaseReport);
+    var globalIncidentsReport = ResolveGlobalIncidentsReport(source.GlobalIncidents);
     var pdfReport = ResolvePdfReport(source.Pdf);
     DateOnly[] excludedDays = teamTasks.IssueTransitions?.ExcludedDays is null
         ? []
@@ -93,6 +94,7 @@ builder.Services.AddSingleton(sp =>
         bugIssueNames,
         teamTasks.ShowGeneralStatistics,
         releaseReport,
+        globalIncidentsReport,
         pdfReport,
         source.PullRequestFieldName);
 
@@ -193,6 +195,23 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
             static pair => (IReadOnlyList<string>)(pair.Value ?? []),
             StringComparer.OrdinalIgnoreCase),
         source.RollbackFieldName);
+}
+
+static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalIncidentsReportOptions? source)
+{
+    if (source is null)
+    {
+        return null;
+    }
+
+    return new GlobalIncidentsReportSettings(
+        source.Namespace,
+        source.SearchPhrase,
+        source.IncidentStartFieldName,
+        source.IncidentRecoveryFieldName,
+        source.ImpactFieldName,
+        source.UrgencyFieldName,
+        source.AdditionalFieldNames);
 }
 
 static PdfReportSettings ResolvePdfReport(PdfOptions? source)

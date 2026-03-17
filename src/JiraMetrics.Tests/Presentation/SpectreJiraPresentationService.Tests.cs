@@ -508,6 +508,24 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Loading release report data...");
     }
 
+    [Fact(DisplayName = "ShowGlobalIncidentsReportLoadingStarted writes loader line")]
+    [Trait("Category", "Unit")]
+    public async Task ShowGlobalIncidentsReportLoadingStartedWhenCalledWritesOutput()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowGlobalIncidentsReportLoadingStarted();
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Loading global incidents report data...");
+    }
+
     [Fact(DisplayName = "ShowReleaseReport writes release table")]
     [Trait("Category", "Unit")]
     public async Task ShowReleaseReportWhenCalledWritesReleaseRows()
@@ -670,6 +688,68 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Total releases:");
         output.Should().Contain("Hotfix count:");
         output.Should().Contain("Rollbacks count:");
+    }
+
+    [Fact(DisplayName = "ShowGlobalIncidentsReport writes incident rows")]
+    [Trait("Category", "Unit")]
+    public async Task ShowGlobalIncidentsReportWhenCalledWritesIncidentRows()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new GlobalIncidentsReportSettings(
+            namespaceName: "Incidents",
+            searchPhrase: "ADF disab",
+            additionalFieldNames: ["Business Impact"]);
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowGlobalIncidentsReport(
+                settings,
+                new MonthLabel("2026-03"),
+                [
+                    new GlobalIncidentItem(
+                        new IssueKey("INC-11861"),
+                        new IssueSummary("SB2 - ADF disabled 10/03/2026"),
+                        new DateTimeOffset(2026, 3, 10, 2, 34, 0, TimeSpan.Zero),
+                        new DateTimeOffset(2026, 3, 10, 3, 23, 0, TimeSpan.Zero),
+                        impact: "Significant / Large",
+                        urgency: "High",
+                        additionalFields: new Dictionary<string, string?>
+                        {
+                            ["Business Impact"] = "ADF live feed unavailable"
+                        })
+                ]);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Global incidents report");
+        output.Should().Contain("Namespace:");
+        output.Should().Contain("Incidents");
+        output.Should().Contain("Search phrase:");
+        output.Should().Contain("ADF disab");
+        output.Should().Contain("Jira ID");
+        output.Should().Contain("Start");
+        output.Should().Contain("Recov");
+        output.Should().Contain("UTC");
+        output.Should().Contain("Durat");
+        output.Should().Contain("Impact");
+        output.Should().Contain("Urgen");
+        output.Should().Contain("Addit");
+        output.Should().Contain("INC-118");
+        output.Should().Contain("SB2 -");
+        output.Should().Contain("ADF");
+        output.Should().Contain("2026-03");
+        output.Should().Contain("02:34");
+        output.Should().Contain("03:23");
+        output.Should().Contain("49m");
+        output.Should().Contain("Total duration:");
+        output.Should().Contain("Signif");
+        output.Should().Contain("Large");
+        output.Should().Contain("High");
+        output.Should().Contain("Business");
+        output.Should().Contain("live");
     }
 
     [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes status and issue type breakdown")]

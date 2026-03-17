@@ -24,6 +24,10 @@ public sealed class AppSettingsTests
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
         var bugIssueNames = new List<IssueTypeName> { new("Bug") };
         var releaseReport = new ReleaseReportSettings(new ProjectKey("RLS"), "Processing", "Change completion date");
+        var globalIncidentsReport = new GlobalIncidentsReportSettings(
+            namespaceName: "Incidents",
+            searchPhrase: "ADF disab",
+            additionalFieldNames: ["Business Impact"]);
         var pdfReport = new PdfReportSettings(enabled: true, outputPath: "report.pdf");
         var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };
         const string customFieldName = "Team";
@@ -49,6 +53,7 @@ public sealed class AppSettingsTests
             bugIssueNames: bugIssueNames,
             showGeneralStatistics: false,
             releaseReport: releaseReport,
+            globalIncidentsReport: globalIncidentsReport,
             pdfReport: pdfReport,
             pullRequestFieldName: pullRequestFieldName);
 
@@ -70,6 +75,7 @@ public sealed class AppSettingsTests
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
         settings.ShowGeneralStatistics.Should().BeFalse();
         settings.ReleaseReport.Should().Be(releaseReport);
+        settings.GlobalIncidentsReport.Should().Be(globalIncidentsReport);
         settings.PdfReport.Should().Be(pdfReport);
         settings.PullRequestFieldName.Should().Be(pullRequestFieldName);
     }

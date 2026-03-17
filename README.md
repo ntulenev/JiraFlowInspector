@@ -12,6 +12,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
 - Optional release report by label and custom release date field.
+- Optional global incidents report by namespace/project and search phrase.
 - P75 transition timing per path group.
 - Timeline diagrams in console and PDF.
 - Optional exclusion of weekends and specific calendar days from duration calculation.
@@ -29,11 +30,12 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
    and currently have `status = "<DoneStatusName>"`.
 5. Optionally loads keys for `RejectStatusName` with the same final-status rule.
 6. Optionally loads release issues for the month.
-7. Optionally loads bug-ratio datasets.
-8. Loads changelogs for selected issues and builds transition timelines.
-9. Applies issue-type and required-stage filters.
-10. Shows console sections.
-11. Optionally writes PDF report.
+7. Optionally loads global incidents for the month.
+8. Optionally loads bug-ratio datasets.
+9. Loads changelogs for selected issues and builds transition timelines.
+10. Applies issue-type and required-stage filters.
+11. Shows console sections.
+12. Optionally writes PDF report.
 
 ## Important Behavior Rules
 
@@ -52,6 +54,8 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   month, optional created-after date.
 - Release report (optional):
   all releases in `MonthLabel` by `ProjectLabel`, with tasks/components counts.
+- Global incidents report (optional):
+  incidents in `MonthLabel` by configured namespace/project and optional search phrase.
 - Bug ratio (optional):
   open/done/rejected/finished counts and finished/created rate.
 - Bug ratio details (optional):
@@ -73,6 +77,7 @@ When `Jira:Pdf:Enabled` is `true`, PDF includes:
 
 - Header (`Jira Analytics`, generation timestamp, project, done status, month, optional created-after/custom-field filter).
 - Release report (if configured).
+- Global incidents report (if configured).
 - Bug ratio (if configured) and bug detail tables.
 - Transition analysis tables (Done and optional Rejected).
 - Path groups summary.
@@ -141,6 +146,23 @@ When `ReleaseReport.ComponentsFieldName` is configured, report also shows
 
 - `Component name`
 - `Release counts` (ordered descending)
+
+### Global Incidents Report
+
+Global incidents query uses:
+
+- `project = GlobalIncidents.Namespace`
+- `IncidentStartFieldName` in `MonthLabel` range
+- optional text-term filters derived from `SearchPhrase`
+
+Per incident row:
+
+- `Incident Start UTC`
+- `Incident Recovery UTC`
+- `Duration` (recovery minus start when both timestamps are present)
+- `Impact`
+- `Urgency`
+- optional configured `AdditionalFieldNames` rendered in one column
 
 ## Duration Calculation
 
@@ -211,6 +233,22 @@ All options live under `Jira`.
   Issue is treated as hot-fix when any rule matches.
 - `Pdf` (`object`, optional):
   PDF settings.
+- `GlobalIncidents` (`object`, optional):
+  global incidents report settings.
+- `GlobalIncidents.Namespace` (`string`, optional, default `Incidents`):
+  Jira namespace/project used for incidents search.
+- `GlobalIncidents.SearchPhrase` (`string`, optional):
+  free-text filter split into Jira `text ~ "<term>*"` terms.
+- `GlobalIncidents.IncidentStartFieldName` (`string`, optional, default `Incident Start date/time UTC`):
+  Jira field name storing incident start UTC.
+- `GlobalIncidents.IncidentRecoveryFieldName` (`string`, optional, default `Incident Recovery date/time UTC`):
+  Jira field name storing incident recovery UTC.
+- `GlobalIncidents.ImpactFieldName` (`string`, optional, default `Impact`):
+  Jira field name used for impact output.
+- `GlobalIncidents.UrgencyFieldName` (`string`, optional, default `Urgency`):
+  Jira field name used for urgency output.
+- `GlobalIncidents.AdditionalFieldNames` (`string[]`, optional):
+  extra Jira field names shown in an aggregated `Additional fields` column.
 - `Pdf.Enabled` (`bool`, optional, default `true`):
   enables PDF generation.
 - `Pdf.OutputPath` (`string`, optional, default `jiraflowinspector-report.pdf`):
@@ -261,6 +299,15 @@ All options live under `Jira`.
         "Change type": [ "Emergency" ],
         "Change reason": [ "Repair", "Mitigation" ]
       }
+    },
+    "GlobalIncidents": {
+      "Namespace": "Incidents",
+      "SearchPhrase": "service outage",
+      "IncidentStartFieldName": "Incident Start date/time UTC",
+      "IncidentRecoveryFieldName": "Incident Recovery date/time UTC",
+      "ImpactFieldName": "Impact",
+      "UrgencyFieldName": "Urgency",
+      "AdditionalFieldNames": [ "Business Impact" ]
     },
     "Pdf": {
       "Enabled": true,

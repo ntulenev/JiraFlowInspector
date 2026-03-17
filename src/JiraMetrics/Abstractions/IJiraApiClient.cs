@@ -1,4 +1,5 @@
 using JiraMetrics.Models;
+using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Abstractions;
@@ -116,6 +117,16 @@ public interface IJiraApiClient
         string? componentsFieldName,
         IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
         string rollbackFieldName,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads global incidents for configured month.
+    /// </summary>
+    /// <param name="settings">Global incidents report settings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Incident issues in selected month.</returns>
+    Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
+        GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken);
 
     /// <summary>
