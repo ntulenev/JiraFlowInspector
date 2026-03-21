@@ -42,7 +42,11 @@ public sealed class PdfContentComposer : IPdfContentComposer
         ComposeBugRatioSection(column, reportData);
         ComposeTransitionSection(column, reportData);
         ComposePathSummarySection(column, reportData.PathSummary);
-        ComposePathGroupsSection(column, reportData.PathGroups, reportData.Settings.BaseUrl);
+        ComposePathGroupsSection(
+            column,
+            reportData.PathGroups,
+            reportData.Settings.BaseUrl,
+            reportData.Settings.ShowTimeCalculationsInHoursOnly);
         ComposeOpenIssuesByStatusSection(column, reportData);
         ComposeFailuresSection(column, reportData.Failures, reportData.Settings.BaseUrl);
     }
@@ -354,7 +358,8 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(incident.Title.Truncate(new TextLength(140)).Value);
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(FormatIncidentDateTimeUtc(incident.IncidentStartUtc));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc));
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(FormatIncidentDuration(incident.Duration));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(
+                    FormatIncidentDuration(incident.Duration, reportData.Settings.ShowTimeCalculationsInHoursOnly));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(incident.Impact ?? "-");
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(incident.Urgency ?? "-");
                 if (includeAdditionalFields)
@@ -370,7 +375,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
         });
 
         var totalDuration = SumIncidentDurations(orderedIncidents);
-        _ = column.Item().Text("Total duration: " + FormatIncidentDuration(totalDuration)).FontColor(Colors.Grey.Darken1);
+        _ = column
+            .Item()
+            .Text("Total duration: " + FormatIncidentDuration(totalDuration, reportData.Settings.ShowTimeCalculationsInHoursOnly))
+            .FontColor(Colors.Grey.Darken1);
     }
 
     private static void ComposeBugRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
@@ -541,9 +549,14 @@ public sealed class PdfContentComposer : IPdfContentComposer
             reportData.Settings.BaseUrl,
             reportData.Settings.DoneStatusName,
             "Done At",
+            reportData.Settings.ShowTimeCalculationsInHoursOnly,
             includeCreatedAt: true,
             includeDaysAtWork: true);
-        ComposeDoneDaysAtWork75PerTypeSection(column, reportData.DoneDaysAtWork75PerType, reportData.Settings.DoneStatusName);
+        ComposeDoneDaysAtWork75PerTypeSection(
+            column,
+            reportData.DoneDaysAtWork75PerType,
+            reportData.Settings.DoneStatusName,
+            reportData.Settings.ShowTimeCalculationsInHoursOnly);
 
         if (reportData.Settings.RejectStatusName is { } rejectStatusName)
         {
@@ -554,6 +567,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 reportData.Settings.BaseUrl,
                 rejectStatusName,
                 "Rejected At",
+                reportData.Settings.ShowTimeCalculationsInHoursOnly,
                 includeCreatedAt: true,
                 includeDaysAtWork: true);
         }
@@ -566,6 +580,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
         JiraBaseUrl baseUrl,
         StatusName targetStatusName,
         string atColumnTitle,
+        bool showTimeCalculationsInHoursOnly,
         bool includeCreatedAt = false,
         bool includeDaysAtWork = false)
     {
@@ -619,7 +634,9 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text(atColumnTitle);
                 if (includeDaysAtWork)
                 {
-                    _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Days at work");
+                    _ = header.Cell()
+                        .Element(PdfPresentationHelpers.StyleHeaderCell)
+                        .Text(GetWorkDurationColumnLabel(showTimeCalculationsInHoursOnly));
                 }
             });
 
@@ -647,7 +664,9 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(BuildLastStatusAtText(issue, targetStatusName));
                 if (includeDaysAtWork)
                 {
-                    _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(BuildWorkDaysAtText(issue, targetStatusName));
+                    _ = table.Cell()
+                        .Element(PdfPresentationHelpers.StyleBodyCell)
+                        .Text(BuildWorkDurationText(issue, targetStatusName, showTimeCalculationsInHoursOnly));
                 }
             }
         });
@@ -656,9 +675,13 @@ public sealed class PdfContentComposer : IPdfContentComposer
     private static void ComposeDoneDaysAtWork75PerTypeSection(
         ColumnDescriptor column,
         IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
-        StatusName doneStatusName)
+        StatusName doneStatusName,
+        bool showTimeCalculationsInHoursOnly)
     {
-        _ = column.Item().Text($"Days at Work 75P per type (moved to {doneStatusName.Value})").Bold();
+        _ = column
+            .Item()
+            .Text($"{GetWorkDuration75Title(showTimeCalculationsInHoursOnly)} per type (moved to {doneStatusName.Value})")
+            .Bold();
         if (summaries.Count == 0)
         {
             _ = column.Item().Text("No data.").FontColor(Colors.Grey.Darken1);
@@ -684,7 +707,9 @@ public sealed class PdfContentComposer : IPdfContentComposer
             {
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Type");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
-                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Days at Work 75P");
+                _ = header.Cell()
+                    .Element(PdfPresentationHelpers.StyleHeaderCell)
+                    .Text(GetWorkDuration75Title(showTimeCalculationsInHoursOnly));
             });
 
             foreach (var summary in orderedSummaries)
@@ -695,7 +720,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     .Text(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(summary.DaysAtWorkP75.TotalDays.ToString("0.##", CultureInfo.InvariantCulture));
+                    .Text(FormatWorkDurationValue(summary.DaysAtWorkP75, showTimeCalculationsInHoursOnly));
             }
         });
     }
@@ -733,7 +758,8 @@ public sealed class PdfContentComposer : IPdfContentComposer
     private static void ComposePathGroupsSection(
         ColumnDescriptor column,
         IReadOnlyList<PathGroup> pathGroups,
-        JiraBaseUrl baseUrl)
+        JiraBaseUrl baseUrl,
+        bool showTimeCalculationsInHoursOnly)
     {
         _ = column.Item().Text("Path groups").Bold().FontSize(12);
 
@@ -766,7 +792,9 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     _ = text.Hyperlink(issue.Key.Value, issueUrl).FontColor(Colors.Blue.Darken2).Underline();
                 }
             });
-            _ = column.Item().Text("TTM 75P: " + PdfPresentationHelpers.ToDurationLabel(group.TotalP75));
+            _ = column
+                .Item()
+                .Text("TTM 75P: " + PdfPresentationHelpers.ToDurationLabel(group.TotalP75, showTimeCalculationsInHoursOnly));
 
             if (group.P75Transitions.Count == 0)
             {
@@ -798,7 +826,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                     _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(transition.To.Value);
                     _ = table.Cell()
                         .Element(PdfPresentationHelpers.StyleBodyCell)
-                        .Text(PdfPresentationHelpers.ToDurationLabel(transition.P75Duration));
+                        .Text(PdfPresentationHelpers.ToDurationLabel(transition.P75Duration, showTimeCalculationsInHoursOnly));
                 }
             });
         }
@@ -1043,7 +1071,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
             : "-";
     }
 
-    private static string BuildWorkDaysAtText(IssueTimeline issue, StatusName targetStatusName)
+    private static string BuildWorkDurationText(
+        IssueTimeline issue,
+        StatusName targetStatusName,
+        bool showTimeCalculationsInHoursOnly)
     {
         var targetTransitionIndex = issue.Transitions
             .Select(static (transition, index) => (transition, index))
@@ -1060,7 +1091,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
             .Take(targetTransitionIndex + 1)
             .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
 
-        return workDuration.TotalDays.ToString("0.##", CultureInfo.InvariantCulture);
+        return FormatWorkDurationValue(workDuration, showTimeCalculationsInHoursOnly);
     }
 
     private static string FormatIncidentDateTimeUtc(DateTimeOffset? value) =>
@@ -1068,11 +1099,16 @@ public sealed class PdfContentComposer : IPdfContentComposer
             ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
             : "-";
 
-    private static string FormatIncidentDuration(TimeSpan? duration)
+    private static string FormatIncidentDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly)
     {
         if (!duration.HasValue || duration.Value < TimeSpan.Zero)
         {
             return "-";
+        }
+
+        if (showTimeCalculationsInHoursOnly)
+        {
+            return DurationLabel.FromDuration(duration.Value, showTimeCalculationsInHoursOnly: true).Value;
         }
 
         var totalMinutes = (int)Math.Round(duration.Value.TotalMinutes, MidpointRounding.AwayFromZero);
@@ -1092,6 +1128,16 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         return string.Format(CultureInfo.InvariantCulture, "{0}m", minutes);
     }
+
+    private static string FormatWorkDurationValue(TimeSpan duration, bool showTimeCalculationsInHoursOnly) =>
+        (showTimeCalculationsInHoursOnly ? duration.TotalHours : duration.TotalDays)
+        .ToString("0.##", CultureInfo.InvariantCulture);
+
+    private static string GetWorkDurationColumnLabel(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "Hours at work" : "Days at work";
+
+    private static string GetWorkDuration75Title(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "Hours at Work 75P" : "Days at Work 75P";
 
     private static TimeSpan? SumIncidentDurations(IReadOnlyList<GlobalIncidentItem> incidents)
     {

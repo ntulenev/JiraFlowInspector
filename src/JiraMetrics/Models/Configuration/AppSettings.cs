@@ -22,6 +22,7 @@ public sealed record AppSettings
     /// <param name="issueTypes">Optional issue types filter.</param>
     /// <param name="customFieldName">Optional custom field name for filtering.</param>
     /// <param name="customFieldValue">Optional custom field value for filtering.</param>
+    /// <param name="showTimeCalculationsInHoursOnly">Whether all time calculations should be shown strictly in hours.</param>
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
@@ -43,6 +44,7 @@ public sealed record AppSettings
         IReadOnlyList<IssueTypeName>? issueTypes = null,
         string? customFieldName = null,
         string? customFieldValue = null,
+        bool showTimeCalculationsInHoursOnly = false,
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
@@ -64,6 +66,7 @@ public sealed record AppSettings
         IssueTypes = issueTypes is null ? [] : [.. issueTypes];
         CustomFieldName = string.IsNullOrWhiteSpace(customFieldName) ? null : customFieldName.Trim();
         CustomFieldValue = string.IsNullOrWhiteSpace(customFieldValue) ? null : customFieldValue.Trim();
+        ShowTimeCalculationsInHoursOnly = showTimeCalculationsInHoursOnly;
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
@@ -160,6 +163,11 @@ public sealed record AppSettings
     /// Gets optional custom field value for filtering.
     /// </summary>
     public string? CustomFieldValue { get; }
+
+    /// <summary>
+    /// Gets whether all time calculations should be shown strictly in hours.
+    /// </summary>
+    public bool ShowTimeCalculationsInHoursOnly { get; }
 
     /// <summary>
     /// Gets whether to exclude weekends from transition durations.

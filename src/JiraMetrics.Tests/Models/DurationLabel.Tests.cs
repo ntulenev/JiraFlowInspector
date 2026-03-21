@@ -78,6 +78,20 @@ public sealed class DurationLabelTests
         result.Value.Should().Be("1d 2h 30m");
     }
 
+    [Fact(DisplayName = "FromDuration returns total hours when strict hours mode is enabled")]
+    [Trait("Category", "Unit")]
+    public void FromDurationWhenStrictHoursModeIsEnabledReturnsHoursOnly()
+    {
+        // Arrange
+        var duration = new TimeSpan(days: 1, hours: 2, minutes: 30, seconds: 0);
+
+        // Act
+        var result = DurationLabel.FromDuration(duration, showTimeCalculationsInHoursOnly: true);
+
+        // Assert
+        result.Value.Should().Be("26.5h");
+    }
+
     [Fact(DisplayName = "FromDuration returns seconds when no larger units exist")]
     [Trait("Category", "Unit")]
     public void FromDurationWhenOnlySecondsExistReturnsSecondsText()
@@ -104,5 +118,19 @@ public sealed class DurationLabelTests
 
         // Assert
         result.Value.Should().Be("0s");
+    }
+
+    [Fact(DisplayName = "FromDuration returns zero hours for negative duration in strict hours mode")]
+    [Trait("Category", "Unit")]
+    public void FromDurationWhenDurationIsNegativeInStrictHoursModeReturnsZeroHours()
+    {
+        // Arrange
+        var duration = TimeSpan.FromMinutes(-5);
+
+        // Act
+        var result = DurationLabel.FromDuration(duration, showTimeCalculationsInHoursOnly: true);
+
+        // Assert
+        result.Value.Should().Be("0h");
     }
 }

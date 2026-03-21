@@ -44,5 +44,6 @@ internal static class PdfPresentationHelpers
         return $"{baseUrl.Value}/browse/{issueKey.Value}";
     }
 
-    public static string ToDurationLabel(TimeSpan duration) => DurationLabel.FromDuration(duration).Value;
+    public static string ToDurationLabel(TimeSpan duration, bool showTimeCalculationsInHoursOnly = false) =>
+        DurationLabel.FromDuration(duration, showTimeCalculationsInHoursOnly).Value;
 }

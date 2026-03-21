@@ -5,6 +5,8 @@ using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Presentation;
 
+using Microsoft.Extensions.Options;
+
 using Spectre.Console;
 using Spectre.Console.Testing;
 
@@ -427,6 +429,43 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("2.5");
     }
 
+    [Fact(DisplayName = "ShowDoneDaysAtWork75PerType writes hours when strict hours mode is enabled")]
+    [Trait("Category", "Unit")]
+    public async Task ShowDoneDaysAtWork75PerTypeWhenStrictHoursModeEnabledWritesHours()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService(Options.Create(new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            [new StageName("Code Review")],
+            new MonthLabel("2026-02"),
+            showTimeCalculationsInHoursOnly: true)));
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowDoneDaysAtWork75PerType(
+                [
+                    new IssueTypeWorkDays75Summary(
+                        new IssueTypeName("Task"),
+                        new ItemCount(4),
+                        TimeSpan.FromDays(2.5))
+                ],
+                new StatusName("Done"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Hours at Work 75P per type");
+        output.Should().Contain("Hours at Work 75P");
+        output.Should().Contain("60");
+        output.Should().NotContain("Days at Work 75P");
+    }
+
     [Fact(DisplayName = "ShowDoneDaysAtWork75PerType writes empty state when there is no data")]
     [Trait("Category", "Unit")]
     public async Task ShowDoneDaysAtWork75PerTypeWhenNoItemsWritesNoData()
@@ -750,6 +789,44 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("High");
         output.Should().Contain("Business");
         output.Should().Contain("live");
+    }
+
+    [Fact(DisplayName = "ShowGlobalIncidentsReport writes hours when strict hours mode is enabled")]
+    [Trait("Category", "Unit")]
+    public async Task ShowGlobalIncidentsReportWhenStrictHoursModeEnabledWritesHours()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService(Options.Create(new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            [new StageName("Code Review")],
+            new MonthLabel("2026-03"),
+            showTimeCalculationsInHoursOnly: true)));
+        var settings = new GlobalIncidentsReportSettings(namespaceName: "Incidents");
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowGlobalIncidentsReport(
+                settings,
+                new MonthLabel("2026-03"),
+                [
+                    new GlobalIncidentItem(
+                        new IssueKey("INC-11861"),
+                        new IssueSummary("SB2 - ADF disabled 10/03/2026"),
+                        new DateTimeOffset(2026, 3, 10, 2, 34, 0, TimeSpan.Zero),
+                        new DateTimeOffset(2026, 3, 10, 3, 23, 0, TimeSpan.Zero))
+                ]);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("0.82h");
+        output.Should().NotContain("49m");
     }
 
     [Fact(DisplayName = "ShowOpenIssuesByStatusSummary writes status and issue type breakdown")]

@@ -6,6 +6,8 @@ using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
+using Microsoft.Extensions.Options;
+
 using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
@@ -15,6 +17,31 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 public sealed class SpectreJiraPresentationService : IJiraPresentationService
 {
+    private readonly bool _showTimeCalculationsInHoursOnly;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SpectreJiraPresentationService"/> class.
+    /// </summary>
+    public SpectreJiraPresentationService()
+        : this(showTimeCalculationsInHoursOnly: false)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SpectreJiraPresentationService"/> class.
+    /// </summary>
+    /// <param name="settings">Application settings options.</param>
+    public SpectreJiraPresentationService(IOptions<AppSettings> settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        _showTimeCalculationsInHoursOnly = settings.Value.ShowTimeCalculationsInHoursOnly;
+    }
+
+    private SpectreJiraPresentationService(bool showTimeCalculationsInHoursOnly)
+    {
+        _showTimeCalculationsInHoursOnly = showTimeCalculationsInHoursOnly;
+    }
+
     /// <inheritdoc />
     public void ShowAuthenticationStarted() => AnsiConsole.MarkupLine("[grey]Authenticating with Jira...[/]");
 
@@ -133,7 +160,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]Summary[/]")
             .AddColumn("[bold]Created At[/]")
             .AddColumn("[bold]Done At[/]")
-            .AddColumn("[bold]Days at work[/]");
+            .AddColumn($"[bold]{GetWorkDurationColumnLabel()}[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -152,7 +179,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 ? lastDoneAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : "-";
             var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-            var daysAtWorkText = BuildWorkDaysAtText(issue, doneStatusName);
+            var daysAtWorkText = BuildWorkDurationText(issue, doneStatusName);
             var codeText = issue.HasPullRequest ? "[green]+[/]" : string.Empty;
 
             _ = table.AddRow(
@@ -177,7 +204,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(summaries);
 
-        AnsiConsole.MarkupLine($"[bold]Days at Work 75P per type (moved to {Markup.Escape(doneStatusName.Value)})[/]");
+        AnsiConsole.MarkupLine($"[bold]{GetWorkDuration75Title()} per type (moved to {Markup.Escape(doneStatusName.Value)})[/]");
         if (summaries.Count == 0)
         {
             AnsiConsole.MarkupLine("[grey]No data.[/]");
@@ -189,7 +216,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .BorderColor(Color.Grey)
             .AddColumn("[bold]Type[/]")
             .AddColumn("[bold]Issues[/]")
-            .AddColumn("[bold]Days at Work 75P[/]");
+            .AddColumn($"[bold]{GetWorkDuration75Title()}[/]");
 
         foreach (var summary in summaries
                      .OrderByDescending(static item => item.DaysAtWorkP75)
@@ -199,7 +226,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             _ = table.AddRow(
                 Markup.Escape(summary.IssueType.Value),
                 summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture),
-                summary.DaysAtWorkP75.TotalDays.ToString("0.##", CultureInfo.InvariantCulture));
+                FormatWorkDurationValue(summary.DaysAtWorkP75));
         }
 
         AnsiConsole.Write(table);
@@ -227,7 +254,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]Summary[/]")
             .AddColumn("[bold]Created At[/]")
             .AddColumn("[bold]Rejected At[/]")
-            .AddColumn("[bold]Days at work[/]");
+            .AddColumn($"[bold]{GetWorkDurationColumnLabel()}[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -246,7 +273,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 ? lastRejectAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : "-";
             var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-            var daysAtWorkText = BuildWorkDaysAtText(issue, rejectStatusName);
+            var daysAtWorkText = BuildWorkDurationText(issue, rejectStatusName);
 
             _ = table.AddRow(
                 (i + 1).ToString(CultureInfo.InvariantCulture),
@@ -662,7 +689,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             var stageDurations = group.P75Transitions
                 .Select(static transition => (stage: transition.From.Value, duration: transition.P75Duration))
                 .ToList();
-            var totalTtm = DurationLabel.FromDuration(group.TotalP75).Value;
+            var totalTtm = DurationLabel.FromDuration(group.TotalP75, _showTimeCalculationsInHoursOnly).Value;
             RenderDurationTimeline(stageDurations, totalTtm);
             AnsiConsole.WriteLine();
 
@@ -678,7 +705,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 _ = table.AddRow(
                     Markup.Escape(transition.From.Value),
                     Markup.Escape(transition.To.Value),
-                    DurationLabel.FromDuration(transition.P75Duration).Value);
+                    DurationLabel.FromDuration(transition.P75Duration, _showTimeCalculationsInHoursOnly).Value);
             }
 
             AnsiConsole.Write(table);
@@ -916,7 +943,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     private int _issueLoadFailed;
     private int _issueLoadStep = 1;
 
-    private static string BuildWorkDaysAtText(IssueTimeline issue, StatusName targetStatusName)
+    private string BuildWorkDurationText(IssueTimeline issue, StatusName targetStatusName)
     {
         var targetTransitionIndex = issue.Transitions
             .Select(static (transition, index) => (transition, index))
@@ -933,7 +960,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .Take(targetTransitionIndex + 1)
             .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
 
-        return workDuration.TotalDays.ToString("0.##", CultureInfo.InvariantCulture);
+        return FormatWorkDurationValue(workDuration);
     }
 
     private static string FormatIncidentDateTimeUtc(DateTimeOffset? value) =>
@@ -941,7 +968,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             ? value.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
             : "-";
 
-    private static string FormatIncidentDuration(TimeSpan? duration)
+    private string FormatIncidentDuration(TimeSpan? duration)
     {
         if (!duration.HasValue)
         {
@@ -952,6 +979,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         if (value < TimeSpan.Zero)
         {
             return "-";
+        }
+
+        if (_showTimeCalculationsInHoursOnly)
+        {
+            return DurationLabel.FromDuration(value, showTimeCalculationsInHoursOnly: true).Value;
         }
 
         var totalMinutes = (int)Math.Round(value.TotalMinutes, MidpointRounding.AwayFromZero);
@@ -971,6 +1003,16 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         return string.Format(CultureInfo.InvariantCulture, "{0}m", minutes);
     }
+
+    private string FormatWorkDurationValue(TimeSpan duration) =>
+        (_showTimeCalculationsInHoursOnly ? duration.TotalHours : duration.TotalDays)
+        .ToString("0.##", CultureInfo.InvariantCulture);
+
+    private string GetWorkDurationColumnLabel() =>
+        _showTimeCalculationsInHoursOnly ? "Hours at work" : "Days at work";
+
+    private string GetWorkDuration75Title() =>
+        _showTimeCalculationsInHoursOnly ? "Hours at Work 75P" : "Days at Work 75P";
 
     private static TimeSpan? SumIncidentDurations(IReadOnlyList<GlobalIncidentItem> incidents)
     {

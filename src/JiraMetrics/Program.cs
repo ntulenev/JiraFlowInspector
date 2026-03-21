@@ -89,6 +89,7 @@ builder.Services.AddSingleton(sp =>
         issueTypes,
         customFieldName,
         customFieldValue,
+        source.ShowTimeCalculationsInHoursOnly,
         teamTasks.IssueTransitions?.ExcludeWeekend ?? false,
         excludedDays,
         bugIssueNames,

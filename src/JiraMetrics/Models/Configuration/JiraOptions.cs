@@ -46,6 +46,11 @@ public sealed class JiraOptions
     public string? CreatedAfter { get; init; }
 
     /// <summary>
+    /// Gets or sets whether all time calculations should be shown strictly in hours.
+    /// </summary>
+    public bool ShowTimeCalculationsInHoursOnly { get; init; }
+
+    /// <summary>
     /// Gets or sets number of retries for transient Jira API errors.
     /// </summary>
     [Range(0, 10)]

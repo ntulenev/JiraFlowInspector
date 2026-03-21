@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace JiraMetrics.Models.ValueObjects;
 
 /// <summary>
@@ -24,12 +26,18 @@ public readonly record struct DurationLabel
     /// Creates a formatted duration label.
     /// </summary>
     /// <param name="duration">Duration value.</param>
+    /// <param name="showTimeCalculationsInHoursOnly">Whether duration should be formatted strictly in hours.</param>
     /// <returns>Duration label.</returns>
-    public static DurationLabel FromDuration(TimeSpan duration)
+    public static DurationLabel FromDuration(TimeSpan duration, bool showTimeCalculationsInHoursOnly = false)
     {
         if (duration < TimeSpan.Zero)
         {
             duration = TimeSpan.Zero;
+        }
+
+        if (showTimeCalculationsInHoursOnly)
+        {
+            return new DurationLabel($"{duration.TotalHours.ToString("0.##", CultureInfo.InvariantCulture)}h");
         }
 
         var days = (int)duration.TotalDays;

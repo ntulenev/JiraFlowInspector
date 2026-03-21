@@ -48,6 +48,7 @@ public sealed class AppSettingsTests
             issueTypes,
             customFieldName,
             customFieldValue,
+            showTimeCalculationsInHoursOnly: true,
             excludeWeekend: true,
             excludedDays: excludedDays,
             bugIssueNames: bugIssueNames,
@@ -70,6 +71,7 @@ public sealed class AppSettingsTests
         settings.IssueTypes.Select(static issueType => issueType.Value).Should().ContainInOrder("Bug", "Story");
         settings.CustomFieldName.Should().Be(customFieldName);
         settings.CustomFieldValue.Should().Be(customFieldValue);
+        settings.ShowTimeCalculationsInHoursOnly.Should().BeTrue();
         settings.ExcludeWeekend.Should().BeTrue();
         settings.ExcludedDays.Should().ContainInOrder(excludedDays);
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
@@ -96,6 +98,7 @@ public sealed class AppSettingsTests
             new MonthLabel("2026-02"));
 
         // Assert
+        settings.ShowTimeCalculationsInHoursOnly.Should().BeFalse();
         settings.PullRequestFieldName.Should().BeNull();
     }
 }
