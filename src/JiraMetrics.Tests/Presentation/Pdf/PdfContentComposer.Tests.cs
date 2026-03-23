@@ -140,6 +140,11 @@ public sealed class PdfContentComposerTests
                         ["Business Impact"] = "Live feed unavailable"
                     })
             ],
+            AllTasksCreatedThisMonth = new ItemCount(47),
+            AllTasksOpenThisMonth = new ItemCount(33),
+            AllTasksMovedToDoneThisMonth = new ItemCount(31),
+            AllTasksRejectedThisMonth = new ItemCount(37),
+            AllTasksFinishedThisMonth = new ItemCount(68),
             BugCreatedThisMonth = new ItemCount(2),
             BugMovedToDoneThisMonth = new ItemCount(1),
             BugRejectedThisMonth = new ItemCount(0),

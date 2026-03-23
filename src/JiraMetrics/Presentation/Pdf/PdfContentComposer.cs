@@ -39,6 +39,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         ComposeReleaseSection(column, reportData);
         ComposeGlobalIncidentsSection(column, reportData);
+        ComposeAllTasksRatioSection(column, reportData);
         ComposeBugRatioSection(column, reportData);
         ComposeTransitionSection(column, reportData);
         ComposePathSummarySection(column, reportData.PathSummary);
@@ -423,48 +424,19 @@ public sealed class PdfContentComposer : IPdfContentComposer
             return;
         }
 
-        _ = column.Item().Text("Bug ratio").Bold().FontSize(12);
-
         var bugTypesLabel = reportData.Settings.BugIssueNames.Count == 0
             ? "-"
             : string.Join(", ", reportData.Settings.BugIssueNames.Select(static x => x.Value));
-        var created = reportData.BugCreatedThisMonth.Value.Value;
-        var finished = reportData.BugFinishedThisMonth.Value.Value;
-        var resolvedRate = created == 0 ? "N/A" : $"{finished * 100.0 / created:0.##}%";
-
-        column.Item().Table(table =>
-        {
-            table.ColumnsDefinition(columns =>
-            {
-                columns.RelativeColumn(2.4f);
-                columns.RelativeColumn(1.2f);
-            });
-
-            table.Header(header =>
-            {
-                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Metric");
-                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
-            });
-
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Bug issue types");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(bugTypesLabel);
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Open this month");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(created.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Done this month");
-            _ = table.Cell()
-                .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(reportData.BugMovedToDoneThisMonth.Value.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Rejected this month");
-            _ = table.Cell()
-                .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(reportData.BugRejectedThisMonth.Value.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished this month");
-            _ = table.Cell()
-                .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(reportData.BugFinishedThisMonth.Value.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Resolved / Created");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(resolvedRate);
-        });
+        ComposeRatioSection(
+            column,
+            "Bug ratio",
+            "Bug issue types",
+            bugTypesLabel,
+            new ItemCount(reportData.BugOpenIssues.Count),
+            reportData.BugCreatedThisMonth.Value,
+            reportData.BugMovedToDoneThisMonth.Value,
+            reportData.BugRejectedThisMonth.Value,
+            reportData.BugFinishedThisMonth.Value);
 
         ComposeIssueListItemsSection(
             column,
@@ -487,6 +459,86 @@ public sealed class PdfContentComposer : IPdfContentComposer
             REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: false);
+    }
+
+    private static void ComposeAllTasksRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
+    {
+        if (!reportData.AllTasksCreatedThisMonth.HasValue
+            || !reportData.AllTasksOpenThisMonth.HasValue
+            || !reportData.AllTasksMovedToDoneThisMonth.HasValue
+            || !reportData.AllTasksRejectedThisMonth.HasValue
+            || !reportData.AllTasksFinishedThisMonth.HasValue)
+        {
+            return;
+        }
+
+        ComposeRatioSection(
+            column,
+            "All tasks ratio",
+            "Issue types",
+            "All",
+            reportData.AllTasksOpenThisMonth.Value,
+            reportData.AllTasksCreatedThisMonth.Value,
+            reportData.AllTasksMovedToDoneThisMonth.Value,
+            reportData.AllTasksRejectedThisMonth.Value,
+            reportData.AllTasksFinishedThisMonth.Value);
+    }
+
+    private static void ComposeRatioSection(
+        ColumnDescriptor column,
+        string title,
+        string scopeLabel,
+        string scopeValue,
+        ItemCount openThisMonth,
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth)
+    {
+        _ = column.Item().Text(title).Bold().FontSize(12);
+
+        column.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.RelativeColumn(2.4f);
+                columns.RelativeColumn(1.2f);
+            });
+
+            table.Header(header =>
+            {
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Metric");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
+            });
+
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeLabel);
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeValue);
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Open this month");
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(openThisMonth.Value.ToString(CultureInfo.InvariantCulture));
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Done this month");
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture));
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Rejected this month");
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished this month");
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished / Created");
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
+        });
+    }
+
+    private static string BuildFinishedToCreatedRatioText(ItemCount createdThisMonth, ItemCount finishedThisMonth)
+    {
+        return createdThisMonth.Value == 0
+            ? "N/A"
+            : $"{finishedThisMonth.Value * 100.0 / createdThisMonth.Value:0.##}%";
     }
 
     private static string BuildHotFixRulesText(IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules)

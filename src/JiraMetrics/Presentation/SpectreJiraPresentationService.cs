@@ -539,6 +539,48 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
+    public void ShowAllTasksRatioLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading all tasks ratio data...[/]");
+
+    /// <inheritdoc />
+    public void ShowAllTasksRatioLoadingCompleted(
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth)
+    {
+        AnsiConsole.MarkupLine(
+            $"[green]All tasks ratio data loaded:[/] created = {createdThisMonth.Value}, done = {movedToDoneThisMonth.Value}, rejected = {rejectedThisMonth.Value}, finished = {finishedThisMonth.Value}");
+    }
+
+    /// <inheritdoc />
+    public void ShowAllTasksRatio(
+        string? customFieldName,
+        string? customFieldValue,
+        ItemCount createdThisMonth,
+        ItemCount openThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth)
+    {
+        AnsiConsole.MarkupLine("[bold]All tasks ratio[/]");
+        if (!string.IsNullOrWhiteSpace(customFieldName)
+            && !string.IsNullOrWhiteSpace(customFieldValue))
+        {
+            AnsiConsole.MarkupLine(
+                $"[grey]Filtered by:[/] {Markup.Escape(customFieldName)} = {Markup.Escape(customFieldValue)}");
+        }
+
+        AnsiConsole.Write(CreateRatioSummaryTable(
+            "Issue types",
+            "All",
+            createdThisMonth,
+            openThisMonth,
+            movedToDoneThisMonth,
+            rejectedThisMonth,
+            finishedThisMonth));
+    }
+
+    /// <inheritdoc />
     public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)
     {
         ArgumentNullException.ThrowIfNull(bugIssueNames);
@@ -584,9 +626,6 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         }
 
         var bugTypes = string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
-        var ratioText = createdThisMonth.Value == 0
-            ? "n/a"
-            : $"{finishedThisMonth.Value * 100.0 / createdThisMonth.Value:0.##}%";
 
         AnsiConsole.MarkupLine("[bold]Bug ratio[/]");
         if (!string.IsNullOrWhiteSpace(customFieldName)
@@ -596,20 +635,14 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 $"[grey]Filtered by:[/] {Markup.Escape(customFieldName)} = {Markup.Escape(customFieldValue)}");
         }
 
-        var table = new Table()
-            .RoundedBorder()
-            .BorderColor(Color.Grey)
-            .AddColumn("[bold]Metric[/]")
-            .AddColumn("[bold]Value[/]");
-
-        _ = table.AddRow("Bug issue types", Markup.Escape(bugTypes));
-        _ = table.AddRow("[red]Open this month[/]", $"[red]{openIssues.Count.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[green]Done this month[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[orange1]Rejected this month[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[deepskyblue1]Finished this month[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("Finished / Created", ratioText);
-
-        AnsiConsole.Write(table);
+        AnsiConsole.Write(CreateRatioSummaryTable(
+            "Bug issue types",
+            bugTypes,
+            createdThisMonth,
+            new ItemCount(openIssues.Count),
+            movedToDoneThisMonth,
+            rejectedThisMonth,
+            finishedThisMonth));
 
         if (openIssues.Count == 0 && doneIssues.Count == 0 && rejectedIssues.Count == 0)
         {
@@ -626,6 +659,38 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold orange1]Rejected issues[/]");
         RenderBugIssueDetailsTable(rejectedIssues, "orange1", includeCreationDate: false);
+    }
+
+    private static Table CreateRatioSummaryTable(
+        string scopeLabel,
+        string scopeValue,
+        ItemCount createdThisMonth,
+        ItemCount openThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth)
+    {
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Metric[/]")
+            .AddColumn("[bold]Value[/]");
+
+        _ = table.AddRow(Markup.Escape(scopeLabel), Markup.Escape(scopeValue));
+        _ = table.AddRow("[red]Open this month[/]", $"[red]{openThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[green]Done this month[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[orange1]Rejected this month[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[deepskyblue1]Finished this month[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("Finished / Created", BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
+
+        return table;
+    }
+
+    private static string BuildFinishedToCreatedRatioText(ItemCount createdThisMonth, ItemCount finishedThisMonth)
+    {
+        return createdThisMonth.Value == 0
+            ? "n/a"
+            : $"{finishedThisMonth.Value * 100.0 / createdThisMonth.Value:0.##}%";
     }
 
     /// <inheritdoc />

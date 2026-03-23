@@ -29,6 +29,31 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; init; } = [];
 
     /// <summary>
+    /// Gets or sets all-tasks count created in month.
+    /// </summary>
+    public ItemCount? AllTasksCreatedThisMonth { get; init; }
+
+    /// <summary>
+    /// Gets or sets all-tasks count still open from issues created in month.
+    /// </summary>
+    public ItemCount? AllTasksOpenThisMonth { get; init; }
+
+    /// <summary>
+    /// Gets or sets all-tasks count moved to done in month.
+    /// </summary>
+    public ItemCount? AllTasksMovedToDoneThisMonth { get; init; }
+
+    /// <summary>
+    /// Gets or sets all-tasks count moved to rejected in month.
+    /// </summary>
+    public ItemCount? AllTasksRejectedThisMonth { get; init; }
+
+    /// <summary>
+    /// Gets or sets finished all-tasks count in month.
+    /// </summary>
+    public ItemCount? AllTasksFinishedThisMonth { get; init; }
+
+    /// <summary>
     /// Gets or sets bug issue count created in month.
     /// </summary>
     public ItemCount? BugCreatedThisMonth { get; init; }

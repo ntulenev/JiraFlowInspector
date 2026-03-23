@@ -65,6 +65,11 @@ public sealed class JiraApplication : IJiraApplication
 
         IReadOnlyList<IssueKey> issueKeys;
         IReadOnlyList<IssueKey> rejectIssueKeys = [];
+        ItemCount? allTasksCreatedThisMonth = null;
+        ItemCount? allTasksOpenThisMonth = null;
+        ItemCount? allTasksMovedToDoneThisMonth = null;
+        ItemCount? allTasksRejectedThisMonth = null;
+        ItemCount? allTasksFinishedThisMonth = null;
         ItemCount? bugCreatedThisMonth = null;
         ItemCount? bugMovedToDoneThisMonth = null;
         ItemCount? bugRejectedThisMonth = null;
@@ -75,6 +80,55 @@ public sealed class JiraApplication : IJiraApplication
         IReadOnlyList<StatusIssueTypeSummary> openIssuesByStatus = [];
         IReadOnlyList<ReleaseIssueItem> releaseIssues = [];
         IReadOnlyList<GlobalIncidentItem> globalIncidents = [];
+
+        async Task<(ItemCount CreatedThisMonth, ItemCount OpenThisMonth, ItemCount MovedToDoneThisMonth, ItemCount RejectedThisMonth, ItemCount FinishedThisMonth, IReadOnlyList<IssueListItem> OpenIssues, IReadOnlyList<IssueListItem> DoneIssues, IReadOnlyList<IssueListItem> RejectedIssues)> LoadIssueRatioAsync(
+            IReadOnlyList<IssueTypeName> issueTypes)
+        {
+            var createdIssues = await _apiClient.GetIssuesCreatedThisMonthAsync(
+                _settings.ProjectKey,
+                issueTypes,
+                cancellationToken).ConfigureAwait(false);
+            var doneIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
+                _settings.ProjectKey,
+                _settings.DoneStatusName,
+                issueTypes,
+                cancellationToken).ConfigureAwait(false);
+
+            IReadOnlyList<IssueListItem> rejectedIssues = [];
+            if (_settings.RejectStatusName is { } rejectStatusName)
+            {
+                rejectedIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
+                    _settings.ProjectKey,
+                    rejectStatusName,
+                    issueTypes,
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            var doneKeys = doneIssues
+                .Select(static issue => issue.Key.Value)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var rejectedKeys = rejectedIssues
+                .Select(static issue => issue.Key.Value)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var finishedKeys = doneKeys
+                .Union(rejectedKeys, StringComparer.OrdinalIgnoreCase)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var openIssues = (IReadOnlyList<IssueListItem>)[.. createdIssues
+                .Where(issue => !finishedKeys.Contains(issue.Key.Value))
+                .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+
+            return (
+                new ItemCount(createdIssues.Count),
+                new ItemCount(openIssues.Count),
+                new ItemCount(doneIssues.Count),
+                new ItemCount(rejectedIssues.Count),
+                new ItemCount(finishedKeys.Count),
+                openIssues,
+                doneIssues,
+                rejectedIssues);
+        }
+
         try
         {
             issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
@@ -158,48 +212,74 @@ public sealed class JiraApplication : IJiraApplication
             _presentationService.ShowSpacer();
         }
 
+        try
+        {
+            _presentationService.ShowAllTasksRatioLoadingStarted();
+
+            (
+                allTasksCreatedThisMonth,
+                allTasksOpenThisMonth,
+                allTasksMovedToDoneThisMonth,
+                allTasksRejectedThisMonth,
+                allTasksFinishedThisMonth,
+                _,
+                _,
+                _) = await LoadIssueRatioAsync([]).ConfigureAwait(false);
+
+            _presentationService.ShowAllTasksRatioLoadingCompleted(
+                allTasksCreatedThisMonth.Value,
+                allTasksMovedToDoneThisMonth.Value,
+                allTasksRejectedThisMonth.Value,
+                allTasksFinishedThisMonth.Value);
+        }
+        catch (HttpRequestException ex)
+        {
+            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            return;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            return;
+        }
+        catch (System.Text.Json.JsonException ex)
+        {
+            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            return;
+        }
+
+        if (allTasksCreatedThisMonth.HasValue
+            && allTasksOpenThisMonth.HasValue
+            && allTasksMovedToDoneThisMonth.HasValue
+            && allTasksRejectedThisMonth.HasValue
+            && allTasksFinishedThisMonth.HasValue)
+        {
+            _presentationService.ShowAllTasksRatio(
+                _settings.CustomFieldName,
+                _settings.CustomFieldValue,
+                allTasksCreatedThisMonth.Value,
+                allTasksOpenThisMonth.Value,
+                allTasksMovedToDoneThisMonth.Value,
+                allTasksRejectedThisMonth.Value,
+                allTasksFinishedThisMonth.Value);
+            _presentationService.ShowSpacer();
+        }
+
         if (_settings.BugIssueNames.Count > 0)
         {
             try
             {
                 _presentationService.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
 
-                var bugCreatedIssues = await _apiClient.GetIssuesCreatedThisMonthAsync(
-                    _settings.ProjectKey,
-                    _settings.BugIssueNames,
-                    cancellationToken).ConfigureAwait(false);
-                bugDoneIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
-                    _settings.ProjectKey,
-                    _settings.DoneStatusName,
-                    _settings.BugIssueNames,
-                    cancellationToken).ConfigureAwait(false);
-
-                if (_settings.RejectStatusName is { } rejectStatusName)
-                {
-                    bugRejectedIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
-                        _settings.ProjectKey,
-                        rejectStatusName,
-                        _settings.BugIssueNames,
-                        cancellationToken).ConfigureAwait(false);
-                }
-
-                var bugDoneKeys = bugDoneIssues
-                    .Select(static issue => issue.Key.Value)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var bugRejectedKeys = bugRejectedIssues
-                    .Select(static issue => issue.Key.Value)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                var bugFinishedKeys = bugDoneKeys
-                    .Union(bugRejectedKeys, StringComparer.OrdinalIgnoreCase)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                bugOpenIssues = [.. bugCreatedIssues
-                    .Where(issue => !bugFinishedKeys.Contains(issue.Key.Value))
-                    .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
-                bugCreatedThisMonth = new ItemCount(bugCreatedIssues.Count);
-                bugMovedToDoneThisMonth = new ItemCount(bugDoneIssues.Count);
-                bugRejectedThisMonth = new ItemCount(bugRejectedIssues.Count);
-                bugFinishedThisMonth = new ItemCount(bugFinishedKeys.Count);
+                (
+                    bugCreatedThisMonth,
+                    _,
+                    bugMovedToDoneThisMonth,
+                    bugRejectedThisMonth,
+                    bugFinishedThisMonth,
+                    bugOpenIssues,
+                    bugDoneIssues,
+                    bugRejectedIssues) = await LoadIssueRatioAsync(_settings.BugIssueNames).ConfigureAwait(false);
 
                 _presentationService.ShowBugRatioLoadingCompleted(
                     bugCreatedThisMonth.Value,
@@ -402,6 +482,11 @@ public sealed class JiraApplication : IJiraApplication
             SearchIssueCount = new ItemCount(issueKeys.Count),
             ReleaseIssues = releaseIssues,
             GlobalIncidents = globalIncidents,
+            AllTasksCreatedThisMonth = allTasksCreatedThisMonth,
+            AllTasksOpenThisMonth = allTasksOpenThisMonth,
+            AllTasksMovedToDoneThisMonth = allTasksMovedToDoneThisMonth,
+            AllTasksRejectedThisMonth = allTasksRejectedThisMonth,
+            AllTasksFinishedThisMonth = allTasksFinishedThisMonth,
             BugCreatedThisMonth = bugCreatedThisMonth,
             BugMovedToDoneThisMonth = bugMovedToDoneThisMonth,
             BugRejectedThisMonth = bugRejectedThisMonth,

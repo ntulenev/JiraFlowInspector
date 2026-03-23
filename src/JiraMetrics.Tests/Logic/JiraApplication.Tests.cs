@@ -282,9 +282,56 @@ public sealed class JiraApplicationTests
         apiClient.CreatedThisMonthIssuesRequested.Should().BeTrue();
         apiClient.MovedToDoneThisMonthIssuesRequested.Should().BeTrue();
         apiClient.RejectedThisMonthIssuesRequested.Should().BeTrue();
+        presentation.AllTasksRatioLoadingStartedShown.Should().BeTrue();
+        presentation.AllTasksRatioLoadingCompletedShown.Should().BeTrue();
+        presentation.AllTasksRatioShown.Should().BeTrue();
         presentation.BugRatioLoadingStartedShown.Should().BeTrue();
         presentation.BugRatioLoadingCompletedShown.Should().BeTrue();
         presentation.BugRatioShown.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "RunAsync shows all tasks ratio section without bug ratio details configuration")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncAlwaysShowsAllTasksRatio()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task")),
+            CreatedThisMonthIssues =
+            [
+                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Open task")),
+                new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done task"))
+            ],
+            MovedToDoneThisMonthIssues = [new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done task"))],
+            RejectedThisMonthIssues = [new IssueListItem(new IssueKey("AAA-12"), new IssueSummary("Rejected task"))]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        presentation.AllTasksRatioLoadingStartedShown.Should().BeTrue();
+        presentation.AllTasksRatioLoadingCompletedShown.Should().BeTrue();
+        presentation.AllTasksRatioShown.Should().BeTrue();
+        presentation.BugRatioShown.Should().BeFalse();
+        pdfReportRenderer.LastReportData!.AllTasksCreatedThisMonth.Should().Be(new ItemCount(2));
+        pdfReportRenderer.LastReportData!.AllTasksOpenThisMonth.Should().Be(new ItemCount(1));
+        pdfReportRenderer.LastReportData!.AllTasksMovedToDoneThisMonth.Should().Be(new ItemCount(1));
+        pdfReportRenderer.LastReportData!.AllTasksRejectedThisMonth.Should().Be(new ItemCount(1));
+        pdfReportRenderer.LastReportData!.AllTasksFinishedThisMonth.Should().Be(new ItemCount(2));
     }
 
     [Fact(DisplayName = "RunAsync shows release report section when release report is configured")]
@@ -955,6 +1002,12 @@ public sealed class JiraApplicationTests
 
         public bool BugRatioLoadingCompletedShown { get; private set; }
 
+        public bool AllTasksRatioShown { get; private set; }
+
+        public bool AllTasksRatioLoadingStartedShown { get; private set; }
+
+        public bool AllTasksRatioLoadingCompletedShown { get; private set; }
+
         public bool ReleaseReportShown { get; private set; }
 
         public bool ReleaseReportLoadingStartedShown { get; private set; }
@@ -1078,6 +1131,35 @@ public sealed class JiraApplicationTests
         {
             GlobalIncidentsReportShown = true;
             Calls.Add("GlobalIncidentsReport");
+        }
+
+        public void ShowAllTasksRatioLoadingStarted()
+        {
+            AllTasksRatioLoadingStartedShown = true;
+            Calls.Add("AllTasksRatioLoadingStarted");
+        }
+
+        public void ShowAllTasksRatioLoadingCompleted(
+            ItemCount createdThisMonth,
+            ItemCount movedToDoneThisMonth,
+            ItemCount rejectedThisMonth,
+            ItemCount finishedThisMonth)
+        {
+            AllTasksRatioLoadingCompletedShown = true;
+            Calls.Add("AllTasksRatioLoadingCompleted");
+        }
+
+        public void ShowAllTasksRatio(
+            string? customFieldName,
+            string? customFieldValue,
+            ItemCount createdThisMonth,
+            ItemCount openThisMonth,
+            ItemCount movedToDoneThisMonth,
+            ItemCount rejectedThisMonth,
+            ItemCount finishedThisMonth)
+        {
+            AllTasksRatioShown = true;
+            Calls.Add("AllTasksRatio");
         }
 
         public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)

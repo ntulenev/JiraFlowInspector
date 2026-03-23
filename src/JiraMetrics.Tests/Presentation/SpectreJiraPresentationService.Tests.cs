@@ -362,6 +362,43 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("2026-02-05");
     }
 
+    [Fact(DisplayName = "ShowAllTasksRatio writes summary without details")]
+    [Trait("Category", "Unit")]
+    public async Task ShowAllTasksRatioWhenCalledWritesSummaryOnly()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowAllTasksRatio(
+                "ADF Team",
+                "Processing",
+                new ItemCount(47),
+                new ItemCount(33),
+                new ItemCount(31),
+                new ItemCount(37),
+                new ItemCount(68));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("All tasks ratio");
+        output.Should().Contain("Filtered by:");
+        output.Should().Contain("ADF Team = Processing");
+        output.Should().Contain("Issue types");
+        output.Should().Contain("All");
+        output.Should().Contain("Open this month");
+        output.Should().Contain("Done this month");
+        output.Should().Contain("Rejected this month");
+        output.Should().Contain("Finished this month");
+        output.Should().Contain("144.68%");
+        output.Should().NotContain("Open issues");
+        output.Should().NotContain("Done issues");
+        output.Should().NotContain("Rejected issues");
+    }
+
     [Fact(DisplayName = "ShowRejectedIssuesTable writes reject issues table")]
     [Trait("Category", "Unit")]
     public async Task ShowRejectedIssuesTableWhenCalledWritesRejectRows()
@@ -527,6 +564,31 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("done = 2");
         output.Should().Contain("rejected = 1");
         output.Should().Contain("finished = 3");
+    }
+
+    [Fact(DisplayName = "ShowAllTasksRatioLoadingStarted and completed write loader lines")]
+    [Trait("Category", "Unit")]
+    public async Task ShowAllTasksRatioLoadingMessagesWhenCalledWriteOutput()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowAllTasksRatioLoadingStarted();
+            service.ShowAllTasksRatioLoadingCompleted(new ItemCount(47), new ItemCount(31), new ItemCount(37), new ItemCount(68));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Loading all tasks ratio data");
+        output.Should().Contain("All tasks ratio data loaded");
+        output.Should().Contain("created = 47");
+        output.Should().Contain("done = 31");
+        output.Should().Contain("rejected = 37");
+        output.Should().Contain("finished =");
+        output.Should().Contain("68");
     }
 
     [Fact(DisplayName = "ShowReleaseReportLoadingStarted writes loader line")]

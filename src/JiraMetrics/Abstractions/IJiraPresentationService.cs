@@ -153,6 +153,43 @@ public interface IJiraPresentationService
         IReadOnlyList<GlobalIncidentItem> incidents);
 
     /// <summary>
+    /// Shows all-tasks ratio loading start message.
+    /// </summary>
+    void ShowAllTasksRatioLoadingStarted();
+
+    /// <summary>
+    /// Shows all-tasks ratio loading complete message.
+    /// </summary>
+    /// <param name="createdThisMonth">Count of created issues in month.</param>
+    /// <param name="movedToDoneThisMonth">Count of moved-to-done issues in month.</param>
+    /// <param name="rejectedThisMonth">Count of moved-to-rejected issues in month.</param>
+    /// <param name="finishedThisMonth">Count of finished issues in month (done + rejected).</param>
+    void ShowAllTasksRatioLoadingCompleted(
+        ItemCount createdThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth);
+
+    /// <summary>
+    /// Shows all-tasks ratio section.
+    /// </summary>
+    /// <param name="customFieldName">Optional custom field name used for filtering.</param>
+    /// <param name="customFieldValue">Optional custom field value used for filtering.</param>
+    /// <param name="createdThisMonth">Count of created issues in month.</param>
+    /// <param name="openThisMonth">Count of open issues created in month and not finished within month.</param>
+    /// <param name="movedToDoneThisMonth">Count of issues moved to done in month.</param>
+    /// <param name="rejectedThisMonth">Count of issues moved to rejected in month.</param>
+    /// <param name="finishedThisMonth">Count of finished issues in month (done + rejected).</param>
+    void ShowAllTasksRatio(
+        string? customFieldName,
+        string? customFieldValue,
+        ItemCount createdThisMonth,
+        ItemCount openThisMonth,
+        ItemCount movedToDoneThisMonth,
+        ItemCount rejectedThisMonth,
+        ItemCount finishedThisMonth);
+
+    /// <summary>
     /// Shows bug ratio loading start message.
     /// </summary>
     /// <param name="bugIssueNames">Issue types treated as bug-like issues.</param>
