@@ -157,13 +157,17 @@ Global incidents query uses:
 
 - `project = GlobalIncidents.Namespace`
 - `IncidentStartFieldName` in `MonthLabel` range
+- if `IncidentStartFallbackFieldName` is configured:
+  incident also matches when fallback start field is in `MonthLabel` range
 - optional raw `JqlFilter` clause
 - fallback text-term filters derived from `SearchPhrase` when `JqlFilter` is not configured
 
 Per incident row:
 
 - `Incident Start UTC`
+  first non-empty value from `IncidentStartFieldName`, then `IncidentStartFallbackFieldName`
 - `Incident Recovery UTC`
+  first non-empty value from `IncidentRecoveryFieldName`, then `IncidentRecoveryFallbackFieldName`
 - `Duration` (recovery minus start when both timestamps are present)
 - `Impact`
 - `Urgency`
@@ -260,9 +264,13 @@ Notes:
   legacy free-text filter split into Jira `text ~ "<term>*"` terms.
   Used only when `JqlFilter` is not configured.
 - `GlobalIncidents.IncidentStartFieldName` (`string`, optional, default `Incident Start date/time UTC`):
-  Jira field name storing incident start UTC.
+  primary Jira field name storing incident start.
+- `GlobalIncidents.IncidentStartFallbackFieldName` (`string`, optional):
+  fallback Jira field name used when primary start field is empty.
 - `GlobalIncidents.IncidentRecoveryFieldName` (`string`, optional, default `Incident Recovery date/time UTC`):
-  Jira field name storing incident recovery UTC.
+  primary Jira field name storing incident recovery.
+- `GlobalIncidents.IncidentRecoveryFallbackFieldName` (`string`, optional):
+  fallback Jira field name used when primary recovery field is empty.
 - `GlobalIncidents.ImpactFieldName` (`string`, optional, default `Impact`):
   Jira field name used for impact output.
 - `GlobalIncidents.UrgencyFieldName` (`string`, optional, default `Urgency`):
@@ -271,6 +279,8 @@ Notes:
   extra Jira field names shown in an aggregated `Additional fields` column.
 - `Pdf.Enabled` (`bool`, optional, default `true`):
   enables PDF generation.
+- `Pdf.OpenAfterGeneration` (`bool`, optional, default `true`):
+  opens generated PDF in the system default viewer after save.
 - `Pdf.OutputPath` (`string`, optional, default `jiraflowinspector-report.pdf`):
   output file path.
   Actual file name gets date suffix `_<dd_MM_yyyy>` before extension.
@@ -326,13 +336,16 @@ Notes:
       "Namespace": "Incidents",
       "JqlFilter": "(\"Incident categorization\" = SERVICE OR labels = SERVICE OR summary ~ \"SERVICE\") AND (summary ~ \"disab*\" OR summary ~ \"unavail*\" OR summary ~ \"downtime\")",
       "IncidentStartFieldName": "Incident Start date/time UTC",
+      "IncidentStartFallbackFieldName": "Incident Start date/time user timezone",
       "IncidentRecoveryFieldName": "Incident Recovery date/time UTC",
+      "IncidentRecoveryFallbackFieldName": "Incident Recovery date/time user timezone",
       "ImpactFieldName": "Impact",
       "UrgencyFieldName": "Urgency",
       "AdditionalFieldNames": [ "Business Impact" ]
     },
     "Pdf": {
       "Enabled": true,
+      "OpenAfterGeneration": true,
       "OutputPath": "jiraflowinspector-report.pdf"
     },
     "CreatedAfter": "2026-01-01",
