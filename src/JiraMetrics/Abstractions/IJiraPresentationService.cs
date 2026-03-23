@@ -77,6 +77,12 @@ public interface IJiraPresentationService
     void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues);
 
     /// <summary>
+    /// Shows short progress message for heavy processing steps after loading.
+    /// </summary>
+    /// <param name="message">Step description.</param>
+    void ShowProcessingStep(string message);
+
+    /// <summary>
     /// Shows spacer line.
     /// </summary>
     void ShowSpacer();

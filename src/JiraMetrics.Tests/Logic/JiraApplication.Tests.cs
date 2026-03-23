@@ -590,6 +590,63 @@ public sealed class JiraApplicationTests
         presentation.PathGroupsSummary.MatchedStageCount.Value.Should().Be(1);
     }
 
+    [Fact(DisplayName = "RunAsync counts unique done and rejected issues in loading progress and shows processing steps")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenRejectedIssuesRequireSeparateLoadUpdatesProgressAndProcessingSteps()
+    {
+        // Arrange
+        var doneIssue = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task"));
+        var rejectedTransitions = new List<TransitionEvent>
+        {
+            new(new StatusName("Open"), new StatusName("To Do"), DateTimeOffset.UtcNow.AddHours(-2), TimeSpan.FromHours(1)),
+            new(new StatusName("To Do"), new StatusName("Reject"), DateTimeOffset.UtcNow.AddHours(-1), TimeSpan.FromHours(1))
+        };
+        var rejectedIssue = new IssueTimeline(
+            new IssueKey("AAA-2"),
+            new IssueTypeName("Task"),
+            new IssueSummary("Rejected task"),
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow,
+            rejectedTransitions,
+            PathKey.FromTransitions(rejectedTransitions),
+            PathLabel.FromTransitions(rejectedTransitions),
+            hasPullRequest: true);
+
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            RejectIssueKeys = [new IssueKey("AAA-1"), new IssueKey("AAA-2")],
+            IssuesByKey =
+            {
+                ["AAA-1"] = doneIssue,
+                ["AAA-2"] = rejectedIssue
+            }
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            apiClient,
+            logic,
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        presentation.IssueLoadingStartedTotal.Should().Be(new ItemCount(2));
+        presentation.IssueLoadingCompletedLoaded.Should().Be(new ItemCount(2));
+        presentation.ProcessingSteps.Should().ContainInOrder(
+            "Applying issue type and required-stage filters...",
+            "Calculating transition metrics and percentiles...",
+            "Building path groups...",
+            "Rendering PDF report...");
+    }
+
     [Fact(DisplayName = "RunAsync renders PDF report after transition analysis")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenAnalysisCompletesRendersPdfReport()
@@ -795,6 +852,8 @@ public sealed class JiraApplicationTests
 
         public IReadOnlyList<IssueKey> IssueKeys { get; set; } = [];
 
+        public IReadOnlyList<IssueKey> RejectIssueKeys { get; set; } = [];
+
         public HashSet<IssueKey> FailIssueKeys { get; set; } = [];
 
         public IssueTimeline? IssueToReturn { get; set; }
@@ -849,7 +908,13 @@ public sealed class JiraApplicationTests
             ProjectKey projectKey,
             StatusName doneStatusName,
             CreatedAfterDate? createdAfter,
-            CancellationToken cancellationToken) => Task.FromResult(IssueKeys);
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(
+                string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase)
+                    ? (RejectIssueKeys.Count == 0 ? IssueKeys : RejectIssueKeys)
+                    : IssueKeys);
+        }
 
         public Task<ItemCount> GetIssueCountCreatedThisMonthAsync(
             ProjectKey projectKey,
@@ -1020,6 +1085,12 @@ public sealed class JiraApplicationTests
 
         public bool DoneDaysAtWork75PerTypeShown { get; private set; }
 
+        public ItemCount? IssueLoadingStartedTotal { get; private set; }
+
+        public ItemCount? IssueLoadingCompletedLoaded { get; private set; }
+
+        public List<string> ProcessingSteps { get; } = [];
+
         public IReadOnlyList<IssueTimeline> DoneIssues { get; private set; } = [];
 
         public IReadOnlyList<IssueTimeline> RejectedIssues { get; private set; } = [];
@@ -1048,6 +1119,7 @@ public sealed class JiraApplicationTests
 
         public void ShowIssueLoadingStarted(ItemCount totalIssues)
         {
+            IssueLoadingStartedTotal = totalIssues;
         }
 
         public void ShowIssueLoaded(IssueKey issueKey)
@@ -1060,6 +1132,12 @@ public sealed class JiraApplicationTests
 
         public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues)
         {
+            IssueLoadingCompletedLoaded = loadedIssues;
+        }
+
+        public void ShowProcessingStep(string message)
+        {
+            ProcessingSteps.Add(message);
         }
 
         public void ShowSpacer()

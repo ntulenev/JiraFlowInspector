@@ -129,6 +129,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         AnsiConsole.MarkupLine($"[green]Issue loading completed:[/] loaded = {loadedIssues.Value}, failed = {failedIssues.Value}");
 
     /// <inheritdoc />
+    public void ShowProcessingStep(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
+    }
+
+    /// <inheritdoc />
     public void ShowSpacer() => AnsiConsole.WriteLine();
 
     /// <inheritdoc />

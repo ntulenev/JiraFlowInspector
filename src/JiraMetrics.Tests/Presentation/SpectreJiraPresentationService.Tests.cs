@@ -239,6 +239,24 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "ShowProcessingStep writes short processing message")]
+    [Trait("Category", "Unit")]
+    public async Task ShowProcessingStepWhenCalledWritesOutput()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowProcessingStep("Rendering PDF report...");
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Rendering PDF report...");
+    }
+
     [Fact(DisplayName = "ShowDoneIssuesTable writes issue type column and value")]
     [Trait("Category", "Unit")]
     public async Task ShowDoneIssuesTableWhenCalledWritesIssueType()

@@ -353,7 +353,13 @@ public sealed class JiraApplication : IJiraApplication
             return;
         }
 
-        _presentationService.ShowIssueLoadingStarted(new ItemCount(issueKeys.Count));
+        var uniqueIssueKeysToLoad = issueKeys
+            .Concat(rejectIssueKeys)
+            .Select(static key => key.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+
+        _presentationService.ShowIssueLoadingStarted(new ItemCount(uniqueIssueKeysToLoad));
 
         var issues = new List<IssueTimeline>();
         var rejectIssues = new List<IssueTimeline>();
@@ -401,23 +407,27 @@ public sealed class JiraApplication : IJiraApplication
                     var issue = await _apiClient.GetIssueTimelineAsync(issueKey, cancellationToken).ConfigureAwait(false);
                     rejectIssues.Add(issue);
                     loadedIssuesByKey[issue.Key.Value] = issue;
+                    _presentationService.ShowIssueLoaded(issueKey);
                 }
                 catch (HttpRequestException ex)
                 {
                     failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                    _presentationService.ShowIssueFailed(issueKey);
                 }
                 catch (InvalidOperationException ex)
                 {
                     failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                    _presentationService.ShowIssueFailed(issueKey);
                 }
                 catch (System.Text.Json.JsonException ex)
                 {
                     failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                    _presentationService.ShowIssueFailed(issueKey);
                 }
             }
         }
 
-        _presentationService.ShowIssueLoadingCompleted(new ItemCount(issues.Count), new ItemCount(failures.Count));
+        _presentationService.ShowIssueLoadingCompleted(new ItemCount(loadedIssuesByKey.Count), new ItemCount(failures.Count));
         _presentationService.ShowSpacer();
 
         if (issues.Count == 0)
@@ -428,6 +438,7 @@ public sealed class JiraApplication : IJiraApplication
             return;
         }
 
+        _presentationService.ShowProcessingStep("Applying issue type and required-stage filters...");
         var issuesByType = _logicService.FilterIssuesByIssueTypes(issues, _settings.IssueTypes);
         if (issuesByType.Count == 0)
         {
@@ -446,6 +457,7 @@ public sealed class JiraApplication : IJiraApplication
             return;
         }
 
+        _presentationService.ShowProcessingStep("Calculating transition metrics and percentiles...");
         var doneDaysAtWork75PerType = _logicService.BuildDaysAtWork75PerType(filteredIssues, _settings.DoneStatusName);
 
         _presentationService.ShowDoneIssuesTable(filteredIssues, _settings.DoneStatusName);
@@ -465,6 +477,7 @@ public sealed class JiraApplication : IJiraApplication
         var groupedIssues = filteredIssues
             .Where(static issue => issue.HasPullRequest)
             .ToList();
+        _presentationService.ShowProcessingStep("Building path groups...");
         var groups = _logicService.BuildPathGroups(groupedIssues);
         var pathGroupsSummary = new PathGroupsSummary(
             new ItemCount(issues.Count),
@@ -476,6 +489,7 @@ public sealed class JiraApplication : IJiraApplication
         _presentationService.ShowPathGroups(groups);
         ShowOpenIssuesSummary();
 
+        _presentationService.ShowProcessingStep("Rendering PDF report...");
         _pdfReportRenderer.RenderReport(new JiraPdfReportData
         {
             Settings = _settings,
