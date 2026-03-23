@@ -16,6 +16,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - P75 transition timing per path group.
 - Timeline diagrams in console and PDF.
 - Optional exclusion of weekends and specific calendar days from duration calculation.
+- Optional hours-only display for duration and work-time metrics.
 - Optional custom field filter (for team-level filtering).
 - Optional retry policy for transient Jira API failures.
 - Optional PDF export (QuestPDF), including clickable Jira links.
@@ -179,6 +180,8 @@ Transition durations come from time between consecutive status changes.
 
 - If `ExcludeWeekend = true`, Saturday/Sunday time is removed.
 - Any date in `ExcludedDays` is removed.
+- If `ShowTimeCalculationsInHoursOnly = true`, duration values are rendered strictly in hours.
+  This affects incident durations, work-duration columns in transition tables, P75 per-type output, and path-group TTM/P75 labels.
 - Supported date formats in `ExcludedDays`:
   `dd.MM.yyyy` and `yyyy-MM-dd`.
 
@@ -284,6 +287,8 @@ Notes:
 - `Pdf.OutputPath` (`string`, optional, default `jiraflowinspector-report.pdf`):
   output file path.
   Actual file name gets date suffix `_<dd_MM_yyyy>` before extension.
+- `ShowTimeCalculationsInHoursOnly` (`bool`, optional, default `false`):
+  renders duration values strictly in hours instead of day-based work metrics/default duration labels.
 - `MonthLabel` (`string`, optional, format `yyyy-MM`):
   reporting month, defaults to current UTC month.
 - `CreatedAfter` (`string`, optional, format `yyyy-MM-dd`):
@@ -348,6 +353,7 @@ Notes:
       "OpenAfterGeneration": true,
       "OutputPath": "jiraflowinspector-report.pdf"
     },
+    "ShowTimeCalculationsInHoursOnly": false,
     "CreatedAfter": "2026-01-01",
     "MonthLabel": "2026-02",
     "RetryCount": 0
