@@ -1321,6 +1321,108 @@ public sealed class JiraApiClientTests
         capturedSearchUrl.Should().Contain("customfield_11348");
     }
 
+    [Fact(DisplayName = "GetGlobalIncidentsForMonthAsync uses fallback start and recovery fields when primary fields are empty")]
+    [Trait("Category", "Unit")]
+    public async Task GetGlobalIncidentsForMonthAsyncWhenPrimaryDateFieldsAreEmptyUsesFallbackFields()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_14851",
+                Name = "Incident Start date/time UTC"
+            },
+            new()
+            {
+                Id = "customfield_11416",
+                Name = "Incident Start date/time user timezone"
+            },
+            new()
+            {
+                Id = "customfield_14852",
+                Name = "Incident Recovery date/time UTC"
+            },
+            new()
+            {
+                Id = "customfield_11417",
+                Name = "Incident Recovery date/time user timezone"
+            },
+            new()
+            {
+                Id = "customfield_11348",
+                Name = "Business Impact"
+            }
+        };
+
+        using var fallbackStartJson = JsonDocument.Parse("\"2026-01-12T03:52:00.000+0100\"");
+        using var fallbackRecoveryJson = JsonDocument.Parse("\"2026-01-12T04:49:00.000+0100\"");
+        using var businessImpactJson = JsonDocument.Parse("{\"type\":\"doc\",\"version\":1,\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"ADF services were unavailable due to Google maintenance\"}]}]}");
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "INC-11586",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "SB2 - ADF disablement since services was down 12/01/2025",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_11416"] = fallbackStartJson.RootElement.Clone(),
+                            ["customfield_11417"] = fallbackRecoveryJson.RootElement.Clone(),
+                            ["customfield_11348"] = businessImpactJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-01");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var incidents = await client.GetGlobalIncidentsForMonthAsync(
+            new GlobalIncidentsReportSettings(
+                namespaceName: "Incidents",
+                jqlFilter: "labels = ADF AND summary ~ \"disab*\"",
+                incidentStartFallbackFieldName: "Incident Start date/time user timezone",
+                incidentRecoveryFallbackFieldName: "Incident Recovery date/time user timezone",
+                additionalFieldNames: ["Business Impact"]),
+            cts.Token);
+
+        // Assert
+        incidents.Should().ContainSingle();
+        incidents[0].Key.Value.Should().Be("INC-11586");
+        incidents[0].IncidentStartUtc.Should().Be(new DateTimeOffset(2026, 1, 12, 2, 52, 0, TimeSpan.Zero));
+        incidents[0].IncidentRecoveryUtc.Should().Be(new DateTimeOffset(2026, 1, 12, 3, 49, 0, TimeSpan.Zero));
+        incidents[0].Duration.Should().Be(TimeSpan.FromMinutes(57));
+        capturedSearchUrl.Should().Contain("customfield_14851");
+        capturedSearchUrl.Should().Contain("customfield_11416");
+        capturedSearchUrl.Should().Contain("customfield_14852");
+        capturedSearchUrl.Should().Contain("customfield_11417");
+        capturedSearchUrl.Should().Contain("Incident%20Start%20date%2Ftime%20user%20timezone%22%20%3E%3D%20%222026-01-01");
+    }
+
     [Fact(DisplayName = "GetGlobalIncidentsForMonthAsync falls back to search phrase when JQL filter is missing")]
     [Trait("Category", "Unit")]
     public async Task GetGlobalIncidentsForMonthAsyncWhenJqlFilterIsMissingUsesSearchPhraseTerms()

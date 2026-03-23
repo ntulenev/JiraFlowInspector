@@ -229,8 +229,14 @@ public sealed partial class JiraApiClient : IJiraApiClient
         ArgumentNullException.ThrowIfNull(settings);
 
         var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
-        var startFieldId = await ResolveFieldIdAsync(settings.IncidentStartFieldName, cancellationToken).ConfigureAwait(false);
-        var recoveryFieldId = await TryResolveFieldIdAsync(settings.IncidentRecoveryFieldName, cancellationToken).ConfigureAwait(false);
+        var startFields = await ResolveGlobalIncidentDateFieldsAsync(
+            settings.IncidentStartFieldName,
+            settings.IncidentStartFallbackFieldName,
+            cancellationToken).ConfigureAwait(false);
+        var recoveryFields = await ResolveGlobalIncidentDateFieldsAsync(
+            settings.IncidentRecoveryFieldName,
+            settings.IncidentRecoveryFallbackFieldName,
+            cancellationToken).ConfigureAwait(false);
         var impactFieldId = await TryResolveFieldIdAsync(settings.ImpactFieldName, cancellationToken).ConfigureAwait(false);
         var urgencyFieldId = await TryResolveFieldIdAsync(settings.UrgencyFieldName, cancellationToken).ConfigureAwait(false);
         var additionalFieldIds = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -240,12 +246,10 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         var escapedNamespace = settings.Namespace.EscapeJqlString();
-        var escapedStartFieldName = settings.IncidentStartFieldName.EscapeJqlString();
         var clauses = new List<string>
         {
             $"project = \"{escapedNamespace}\"",
-            $"\"{escapedStartFieldName}\" >= \"{monthStart:yyyy-MM-dd}\"",
-            $"\"{escapedStartFieldName}\" < \"{nextMonthStart:yyyy-MM-dd}\""
+            BuildDateRangeClause(startFields, monthStart, nextMonthStart)
         };
         if (!string.IsNullOrWhiteSpace(settings.JqlFilter))
         {
@@ -256,14 +260,12 @@ public sealed partial class JiraApiClient : IJiraApiClient
             AddTextSearchClauses(clauses, settings.SearchPhrase);
         }
 
-        var jql = $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedStartFieldName}\" ASC, key ASC";
+        var jql = $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
 
         return await SearchGlobalIncidentItemsAsync(
             jql,
-            startFieldId,
-            settings.IncidentStartFieldName,
-            recoveryFieldId,
-            settings.IncidentRecoveryFieldName,
+            startFields,
+            recoveryFields,
             impactFieldId,
             settings.ImpactFieldName,
             urgencyFieldId,
@@ -392,6 +394,24 @@ public sealed partial class JiraApiClient : IJiraApiClient
         return $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" BEFORE \"{nextMonthStart:yyyy-MM-dd}\" AND status = \"{escapedDoneStatus}\"";
     }
 
+    private static string BuildDateRangeClause(
+        IReadOnlyList<ResolvedGlobalIncidentField> fields,
+        DateOnly monthStart,
+        DateOnly nextMonthStart)
+    {
+        var fieldClauses = fields
+            .Select(field =>
+            {
+                var escapedField = field.FieldName.EscapeJqlString();
+                return $"(\"{escapedField}\" >= \"{monthStart:yyyy-MM-dd}\" AND \"{escapedField}\" < \"{nextMonthStart:yyyy-MM-dd}\")";
+            })
+            .ToArray();
+
+        return fieldClauses.Length == 1
+            ? fieldClauses[0]
+            : $"({string.Join(" OR ", fieldClauses)})";
+    }
+
     private static string BuildExcludedStatusesClause(StatusName doneStatusName, StatusName? rejectStatusName)
     {
         var statusesToExclude = new List<string>
@@ -430,6 +450,30 @@ public sealed partial class JiraApiClient : IJiraApiClient
             var pattern = escapedTerm.EndsWith('*') ? escapedTerm : escapedTerm + "*";
             clauses.Add($"text ~ \"{pattern}\"");
         }
+    }
+
+    private async Task<IReadOnlyList<ResolvedGlobalIncidentField>> ResolveGlobalIncidentDateFieldsAsync(
+        string primaryFieldName,
+        string? fallbackFieldName,
+        CancellationToken cancellationToken)
+    {
+        var primaryFieldId = await ResolveFieldIdAsync(primaryFieldName, cancellationToken).ConfigureAwait(false);
+        var fields = new List<ResolvedGlobalIncidentField>
+        {
+            new(primaryFieldName, primaryFieldId)
+        };
+
+        if (!string.IsNullOrWhiteSpace(fallbackFieldName))
+        {
+            var fallbackFieldId = await TryResolveFieldIdAsync(fallbackFieldName, cancellationToken).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(fallbackFieldId)
+                && !fields.Any(field => string.Equals(field.FieldId, fallbackFieldId, StringComparison.OrdinalIgnoreCase)))
+            {
+                fields.Add(new ResolvedGlobalIncidentField(fallbackFieldName, fallbackFieldId));
+            }
+        }
+
+        return fields;
     }
 
     private async Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken)
@@ -742,10 +786,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
 
     private async Task<IReadOnlyList<GlobalIncidentItem>> SearchGlobalIncidentItemsAsync(
         string jql,
-        string incidentStartFieldId,
-        string incidentStartFieldName,
-        string? incidentRecoveryFieldId,
-        string incidentRecoveryFieldName,
+        IReadOnlyList<ResolvedGlobalIncidentField> incidentStartFields,
+        IReadOnlyList<ResolvedGlobalIncidentField> incidentRecoveryFields,
         string? impactFieldId,
         string impactFieldName,
         string? urgencyFieldId,
@@ -762,10 +804,18 @@ public sealed partial class JiraApiClient : IJiraApiClient
             var fields = new List<string>
             {
                 "key",
-                "summary",
-                Uri.EscapeDataString(incidentStartFieldId)
+                "summary"
             };
-            AddFieldIdIfNeeded(fields, incidentRecoveryFieldId);
+            foreach (var incidentStartField in incidentStartFields)
+            {
+                AddFieldIdIfNeeded(fields, incidentStartField.FieldId);
+            }
+
+            foreach (var incidentRecoveryField in incidentRecoveryFields)
+            {
+                AddFieldIdIfNeeded(fields, incidentRecoveryField.FieldId);
+            }
+
             AddFieldIdIfNeeded(fields, impactFieldId);
             AddFieldIdIfNeeded(fields, urgencyFieldId);
             foreach (var additionalFieldId in additionalFieldIds.Values)
@@ -795,16 +845,13 @@ public sealed partial class JiraApiClient : IJiraApiClient
                     .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
                     .Select(issue =>
                     {
-                        var startedAt = TryParseConfiguredDateTimeField(issue.Fields, incidentStartFieldId, incidentStartFieldName);
+                        var startedAt = TryParseConfiguredDateTimeField(issue.Fields, incidentStartFields);
                         if (!startedAt.HasValue)
                         {
                             return null;
                         }
 
-                        var recoveredAt = TryParseConfiguredDateTimeField(
-                            issue.Fields,
-                            incidentRecoveryFieldId,
-                            incidentRecoveryFieldName);
+                        var recoveredAt = TryParseConfiguredDateTimeField(issue.Fields, incidentRecoveryFields);
                         var impact = ResolveFieldDisplayValue(issue.Fields, impactFieldId, impactFieldName);
                         var urgency = ResolveFieldDisplayValue(issue.Fields, urgencyFieldId, urgencyFieldName);
                         var additionalFields = ResolveAdditionalFieldValues(issue.Fields, additionalFieldIds);
@@ -1412,6 +1459,22 @@ public sealed partial class JiraApiClient : IJiraApiClient
 
     private static DateTimeOffset? TryParseConfiguredDateTimeField(
         JiraIssueFieldsResponse? fields,
+        IReadOnlyList<ResolvedGlobalIncidentField> fieldCandidates)
+    {
+        foreach (var fieldCandidate in fieldCandidates)
+        {
+            var resolvedDateTime = TryParseConfiguredDateTimeField(fields, fieldCandidate.FieldId, fieldCandidate.FieldName);
+            if (resolvedDateTime.HasValue)
+            {
+                return resolvedDateTime;
+            }
+        }
+
+        return null;
+    }
+
+    private static DateTimeOffset? TryParseConfiguredDateTimeField(
+        JiraIssueFieldsResponse? fields,
         string? fieldId,
         string? fieldName)
     {
@@ -1458,6 +1521,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
 
         return null;
     }
+
+    private readonly record struct ResolvedGlobalIncidentField(string FieldName, string FieldId);
 
     private static string? ResolveFieldDisplayValue(
         JiraIssueFieldsResponse? fields,

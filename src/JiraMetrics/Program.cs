@@ -220,7 +220,9 @@ static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalInciden
         source.JqlFilter,
         source.SearchPhrase,
         source.IncidentStartFieldName,
+        source.IncidentStartFallbackFieldName,
         source.IncidentRecoveryFieldName,
+        source.IncidentRecoveryFallbackFieldName,
         source.ImpactFieldName,
         source.UrgencyFieldName,
         source.AdditionalFieldNames);

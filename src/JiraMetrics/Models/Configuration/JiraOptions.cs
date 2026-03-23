@@ -239,9 +239,19 @@ public sealed class GlobalIncidentsReportOptions
     public string IncidentStartFieldName { get; init; } = "Incident Start date/time UTC";
 
     /// <summary>
+    /// Gets or sets fallback incident start field name used when the primary field is empty.
+    /// </summary>
+    public string? IncidentStartFallbackFieldName { get; init; }
+
+    /// <summary>
     /// Gets or sets incident recovery field name.
     /// </summary>
     public string IncidentRecoveryFieldName { get; init; } = "Incident Recovery date/time UTC";
+
+    /// <summary>
+    /// Gets or sets fallback incident recovery field name used when the primary field is empty.
+    /// </summary>
+    public string? IncidentRecoveryFallbackFieldName { get; init; }
 
     /// <summary>
     /// Gets or sets impact field name.

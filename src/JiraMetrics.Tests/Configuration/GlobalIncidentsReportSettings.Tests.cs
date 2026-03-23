@@ -16,7 +16,9 @@ public sealed class GlobalIncidentsReportSettingsTests
         // Assert
         settings.Namespace.Should().Be("Incidents");
         settings.IncidentStartFieldName.Should().Be("Incident Start date/time UTC");
+        settings.IncidentStartFallbackFieldName.Should().BeNull();
         settings.IncidentRecoveryFieldName.Should().Be("Incident Recovery date/time UTC");
+        settings.IncidentRecoveryFallbackFieldName.Should().BeNull();
         settings.ImpactFieldName.Should().Be("Impact");
         settings.UrgencyFieldName.Should().Be("Urgency");
         settings.JqlFilter.Should().BeNull();
@@ -45,5 +47,19 @@ public sealed class GlobalIncidentsReportSettingsTests
 
         // Assert
         settings.AdditionalFieldNames.Should().ContainInOrder("Business Impact", "Incident resolution");
+    }
+
+    [Fact(DisplayName = "Constructor trims fallback field names")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenFallbackFieldNamesAreProvidedStoresTrimmedValues()
+    {
+        // Act
+        var settings = new GlobalIncidentsReportSettings(
+            incidentStartFallbackFieldName: "  Incident Start date/time user timezone  ",
+            incidentRecoveryFallbackFieldName: "  Incident Recovery date/time user timezone  ");
+
+        // Assert
+        settings.IncidentStartFallbackFieldName.Should().Be("Incident Start date/time user timezone");
+        settings.IncidentRecoveryFallbackFieldName.Should().Be("Incident Recovery date/time user timezone");
     }
 }
