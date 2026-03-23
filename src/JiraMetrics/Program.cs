@@ -171,7 +171,9 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         || !string.IsNullOrWhiteSpace(source.ReleaseDateFieldName)
         || !string.IsNullOrWhiteSpace(source.ComponentsFieldName)
         || source.HotFixRules is { Count: > 0 }
-        || !string.IsNullOrWhiteSpace(source.RollbackFieldName);
+        || !string.IsNullOrWhiteSpace(source.RollbackFieldName)
+        || !string.IsNullOrWhiteSpace(source.EnvironmentFieldName)
+        || !string.IsNullOrWhiteSpace(source.EnvironmentFieldValue);
 
     if (!hasAnyValue)
     {
@@ -195,7 +197,9 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
             static pair => pair.Key,
             static pair => (IReadOnlyList<string>)(pair.Value ?? []),
             StringComparer.OrdinalIgnoreCase),
-        source.RollbackFieldName);
+        source.RollbackFieldName,
+        source.EnvironmentFieldName,
+        source.EnvironmentFieldValue);
 }
 
 static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalIncidentsReportOptions? source)

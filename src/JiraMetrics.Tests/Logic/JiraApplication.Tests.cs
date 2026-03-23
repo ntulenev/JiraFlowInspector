@@ -855,6 +855,8 @@ public sealed class JiraApplicationTests
             string? componentsFieldName,
             IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
             string rollbackFieldName,
+            string? environmentFieldName,
+            string? environmentFieldValue,
             CancellationToken cancellationToken)
         {
             ReleaseIssuesRequested = true;

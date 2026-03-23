@@ -321,6 +321,10 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         {
             AnsiConsole.MarkupLine($"[grey]Components field:[/] {Markup.Escape(settings.ComponentsFieldName)}");
         }
+        if (!string.IsNullOrWhiteSpace(settings.EnvironmentFieldName))
+        {
+            AnsiConsole.MarkupLine("[grey]Environments:[/] shown per release");
+        }
         AnsiConsole.MarkupLine("[grey]Hot-fix markers:[/]");
         foreach (var (fieldName, values) in settings.HotFixRules
             .OrderBy(static pair => pair.Key, StringComparer.OrdinalIgnoreCase))
@@ -342,6 +346,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         }
 
         var includeComponents = !string.IsNullOrWhiteSpace(settings.ComponentsFieldName);
+        var includeEnvironments = !string.IsNullOrWhiteSpace(settings.EnvironmentFieldName);
 
         var table = new Table()
             .RoundedBorder()
@@ -355,6 +360,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         if (includeComponents)
         {
             _ = table.AddColumn("[bold]Components[/]");
+        }
+
+        if (includeEnvironments)
+        {
+            _ = table.AddColumn("[bold]Environments[/]");
         }
 
         _ = table.AddColumn(new TableColumn("[bold]Rollback type[/]").NoWrap());
@@ -385,6 +395,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                     ? "-"
                     : release.Components.ToString(CultureInfo.InvariantCulture);
                 row.Add(FormatReleaseCell(componentsText, release.IsHotFix));
+            }
+            if (includeEnvironments)
+            {
+                var environmentsText = release.EnvironmentNames.Count == 0
+                    ? "-"
+                    : string.Join(", ", release.EnvironmentNames);
+                row.Add(FormatReleaseCell(environmentsText, release.IsHotFix));
             }
 
             var rollbackText = string.IsNullOrWhiteSpace(release.RollbackType)

@@ -17,6 +17,7 @@ public sealed record ReleaseIssueItem
     /// <param name="components">Count of components for configured components field.</param>
     /// <param name="status">Current issue status.</param>
     /// <param name="componentNames">Component names for configured components field.</param>
+    /// <param name="environmentNames">Environment names for configured environment field.</param>
     /// <param name="rollbackType">Rollback payload for configured rollback field.</param>
     /// <param name="isHotFix">Whether this release is marked as emergency hot-fix release.</param>
     public ReleaseIssueItem(
@@ -27,6 +28,7 @@ public sealed record ReleaseIssueItem
         int components = 0,
         StatusName? status = null,
         IReadOnlyList<string>? componentNames = null,
+        IReadOnlyList<string>? environmentNames = null,
         string? rollbackType = null,
         bool isHotFix = false)
     {
@@ -42,6 +44,13 @@ public sealed record ReleaseIssueItem
         ComponentNames = componentNames is null
             ? []
             : [.. componentNames
+                .Where(static value => !string.IsNullOrWhiteSpace(value))
+                .Select(static value => value.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(static value => value, StringComparer.OrdinalIgnoreCase)];
+        EnvironmentNames = environmentNames is null
+            ? []
+            : [.. environmentNames
                 .Where(static value => !string.IsNullOrWhiteSpace(value))
                 .Select(static value => value.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -84,6 +93,11 @@ public sealed record ReleaseIssueItem
     /// Gets component names for configured components field.
     /// </summary>
     public IReadOnlyList<string> ComponentNames { get; }
+
+    /// <summary>
+    /// Gets environment names for configured environment field.
+    /// </summary>
+    public IReadOnlyList<string> EnvironmentNames { get; }
 
     /// <summary>
     /// Gets rollback payload for configured rollback field.

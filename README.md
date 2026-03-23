@@ -11,7 +11,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Transition analytics for issues moved to `Done` in a selected month.
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
-- Optional release report by label and custom release date field.
+- Optional release report by label, custom release date field, and optional environment filter.
 - Optional global incidents report by namespace/project and search phrase.
 - P75 transition timing per path group.
 - Timeline diagrams in console and PDF.
@@ -53,7 +53,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Report context:
   month, optional created-after date.
 - Release report (optional):
-  all releases in `MonthLabel` by `ProjectLabel`, with tasks/components counts.
+  all releases in `MonthLabel` by `ProjectLabel`, with tasks/components/environment details.
 - Global incidents report (optional):
   incidents in `MonthLabel` by configured namespace/project and optional search phrase.
 - Bug ratio (optional):
@@ -122,6 +122,7 @@ Release query uses:
 - `project = ReleaseProjectKey`
 - `labels = ProjectLabel`
 - `ReleaseDateFieldName` in `MonthLabel` range.
+- optional `EnvironmentFieldName = EnvironmentFieldValue`
 
 Per release row:
 
@@ -131,6 +132,9 @@ Per release row:
   count of all linked work items (both inward/outward links).
 - `Components`:
   count from configured components field; fallback to standard Jira `components`.
+  Supports array/string/object custom-field payloads.
+- `Environments`:
+  values from configured environment field.
   Supports array/string/object custom-field payloads.
 - `Rollback type`:
   payload from configured rollback field; if empty then `-`.
@@ -226,11 +230,22 @@ All options live under `Jira`.
   Jira field display name storing release date.
 - `ReleaseReport.ComponentsFieldName` (`string`, optional):
   Jira field name for components counting.
+- `ReleaseReport.EnvironmentFieldName` (`string`, optional):
+  Jira field name or Jira field id used both for release filtering and for displaying environments in the release table.
+- `ReleaseReport.EnvironmentFieldValue` (`string`, optional):
+  Jira environment value used for release filtering.
 - `ReleaseReport.RollbackFieldName` (`string`, optional, default `Rollback type`):
   Jira field name for rollback payload in release table.
 - `ReleaseReport.HotFixRules` (`object`, optional, default `{ "Change type": ["Emergency"] }`):
   hot-fix rules dictionary where key is Jira field name and value is list of accepted marker values.
   Issue is treated as hot-fix when any rule matches.
+
+Notes:
+
+- Jira can use different environment fields in different projects.
+- In some projects, the environment data can be stored in a field with display name like `Environment`.
+- In other projects, the same data can be stored in a different field, for example `Environments`, or only be reliably addressable by custom field id.
+- If release report returns `No releases found for selected month`, verify `ReleaseProjectKey`, `MonthLabel`, and the actual Jira field used for environments in that project.
 - `Pdf` (`object`, optional):
   PDF settings.
 - `GlobalIncidents` (`object`, optional):
@@ -294,6 +309,8 @@ All options live under `Jira`.
       "ProjectLabel": "AAA",
       "ReleaseDateFieldName": "Change completion date",
       "ComponentsFieldName": "Components",
+      "EnvironmentFieldName": "your-environment-field-name-or-id",
+      "EnvironmentFieldValue": "your-environment-filter-value",
       "RollbackFieldName": "Rollback type",
       "HotFixRules": {
         "Change type": [ "Emergency" ],

@@ -174,6 +174,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
         string? componentsFieldName,
         IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
         string rollbackFieldName,
+        string? environmentFieldName,
+        string? environmentFieldValue,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
@@ -186,6 +188,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
         var componentsFieldId = await TryResolveFieldIdAsync(componentsFieldName, cancellationToken).ConfigureAwait(false);
         var resolvedHotFixRules = await ResolveHotFixRulesAsync(hotFixRules, cancellationToken).ConfigureAwait(false);
         var rollbackFieldId = await TryResolveFieldIdAsync(rollbackFieldName, cancellationToken).ConfigureAwait(false);
+        var environmentFieldId = await TryResolveFieldIdAsync(environmentFieldName, cancellationToken).ConfigureAwait(false);
         var escapedProject = releaseProjectKey.Value.EscapeJqlString();
         var escapedLabel = projectLabel.EscapeJqlString();
         var escapedFieldName = releaseDateFieldName.EscapeJqlString();
@@ -196,6 +199,12 @@ public sealed partial class JiraApiClient : IJiraApiClient
             $"\"{escapedFieldName}\" >= \"{monthStart:yyyy-MM-dd}\"",
             $"\"{escapedFieldName}\" < \"{nextMonthStart:yyyy-MM-dd}\""
         };
+        if (!string.IsNullOrWhiteSpace(environmentFieldName) && !string.IsNullOrWhiteSpace(environmentFieldValue))
+        {
+            var escapedEnvironmentFieldName = environmentFieldName.EscapeJqlString();
+            var escapedEnvironmentFieldValue = environmentFieldValue.EscapeJqlString();
+            clauses.Add($"\"{escapedEnvironmentFieldName}\" = \"{escapedEnvironmentFieldValue}\"");
+        }
 
         var jql = $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedFieldName}\" ASC, key ASC";
         return await SearchReleaseIssueItemsAsync(
@@ -207,6 +216,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
             resolvedHotFixRules,
             rollbackFieldId,
             rollbackFieldName,
+            environmentFieldId,
+            environmentFieldName,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -825,6 +836,8 @@ public sealed partial class JiraApiClient : IJiraApiClient
         IReadOnlyList<ResolvedHotFixRule> hotFixRules,
         string? rollbackFieldId,
         string rollbackFieldName,
+        string? environmentFieldId,
+        string? environmentFieldName,
         CancellationToken cancellationToken)
     {
         var issues = new List<ReleaseIssueItem>();
@@ -855,6 +868,10 @@ public sealed partial class JiraApiClient : IJiraApiClient
             if (!string.IsNullOrWhiteSpace(rollbackFieldId))
             {
                 fields.Add(Uri.EscapeDataString(rollbackFieldId));
+            }
+            if (!string.IsNullOrWhiteSpace(environmentFieldId))
+            {
+                fields.Add(Uri.EscapeDataString(environmentFieldId));
             }
             if (!string.IsNullOrWhiteSpace(componentsFieldId) || !string.IsNullOrWhiteSpace(componentsFieldName))
             {
@@ -892,6 +909,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         var tasks = CountAllLinkedTasks(issue.Fields);
                         var componentNames = ResolveComponentNames(issue.Fields, componentsFieldId, componentsFieldName);
                         var components = componentNames.Count;
+                        var environmentNames = ResolveEnvironmentNames(issue.Fields, environmentFieldId, environmentFieldName);
                         var rollbackType = ResolveRollbackPayload(issue.Fields, rollbackFieldId, rollbackFieldName);
                         var isHotFix = IsHotFixRelease(issue.Fields, hotFixRules);
                         return (
@@ -902,6 +920,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                             tasks,
                             components,
                             componentNames,
+                            environmentNames,
                             rollbackType,
                             isHotFix);
                     })
@@ -914,6 +933,7 @@ public sealed partial class JiraApiClient : IJiraApiClient
                         item.components,
                         item.status,
                         item.componentNames,
+                        item.environmentNames,
                         item.rollbackType,
                         item.isHotFix)));
             }
@@ -997,6 +1017,24 @@ public sealed partial class JiraApiClient : IJiraApiClient
         }
 
         return [];
+    }
+
+    private static IReadOnlyList<string> ResolveEnvironmentNames(
+        JiraIssueFieldsResponse? fields,
+        string? environmentFieldId,
+        string? environmentFieldName)
+    {
+        if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
+        {
+            return [];
+        }
+
+        if (!TryGetAdditionalFieldValue(fields.AdditionalFields, environmentFieldId, environmentFieldName, out var rawEnvironments))
+        {
+            return [];
+        }
+
+        return ParseRawFieldValues(rawEnvironments);
     }
 
     private static int CountAllLinkedTasks(JiraIssueFieldsResponse? fields)

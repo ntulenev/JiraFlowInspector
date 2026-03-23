@@ -39,12 +39,16 @@ public sealed class ReleaseReportSettingsTests
                 ["Change type"] = ["Emergency"],
                 ["Change reason"] = ["Repair", "Mitigation"]
             },
-            rollbackFieldName: "Rollback category");
+            rollbackFieldName: "Rollback category",
+            environmentFieldName: "Environments",
+            environmentFieldValue: "P005");
 
         // Assert
         settings.HotFixRules.Should().HaveCount(2);
         settings.HotFixRules["Change type"].Should().BeEquivalentTo(["Emergency"]);
         settings.HotFixRules["Change reason"].Should().BeEquivalentTo(["Mitigation", "Repair"]);
         settings.RollbackFieldName.Should().Be("Rollback category");
+        settings.EnvironmentFieldName.Should().Be("Environments");
+        settings.EnvironmentFieldValue.Should().Be("P005");
     }
 }

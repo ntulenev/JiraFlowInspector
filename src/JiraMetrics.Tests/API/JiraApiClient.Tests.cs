@@ -575,10 +575,16 @@ public sealed class JiraApiClientTests
             {
                 Id = "customfield_12345",
                 Name = "Change completion date"
+            },
+            new()
+            {
+                Id = "customfield_10865",
+                Name = "Environment"
             }
         };
 
         using var releaseDateJson = JsonDocument.Parse("\"2026-02-14\"");
+        using var environmentJson = JsonDocument.Parse("[{\"value\":\"P005\"}]");
         var pageResponse = new JiraSearchResponse
         {
             Issues =
@@ -664,6 +670,8 @@ public sealed class JiraApiClientTests
                 ["Change type"] = ["Emergency"]
             },
             "Rollback type",
+            environmentFieldName: null,
+            environmentFieldValue: null,
             cts.Token);
 
         // Assert
@@ -674,6 +682,7 @@ public sealed class JiraApiClientTests
         releases[0].Status.Value.Should().Be("Ready for Prod");
         releases[0].Tasks.Should().Be(3);
         releases[0].ComponentNames.Should().BeEmpty();
+        releases[0].EnvironmentNames.Should().BeEmpty();
         releases[0].IsHotFix.Should().BeFalse();
         capturedSearchUrl.Should().Contain("project");
         capturedSearchUrl.Should().Contain("RLS");
@@ -683,6 +692,90 @@ public sealed class JiraApiClientTests
         capturedSearchUrl.Should().Contain("customfield_12345");
         capturedSearchUrl.Should().Contain("status");
         capturedSearchUrl.Should().Contain("issuelinks");
+    }
+
+    [Fact(DisplayName = "GetReleaseIssuesForMonthAsync adds environment filter when configured")]
+    [Trait("Category", "Unit")]
+    public async Task GetReleaseIssuesForMonthAsyncWhenEnvironmentFilterIsConfiguredAddsClause()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedSearchUrl = string.Empty;
+
+        var fieldResponse = new List<JiraFieldResponse>
+        {
+            new()
+            {
+                Id = "customfield_12345",
+                Name = "Change completion date"
+            },
+            new()
+            {
+                Id = "customfield_10865",
+                Name = "Environment"
+            }
+        };
+
+        using var releaseDateJson = JsonDocument.Parse("\"2026-02-14\"");
+        using var environmentJson = JsonDocument.Parse("[{\"value\":\"P005\"}]");
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "RLS-7",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "P005 release",
+                        AdditionalFields = new Dictionary<string, JsonElement>
+                        {
+                            ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
+                            ["customfield_10865"] = environmentJson.RootElement.Clone()
+                        }
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
+                It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fieldResponse);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-02");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var releases = await client.GetReleaseIssuesForMonthAsync(
+            new ProjectKey("RLS"),
+            "Processing",
+            "Change completion date",
+            componentsFieldName: null,
+            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            },
+            rollbackFieldName: "Rollback type",
+            environmentFieldName: "customfield_10865",
+            environmentFieldValue: "P005",
+            cancellationToken: cts.Token);
+
+        // Assert
+        releases.Should().ContainSingle();
+        releases[0].Key.Value.Should().Be("RLS-7");
+        releases[0].EnvironmentNames.Should().ContainSingle().Which.Should().Be("P005");
+        capturedSearchUrl.Should().Contain("customfield_10865");
+        capturedSearchUrl.Should().Contain("P005");
     }
 
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync parses datetime release field values")]
@@ -748,6 +841,8 @@ public sealed class JiraApiClientTests
                 ["Change type"] = ["Emergency"]
             },
             "Rollback type",
+            environmentFieldName: null,
+            environmentFieldValue: null,
             cts.Token);
 
         // Assert
@@ -757,6 +852,7 @@ public sealed class JiraApiClientTests
         releases[0].Status.Should().Be(StatusName.Unknown);
         releases[0].Tasks.Should().Be(0);
         releases[0].ComponentNames.Should().BeEmpty();
+        releases[0].EnvironmentNames.Should().BeEmpty();
         releases[0].IsHotFix.Should().BeFalse();
     }
 
@@ -779,11 +875,17 @@ public sealed class JiraApiClientTests
             {
                 Id = "customfield_77777",
                 Name = "Component/s"
+            },
+            new()
+            {
+                Id = "customfield_10865",
+                Name = "Environment"
             }
         };
 
         using var releaseDateJson = JsonDocument.Parse("\"2026-02-14\"");
         using var componentsJson = JsonDocument.Parse("[{\"value\":\"ADF PostgreSQL Database\"},{\"value\":\"Flux\"}]");
+        using var environmentsJson = JsonDocument.Parse("[{\"value\":\"P005\"},{\"value\":\"S005\"}]");
         var pageResponse = new JiraSearchResponse
         {
             Issues =
@@ -798,7 +900,8 @@ public sealed class JiraApiClientTests
                         AdditionalFields = new Dictionary<string, JsonElement>
                         {
                             ["customfield_12345"] = releaseDateJson.RootElement.Clone(),
-                            ["customfield_77777"] = componentsJson.RootElement.Clone()
+                            ["customfield_77777"] = componentsJson.RootElement.Clone(),
+                            ["customfield_10865"] = environmentsJson.RootElement.Clone()
                         }
                     }
                 }
@@ -833,6 +936,8 @@ public sealed class JiraApiClientTests
                 ["Change type"] = ["Emergency"]
             },
             "Rollback type",
+            environmentFieldName: "customfield_10865",
+            environmentFieldValue: "P005",
             cts.Token);
 
         // Assert
@@ -841,9 +946,11 @@ public sealed class JiraApiClientTests
         releases[0].Status.Value.Should().Be("Released");
         releases[0].Components.Should().Be(2);
         releases[0].ComponentNames.Should().ContainInOrder("ADF PostgreSQL Database", "Flux");
+        releases[0].EnvironmentNames.Should().ContainInOrder("P005", "S005");
         releases[0].IsHotFix.Should().BeFalse();
         capturedSearchUrl.Should().Contain("customfield_12345");
         capturedSearchUrl.Should().Contain("customfield_77777");
+        capturedSearchUrl.Should().Contain("customfield_10865");
         capturedSearchUrl.Should().Contain("status");
         capturedSearchUrl.Should().Contain("components");
     }
@@ -920,6 +1027,8 @@ public sealed class JiraApiClientTests
                 ["Change type"] = ["Emergency"]
             },
             rollbackFieldName: "Rollback type",
+            environmentFieldName: null,
+            environmentFieldValue: null,
             cancellationToken: cts.Token);
 
         // Assert
@@ -1001,6 +1110,8 @@ public sealed class JiraApiClientTests
                 ["Change type"] = ["Emergency"]
             },
             rollbackFieldName: "Rollback type",
+            environmentFieldName: null,
+            environmentFieldValue: null,
             cancellationToken: cts.Token);
 
         // Assert
@@ -1088,6 +1199,8 @@ public sealed class JiraApiClientTests
                 ["Change reason"] = ["Repair", "Mitigation"]
             },
             rollbackFieldName: "Rollback type",
+            environmentFieldName: null,
+            environmentFieldValue: null,
             cancellationToken: cts.Token);
 
         // Assert

@@ -201,6 +201,16 @@ public sealed class ReleaseReportOptions
     /// Gets or sets optional rollback field name.
     /// </summary>
     public string? RollbackFieldName { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional environment field name used for release filtering.
+    /// </summary>
+    public string? EnvironmentFieldName { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional environment field value used for release filtering.
+    /// </summary>
+    public string? EnvironmentFieldValue { get; init; }
 }
 
 /// <summary>

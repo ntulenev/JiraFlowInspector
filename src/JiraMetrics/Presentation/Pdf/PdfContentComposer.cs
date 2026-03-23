@@ -77,6 +77,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
         }
 
         var includeComponents = !string.IsNullOrWhiteSpace(releaseReport.ComponentsFieldName);
+        var includeEnvironments = !string.IsNullOrWhiteSpace(releaseReport.EnvironmentFieldName);
         var jiraBaseUrl = reportData.Settings.BaseUrl;
         var orderedReleases = reportData.ReleaseIssues
             .OrderBy(static release => release.ReleaseDate)
@@ -98,6 +99,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 {
                     columns.ConstantColumn(72);
                 }
+                if (includeEnvironments)
+                {
+                    columns.ConstantColumn(110);
+                }
 
                 columns.ConstantColumn(96);
                 columns.RelativeColumn(4);
@@ -113,6 +118,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 if (includeComponents)
                 {
                     _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Components");
+                }
+                if (includeEnvironments)
+                {
+                    _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Environments");
                 }
 
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Rollback type");
@@ -198,6 +207,25 @@ public sealed class PdfContentComposer : IPdfContentComposer
                         _ = table.Cell()
                             .Element(PdfPresentationHelpers.StyleBodyCell)
                             .Text(componentsText);
+                    }
+                }
+
+                if (includeEnvironments)
+                {
+                    var environmentsText = release.EnvironmentNames.Count == 0
+                        ? "-"
+                        : string.Join(", ", release.EnvironmentNames);
+                    if (release.IsHotFix)
+                    {
+                        var hotFixEnvironmentColor = Colors.Red.Darken2;
+                        table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                        {
+                            _ = text.Span(environmentsText).FontColor(hotFixEnvironmentColor);
+                        });
+                    }
+                    else
+                    {
+                        _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(environmentsText);
                     }
                 }
 

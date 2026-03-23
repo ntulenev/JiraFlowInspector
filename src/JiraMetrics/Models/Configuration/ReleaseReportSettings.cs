@@ -20,13 +20,17 @@ public sealed record ReleaseReportSettings
     /// <param name="componentsFieldName">Optional components field name.</param>
     /// <param name="hotFixRules">Optional hot-fix marker rules in format <c>field name -&gt; values</c>. Defaults to <c>Change type -&gt; Emergency</c>.</param>
     /// <param name="rollbackFieldName">Optional rollback marker field name. Defaults to <c>Rollback type</c>.</param>
+    /// <param name="environmentFieldName">Optional environment field name used for filtering.</param>
+    /// <param name="environmentFieldValue">Optional environment field value used for filtering.</param>
     public ReleaseReportSettings(
         ProjectKey releaseProjectKey,
         string projectLabel,
         string releaseDateFieldName,
         string? componentsFieldName = null,
         IReadOnlyDictionary<string, IReadOnlyList<string>>? hotFixRules = null,
-        string? rollbackFieldName = null)
+        string? rollbackFieldName = null,
+        string? environmentFieldName = null,
+        string? environmentFieldValue = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseDateFieldName);
@@ -37,6 +41,8 @@ public sealed record ReleaseReportSettings
         ComponentsFieldName = string.IsNullOrWhiteSpace(componentsFieldName) ? null : componentsFieldName.Trim();
         HotFixRules = NormalizeHotFixRules(hotFixRules);
         RollbackFieldName = string.IsNullOrWhiteSpace(rollbackFieldName) ? DEFAULT_ROLLBACK_FIELD_NAME : rollbackFieldName.Trim();
+        EnvironmentFieldName = string.IsNullOrWhiteSpace(environmentFieldName) ? null : environmentFieldName.Trim();
+        EnvironmentFieldValue = string.IsNullOrWhiteSpace(environmentFieldValue) ? null : environmentFieldValue.Trim();
     }
 
     /// <summary>
@@ -68,6 +74,16 @@ public sealed record ReleaseReportSettings
     /// Gets rollback field name.
     /// </summary>
     public string RollbackFieldName { get; }
+
+    /// <summary>
+    /// Gets optional environment field name used for filtering.
+    /// </summary>
+    public string? EnvironmentFieldName { get; }
+
+    /// <summary>
+    /// Gets optional environment field value used for filtering.
+    /// </summary>
+    public string? EnvironmentFieldValue { get; }
 
     private static Dictionary<string, IReadOnlyList<string>> NormalizeHotFixRules(
         IReadOnlyDictionary<string, IReadOnlyList<string>>? source)

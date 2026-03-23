@@ -628,7 +628,9 @@ public sealed class SpectreJiraPresentationServiceTests
             new ProjectKey("RLS"),
             "Processing",
             "Change completion date",
-            "Components");
+            "Components",
+            environmentFieldName: "customfield_10865",
+            environmentFieldValue: "P005");
 
         // Act
         var output = await RunWithTestConsoleAsync(console =>
@@ -645,6 +647,7 @@ public sealed class SpectreJiraPresentationServiceTests
                         components: 2,
                         status: new StatusName("In QA"),
                         componentNames: ["Flux", "ADF PostgreSQL Database"],
+                        environmentNames: ["P005", "S005"],
                         rollbackType: "Full rollback"),
                     new ReleaseIssueItem(
                         new IssueKey("RLS-2"),
@@ -653,7 +656,8 @@ public sealed class SpectreJiraPresentationServiceTests
                         tasks: 1,
                         components: 1,
                         status: new StatusName("Done"),
-                        componentNames: ["Flux"])
+                        componentNames: ["Flux"],
+                        environmentNames: ["P005"])
                 ]);
             return Task.FromResult(console.Output);
         });
@@ -662,10 +666,13 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Components field:");
         output.Should().Contain("Hot-fix markers:");
         output.Should().Contain("Components");
+        output.Should().Contain("Environments");
         output.Should().Contain("Status");
         output.Should().Contain("Tasks");
         output.Should().Contain("In QA");
         output.Should().Contain("2");
+        output.Should().Contain("P005");
+        output.Should().Contain("S005");
         output.Should().Contain("Components release table");
         output.Should().Contain("Component name");
         output.Should().Contain("Release counts");
@@ -699,7 +706,9 @@ public sealed class SpectreJiraPresentationServiceTests
             new ProjectKey("RLS"),
             "Processing",
             "Change completion date",
-            "Components");
+            "Components",
+            environmentFieldName: "customfield_10865",
+            environmentFieldValue: "P005");
 
         // Act
         var output = await RunWithTestConsoleAsync(console =>
@@ -714,7 +723,8 @@ public sealed class SpectreJiraPresentationServiceTests
                     tasks: 0,
                     components: 0,
                     status: new StatusName("Open"),
-                    componentNames: [])]);
+                    componentNames: [],
+                    environmentNames: [])]);
             return Task.FromResult(console.Output);
         });
 
@@ -722,6 +732,7 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("RLS-2");
         output.Should().Contain("Open");
         output.Should().Contain("-");
+        output.Should().Contain("Environments");
         output.Should().Contain("Components release table");
         output.Should().Contain("No components data.");
         output.Should().Contain("Total releases:");

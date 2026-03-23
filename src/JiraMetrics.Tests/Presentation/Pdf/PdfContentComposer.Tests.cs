@@ -80,7 +80,9 @@ public sealed class PdfContentComposerTests
             releaseReport: new ReleaseReportSettings(
                 new ProjectKey("RLS"),
                 "ADF",
-                "Change completion date"),
+                "Change completion date",
+                environmentFieldName: "customfield_10865",
+                environmentFieldValue: "P005"),
             globalIncidentsReport: new GlobalIncidentsReportSettings(
                 namespaceName: "Incidents",
                 searchPhrase: "ADF disab",
@@ -121,7 +123,8 @@ public sealed class PdfContentComposerTests
                     new IssueSummary("Release title"),
                     new DateOnly(2026, 2, 10),
                     tasks: 3,
-                    components: 2)
+                    components: 2,
+                    environmentNames: ["P005", "S005"])
             ],
             GlobalIncidents =
             [
