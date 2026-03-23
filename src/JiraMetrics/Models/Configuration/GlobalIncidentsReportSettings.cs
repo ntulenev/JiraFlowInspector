@@ -15,6 +15,7 @@ public sealed record GlobalIncidentsReportSettings
     /// Initializes a new instance of the <see cref="GlobalIncidentsReportSettings"/> class.
     /// </summary>
     /// <param name="namespaceName">Jira namespace or project used for incidents search.</param>
+    /// <param name="jqlFilter">Optional raw JQL clause used to filter incidents.</param>
     /// <param name="searchPhrase">Optional free-text phrase used to filter incidents.</param>
     /// <param name="incidentStartFieldName">Incident start field name.</param>
     /// <param name="incidentRecoveryFieldName">Incident recovery field name.</param>
@@ -23,6 +24,7 @@ public sealed record GlobalIncidentsReportSettings
     /// <param name="additionalFieldNames">Optional additional field names shown in the report.</param>
     public GlobalIncidentsReportSettings(
         string? namespaceName = null,
+        string? jqlFilter = null,
         string? searchPhrase = null,
         string? incidentStartFieldName = null,
         string? incidentRecoveryFieldName = null,
@@ -31,6 +33,7 @@ public sealed record GlobalIncidentsReportSettings
         IReadOnlyList<string>? additionalFieldNames = null)
     {
         Namespace = string.IsNullOrWhiteSpace(namespaceName) ? DEFAULT_NAMESPACE : namespaceName.Trim();
+        JqlFilter = string.IsNullOrWhiteSpace(jqlFilter) ? null : jqlFilter.Trim();
         SearchPhrase = string.IsNullOrWhiteSpace(searchPhrase) ? null : searchPhrase.Trim();
         IncidentStartFieldName = string.IsNullOrWhiteSpace(incidentStartFieldName)
             ? DEFAULT_INCIDENT_START_FIELD_NAME
@@ -57,6 +60,11 @@ public sealed record GlobalIncidentsReportSettings
     /// Gets Jira namespace or project used for incidents search.
     /// </summary>
     public string Namespace { get; }
+
+    /// <summary>
+    /// Gets optional raw JQL clause used to filter incidents.
+    /// </summary>
+    public string? JqlFilter { get; }
 
     /// <summary>
     /// Gets optional free-text phrase used to filter incidents.

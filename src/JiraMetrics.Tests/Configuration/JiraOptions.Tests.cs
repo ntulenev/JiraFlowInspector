@@ -36,7 +36,7 @@ public sealed class JiraOptionsTests
             GlobalIncidents = new GlobalIncidentsReportOptions
             {
                 Namespace = "Incidents",
-                SearchPhrase = "ADF disab",
+                SearchPhrase = "ORX disab",
                 AdditionalFieldNames = ["Business Impact"]
             },
             CreatedAfter = "2026-01-15",

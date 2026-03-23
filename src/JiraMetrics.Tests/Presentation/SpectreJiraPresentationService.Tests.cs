@@ -326,7 +326,7 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowBugRatio(
                 [new IssueTypeName("Bug")],
-                "ADF Team",
+                "NOVA Team",
                 "Processing",
                 new ItemCount(8),
                 new ItemCount(4),
@@ -341,7 +341,7 @@ public sealed class SpectreJiraPresentationServiceTests
         // Assert
         output.Should().Contain("Bug ratio");
         output.Should().Contain("Filtered by:");
-        output.Should().Contain("ADF Team = Processing");
+        output.Should().Contain("NOVA Team = Processing");
         output.Should().NotContain("Created this month");
         output.Should().Contain("Open this month");
         output.Should().Contain("Done this month");
@@ -646,7 +646,7 @@ public sealed class SpectreJiraPresentationServiceTests
                         tasks: 3,
                         components: 2,
                         status: new StatusName("In QA"),
-                        componentNames: ["Flux", "ADF PostgreSQL Database"],
+                        componentNames: ["Flux", "Nebula PostgreSQL Database"],
                         environmentNames: ["P005", "S005"],
                         rollbackType: "Full rollback"),
                     new ReleaseIssueItem(
@@ -682,10 +682,10 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Full");
         output.Should().Contain("rollback");
         output.Should().Contain("Flux");
-        output.Should().Contain("ADF PostgreSQL Database");
+        output.Should().Contain("Nebula PostgreSQL Database");
 
         var fluxIndex = output.IndexOf("Flux", StringComparison.Ordinal);
-        var adfIndex = output.IndexOf("ADF PostgreSQL Database", StringComparison.Ordinal);
+        var adfIndex = output.IndexOf("Nebula PostgreSQL Database", StringComparison.Ordinal);
         fluxIndex.Should().BeGreaterThanOrEqualTo(0);
         adfIndex.Should().BeGreaterThanOrEqualTo(0);
         fluxIndex.Should().BeLessThan(adfIndex);
@@ -748,7 +748,7 @@ public sealed class SpectreJiraPresentationServiceTests
         var service = new SpectreJiraPresentationService();
         var settings = new GlobalIncidentsReportSettings(
             namespaceName: "Incidents",
-            searchPhrase: "ADF disab",
+            jqlFilter: "(labels = ORX OR summary ~ \"ORX\") AND (summary ~ \"disab*\" OR summary ~ \"downtime\")",
             additionalFieldNames: ["Business Impact"]);
 
         // Act
@@ -760,14 +760,14 @@ public sealed class SpectreJiraPresentationServiceTests
                 [
                     new GlobalIncidentItem(
                         new IssueKey("INC-11861"),
-                        new IssueSummary("SB2 - ADF disabled 10/03/2026"),
+                        new IssueSummary("NOVA - ORX disabled 10/03/2026"),
                         new DateTimeOffset(2026, 3, 10, 2, 34, 0, TimeSpan.Zero),
                         new DateTimeOffset(2026, 3, 10, 3, 23, 0, TimeSpan.Zero),
                         impact: "Significant / Large",
                         urgency: "High",
                         additionalFields: new Dictionary<string, string?>
                         {
-                            ["Business Impact"] = "ADF live feed unavailable"
+                            ["Business Impact"] = "ORX live feed unavailable"
                         })
                 ]);
             return Task.FromResult(console.Output);
@@ -777,8 +777,9 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Global incidents report");
         output.Should().Contain("Namespace:");
         output.Should().Contain("Incidents");
-        output.Should().Contain("Search phrase:");
-        output.Should().Contain("ADF disab");
+        output.Should().Contain("JQL filter:");
+        output.Should().Contain("labels = ORX");
+        output.Should().Contain("downtime");
         output.Should().Contain("Jira ID");
         output.Should().Contain("Start");
         output.Should().Contain("Recov");
@@ -788,8 +789,8 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Urgen");
         output.Should().Contain("Addit");
         output.Should().Contain("INC-118");
-        output.Should().Contain("SB2 -");
-        output.Should().Contain("ADF");
+        output.Should().Contain("NOVA -");
+        output.Should().Contain("ORX");
         output.Should().Contain("2026-03");
         output.Should().Contain("02:34");
         output.Should().Contain("03:23");
@@ -828,7 +829,7 @@ public sealed class SpectreJiraPresentationServiceTests
                 [
                     new GlobalIncidentItem(
                         new IssueKey("INC-11861"),
-                        new IssueSummary("SB2 - ADF disabled 10/03/2026"),
+                        new IssueSummary("NOVA - ORX disabled 10/03/2026"),
                         new DateTimeOffset(2026, 3, 10, 2, 34, 0, TimeSpan.Zero),
                         new DateTimeOffset(2026, 3, 10, 3, 23, 0, TimeSpan.Zero))
                 ]);

@@ -85,7 +85,7 @@ public sealed class PdfContentComposerTests
                 environmentFieldValue: "P005"),
             globalIncidentsReport: new GlobalIncidentsReportSettings(
                 namespaceName: "Incidents",
-                searchPhrase: "ADF disab",
+                jqlFilter: "(labels = SERVICE OR summary ~ \"SERVICE\") AND (summary ~ \"downtime\")",
                 additionalFieldNames: ["Business Impact"]),
             pdfReport: new PdfReportSettings(true, "report.pdf"));
 

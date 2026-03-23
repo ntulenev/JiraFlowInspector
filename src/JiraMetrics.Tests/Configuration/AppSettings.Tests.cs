@@ -26,7 +26,8 @@ public sealed class AppSettingsTests
         var releaseReport = new ReleaseReportSettings(new ProjectKey("RLS"), "Processing", "Change completion date");
         var globalIncidentsReport = new GlobalIncidentsReportSettings(
             namespaceName: "Incidents",
-            searchPhrase: "ADF disab",
+            jqlFilter: "labels = SERVICE",
+            searchPhrase: "ORX disab",
             additionalFieldNames: ["Business Impact"]);
         var pdfReport = new PdfReportSettings(enabled: true, outputPath: "report.pdf");
         var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };

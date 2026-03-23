@@ -12,7 +12,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
 - Optional release report by label, custom release date field, and optional environment filter.
-- Optional global incidents report by namespace/project and search phrase.
+- Optional global incidents report by namespace/project and JQL filter.
 - P75 transition timing per path group.
 - Timeline diagrams in console and PDF.
 - Optional exclusion of weekends and specific calendar days from duration calculation.
@@ -55,7 +55,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Release report (optional):
   all releases in `MonthLabel` by `ProjectLabel`, with tasks/components/environment details.
 - Global incidents report (optional):
-  incidents in `MonthLabel` by configured namespace/project and optional search phrase.
+  incidents in `MonthLabel` by configured namespace/project and optional JQL filter.
 - Bug ratio (optional):
   open/done/rejected/finished counts and finished/created rate.
 - Bug ratio details (optional):
@@ -157,7 +157,8 @@ Global incidents query uses:
 
 - `project = GlobalIncidents.Namespace`
 - `IncidentStartFieldName` in `MonthLabel` range
-- optional text-term filters derived from `SearchPhrase`
+- optional raw `JqlFilter` clause
+- fallback text-term filters derived from `SearchPhrase` when `JqlFilter` is not configured
 
 Per incident row:
 
@@ -252,8 +253,12 @@ Notes:
   global incidents report settings.
 - `GlobalIncidents.Namespace` (`string`, optional, default `Incidents`):
   Jira namespace/project used for incidents search.
+- `GlobalIncidents.JqlFilter` (`string`, optional):
+  raw JQL clause appended to the global-incidents query.
+  When configured, it takes precedence over `SearchPhrase`.
 - `GlobalIncidents.SearchPhrase` (`string`, optional):
-  free-text filter split into Jira `text ~ "<term>*"` terms.
+  legacy free-text filter split into Jira `text ~ "<term>*"` terms.
+  Used only when `JqlFilter` is not configured.
 - `GlobalIncidents.IncidentStartFieldName` (`string`, optional, default `Incident Start date/time UTC`):
   Jira field name storing incident start UTC.
 - `GlobalIncidents.IncidentRecoveryFieldName` (`string`, optional, default `Incident Recovery date/time UTC`):
@@ -319,7 +324,7 @@ Notes:
     },
     "GlobalIncidents": {
       "Namespace": "Incidents",
-      "SearchPhrase": "service outage",
+      "JqlFilter": "(\"Incident categorization\" = SERVICE OR labels = SERVICE OR summary ~ \"SERVICE\") AND (summary ~ \"disab*\" OR summary ~ \"unavail*\" OR summary ~ \"downtime\")",
       "IncidentStartFieldName": "Incident Start date/time UTC",
       "IncidentRecoveryFieldName": "Incident Recovery date/time UTC",
       "ImpactFieldName": "Impact",

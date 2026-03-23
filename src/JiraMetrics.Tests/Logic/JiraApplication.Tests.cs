@@ -349,7 +349,7 @@ public sealed class JiraApplicationTests
                 bugIssueNames: [new IssueTypeName("Bug")],
                 releaseReport: new ReleaseReportSettings(
                     new ProjectKey("RLS"),
-                    "ADF",
+                    "ORX",
                     "Change completion date"))),
             apiClient,
             logic,
@@ -394,7 +394,7 @@ public sealed class JiraApplicationTests
             [
                 new GlobalIncidentItem(
                     new IssueKey("INC-1"),
-                    new IssueSummary("ADF disabled"),
+                    new IssueSummary("ORX disabled"),
                     new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
                     new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero))
             ]
@@ -408,9 +408,9 @@ public sealed class JiraApplicationTests
                 issueTypes: [new IssueTypeName("Task")],
                 releaseReport: new ReleaseReportSettings(
                     new ProjectKey("RLS"),
-                    "ADF",
+                    "ORX",
                     "Change completion date"),
-                globalIncidentsReport: new GlobalIncidentsReportSettings(searchPhrase: "ADF disab"))),
+                globalIncidentsReport: new GlobalIncidentsReportSettings(jqlFilter: "labels = SERVICE"))),
             apiClient,
             logic,
             presentation,

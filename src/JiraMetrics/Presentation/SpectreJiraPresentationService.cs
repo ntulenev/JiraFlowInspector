@@ -461,7 +461,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         AnsiConsole.MarkupLine("[bold]Global incidents report[/]");
         AnsiConsole.MarkupLine(
             $"[grey]Namespace:[/] {Markup.Escape(settings.Namespace)}    [grey]Month:[/] {Markup.Escape(monthLabel.Value)}");
-        if (!string.IsNullOrWhiteSpace(settings.SearchPhrase))
+        if (!string.IsNullOrWhiteSpace(settings.JqlFilter))
+        {
+            AnsiConsole.MarkupLine($"[grey]JQL filter:[/] {Markup.Escape(settings.JqlFilter)}");
+        }
+        else if (!string.IsNullOrWhiteSpace(settings.SearchPhrase))
         {
             AnsiConsole.MarkupLine($"[grey]Search phrase:[/] {Markup.Escape(settings.SearchPhrase)}");
         }

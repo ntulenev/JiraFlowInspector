@@ -247,7 +247,14 @@ public sealed partial class JiraApiClient : IJiraApiClient
             $"\"{escapedStartFieldName}\" >= \"{monthStart:yyyy-MM-dd}\"",
             $"\"{escapedStartFieldName}\" < \"{nextMonthStart:yyyy-MM-dd}\""
         };
-        AddTextSearchClauses(clauses, settings.SearchPhrase);
+        if (!string.IsNullOrWhiteSpace(settings.JqlFilter))
+        {
+            clauses.Add($"({settings.JqlFilter.Trim()})");
+        }
+        else
+        {
+            AddTextSearchClauses(clauses, settings.SearchPhrase);
+        }
 
         var jql = $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedStartFieldName}\" ASC, key ASC";
 

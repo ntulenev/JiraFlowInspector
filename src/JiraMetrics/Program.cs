@@ -211,6 +211,7 @@ static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalInciden
 
     return new GlobalIncidentsReportSettings(
         source.Namespace,
+        source.JqlFilter,
         source.SearchPhrase,
         source.IncidentStartFieldName,
         source.IncidentRecoveryFieldName,

@@ -19,8 +19,20 @@ public sealed class GlobalIncidentsReportSettingsTests
         settings.IncidentRecoveryFieldName.Should().Be("Incident Recovery date/time UTC");
         settings.ImpactFieldName.Should().Be("Impact");
         settings.UrgencyFieldName.Should().Be("Urgency");
+        settings.JqlFilter.Should().BeNull();
         settings.SearchPhrase.Should().BeNull();
         settings.AdditionalFieldNames.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Constructor trims JQL filter when it is provided")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenJqlFilterIsProvidedStoresTrimmedValue()
+    {
+        // Act
+        var settings = new GlobalIncidentsReportSettings(jqlFilter: "  summary ~ \"downtime\"  ");
+
+        // Assert
+        settings.JqlFilter.Should().Be("summary ~ \"downtime\"");
     }
 
     [Fact(DisplayName = "Constructor normalizes additional field names")]

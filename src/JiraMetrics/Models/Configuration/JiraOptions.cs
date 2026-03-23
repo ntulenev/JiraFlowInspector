@@ -224,6 +224,11 @@ public sealed class GlobalIncidentsReportOptions
     public string Namespace { get; init; } = "Incidents";
 
     /// <summary>
+    /// Gets or sets optional raw JQL clause used to filter incidents.
+    /// </summary>
+    public string? JqlFilter { get; init; }
+
+    /// <summary>
     /// Gets or sets optional free-text phrase used to filter incidents.
     /// </summary>
     public string? SearchPhrase { get; init; }

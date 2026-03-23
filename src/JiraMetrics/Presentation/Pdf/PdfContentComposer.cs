@@ -314,7 +314,11 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         _ = column.Item().Text("Global incidents report").Bold().FontSize(12);
         _ = column.Item().Text($"Namespace: {globalIncidentsReport.Namespace}").FontColor(Colors.Grey.Darken1);
-        if (!string.IsNullOrWhiteSpace(globalIncidentsReport.SearchPhrase))
+        if (!string.IsNullOrWhiteSpace(globalIncidentsReport.JqlFilter))
+        {
+            _ = column.Item().Text($"JQL filter: {globalIncidentsReport.JqlFilter}").FontColor(Colors.Grey.Darken1);
+        }
+        else if (!string.IsNullOrWhiteSpace(globalIncidentsReport.SearchPhrase))
         {
             _ = column.Item().Text($"Search phrase: {globalIncidentsReport.SearchPhrase}").FontColor(Colors.Grey.Darken1);
         }

@@ -37,7 +37,7 @@ public sealed class JiraIssueFieldsResponseTests
                     },
                     InwardIssue = new JiraIssueLinkIssueResponse
                     {
-                        Key = "ADF-1"
+                        Key = "NOVA-1"
                     }
                 }
             ]
@@ -55,6 +55,6 @@ public sealed class JiraIssueFieldsResponseTests
         json.Should().Contain("\"issuelinks\":[");
         json.Should().Contain("\"inward\":\"is caused by\"");
         json.Should().Contain("\"outward\":\"causes\"");
-        json.Should().Contain("\"inwardIssue\":{\"key\":\"ADF-1\"}");
+        json.Should().Contain("\"inwardIssue\":{\"key\":\"NOVA-1\"}");
     }
 }
