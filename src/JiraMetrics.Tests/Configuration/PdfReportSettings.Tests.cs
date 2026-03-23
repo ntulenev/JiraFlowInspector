@@ -8,6 +8,28 @@ namespace JiraMetrics.Tests.Configuration;
 
 public sealed class PdfReportSettingsTests
 {
+    [Fact(DisplayName = "Constructor enables auto-open by default")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenOpenAfterGenerationIsNotProvidedUsesTrue()
+    {
+        // Arrange
+        var settings = new PdfReportSettings();
+
+        // Assert
+        settings.OpenAfterGeneration.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Constructor stores configured auto-open flag")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenOpenAfterGenerationIsProvidedStoresValue()
+    {
+        // Arrange
+        var settings = new PdfReportSettings(enabled: true, outputPath: "report.pdf", openAfterGeneration: false);
+
+        // Assert
+        settings.OpenAfterGeneration.Should().BeFalse();
+    }
+
     [Fact(DisplayName = "ResolveOutputPath resolves relative path to absolute path")]
     [Trait("Category", "Unit")]
     public void ResolveOutputPathWhenPathIsRelativeReturnsAbsolutePath()

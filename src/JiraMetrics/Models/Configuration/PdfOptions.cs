@@ -11,6 +11,11 @@ public sealed class PdfOptions
     public bool Enabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether generated PDF should be opened after save.
+    /// </summary>
+    public bool OpenAfterGeneration { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets output file path for generated PDF report.
     /// </summary>
     public string OutputPath { get; init; } = "jiraflowinspector-report.pdf";

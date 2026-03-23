@@ -13,17 +13,24 @@ public sealed record PdfReportSettings
     /// Initializes a new instance of the <see cref="PdfReportSettings"/> class.
     /// </summary>
     /// <param name="enabled">Whether PDF generation is enabled.</param>
+    /// <param name="openAfterGeneration">Whether generated PDF should be opened after save.</param>
     /// <param name="outputPath">Configured output path.</param>
-    public PdfReportSettings(bool enabled = true, string? outputPath = null)
+    public PdfReportSettings(bool enabled = true, string? outputPath = null, bool openAfterGeneration = true)
     {
         Enabled = enabled;
         OutputPath = string.IsNullOrWhiteSpace(outputPath) ? DEFAULT_OUTPUT_PATH : outputPath.Trim();
+        OpenAfterGeneration = openAfterGeneration;
     }
 
     /// <summary>
     /// Gets a value indicating whether PDF generation is enabled.
     /// </summary>
     public bool Enabled { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether generated PDF should be opened after save.
+    /// </summary>
+    public bool OpenAfterGeneration { get; }
 
     /// <summary>
     /// Gets configured output path.

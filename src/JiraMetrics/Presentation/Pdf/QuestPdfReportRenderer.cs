@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
@@ -23,18 +24,22 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
     /// </summary>
     /// <param name="options">Application settings options.</param>
     /// <param name="pdfReportFileStore">PDF output file store.</param>
+    /// <param name="pdfReportLauncher">PDF report launcher.</param>
     /// <param name="pdfContentComposer">PDF content composer.</param>
     public QuestPdfReportRenderer(
         IOptions<AppSettings> options,
         IPdfReportFileStore pdfReportFileStore,
+        IPdfReportLauncher pdfReportLauncher,
         IPdfContentComposer pdfContentComposer)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(pdfReportFileStore);
+        ArgumentNullException.ThrowIfNull(pdfReportLauncher);
         ArgumentNullException.ThrowIfNull(pdfContentComposer);
 
         _settings = options.Value;
         _pdfReportFileStore = pdfReportFileStore;
+        _pdfReportLauncher = pdfReportLauncher;
         _pdfContentComposer = pdfContentComposer;
     }
 
@@ -107,9 +112,28 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
         _pdfReportFileStore.Save(outputPath, document);
 
         System.Console.WriteLine($"PDF report saved to: {outputPath}");
+
+        if (_settings.PdfReport.OpenAfterGeneration)
+        {
+            try
+            {
+                _pdfReportLauncher.Open(outputPath);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                WritePdfOpenFailedMessage(outputPath, ex.Message);
+            }
+        }
+    }
+
+    [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "CLI warning message for local desktop usage.")]
+    private static void WritePdfOpenFailedMessage(string outputPath, string reason)
+    {
+        System.Console.WriteLine($"Failed to open PDF automatically: {outputPath} ({reason})");
     }
 
     private readonly AppSettings _settings;
     private readonly IPdfReportFileStore _pdfReportFileStore;
+    private readonly IPdfReportLauncher _pdfReportLauncher;
     private readonly IPdfContentComposer _pdfContentComposer;
 }

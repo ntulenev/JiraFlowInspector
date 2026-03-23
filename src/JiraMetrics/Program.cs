@@ -125,6 +125,7 @@ builder.Services.AddTransient<IJiraLogicService, JiraLogicService>();
 builder.Services.AddTransient<IJiraPresentationService, SpectreJiraPresentationService>();
 builder.Services.AddTransient<IPdfContentComposer, PdfContentComposer>();
 builder.Services.AddTransient<IPdfReportFileStore, PdfReportFileStore>();
+builder.Services.AddTransient<IPdfReportLauncher, PdfReportLauncher>();
 builder.Services.AddTransient<IPdfReportRenderer, QuestPdfReportRenderer>();
 builder.Services.AddTransient<IJiraApplication, JiraApplication>();
 
@@ -232,7 +233,7 @@ static PdfReportSettings ResolvePdfReport(PdfOptions? source)
         return new PdfReportSettings();
     }
 
-    return new PdfReportSettings(source.Enabled, source.OutputPath);
+    return new PdfReportSettings(source.Enabled, source.OutputPath, source.OpenAfterGeneration);
 }
 
 [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Startup progress messages are internal CLI status output.")]
