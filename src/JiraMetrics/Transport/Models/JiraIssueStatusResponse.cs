@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira issue status DTO.
 /// </summary>
-internal sealed class JiraIssueStatusResponse
+public sealed class JiraIssueStatusResponse
 {
     /// <summary>
     /// Gets issue status name.

@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira issue response DTO.
 /// </summary>
-internal sealed class JiraIssueResponse
+public sealed class JiraIssueResponse
 {
     /// <summary>
     /// Gets issue key.

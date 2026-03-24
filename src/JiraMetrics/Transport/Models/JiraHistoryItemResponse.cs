@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira changelog history item DTO.
 /// </summary>
-internal sealed class JiraHistoryItemResponse
+public sealed class JiraHistoryItemResponse
 {
     /// <summary>
     /// Gets changed field name.

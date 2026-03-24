@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira sub-task DTO.
 /// </summary>
-internal sealed class JiraSubtaskResponse
+public sealed class JiraSubtaskResponse
 {
     /// <summary>
     /// Gets sub-task key.

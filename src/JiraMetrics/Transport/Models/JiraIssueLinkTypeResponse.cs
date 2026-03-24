@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira issue-link type DTO.
 /// </summary>
-internal sealed class JiraIssueLinkTypeResponse
+public sealed class JiraIssueLinkTypeResponse
 {
     /// <summary>
     /// Gets inward relation text.

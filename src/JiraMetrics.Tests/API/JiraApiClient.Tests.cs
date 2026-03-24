@@ -4,6 +4,10 @@ using FluentAssertions;
 
 using JiraMetrics.Abstractions;
 using JiraMetrics.API;
+using JiraMetrics.API.FieldResolution;
+using JiraMetrics.API.Jql;
+using JiraMetrics.API.Mapping;
+using JiraMetrics.API.Search;
 using JiraMetrics.Logic;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -17,15 +21,19 @@ namespace JiraMetrics.Tests.API;
 
 public sealed class JiraApiClientTests
 {
-    [Fact(DisplayName = "Constructor throws when transport is null")]
+    [Fact(DisplayName = "Constructor throws when search executor is null")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenTransportIsNullThrowsArgumentNullException()
+    public void ConstructorWhenSearchExecutorIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IJiraTransport transport = null!;
+        IJiraSearchExecutor searchExecutor = null!;
 
         // Act
-        Action act = () => _ = CreateClient(transport, CreateSettings());
+        Action act = () => _ = new JiraApiClient(
+            searchExecutor,
+            Mock.Of<IJiraJqlFacade>(),
+            Mock.Of<IJiraFieldResolver>(),
+            Mock.Of<IJiraMapperFacade>());
 
         // Assert
         act.Should()
@@ -247,89 +255,6 @@ public sealed class JiraApiClientTests
         // Assert
         capturedUrl.Should().Contain("2026-01-01");
         capturedUrl.Should().Contain("2026-02-01");
-    }
-
-    [Fact(DisplayName = "GetIssueCountCreatedThisMonthAsync uses month range and bug issue type filter")]
-    [Trait("Category", "Unit")]
-    public async Task GetIssueCountCreatedThisMonthAsyncWhenCalledUsesCreatedAndIssueTypeClauses()
-    {
-        // Arrange
-        using var cts = new CancellationTokenSource();
-        var capturedUrl = string.Empty;
-
-        var pageResponse = new JiraSearchResponse
-        {
-            Total = 5,
-            IsLast = true
-        };
-
-        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
-        transport
-            .Setup(t => t.GetAsync<JiraSearchResponse>(
-                It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
-            .ReturnsAsync(pageResponse);
-
-        var settings = CreateSettings(monthLabel: "2026-01");
-        var client = CreateClient(transport.Object, settings);
-
-        // Act
-        var count = await client.GetIssueCountCreatedThisMonthAsync(
-            new ProjectKey("AAA"),
-            [new IssueTypeName("Bug")],
-            cts.Token);
-
-        // Assert
-        count.Value.Should().Be(5);
-        capturedUrl.Should().Contain("created");
-        capturedUrl.Should().Contain("2026-01-01");
-        capturedUrl.Should().Contain("2026-02-01");
-        capturedUrl.Should().Contain("issuetype");
-        capturedUrl.Should().Contain("Bug");
-        capturedUrl.Should().Contain("maxResults=1");
-    }
-
-    [Fact(DisplayName = "GetIssueCountMovedToDoneThisMonthAsync does not add created-after filter")]
-    [Trait("Category", "Unit")]
-    public async Task GetIssueCountMovedToDoneThisMonthAsyncWhenCalledDoesNotAddCreatedClause()
-    {
-        // Arrange
-        using var cts = new CancellationTokenSource();
-        var capturedUrl = string.Empty;
-
-        var pageResponse = new JiraSearchResponse
-        {
-            Total = 3,
-            IsLast = true
-        };
-
-        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
-        transport
-            .Setup(t => t.GetAsync<JiraSearchResponse>(
-                It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
-            .ReturnsAsync(pageResponse);
-
-        var client = CreateClient(transport.Object);
-
-        // Act
-        var count = await client.GetIssueCountMovedToDoneThisMonthAsync(
-            new ProjectKey("AAA"),
-            new StatusName("Done"),
-            [new IssueTypeName("Bug")],
-            cts.Token);
-
-        // Assert
-        count.Value.Should().Be(3);
-        capturedUrl.Should().Contain("status");
-        capturedUrl.Should().Contain("CHANGED");
-        capturedUrl.Should().Contain("status%20%3D%20%22Done%22");
-        capturedUrl.Should().Contain("issuetype");
-        capturedUrl.Should().Contain("Bug");
-        capturedUrl.Should().NotContain("created%20%3E%3D");
-        capturedUrl.Should().Contain("maxResults=1");
     }
 
     [Fact(DisplayName = "GetIssuesCreatedThisMonthAsync returns issue details with Jira id and title")]
@@ -1870,7 +1795,19 @@ public sealed class JiraApiClientTests
     private static JiraApiClient CreateClient(IJiraTransport transport, IOptions<AppSettings>? settings = null)
     {
         var resolvedSettings = settings ?? CreateSettings();
-        return new JiraApiClient(transport, resolvedSettings, CreateTransitionBuilder(resolvedSettings));
+        var fieldValueReader = new JiraFieldValueReader();
+
+        return new JiraApiClient(
+            new JiraSearchExecutor(transport),
+            new JiraJqlFacade(
+                new TeamTasksJqlBuilder(resolvedSettings),
+                new ReleaseIssuesJqlBuilder(resolvedSettings),
+                new GlobalIncidentsJqlBuilder(resolvedSettings)),
+            new JiraFieldResolver(transport),
+            new JiraMapperFacade(
+                new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings, fieldValueReader),
+                new ReleaseIssueMapper(fieldValueReader),
+                new GlobalIncidentMapper(fieldValueReader)));
     }
 
     private static TransitionBuilder CreateTransitionBuilder(IOptions<AppSettings> settings) => new(settings);

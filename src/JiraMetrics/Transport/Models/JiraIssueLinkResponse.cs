@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira issue-link DTO.
 /// </summary>
-internal sealed class JiraIssueLinkResponse
+public sealed class JiraIssueLinkResponse
 {
     /// <summary>
     /// Gets issue-link type.

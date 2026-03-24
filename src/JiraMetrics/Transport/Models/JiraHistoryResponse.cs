@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira changelog history DTO.
 /// </summary>
-internal sealed class JiraHistoryResponse
+public sealed class JiraHistoryResponse
 {
     /// <summary>
     /// Gets history creation timestamp.
@@ -17,5 +17,5 @@ internal sealed class JiraHistoryResponse
     /// Gets history items.
     /// </summary>
     [JsonPropertyName("items")]
-    public List<JiraHistoryItemResponse> Items { get; init; } = [];
+    public IReadOnlyList<JiraHistoryItemResponse> Items { get; init; } = [];
 }

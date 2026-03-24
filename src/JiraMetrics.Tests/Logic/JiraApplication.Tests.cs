@@ -277,8 +277,6 @@ public sealed class JiraApplicationTests
         await app.RunAsync();
 
         // Assert
-        apiClient.CreatedThisMonthCountRequested.Should().BeFalse();
-        apiClient.MovedToDoneThisMonthCountRequested.Should().BeFalse();
         apiClient.CreatedThisMonthIssuesRequested.Should().BeTrue();
         apiClient.MovedToDoneThisMonthIssuesRequested.Should().BeTrue();
         apiClient.RejectedThisMonthIssuesRequested.Should().BeTrue();
@@ -862,10 +860,6 @@ public sealed class JiraApplicationTests
 
         public bool ThrowOnAuth { get; set; }
 
-        public ItemCount CreatedThisMonthCount { get; set; } = new(0);
-
-        public ItemCount MovedToDoneThisMonthCount { get; set; } = new(0);
-
         public IReadOnlyList<IssueListItem> CreatedThisMonthIssues { get; set; } = [];
 
         public IReadOnlyList<IssueListItem> MovedToDoneThisMonthIssues { get; set; } = [];
@@ -877,10 +871,6 @@ public sealed class JiraApplicationTests
         public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; set; } = [];
 
         public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; set; } = [];
-
-        public bool CreatedThisMonthCountRequested { get; private set; }
-
-        public bool MovedToDoneThisMonthCountRequested { get; private set; }
 
         public bool CreatedThisMonthIssuesRequested { get; private set; }
 
@@ -914,25 +904,6 @@ public sealed class JiraApplicationTests
                 string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase)
                     ? (RejectIssueKeys.Count == 0 ? IssueKeys : RejectIssueKeys)
                     : IssueKeys);
-        }
-
-        public Task<ItemCount> GetIssueCountCreatedThisMonthAsync(
-            ProjectKey projectKey,
-            IReadOnlyList<IssueTypeName> issueTypes,
-            CancellationToken cancellationToken)
-        {
-            CreatedThisMonthCountRequested = true;
-            return Task.FromResult(CreatedThisMonthCount);
-        }
-
-        public Task<ItemCount> GetIssueCountMovedToDoneThisMonthAsync(
-            ProjectKey projectKey,
-            StatusName doneStatusName,
-            IReadOnlyList<IssueTypeName> issueTypes,
-            CancellationToken cancellationToken)
-        {
-            MovedToDoneThisMonthCountRequested = true;
-            return Task.FromResult(MovedToDoneThisMonthCount);
         }
 
         public Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(

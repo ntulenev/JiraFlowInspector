@@ -5,7 +5,7 @@ namespace JiraMetrics.Transport.Models;
 /// <summary>
 /// Jira current user API response.
 /// </summary>
-internal sealed class JiraCurrentUserResponse
+public sealed class JiraCurrentUserResponse
 {
     /// <summary>
     /// Gets user display name.

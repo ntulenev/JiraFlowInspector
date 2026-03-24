@@ -5,6 +5,10 @@ using System.Text;
 
 using JiraMetrics.Abstractions;
 using JiraMetrics.API;
+using JiraMetrics.API.FieldResolution;
+using JiraMetrics.API.Jql;
+using JiraMetrics.API.Mapping;
+using JiraMetrics.API.Search;
 using JiraMetrics.Logic;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -119,6 +123,17 @@ builder.Services.AddHttpClient<IJiraTransport, JiraTransport>((sp, http) =>
 builder.Services.AddSingleton<ISerializer, SimpleJsonSerializer>();
 builder.Services.AddSingleton<IJiraRetryPolicy, JiraRetryPolicy>();
 builder.Services.AddSingleton<ITransitionBuilder, TransitionBuilder>();
+builder.Services.AddTransient<IJiraSearchExecutor, JiraSearchExecutor>();
+builder.Services.AddTransient<IJiraFieldResolver, JiraFieldResolver>();
+builder.Services.AddTransient<ITeamTasksJqlBuilder, TeamTasksJqlBuilder>();
+builder.Services.AddTransient<IReleaseIssuesJqlBuilder, ReleaseIssuesJqlBuilder>();
+builder.Services.AddTransient<IGlobalIncidentsJqlBuilder, GlobalIncidentsJqlBuilder>();
+builder.Services.AddTransient<IJiraJqlFacade, JiraJqlFacade>();
+builder.Services.AddSingleton<JiraFieldValueReader>();
+builder.Services.AddTransient<IIssueTimelineMapper, IssueTimelineMapper>();
+builder.Services.AddTransient<IReleaseIssueMapper, ReleaseIssueMapper>();
+builder.Services.AddTransient<IGlobalIncidentMapper, GlobalIncidentMapper>();
+builder.Services.AddTransient<IJiraMapperFacade, JiraMapperFacade>();
 builder.Services.AddTransient<IJiraApiClient, JiraApiClient>();
 builder.Services.AddTransient<IJiraAnalyticsService, JiraAnalyticsService>();
 builder.Services.AddTransient<IJiraLogicService, JiraLogicService>();
