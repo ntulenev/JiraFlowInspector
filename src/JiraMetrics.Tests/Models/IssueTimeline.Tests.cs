@@ -114,4 +114,96 @@ public sealed class IssueTimelineTests
         issue.SubItemsCount.Should().Be(0);
         issue.HasPullRequest.Should().BeFalse();
     }
+
+    [Fact(DisplayName = "TryBuildWorkDuration returns cumulative duration until target status")]
+    [Trait("Category", "Unit")]
+    public void TryBuildWorkDurationWhenTargetStatusIsReachedReturnsDuration()
+    {
+        // Arrange
+        var created = DateTimeOffset.UtcNow.AddHours(-3);
+        var issue = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            DateTimeOffset.UtcNow,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("In Progress"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1)),
+                new TransitionEvent(
+                    new StatusName("In Progress"),
+                    new StatusName("Done"),
+                    created.AddHours(3),
+                    TimeSpan.FromHours(2))
+            ],
+            new PathKey("OPEN->IN PROGRESS->DONE"),
+            new PathLabel("Open -> In Progress -> Done"));
+
+        // Act
+        var duration = issue.TryBuildWorkDuration(new StatusName("Done"));
+
+        // Assert
+        duration.Should().Be(TimeSpan.FromHours(3));
+    }
+
+    [Fact(DisplayName = "TryBuildWorkDuration returns null when target status was not reached")]
+    [Trait("Category", "Unit")]
+    public void TryBuildWorkDurationWhenTargetStatusWasNotReachedReturnsNull()
+    {
+        // Arrange
+        var created = DateTimeOffset.UtcNow.AddHours(-2);
+        var issue = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            DateTimeOffset.UtcNow,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("In Progress"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1))
+            ],
+            new PathKey("OPEN->IN PROGRESS"),
+            new PathLabel("Open -> In Progress"));
+
+        // Act
+        var duration = issue.TryBuildWorkDuration(new StatusName("Done"));
+
+        // Assert
+        duration.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "TryBuildWorkDuration clamps negative total duration to zero")]
+    [Trait("Category", "Unit")]
+    public void TryBuildWorkDurationWhenTotalDurationIsNegativeReturnsZero()
+    {
+        // Arrange
+        var created = DateTimeOffset.UtcNow.AddHours(-1);
+        var issue = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            DateTimeOffset.UtcNow,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("Done"),
+                    created.AddMinutes(10),
+                    TimeSpan.FromHours(-1))
+            ],
+            new PathKey("OPEN->DONE"),
+            new PathLabel("Open -> Done"));
+
+        // Act
+        var duration = issue.TryBuildWorkDuration(new StatusName("Done"));
+
+        // Assert
+        duration.Should().Be(TimeSpan.Zero);
+    }
 }

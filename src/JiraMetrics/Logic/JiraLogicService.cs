@@ -80,7 +80,7 @@ public sealed class JiraLogicService : IJiraLogicService
         ArgumentNullException.ThrowIfNull(issues);
 
         return [.. issues
-            .Select(issue => (issue.IssueType, workDuration: TryBuildWorkDuration(issue, targetStatusName)))
+            .Select(issue => (issue.IssueType, workDuration: issue.TryBuildWorkDuration(targetStatusName)))
             .Where(static sample => sample.workDuration.HasValue)
             .GroupBy(static sample => sample.IssueType.Value, StringComparer.OrdinalIgnoreCase)
             .Select(group =>
@@ -135,23 +135,4 @@ public sealed class JiraLogicService : IJiraLogicService
             .ThenBy(group => group.PathLabel.Value, StringComparer.OrdinalIgnoreCase)];
     }
 
-    private static TimeSpan? TryBuildWorkDuration(IssueTimeline issue, StatusName targetStatusName)
-    {
-        var targetTransitionIndex = issue.Transitions
-            .Select(static (transition, index) => (transition, index))
-            .Where(item => string.Equals(item.transition.To.Value, targetStatusName.Value, StringComparison.OrdinalIgnoreCase))
-            .Select(static item => item.index)
-            .DefaultIfEmpty(-1)
-            .Max();
-        if (targetTransitionIndex < 0)
-        {
-            return null;
-        }
-
-        var duration = issue.Transitions
-            .Take(targetTransitionIndex + 1)
-            .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
-
-        return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
-    }
 }

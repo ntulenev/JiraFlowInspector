@@ -104,4 +104,35 @@ public sealed record IssueTimeline
     /// Gets a value indicating whether the issue has pull request(s).
     /// </summary>
     public bool HasPullRequest { get; }
+
+    /// <summary>
+    /// Tries to calculate cumulative work duration until the issue first reaches the target status.
+    /// </summary>
+    /// <param name="targetStatusName">Target status used as work completion point.</param>
+    /// <returns>
+    /// Total duration up to the last transition into the target status, or <c>null</c> when the target status
+    /// was never reached.
+    /// </returns>
+    public TimeSpan? TryBuildWorkDuration(StatusName targetStatusName)
+    {
+        var targetTransitionIndex = Transitions
+            .Select(static (transition, index) => (transition, index))
+            .Where(item => string.Equals(
+                item.transition.To.Value,
+                targetStatusName.Value,
+                StringComparison.OrdinalIgnoreCase))
+            .Select(static item => item.index)
+            .DefaultIfEmpty(-1)
+            .Max();
+        if (targetTransitionIndex < 0)
+        {
+            return null;
+        }
+
+        var duration = Transitions
+            .Take(targetTransitionIndex + 1)
+            .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
+
+        return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+    }
 }
