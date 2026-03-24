@@ -21,29 +21,42 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         var presentation = new FakePresentationService();
+        var dataFacade = CreateDataFacade(apiClient, presentation);
+        var analysisFacade = CreateAnalysisFacade(logic);
         var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+        Action act = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            pdfReportRenderer);
 
         // Assert
         act.Should()
             .Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "Constructor throws when API client is null")]
+    [Fact(DisplayName = "Constructor throws when data facade is null")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenApiClientIsNullThrowsArgumentNullException()
+    public void ConstructorWhenDataFacadeIsNullThrowsArgumentNullException()
     {
         // Arrange
         var settings = Options.Create(CreateSettings());
-        IJiraApiClient apiClient = null!;
         var logic = new JiraLogicService(new JiraAnalyticsService());
+        IJiraApplicationDataFacade dataFacade = null!;
+        var analysisFacade = CreateAnalysisFacade(logic);
         var presentation = new FakePresentationService();
         var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+        Action act = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -59,29 +72,42 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         var presentation = new FakePresentationService();
+        var dataFacade = CreateDataFacade(apiClient, presentation);
+        var analysisFacade = CreateAnalysisFacade(logic);
         var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+        Action act = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            pdfReportRenderer);
 
         // Assert
         act.Should()
             .Throw<ArgumentException>();
     }
 
-    [Fact(DisplayName = "Constructor throws when logic service is null")]
+    [Fact(DisplayName = "Constructor throws when analysis facade is null")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenLogicServiceIsNullThrowsArgumentNullException()
+    public void ConstructorWhenAnalysisFacadeIsNullThrowsArgumentNullException()
     {
         // Arrange
         var settings = Options.Create(CreateSettings());
         var apiClient = new FakeApiClient();
-        IJiraLogicService logic = null!;
         var presentation = new FakePresentationService();
+        var dataFacade = CreateDataFacade(apiClient, presentation);
+        IJiraApplicationAnalysisFacade analysisFacade = null!;
         var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+        Action act = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -97,10 +123,17 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         IJiraPresentationService presentation = null!;
+        var dataFacade = CreateDataFacade(apiClient, new FakePresentationService());
+        var analysisFacade = CreateAnalysisFacade(logic);
         var pdfReportRenderer = new FakePdfReportRenderer();
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+        Action act = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -116,10 +149,17 @@ public sealed class JiraApplicationTests
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
         var presentation = new FakePresentationService();
+        var dataFacade = CreateDataFacade(apiClient, presentation);
+        var analysisFacade = CreateAnalysisFacade(logic);
         IPdfReportRenderer pdfReportRenderer = null!;
 
         // Act
-        Action act = () => _ = new JiraApplication(settings, apiClient, logic, presentation, pdfReportRenderer);
+        Action act = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            pdfReportRenderer);
 
         // Assert
         act.Should()
@@ -142,8 +182,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings()),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -173,8 +213,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings()),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -201,8 +241,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings()),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -233,8 +273,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings([new IssueTypeName("Bug"), new IssueTypeName("Story")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -268,8 +308,8 @@ public sealed class JiraApplicationTests
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
                 bugIssueNames: [new IssueTypeName("Bug")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -312,8 +352,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -355,8 +395,8 @@ public sealed class JiraApplicationTests
                     new ProjectKey("RLS"),
                     "Processing",
                     "Change completion date"))),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -396,8 +436,8 @@ public sealed class JiraApplicationTests
                     new ProjectKey("RLS"),
                     "ORX",
                     "Change completion date"))),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -456,8 +496,8 @@ public sealed class JiraApplicationTests
                     "ORX",
                     "Change completion date"),
                 globalIncidentsReport: new GlobalIncidentsReportSettings(jqlFilter: "labels = SERVICE"))),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -510,8 +550,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -571,8 +611,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -627,8 +667,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -662,8 +702,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -704,8 +744,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -738,8 +778,8 @@ public sealed class JiraApplicationTests
         var pdfReportRenderer = new FakePdfReportRenderer();
         var app = new JiraApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -780,8 +820,8 @@ public sealed class JiraApplicationTests
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
                 showGeneralStatistics: false)),
-            apiClient,
-            logic,
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
             presentation,
             pdfReportRenderer);
 
@@ -795,6 +835,27 @@ public sealed class JiraApplicationTests
         pdfReportRenderer.LastReportData.Should().NotBeNull();
         pdfReportRenderer.LastReportData!.Settings.ShowGeneralStatistics.Should().BeFalse();
         pdfReportRenderer.LastReportData.OpenIssuesByStatus.Should().BeEmpty();
+    }
+
+    private static JiraApplicationDataFacade CreateDataFacade(
+        IJiraApiClient apiClient,
+        IJiraPresentationService presentationService)
+    {
+        ArgumentNullException.ThrowIfNull(apiClient);
+        ArgumentNullException.ThrowIfNull(presentationService);
+
+        return new JiraApplicationDataFacade(
+            apiClient,
+            new JiraReportContextLoader(apiClient),
+            new JiraIssueRatioLoader(apiClient),
+            new JiraIssueTimelineLoader(apiClient, presentationService));
+    }
+
+    private static JiraApplicationAnalysisFacade CreateAnalysisFacade(IJiraLogicService logicService)
+    {
+        ArgumentNullException.ThrowIfNull(logicService);
+
+        return new JiraApplicationAnalysisFacade(logicService);
     }
 
     private static AppSettings CreateSettings(
@@ -1266,4 +1327,8 @@ public sealed class JiraApplicationTests
         }
     }
 }
+
+
+
+
 

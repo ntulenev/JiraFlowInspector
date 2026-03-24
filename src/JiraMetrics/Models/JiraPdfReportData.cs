@@ -9,6 +9,70 @@ namespace JiraMetrics.Models;
 public sealed class JiraPdfReportData
 {
     /// <summary>
+    /// Creates aggregated PDF report data for a successful analysis run.
+    /// </summary>
+    /// <param name="settings">Application settings.</param>
+    /// <param name="reportContext">Preloaded report context.</param>
+    /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
+    /// <param name="bugRatio">Bug ratio snapshot.</param>
+    /// <param name="analysis">Issue analysis result.</param>
+    /// <param name="failures">Issue load failures.</param>
+    /// <returns>Aggregated PDF report data.</returns>
+    public static JiraPdfReportData Create(
+        AppSettings settings,
+        JiraReportContext reportContext,
+        IssueRatioSnapshot allTasksRatio,
+        IssueRatioSnapshot? bugRatio,
+        JiraIssueAnalysisResult analysis,
+        IReadOnlyList<LoadFailure> failures)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(reportContext);
+        ArgumentNullException.ThrowIfNull(allTasksRatio);
+        ArgumentNullException.ThrowIfNull(analysis);
+        ArgumentNullException.ThrowIfNull(failures);
+
+        if (analysis.Outcome != JiraIssueAnalysisOutcome.Success)
+        {
+            throw new InvalidOperationException(
+                "PDF report data can only be created for a successful analysis.");
+        }
+
+        if (analysis.PathSummary is null)
+        {
+            throw new InvalidOperationException(
+                "Successful analysis must include path summary data.");
+        }
+
+        return new JiraPdfReportData
+        {
+            Settings = settings,
+            SearchIssueCount = new ItemCount(reportContext.IssueKeys.Count),
+            ReleaseIssues = reportContext.ReleaseIssues,
+            GlobalIncidents = reportContext.GlobalIncidents,
+            AllTasksCreatedThisMonth = allTasksRatio.CreatedThisMonth,
+            AllTasksOpenThisMonth = allTasksRatio.OpenThisMonth,
+            AllTasksMovedToDoneThisMonth = allTasksRatio.MovedToDoneThisMonth,
+            AllTasksRejectedThisMonth = allTasksRatio.RejectedThisMonth,
+            AllTasksFinishedThisMonth = allTasksRatio.FinishedThisMonth,
+            BugCreatedThisMonth = bugRatio?.CreatedThisMonth,
+            BugMovedToDoneThisMonth = bugRatio?.MovedToDoneThisMonth,
+            BugRejectedThisMonth = bugRatio?.RejectedThisMonth,
+            BugFinishedThisMonth = bugRatio?.FinishedThisMonth,
+            BugOpenIssues = bugRatio?.OpenIssues ?? [],
+            BugDoneIssues = bugRatio?.DoneIssues ?? [],
+            BugRejectedIssues = bugRatio?.RejectedIssues ?? [],
+            OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
+            DoneIssues = analysis.DoneIssues,
+            DoneDaysAtWork75PerType = analysis.DoneDaysAtWork75PerType,
+            RejectedIssues = analysis.RejectedIssues,
+            PathSummary = analysis.PathSummary,
+            PathGroups = analysis.PathGroups,
+            Failures = failures
+        };
+    }
+
+    /// <summary>
     /// Gets or sets application settings.
     /// </summary>
     public required AppSettings Settings { get; init; }

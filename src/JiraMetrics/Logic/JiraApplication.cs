@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -13,8 +15,8 @@ namespace JiraMetrics.Logic;
 public sealed class JiraApplication : IJiraApplication
 {
     private readonly AppSettings _settings;
-    private readonly IJiraApiClient _apiClient;
-    private readonly IJiraLogicService _logicService;
+    private readonly IJiraApplicationDataFacade _dataFacade;
+    private readonly IJiraApplicationAnalysisFacade _analysisFacade;
     private readonly IJiraPresentationService _presentationService;
     private readonly IPdfReportRenderer _pdfReportRenderer;
 
@@ -22,23 +24,30 @@ public sealed class JiraApplication : IJiraApplication
     /// Initializes a new instance of the <see cref="JiraApplication"/> class.
     /// </summary>
     /// <param name="settings">Application settings options.</param>
-    /// <param name="apiClient">Jira API client.</param>
-    /// <param name="logicService">Domain logic service.</param>
+    /// <param name="dataFacade">Application data facade.</param>
+    /// <param name="analysisFacade">Application analysis facade.</param>
     /// <param name="presentationService">Presentation service.</param>
     /// <param name="pdfReportRenderer">PDF report renderer.</param>
     public JiraApplication(
         IOptions<AppSettings> settings,
-        IJiraApiClient apiClient,
-        IJiraLogicService logicService,
+        IJiraApplicationDataFacade dataFacade,
+        IJiraApplicationAnalysisFacade analysisFacade,
         IJiraPresentationService presentationService,
         IPdfReportRenderer pdfReportRenderer)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _settings = settings.Value ?? throw new ArgumentException("App settings value is required.", nameof(settings));
-        _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
-        _logicService = logicService ?? throw new ArgumentNullException(nameof(logicService));
-        _presentationService = presentationService ?? throw new ArgumentNullException(nameof(presentationService));
-        _pdfReportRenderer = pdfReportRenderer ?? throw new ArgumentNullException(nameof(pdfReportRenderer));
+        _settings = settings.Value ?? throw new ArgumentException(
+            "App settings value is required.",
+            nameof(settings));
+        ArgumentNullException.ThrowIfNull(dataFacade);
+        ArgumentNullException.ThrowIfNull(analysisFacade);
+        ArgumentNullException.ThrowIfNull(presentationService);
+        ArgumentNullException.ThrowIfNull(pdfReportRenderer);
+
+        _dataFacade = dataFacade;
+        _analysisFacade = analysisFacade;
+        _presentationService = presentationService;
+        _pdfReportRenderer = pdfReportRenderer;
     }
 
     /// <summary>
@@ -47,11 +56,184 @@ public sealed class JiraApplication : IJiraApplication
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
+        await AuthenticateAsync(cancellationToken).ConfigureAwait(false);
+
+        _presentationService.ShowReportPeriodContext(_settings.MonthLabel, _settings.CreatedAfter);
+        _presentationService.ShowSpacer();
+
+        ShowOptionalReportLoadingStarted();
+
+        var reportContext = await TryLoadSearchDataAsync(
+            () => _dataFacade.LoadReportContextAsync(_settings, cancellationToken)).ConfigureAwait(false);
+        if (reportContext is null)
+        {
+            return;
+        }
+
+        ShowOptionalReports(reportContext);
+
+        _presentationService.ShowAllTasksRatioLoadingStarted();
+        var allTasksRatio = await TryLoadSearchDataAsync(
+            () => _dataFacade.LoadIssueRatioAsync(_settings, [], cancellationToken)).ConfigureAwait(false);
+        if (allTasksRatio is null)
+        {
+            return;
+        }
+
+        _presentationService.ShowAllTasksRatioLoadingCompleted(
+            allTasksRatio.CreatedThisMonth,
+            allTasksRatio.MovedToDoneThisMonth,
+            allTasksRatio.RejectedThisMonth,
+            allTasksRatio.FinishedThisMonth);
+        _presentationService.ShowAllTasksRatio(
+            _settings.CustomFieldName,
+            _settings.CustomFieldValue,
+            allTasksRatio.CreatedThisMonth,
+            allTasksRatio.OpenThisMonth,
+            allTasksRatio.MovedToDoneThisMonth,
+            allTasksRatio.RejectedThisMonth,
+            allTasksRatio.FinishedThisMonth);
+        _presentationService.ShowSpacer();
+
+        IssueRatioSnapshot? bugRatio = null;
+        if (_settings.BugIssueNames.Count > 0)
+        {
+            _presentationService.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
+            bugRatio = await TryLoadSearchDataAsync(
+                () => _dataFacade.LoadIssueRatioAsync(
+                    _settings,
+                    _settings.BugIssueNames,
+                    cancellationToken)).ConfigureAwait(false);
+            if (bugRatio is null)
+            {
+                return;
+            }
+
+            _presentationService.ShowBugRatioLoadingCompleted(
+                bugRatio.CreatedThisMonth,
+                bugRatio.MovedToDoneThisMonth,
+                bugRatio.RejectedThisMonth,
+                bugRatio.FinishedThisMonth);
+            _presentationService.ShowBugRatio(
+                _settings.BugIssueNames,
+                _settings.CustomFieldName,
+                _settings.CustomFieldValue,
+                bugRatio.CreatedThisMonth,
+                bugRatio.MovedToDoneThisMonth,
+                bugRatio.RejectedThisMonth,
+                bugRatio.FinishedThisMonth,
+                bugRatio.OpenIssues,
+                bugRatio.DoneIssues,
+                bugRatio.RejectedIssues);
+            _presentationService.ShowSpacer();
+        }
+
+        _presentationService.ShowReportHeader(_settings, new ItemCount(reportContext.IssueKeys.Count));
+
+        var openIssuesSummaryShown = false;
+
+        void ShowOpenIssuesSummary()
+        {
+            if (openIssuesSummaryShown || !_settings.ShowGeneralStatistics)
+            {
+                return;
+            }
+
+            _presentationService.ShowOpenIssuesByStatusSummary(
+                reportContext.OpenIssuesByStatus,
+                _settings.DoneStatusName,
+                _settings.RejectStatusName);
+            _presentationService.ShowSpacer();
+            openIssuesSummaryShown = true;
+        }
+
+        if (reportContext.IssueKeys.Count == 0)
+        {
+            _presentationService.ShowNoIssuesMatchedFilter();
+            ShowOpenIssuesSummary();
+            return;
+        }
+
+        var loadResult = await _dataFacade.LoadIssueTimelinesAsync(
+            reportContext.IssueKeys,
+            reportContext.RejectIssueKeys,
+            cancellationToken).ConfigureAwait(false);
+        if (loadResult.DoneIssues.Count == 0)
+        {
+            _presentationService.ShowNoIssuesLoaded();
+            _presentationService.ShowFailures(loadResult.Failures);
+            ShowOpenIssuesSummary();
+            return;
+        }
+
+        _presentationService.ShowProcessingStep(
+            "Applying issue type and required-stage filters...");
+        var analysis = _analysisFacade.Analyze(
+            loadResult.DoneIssues,
+            loadResult.RejectIssues,
+            loadResult.Failures,
+            _settings);
+
+        if (analysis.Outcome == JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter)
+        {
+            _presentationService.ShowNoIssuesMatchedFilter();
+            _presentationService.ShowFailures(loadResult.Failures);
+            ShowOpenIssuesSummary();
+            return;
+        }
+
+        if (analysis.Outcome == JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage)
+        {
+            _presentationService.ShowNoIssuesMatchedRequiredStage();
+            _presentationService.ShowFailures(loadResult.Failures);
+            ShowOpenIssuesSummary();
+            return;
+        }
+
+        _presentationService.ShowProcessingStep(
+            "Calculating transition metrics and percentiles...");
+        _presentationService.ShowDoneIssuesTable(analysis.DoneIssues, _settings.DoneStatusName);
+        _presentationService.ShowSpacer();
+        _presentationService.ShowDoneDaysAtWork75PerType(
+            analysis.DoneDaysAtWork75PerType,
+            _settings.DoneStatusName);
+        _presentationService.ShowSpacer();
+
+        if (_settings.RejectStatusName is { } rejectStatusName)
+        {
+            _presentationService.ShowRejectedIssuesTable(analysis.RejectedIssues, rejectStatusName);
+            _presentationService.ShowSpacer();
+        }
+
+        _presentationService.ShowProcessingStep("Building path groups...");
+        _presentationService.ShowPathGroupsSummary(analysis.PathSummary!);
+        _presentationService.ShowSpacer();
+        _presentationService.ShowPathGroups(analysis.PathGroups);
+        ShowOpenIssuesSummary();
+
+        _presentationService.ShowProcessingStep("Rendering PDF report...");
+        _pdfReportRenderer.RenderReport(JiraPdfReportData.Create(
+            _settings,
+            reportContext,
+            allTasksRatio,
+            bugRatio,
+            analysis,
+            loadResult.Failures));
+
+        if (loadResult.Failures.Count > 0)
+        {
+            _presentationService.ShowSpacer();
+            _presentationService.ShowFailures(loadResult.Failures);
+        }
+    }
+
+    private async Task AuthenticateAsync(CancellationToken cancellationToken)
+    {
         _presentationService.ShowAuthenticationStarted();
 
         try
         {
-            var user = await _apiClient.GetCurrentUserAsync(cancellationToken).ConfigureAwait(false);
+            var user = await _dataFacade.GetCurrentUserAsync(cancellationToken).ConfigureAwait(false);
             _presentationService.ShowAuthenticationSucceeded(user);
         }
         catch (Exception ex)
@@ -59,147 +241,32 @@ public sealed class JiraApplication : IJiraApplication
             _presentationService.ShowAuthenticationFailed(ErrorMessage.FromException(ex));
             throw;
         }
+    }
 
-        _presentationService.ShowReportPeriodContext(_settings.MonthLabel, _settings.CreatedAfter);
-        _presentationService.ShowSpacer();
-
-        IReadOnlyList<IssueKey> issueKeys;
-        IReadOnlyList<IssueKey> rejectIssueKeys = [];
-        ItemCount? allTasksCreatedThisMonth = null;
-        ItemCount? allTasksOpenThisMonth = null;
-        ItemCount? allTasksMovedToDoneThisMonth = null;
-        ItemCount? allTasksRejectedThisMonth = null;
-        ItemCount? allTasksFinishedThisMonth = null;
-        ItemCount? bugCreatedThisMonth = null;
-        ItemCount? bugMovedToDoneThisMonth = null;
-        ItemCount? bugRejectedThisMonth = null;
-        ItemCount? bugFinishedThisMonth = null;
-        IReadOnlyList<IssueListItem> bugOpenIssues = [];
-        IReadOnlyList<IssueListItem> bugDoneIssues = [];
-        IReadOnlyList<IssueListItem> bugRejectedIssues = [];
-        IReadOnlyList<StatusIssueTypeSummary> openIssuesByStatus = [];
-        IReadOnlyList<ReleaseIssueItem> releaseIssues = [];
-        IReadOnlyList<GlobalIncidentItem> globalIncidents = [];
-
-        async Task<(ItemCount CreatedThisMonth, ItemCount OpenThisMonth, ItemCount MovedToDoneThisMonth, ItemCount RejectedThisMonth, ItemCount FinishedThisMonth, IReadOnlyList<IssueListItem> OpenIssues, IReadOnlyList<IssueListItem> DoneIssues, IReadOnlyList<IssueListItem> RejectedIssues)> LoadIssueRatioAsync(
-            IReadOnlyList<IssueTypeName> issueTypes)
+    private void ShowOptionalReportLoadingStarted()
+    {
+        if (_settings.ReleaseReport is not null)
         {
-            var createdIssues = await _apiClient.GetIssuesCreatedThisMonthAsync(
-                _settings.ProjectKey,
-                issueTypes,
-                cancellationToken).ConfigureAwait(false);
-            var doneIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
-                _settings.ProjectKey,
-                _settings.DoneStatusName,
-                issueTypes,
-                cancellationToken).ConfigureAwait(false);
-
-            IReadOnlyList<IssueListItem> rejectedIssues = [];
-            if (_settings.RejectStatusName is { } rejectStatusName)
-            {
-                rejectedIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
-                    _settings.ProjectKey,
-                    rejectStatusName,
-                    issueTypes,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            var doneKeys = doneIssues
-                .Select(static issue => issue.Key.Value)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var rejectedKeys = rejectedIssues
-                .Select(static issue => issue.Key.Value)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var finishedKeys = doneKeys
-                .Union(rejectedKeys, StringComparer.OrdinalIgnoreCase)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var openIssues = (IReadOnlyList<IssueListItem>)[.. createdIssues
-                .Where(issue => !finishedKeys.Contains(issue.Key.Value))
-                .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
-
-            return (
-                new ItemCount(createdIssues.Count),
-                new ItemCount(openIssues.Count),
-                new ItemCount(doneIssues.Count),
-                new ItemCount(rejectedIssues.Count),
-                new ItemCount(finishedKeys.Count),
-                openIssues,
-                doneIssues,
-                rejectedIssues);
+            _presentationService.ShowReleaseReportLoadingStarted();
         }
 
-        try
+        if (_settings.GlobalIncidentsReport is not null)
         {
-            issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
-                _settings.ProjectKey,
-                _settings.DoneStatusName,
-                _settings.CreatedAfter,
-                cancellationToken).ConfigureAwait(false);
-
-            if (_settings.RejectStatusName is { } rejectStatusName)
-            {
-                rejectIssueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
-                    _settings.ProjectKey,
-                    rejectStatusName,
-                    _settings.CreatedAfter,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            if (_settings.ReleaseReport is { } releaseReport)
-            {
-                _presentationService.ShowReleaseReportLoadingStarted();
-
-                releaseIssues = await _apiClient.GetReleaseIssuesForMonthAsync(
-                    releaseReport.ReleaseProjectKey,
-                    releaseReport.ProjectLabel,
-                    releaseReport.ReleaseDateFieldName,
-                    releaseReport.ComponentsFieldName,
-                    releaseReport.HotFixRules,
-                    releaseReport.RollbackFieldName,
-                    releaseReport.EnvironmentFieldName,
-                    releaseReport.EnvironmentFieldValue,
-                    cancellationToken).ConfigureAwait(false);
-            }
-
-            if (_settings.GlobalIncidentsReport is { } globalIncidentsReport)
-            {
-                _presentationService.ShowGlobalIncidentsReportLoadingStarted();
-
-                globalIncidents = await _apiClient
-                    .GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            if (_settings.ShowGeneralStatistics)
-            {
-                openIssuesByStatus = await _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
-                    _settings.ProjectKey,
-                    _settings.DoneStatusName,
-                    _settings.RejectStatusName,
-                    cancellationToken).ConfigureAwait(false);
-            }
+            _presentationService.ShowGlobalIncidentsReportLoadingStarted();
         }
-        catch (HttpRequestException ex)
-        {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
-        }
-        catch (InvalidOperationException ex)
-        {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
-        }
-        catch (System.Text.Json.JsonException ex)
-        {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
-        }
+    }
+
+    private void ShowOptionalReports(JiraReportContext reportContext)
+    {
+        ArgumentNullException.ThrowIfNull(reportContext);
 
         if (_settings.ReleaseReport is { } releaseReportSettings)
         {
             _presentationService.ShowSpacer();
-            _presentationService.ShowReleaseReport(releaseReportSettings, _settings.MonthLabel, releaseIssues);
+            _presentationService.ShowReleaseReport(
+                releaseReportSettings,
+                _settings.MonthLabel,
+                reportContext.ReleaseIssues);
             _presentationService.ShowSpacer();
         }
 
@@ -208,319 +275,31 @@ public sealed class JiraApplication : IJiraApplication
             _presentationService.ShowGlobalIncidentsReport(
                 globalIncidentsReportSettings,
                 _settings.MonthLabel,
-                globalIncidents);
+                reportContext.GlobalIncidents);
             _presentationService.ShowSpacer();
         }
+    }
 
+    private async Task<T?> TryLoadSearchDataAsync<T>(Func<Task<T>> loadAsync)
+        where T : class
+    {
         try
         {
-            _presentationService.ShowAllTasksRatioLoadingStarted();
-
-            (
-                allTasksCreatedThisMonth,
-                allTasksOpenThisMonth,
-                allTasksMovedToDoneThisMonth,
-                allTasksRejectedThisMonth,
-                allTasksFinishedThisMonth,
-                _,
-                _,
-                _) = await LoadIssueRatioAsync([]).ConfigureAwait(false);
-
-            _presentationService.ShowAllTasksRatioLoadingCompleted(
-                allTasksCreatedThisMonth.Value,
-                allTasksMovedToDoneThisMonth.Value,
-                allTasksRejectedThisMonth.Value,
-                allTasksFinishedThisMonth.Value);
+            return await loadAsync().ConfigureAwait(false);
         }
         catch (HttpRequestException ex)
         {
             _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
         }
         catch (InvalidOperationException ex)
         {
             _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
         }
-        catch (System.Text.Json.JsonException ex)
+        catch (JsonException ex)
         {
             _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-            return;
         }
 
-        if (allTasksCreatedThisMonth.HasValue
-            && allTasksOpenThisMonth.HasValue
-            && allTasksMovedToDoneThisMonth.HasValue
-            && allTasksRejectedThisMonth.HasValue
-            && allTasksFinishedThisMonth.HasValue)
-        {
-            _presentationService.ShowAllTasksRatio(
-                _settings.CustomFieldName,
-                _settings.CustomFieldValue,
-                allTasksCreatedThisMonth.Value,
-                allTasksOpenThisMonth.Value,
-                allTasksMovedToDoneThisMonth.Value,
-                allTasksRejectedThisMonth.Value,
-                allTasksFinishedThisMonth.Value);
-            _presentationService.ShowSpacer();
-        }
-
-        if (_settings.BugIssueNames.Count > 0)
-        {
-            try
-            {
-                _presentationService.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
-
-                (
-                    bugCreatedThisMonth,
-                    _,
-                    bugMovedToDoneThisMonth,
-                    bugRejectedThisMonth,
-                    bugFinishedThisMonth,
-                    bugOpenIssues,
-                    bugDoneIssues,
-                    bugRejectedIssues) = await LoadIssueRatioAsync(_settings.BugIssueNames).ConfigureAwait(false);
-
-                _presentationService.ShowBugRatioLoadingCompleted(
-                    bugCreatedThisMonth.Value,
-                    bugMovedToDoneThisMonth.Value,
-                    bugRejectedThisMonth.Value,
-                    bugFinishedThisMonth.Value);
-            }
-            catch (HttpRequestException ex)
-            {
-                _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-                return;
-            }
-            catch (InvalidOperationException ex)
-            {
-                _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-                return;
-            }
-            catch (System.Text.Json.JsonException ex)
-            {
-                _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
-                return;
-            }
-        }
-
-        if (bugCreatedThisMonth.HasValue
-            && bugMovedToDoneThisMonth.HasValue
-            && bugRejectedThisMonth.HasValue
-            && bugFinishedThisMonth.HasValue)
-        {
-            _presentationService.ShowBugRatio(
-                _settings.BugIssueNames,
-                _settings.CustomFieldName,
-                _settings.CustomFieldValue,
-                bugCreatedThisMonth.Value,
-                bugMovedToDoneThisMonth.Value,
-                bugRejectedThisMonth.Value,
-                bugFinishedThisMonth.Value,
-                bugOpenIssues,
-                bugDoneIssues,
-                bugRejectedIssues);
-            _presentationService.ShowSpacer();
-        }
-
-        _presentationService.ShowReportHeader(_settings, new ItemCount(issueKeys.Count));
-        var openIssuesSummaryShown = false;
-
-        void ShowOpenIssuesSummary()
-        {
-            if (openIssuesSummaryShown)
-            {
-                return;
-            }
-
-            if (!_settings.ShowGeneralStatistics)
-            {
-                return;
-            }
-
-            _presentationService.ShowOpenIssuesByStatusSummary(
-                openIssuesByStatus,
-                _settings.DoneStatusName,
-                _settings.RejectStatusName);
-            _presentationService.ShowSpacer();
-            openIssuesSummaryShown = true;
-        }
-
-        if (issueKeys.Count == 0)
-        {
-            _presentationService.ShowNoIssuesMatchedFilter();
-            ShowOpenIssuesSummary();
-            return;
-        }
-
-        var uniqueIssueKeysToLoad = issueKeys
-            .Concat(rejectIssueKeys)
-            .Select(static key => key.Value)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
-
-        _presentationService.ShowIssueLoadingStarted(new ItemCount(uniqueIssueKeysToLoad));
-
-        var issues = new List<IssueTimeline>();
-        var rejectIssues = new List<IssueTimeline>();
-        var loadedIssuesByKey = new Dictionary<string, IssueTimeline>(StringComparer.OrdinalIgnoreCase);
-        var failures = new List<LoadFailure>();
-
-        foreach (var issueKey in issueKeys)
-        {
-            try
-            {
-                var issue = await _apiClient.GetIssueTimelineAsync(issueKey, cancellationToken).ConfigureAwait(false);
-                issues.Add(issue);
-                loadedIssuesByKey[issue.Key.Value] = issue;
-                _presentationService.ShowIssueLoaded(issueKey);
-            }
-            catch (HttpRequestException ex)
-            {
-                failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-                _presentationService.ShowIssueFailed(issueKey);
-            }
-            catch (InvalidOperationException ex)
-            {
-                failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-                _presentationService.ShowIssueFailed(issueKey);
-            }
-            catch (System.Text.Json.JsonException ex)
-            {
-                failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-                _presentationService.ShowIssueFailed(issueKey);
-            }
-        }
-
-        if (_settings.RejectStatusName is not null && rejectIssueKeys.Count > 0)
-        {
-            foreach (var issueKey in rejectIssueKeys)
-            {
-                if (loadedIssuesByKey.TryGetValue(issueKey.Value, out var loadedIssue))
-                {
-                    rejectIssues.Add(loadedIssue);
-                    continue;
-                }
-
-                try
-                {
-                    var issue = await _apiClient.GetIssueTimelineAsync(issueKey, cancellationToken).ConfigureAwait(false);
-                    rejectIssues.Add(issue);
-                    loadedIssuesByKey[issue.Key.Value] = issue;
-                    _presentationService.ShowIssueLoaded(issueKey);
-                }
-                catch (HttpRequestException ex)
-                {
-                    failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-                    _presentationService.ShowIssueFailed(issueKey);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-                    _presentationService.ShowIssueFailed(issueKey);
-                }
-                catch (System.Text.Json.JsonException ex)
-                {
-                    failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-                    _presentationService.ShowIssueFailed(issueKey);
-                }
-            }
-        }
-
-        _presentationService.ShowIssueLoadingCompleted(new ItemCount(loadedIssuesByKey.Count), new ItemCount(failures.Count));
-        _presentationService.ShowSpacer();
-
-        if (issues.Count == 0)
-        {
-            _presentationService.ShowNoIssuesLoaded();
-            _presentationService.ShowFailures(failures);
-            ShowOpenIssuesSummary();
-            return;
-        }
-
-        _presentationService.ShowProcessingStep("Applying issue type and required-stage filters...");
-        var issuesByType = _logicService.FilterIssuesByIssueTypes(issues, _settings.IssueTypes);
-        if (issuesByType.Count == 0)
-        {
-            _presentationService.ShowNoIssuesMatchedFilter();
-            _presentationService.ShowFailures(failures);
-            ShowOpenIssuesSummary();
-            return;
-        }
-
-        var filteredIssues = _logicService.FilterIssuesByRequiredStage(issuesByType, _settings.RequiredPathStages);
-        if (filteredIssues.Count == 0)
-        {
-            _presentationService.ShowNoIssuesMatchedRequiredStage();
-            _presentationService.ShowFailures(failures);
-            ShowOpenIssuesSummary();
-            return;
-        }
-
-        _presentationService.ShowProcessingStep("Calculating transition metrics and percentiles...");
-        var doneDaysAtWork75PerType = _logicService.BuildDaysAtWork75PerType(filteredIssues, _settings.DoneStatusName);
-
-        _presentationService.ShowDoneIssuesTable(filteredIssues, _settings.DoneStatusName);
-        _presentationService.ShowSpacer();
-        _presentationService.ShowDoneDaysAtWork75PerType(doneDaysAtWork75PerType, _settings.DoneStatusName);
-        _presentationService.ShowSpacer();
-
-        IReadOnlyList<IssueTimeline> filteredRejectedIssues = [];
-        if (_settings.RejectStatusName is { } rejectStatus)
-        {
-            var rejectIssuesByType = _logicService.FilterIssuesByIssueTypes(rejectIssues, _settings.IssueTypes);
-            filteredRejectedIssues = _logicService.FilterIssuesByRequiredStage(rejectIssuesByType, _settings.RequiredPathStages);
-            _presentationService.ShowRejectedIssuesTable(filteredRejectedIssues, rejectStatus);
-            _presentationService.ShowSpacer();
-        }
-
-        var groupedIssues = filteredIssues
-            .Where(static issue => issue.HasPullRequest)
-            .ToList();
-        _presentationService.ShowProcessingStep("Building path groups...");
-        var groups = _logicService.BuildPathGroups(groupedIssues);
-        var pathGroupsSummary = new PathGroupsSummary(
-            new ItemCount(issues.Count),
-            new ItemCount(groupedIssues.Count),
-            new ItemCount(failures.Count),
-            new ItemCount(groups.Count));
-        _presentationService.ShowPathGroupsSummary(pathGroupsSummary);
-        _presentationService.ShowSpacer();
-        _presentationService.ShowPathGroups(groups);
-        ShowOpenIssuesSummary();
-
-        _presentationService.ShowProcessingStep("Rendering PDF report...");
-        _pdfReportRenderer.RenderReport(new JiraPdfReportData
-        {
-            Settings = _settings,
-            SearchIssueCount = new ItemCount(issueKeys.Count),
-            ReleaseIssues = releaseIssues,
-            GlobalIncidents = globalIncidents,
-            AllTasksCreatedThisMonth = allTasksCreatedThisMonth,
-            AllTasksOpenThisMonth = allTasksOpenThisMonth,
-            AllTasksMovedToDoneThisMonth = allTasksMovedToDoneThisMonth,
-            AllTasksRejectedThisMonth = allTasksRejectedThisMonth,
-            AllTasksFinishedThisMonth = allTasksFinishedThisMonth,
-            BugCreatedThisMonth = bugCreatedThisMonth,
-            BugMovedToDoneThisMonth = bugMovedToDoneThisMonth,
-            BugRejectedThisMonth = bugRejectedThisMonth,
-            BugFinishedThisMonth = bugFinishedThisMonth,
-            BugOpenIssues = bugOpenIssues,
-            BugDoneIssues = bugDoneIssues,
-            BugRejectedIssues = bugRejectedIssues,
-            OpenIssuesByStatus = openIssuesByStatus,
-            DoneIssues = filteredIssues,
-            DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
-            RejectedIssues = filteredRejectedIssues,
-            PathSummary = pathGroupsSummary,
-            PathGroups = groups,
-            Failures = failures
-        });
-
-        if (failures.Count > 0)
-        {
-            _presentationService.ShowSpacer();
-            _presentationService.ShowFailures(failures);
-        }
+        return null;
     }
 }
