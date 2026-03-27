@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
@@ -144,3 +143,4 @@ internal sealed class JiraIssueTimelineLoader
         IssueTimeline? Issue,
         LoadFailure? Failure);
 }
+

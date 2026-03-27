@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -568,3 +567,4 @@ public sealed class JiraApplication : IJiraApplication
         return null;
     }
 }
+

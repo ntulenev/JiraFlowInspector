@@ -1,6 +1,5 @@
 using System.Net;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models.Configuration;
 
 using Microsoft.Extensions.Options;
@@ -57,3 +56,4 @@ public sealed class JiraRetryPolicy : IJiraRetryPolicy
     private const int BASE_DELAY_MS = 200;
     private readonly JiraOptions _options;
 }
+

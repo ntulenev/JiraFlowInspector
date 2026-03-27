@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 
 using QuestPDF.Fluent;
@@ -50,3 +49,4 @@ public sealed class PdfContentComposer : IPdfContentComposer
         }
     }
 }
+

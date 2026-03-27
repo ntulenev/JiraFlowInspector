@@ -1,6 +1,5 @@
 using FluentAssertions;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -1600,6 +1599,7 @@ public sealed class JiraApplicationTests
         }
     }
 }
+
 
 
 

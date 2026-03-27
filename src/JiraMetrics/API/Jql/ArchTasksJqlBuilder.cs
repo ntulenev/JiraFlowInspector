@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models.Configuration;
 
 using Microsoft.Extensions.Options;
@@ -26,3 +25,4 @@ public sealed class ArchTasksJqlBuilder : IArchTasksJqlBuilder
     private readonly JiraMetrics.Models.ValueObjects.ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591
+

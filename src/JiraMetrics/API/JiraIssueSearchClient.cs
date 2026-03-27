@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
@@ -78,3 +77,4 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
         return _mapperFacade.MapStatusIssueTypeSummaries(issues);
     }
 }
+

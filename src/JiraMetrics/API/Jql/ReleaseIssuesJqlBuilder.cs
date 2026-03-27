@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Helpers;
@@ -57,3 +56,4 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
     private readonly ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591
+

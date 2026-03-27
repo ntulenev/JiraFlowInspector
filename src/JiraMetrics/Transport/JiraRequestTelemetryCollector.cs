@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 
 namespace JiraMetrics.Transport;
@@ -126,3 +125,4 @@ public sealed class JiraRequestTelemetryCollector : IJiraRequestTelemetryCollect
         public TimeSpan MaxDuration { get; set; }
     }
 }
+

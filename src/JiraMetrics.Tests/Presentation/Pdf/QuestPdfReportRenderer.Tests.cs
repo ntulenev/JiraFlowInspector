@@ -2,7 +2,6 @@ using System.Globalization;
 
 using FluentAssertions;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -224,3 +223,4 @@ public sealed class QuestPdfReportRendererTests
         };
     }
 }
+

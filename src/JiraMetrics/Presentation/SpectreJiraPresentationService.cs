@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -467,3 +466,4 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     private static bool CanAnimatePendingLoader() =>
         !Console.IsOutputRedirected && AnsiConsole.Console.GetType().Name != "TestConsole";
 }
+

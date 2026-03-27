@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
@@ -344,3 +343,4 @@ public sealed record ReleaseIssueMappingContext(
     string? EnvironmentFieldId,
     string? EnvironmentFieldName);
 #pragma warning restore CS1591
+

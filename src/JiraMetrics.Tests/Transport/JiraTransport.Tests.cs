@@ -4,7 +4,6 @@ using System.Text.Json;
 
 using FluentAssertions;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Transport;
 using JiraMetrics.Transport.Models;
@@ -468,3 +467,4 @@ public sealed class JiraTransportTests
     }
 
 }
+

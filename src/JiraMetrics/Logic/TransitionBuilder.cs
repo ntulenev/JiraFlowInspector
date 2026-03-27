@@ -1,6 +1,5 @@
 using System.Collections.Frozen;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -111,3 +110,4 @@ public sealed class TransitionBuilder : ITransitionBuilder
     private readonly bool _excludeWeekend;
     private readonly FrozenSet<DateOnly> _excludedDays;
 }
+

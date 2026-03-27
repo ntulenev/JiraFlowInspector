@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.Helpers;
 using JiraMetrics.Models.Configuration;
@@ -96,3 +95,4 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
     private readonly ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591
+

@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 
 namespace JiraMetrics.Logic;
@@ -17,3 +16,4 @@ internal sealed class NoOpJiraRequestTelemetryCollector : IJiraRequestTelemetryC
 
     public JiraRequestTelemetrySummary GetSummary() => new(0, 0, 0, TimeSpan.Zero, []);
 }
+

@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.API.Mapping;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -150,3 +149,4 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         return _mapperFacade.MapGlobalIncidents(issues, context);
     }
 }
+

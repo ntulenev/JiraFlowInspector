@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
@@ -26,3 +25,4 @@ public sealed class PdfReportFileStore : IPdfReportFileStore
         File.WriteAllBytes(outputPath, pdfContent);
     }
 }
+

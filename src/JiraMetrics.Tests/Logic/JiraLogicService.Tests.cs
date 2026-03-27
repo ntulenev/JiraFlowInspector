@@ -1,6 +1,5 @@
 using FluentAssertions;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
@@ -274,3 +273,4 @@ public sealed class JiraLogicServiceTests
             pathLabel);
     }
 }
+

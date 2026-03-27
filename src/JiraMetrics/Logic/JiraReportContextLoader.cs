@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -158,3 +157,4 @@ internal sealed class JiraReportContextLoader
             cancellationToken);
     }
 }
+

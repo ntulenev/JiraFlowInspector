@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 
@@ -137,3 +136,4 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
     private readonly IPdfReportLauncher _pdfReportLauncher;
     private readonly IPdfContentComposer _pdfContentComposer;
 }
+

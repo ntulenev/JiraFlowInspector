@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
@@ -252,3 +251,4 @@ public sealed record GlobalIncidentMappingContext(
     string UrgencyFieldName,
     IReadOnlyDictionary<string, string?> AdditionalFieldIds);
 #pragma warning restore CS1591
+

@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
@@ -32,3 +31,4 @@ internal sealed class JiraUserClient : IJiraUserClient
         return new JiraAuthUser(new UserDisplayName(displayName), response.EmailAddress, response.AccountId);
     }
 }
+

@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -79,3 +78,4 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
     private readonly IGlobalIncidentsJqlBuilder _globalIncidentsJqlBuilder;
 }
 #pragma warning restore CS1591
+

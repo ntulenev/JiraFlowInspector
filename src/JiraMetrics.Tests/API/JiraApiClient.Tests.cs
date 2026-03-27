@@ -2,7 +2,6 @@ using System.Text.Json;
 
 using FluentAssertions;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.API;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.API.Jql;
@@ -2011,3 +2010,4 @@ public sealed class JiraApiClientTests
 
     private static readonly string[] _bulkTimelineIssueKeys = ["AAA-1", "AAA-2"];
 }
+

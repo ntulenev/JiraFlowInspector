@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text;
 
-using JiraMetrics.Abstractions;
 
 namespace JiraMetrics.Transport;
 
@@ -133,3 +132,4 @@ public sealed class JiraTransport : IJiraTransport
     private readonly ISerializer _serializer;
     private readonly IJiraRequestTelemetryCollector _telemetryCollector;
 }
+

@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
 
@@ -215,3 +214,4 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
     private static readonly string[] _bulkChangelogFieldIds = ["status"];
 }
 #pragma warning restore CS1591
+

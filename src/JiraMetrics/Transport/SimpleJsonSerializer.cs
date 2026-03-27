@@ -1,6 +1,5 @@
 using System.Text.Json;
 
-using JiraMetrics.Abstractions;
 
 namespace JiraMetrics.Transport;
 
@@ -25,3 +24,4 @@ public sealed class SimpleJsonSerializer : ISerializer
         PropertyNameCaseInsensitive = true
     };
 }
+

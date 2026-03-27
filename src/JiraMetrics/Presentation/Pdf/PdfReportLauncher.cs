@@ -1,6 +1,5 @@
 using System.Diagnostics;
 
-using JiraMetrics.Abstractions;
 
 namespace JiraMetrics.Presentation.Pdf;
 
@@ -21,3 +20,4 @@ public sealed class PdfReportLauncher : IPdfReportLauncher
         });
     }
 }
+

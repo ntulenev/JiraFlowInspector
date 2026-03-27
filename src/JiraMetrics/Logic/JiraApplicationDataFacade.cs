@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -124,3 +123,4 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
                 .OrderBy(static value => value, StringComparer.OrdinalIgnoreCase));
     }
 }
+

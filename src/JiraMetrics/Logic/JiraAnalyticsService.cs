@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Logic;
@@ -43,3 +42,4 @@ public sealed class JiraAnalyticsService : IJiraAnalyticsService
     }
 
 }
+

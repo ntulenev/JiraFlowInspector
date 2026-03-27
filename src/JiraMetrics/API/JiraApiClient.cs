@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -142,3 +141,4 @@ public sealed class JiraApiClient : IJiraApiClient
         CancellationToken cancellationToken) =>
         _issueTimelineClient.GetIssueTimelinesAsync(issueKeys, cancellationToken);
 }
+

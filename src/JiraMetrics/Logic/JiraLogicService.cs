@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
@@ -136,3 +135,4 @@ public sealed class JiraLogicService : IJiraLogicService
     }
 
 }
+

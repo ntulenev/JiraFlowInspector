@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
@@ -63,3 +62,4 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     private readonly IGlobalIncidentMapper _globalIncidentMapper;
 }
 #pragma warning restore CS1591
+

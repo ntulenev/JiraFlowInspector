@@ -153,7 +153,7 @@ public sealed record AppSettings
         GlobalIncidentsReport = globalIncidentsReport;
         PdfReport = pdfReport ?? new PdfReportSettings();
         PullRequestFieldName = string.IsNullOrWhiteSpace(pullRequestFieldName)
-            ? null!
+            ? null
             : pullRequestFieldName.Trim();
     }
 
@@ -270,5 +270,5 @@ public sealed record AppSettings
     /// <summary>
     /// Gets pull request field name or id used for code-activity detection.
     /// </summary>
-    public string PullRequestFieldName { get; }
+    public string? PullRequestFieldName { get; }
 }

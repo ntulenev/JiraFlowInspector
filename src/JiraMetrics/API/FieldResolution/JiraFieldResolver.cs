@@ -1,4 +1,3 @@
-using JiraMetrics.Abstractions;
 using JiraMetrics.Transport.Models;
 
 #pragma warning disable CS1591
@@ -267,3 +266,4 @@ public readonly record struct ResolvedJiraField(string FieldName, string FieldId
 
 public sealed record ResolvedHotFixRule(string FieldName, string? FieldId, HashSet<string> Values);
 #pragma warning restore CS1591
+
