@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 using JiraMetrics.Abstractions;
@@ -15,15 +16,22 @@ public sealed class JiraTransport : IJiraTransport
     /// <param name="http">HTTP client instance.</param>
     /// <param name="retryPolicy">Retry policy instance.</param>
     /// <param name="serializer">Serializer instance.</param>
-    public JiraTransport(HttpClient http, IJiraRetryPolicy retryPolicy, ISerializer serializer)
+    /// <param name="telemetryCollector">Transport telemetry collector.</param>
+    public JiraTransport(
+        HttpClient http,
+        IJiraRetryPolicy retryPolicy,
+        ISerializer serializer,
+        IJiraRequestTelemetryCollector telemetryCollector)
     {
         ArgumentNullException.ThrowIfNull(http);
         ArgumentNullException.ThrowIfNull(retryPolicy);
         ArgumentNullException.ThrowIfNull(serializer);
+        ArgumentNullException.ThrowIfNull(telemetryCollector);
 
         _http = http;
         _retryPolicy = retryPolicy;
         _serializer = serializer;
+        _telemetryCollector = telemetryCollector;
     }
 
     /// <inheritdoc />
@@ -68,15 +76,24 @@ public sealed class JiraTransport : IJiraTransport
 
         while (true)
         {
+            using var request = requestFactory(url);
+            var stopwatch = Stopwatch.StartNew();
+
             try
             {
-                using var request = requestFactory(url);
                 using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                stopwatch.Stop();
+                _telemetryCollector.Record(
+                    request.Method.Method,
+                    url,
+                    stopwatch.Elapsed,
+                    Encoding.UTF8.GetByteCount(body),
+                    isRetry: attempt > 0);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                    return _serializer.Deserialize<TDto>(json);
+                    return _serializer.Deserialize<TDto>(body);
                 }
 
                 if (_retryPolicy.TryGetDelay(attempt + 1, response.StatusCode, null, out var delay))
@@ -86,14 +103,27 @@ public sealed class JiraTransport : IJiraTransport
                     continue;
                 }
 
-                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
                 throw new HttpRequestException(
                     $"Jira API error {(int)response.StatusCode} {response.ReasonPhrase}. Url={url}. Body={body}");
             }
-            catch (HttpRequestException ex) when (_retryPolicy.TryGetDelay(attempt + 1, null, ex, out var delay))
+            catch (HttpRequestException ex)
             {
-                attempt++;
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                stopwatch.Stop();
+                _telemetryCollector.Record(
+                    request.Method.Method,
+                    url,
+                    stopwatch.Elapsed,
+                    responseBytes: 0,
+                    isRetry: attempt > 0);
+
+                if (_retryPolicy.TryGetDelay(attempt + 1, null, ex, out var delay))
+                {
+                    attempt++;
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                throw;
             }
         }
     }
@@ -101,4 +131,5 @@ public sealed class JiraTransport : IJiraTransport
     private readonly HttpClient _http;
     private readonly IJiraRetryPolicy _retryPolicy;
     private readonly ISerializer _serializer;
+    private readonly IJiraRequestTelemetryCollector _telemetryCollector;
 }

@@ -121,6 +121,7 @@ builder.Services.AddHttpClient<IJiraTransport, JiraTransport>((sp, http) =>
 });
 
 builder.Services.AddSingleton<ISerializer, SimpleJsonSerializer>();
+builder.Services.AddSingleton<IJiraRequestTelemetryCollector, JiraRequestTelemetryCollector>();
 builder.Services.AddSingleton<IJiraRetryPolicy, JiraRetryPolicy>();
 builder.Services.AddSingleton<ITransitionBuilder, TransitionBuilder>();
 builder.Services.AddTransient<IJiraSearchExecutor, JiraSearchExecutor>();

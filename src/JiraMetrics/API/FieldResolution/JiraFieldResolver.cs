@@ -66,53 +66,23 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
         }
 
         var trimmedFieldName = fieldName.Trim();
+        lock (_cacheSync)
+        {
+            if (_resolvedFieldIds.TryGetValue(trimmedFieldName, out var cachedFieldId))
+            {
+                return cachedFieldId;
+            }
+        }
+
         var candidates = await GetFieldsAsync(cancellationToken).ConfigureAwait(false);
+        var resolvedFieldId = ResolveFieldId(trimmedFieldName, candidates);
 
-        var idMatch = candidates.FirstOrDefault(field =>
-            string.Equals(field.Id!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(idMatch?.Id))
+        lock (_cacheSync)
         {
-            return idMatch.Id.Trim();
+            _resolvedFieldIds[trimmedFieldName] = resolvedFieldId;
         }
 
-        var exactNameMatches = candidates
-            .Where(field =>
-                !string.IsNullOrWhiteSpace(field.Name)
-                && string.Equals(field.Name!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        if (exactNameMatches.Count > 0)
-        {
-            var preferredExactName = exactNameMatches
-                .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
-                .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
-                .First();
-            return preferredExactName.Id!.Trim();
-        }
-
-        var normalizedTarget = NormalizeFieldName(trimmedFieldName);
-        if (string.IsNullOrEmpty(normalizedTarget))
-        {
-            return null;
-        }
-
-        var normalizedMatches = candidates
-            .Where(field =>
-                !string.IsNullOrWhiteSpace(field.Name)
-                && string.Equals(
-                    NormalizeFieldName(field.Name),
-                    normalizedTarget,
-                    StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        if (normalizedMatches.Count > 0)
-        {
-            var preferredNormalized = normalizedMatches
-                .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
-                .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
-                .First();
-            return preferredNormalized.Id!.Trim();
-        }
-
-        return null;
+        return resolvedFieldId;
     }
 
     public async Task<IReadOnlyList<ResolvedHotFixRule>> ResolveHotFixRulesAsync(
@@ -175,6 +145,42 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
             return _cachedFields;
         }
 
+        Task<IReadOnlyList<JiraFieldResponse>>? cachedFieldsTask;
+        lock (_cacheSync)
+        {
+            cachedFieldsTask = _cachedFieldsTask;
+            if (cachedFieldsTask is null)
+            {
+                cachedFieldsTask = LoadFieldsAsync(cancellationToken);
+                _cachedFieldsTask = cachedFieldsTask;
+            }
+        }
+
+        try
+        {
+            return await cachedFieldsTask.ConfigureAwait(false);
+        }
+        catch
+        {
+            lock (_cacheSync)
+            {
+                if (ReferenceEquals(_cachedFieldsTask, cachedFieldsTask))
+                {
+                    _cachedFieldsTask = null;
+                }
+            }
+
+            throw;
+        }
+    }
+
+    private async Task<IReadOnlyList<JiraFieldResponse>> LoadFieldsAsync(CancellationToken cancellationToken)
+    {
+        if (_cachedFields is not null)
+        {
+            return _cachedFields;
+        }
+
         var response = await _transport
             .GetAsync<List<JiraFieldResponse>>(
                 new Uri("rest/api/3/field", UriKind.Relative),
@@ -190,6 +196,57 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
         return _cachedFields;
     }
 
+    private static string? ResolveFieldId(
+        string trimmedFieldName,
+        IReadOnlyList<JiraFieldResponse> candidates)
+    {
+        var idMatch = candidates.FirstOrDefault(field =>
+            string.Equals(field.Id!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(idMatch?.Id))
+        {
+            return idMatch.Id.Trim();
+        }
+
+        var exactNameMatches = candidates
+            .Where(field =>
+                !string.IsNullOrWhiteSpace(field.Name)
+                && string.Equals(field.Name!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (exactNameMatches.Count > 0)
+        {
+            var preferredExactName = exactNameMatches
+                .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
+                .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
+                .First();
+            return preferredExactName.Id!.Trim();
+        }
+
+        var normalizedTarget = NormalizeFieldName(trimmedFieldName);
+        if (string.IsNullOrEmpty(normalizedTarget))
+        {
+            return null;
+        }
+
+        var normalizedMatches = candidates
+            .Where(field =>
+                !string.IsNullOrWhiteSpace(field.Name)
+                && string.Equals(
+                    NormalizeFieldName(field.Name),
+                    normalizedTarget,
+                    StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (normalizedMatches.Count > 0)
+        {
+            var preferredNormalized = normalizedMatches
+                .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
+                .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
+                .First();
+            return preferredNormalized.Id!.Trim();
+        }
+
+        return null;
+    }
+
     private static string NormalizeFieldName(string value) =>
         new([.. value
             .Where(static ch => char.IsLetterOrDigit(ch))
@@ -199,7 +256,11 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
         fieldId.StartsWith("customfield_", StringComparison.OrdinalIgnoreCase);
 
     private readonly IJiraTransport _transport;
+    private readonly object _cacheSync = new();
     private IReadOnlyList<JiraFieldResponse>? _cachedFields;
+    private Task<IReadOnlyList<JiraFieldResponse>>? _cachedFieldsTask;
+    private readonly Dictionary<string, string?> _resolvedFieldIds =
+        new(StringComparer.OrdinalIgnoreCase);
 }
 
 public readonly record struct ResolvedJiraField(string FieldName, string FieldId);

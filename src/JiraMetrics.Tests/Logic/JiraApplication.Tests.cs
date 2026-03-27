@@ -167,6 +167,7 @@ public sealed class JiraApplicationTests
         // Assert
         presentation.NoIssuesMatchedFilterShown.Should().BeTrue();
         presentation.DoneIssuesTableShown.Should().BeFalse();
+        presentation.ExecutionSummaryShown.Should().BeTrue();
     }
 
     [Fact(DisplayName = "RunAsync shows failures when issue loading fails")]
@@ -511,7 +512,7 @@ public sealed class JiraApplicationTests
         headerIndex.Should().BeGreaterThanOrEqualTo(0);
         periodContextIndex.Should().BeLessThan(releaseLoadingStartIndex);
         releaseLoadingStartIndex.Should().BeLessThan(releaseIndex);
-        releaseIndex.Should().BeLessThan(bugRatioLoadingStartIndex);
+        bugRatioLoadingStartIndex.Should().BeLessThan(bugRatioIndex);
         releaseIndex.Should().BeLessThan(bugRatioIndex);
         releaseIndex.Should().BeLessThan(headerIndex);
     }
@@ -1374,6 +1375,8 @@ public sealed class JiraApplicationTests
 
         public PathGroupsSummary? PathGroupsSummary { get; private set; }
 
+        public bool ExecutionSummaryShown { get; private set; }
+
         public void ShowAuthenticationStarted()
         {
         }
@@ -1583,6 +1586,12 @@ public sealed class JiraApplicationTests
             {
                 FailuresShown = true;
             }
+        }
+
+        public void ShowExecutionSummary(TimeSpan totalDuration, JiraRequestTelemetrySummary requestTelemetry)
+        {
+            ExecutionSummaryShown = true;
+            Calls.Add("ExecutionSummary");
         }
     }
 }

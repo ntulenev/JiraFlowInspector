@@ -8,6 +8,12 @@ namespace JiraMetrics.Transport.Models;
 public sealed class JiraBulkChangelogFetchRequest
 {
     /// <summary>
+    /// Gets or sets filtered field ids.
+    /// </summary>
+    [JsonPropertyName("fieldIds")]
+    public IReadOnlyList<string>? FieldIds { get; init; }
+
+    /// <summary>
     /// Gets or sets requested issue ids or keys.
     /// </summary>
     [JsonPropertyName("issueIdsOrKeys")]

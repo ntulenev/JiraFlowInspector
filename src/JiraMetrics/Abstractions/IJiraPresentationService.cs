@@ -271,6 +271,13 @@ public interface IJiraPresentationService
     void ShowPathGroups(IReadOnlyList<PathGroup> groups);
 
     /// <summary>
+    /// Shows final execution summary including total duration and Jira HTTP telemetry.
+    /// </summary>
+    /// <param name="totalDuration">Total application run duration.</param>
+    /// <param name="requestTelemetry">Aggregated Jira HTTP telemetry.</param>
+    void ShowExecutionSummary(TimeSpan totalDuration, JiraRequestTelemetrySummary requestTelemetry);
+
+    /// <summary>
     /// Shows failed issue table.
     /// </summary>
     /// <param name="failures">Failures.</param>

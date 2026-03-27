@@ -87,6 +87,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
                     new Uri("rest/api/3/changelog/bulkfetch", UriKind.Relative),
                     new JiraBulkChangelogFetchRequest
                     {
+                        FieldIds = _bulkChangelogFieldIds,
                         IssueIdsOrKeys = [.. issueKeys.Select(static key => key.Value)],
                         MaxResults = BULK_CHANGELOG_PAGE_SIZE,
                         NextPageToken = nextPageToken
@@ -211,5 +212,6 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
     private readonly IJiraTransport _transport;
     private const int BULK_CHANGELOG_PAGE_SIZE = 1000;
+    private static readonly string[] _bulkChangelogFieldIds = ["status"];
 }
 #pragma warning restore CS1591

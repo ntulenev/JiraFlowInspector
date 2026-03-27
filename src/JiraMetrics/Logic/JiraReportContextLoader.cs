@@ -25,84 +25,131 @@ internal sealed class JiraReportContextLoader
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        IReadOnlyList<IssueKey> issueKeys;
-        if (settings.CreatedAfter is null && allTasksSnapshot is not null)
-        {
-            issueKeys = [.. allTasksSnapshot.DoneIssues.Select(static issue => issue.Key)];
-        }
-        else
-        {
-            issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
-                settings.ProjectKey,
-                settings.DoneStatusName,
-                settings.CreatedAfter,
-                cancellationToken).ConfigureAwait(false);
-        }
+        var issueKeysTask = LoadIssueKeysAsync(
+            settings,
+            settings.DoneStatusName,
+            allTasksSnapshot,
+            snapshotSelector: static snapshot => snapshot.DoneIssues.Select(static issue => issue.Key),
+            cancellationToken);
+        var rejectIssueKeysTask = LoadRejectIssueKeysAsync(settings, allTasksSnapshot, cancellationToken);
+        var releaseIssuesTask = LoadReleaseIssuesAsync(settings, cancellationToken);
+        var archTasksTask = LoadArchTasksAsync(settings, cancellationToken);
+        var globalIncidentsTask = LoadGlobalIncidentsAsync(settings, cancellationToken);
+        var openIssuesByStatusTask = LoadOpenIssuesByStatusAsync(settings, cancellationToken);
 
-        IReadOnlyList<IssueKey> rejectIssueKeys = [];
-        if (settings.RejectStatusName is { } rejectStatusName)
-        {
-            if (settings.CreatedAfter is null && allTasksSnapshot is not null)
-            {
-                rejectIssueKeys = [.. allTasksSnapshot.RejectedIssues.Select(static issue => issue.Key)];
-            }
-            else
-            {
-                rejectIssueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
-                    settings.ProjectKey,
-                    rejectStatusName,
-                    settings.CreatedAfter,
-                    cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        IReadOnlyList<ReleaseIssueItem> releaseIssues = [];
-        if (settings.ReleaseReport is { } releaseReport)
-        {
-            releaseIssues = await _apiClient.GetReleaseIssuesForMonthAsync(
-                releaseReport.ReleaseProjectKey,
-                releaseReport.ProjectLabel,
-                releaseReport.ReleaseDateFieldName,
-                releaseReport.ComponentsFieldName,
-                releaseReport.HotFixRules,
-                releaseReport.RollbackFieldName,
-                releaseReport.EnvironmentFieldName,
-                releaseReport.EnvironmentFieldValue,
-                cancellationToken).ConfigureAwait(false);
-        }
-
-        IReadOnlyList<ArchTaskItem> archTasks = [];
-        if (settings.ArchTasksReport is { } archTasksReport)
-        {
-            archTasks = await _apiClient
-                .GetArchTasksAsync(archTasksReport, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        IReadOnlyList<GlobalIncidentItem> globalIncidents = [];
-        if (settings.GlobalIncidentsReport is { } globalIncidentsReport)
-        {
-            globalIncidents = await _apiClient
-                .GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        IReadOnlyList<StatusIssueTypeSummary> openIssuesByStatus = [];
-        if (settings.ShowGeneralStatistics)
-        {
-            openIssuesByStatus = await _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
-                settings.ProjectKey,
-                settings.DoneStatusName,
-                settings.RejectStatusName,
-                cancellationToken).ConfigureAwait(false);
-        }
+        await Task.WhenAll(
+                issueKeysTask,
+                rejectIssueKeysTask,
+                releaseIssuesTask,
+                archTasksTask,
+                globalIncidentsTask,
+                openIssuesByStatusTask)
+            .ConfigureAwait(false);
 
         return new JiraReportContext(
-            issueKeys,
-            rejectIssueKeys,
-            releaseIssues,
-            archTasks,
-            globalIncidents,
-            openIssuesByStatus);
+            await issueKeysTask.ConfigureAwait(false),
+            await rejectIssueKeysTask.ConfigureAwait(false),
+            await releaseIssuesTask.ConfigureAwait(false),
+            await archTasksTask.ConfigureAwait(false),
+            await globalIncidentsTask.ConfigureAwait(false),
+            await openIssuesByStatusTask.ConfigureAwait(false));
+    }
+
+    private Task<IReadOnlyList<IssueKey>> LoadIssueKeysAsync(
+        AppSettings settings,
+        StatusName statusName,
+        IssueSearchSnapshot? allTasksSnapshot,
+        Func<IssueSearchSnapshot, IEnumerable<IssueKey>> snapshotSelector,
+        CancellationToken cancellationToken)
+    {
+        if (settings.CreatedAfter is null && allTasksSnapshot is not null)
+        {
+            return Task.FromResult<IReadOnlyList<IssueKey>>([.. snapshotSelector(allTasksSnapshot)]);
+        }
+
+        return _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
+            settings.ProjectKey,
+            statusName,
+            settings.CreatedAfter,
+            cancellationToken);
+    }
+
+    private Task<IReadOnlyList<IssueKey>> LoadRejectIssueKeysAsync(
+        AppSettings settings,
+        IssueSearchSnapshot? allTasksSnapshot,
+        CancellationToken cancellationToken)
+    {
+        if (settings.RejectStatusName is not { } rejectStatusName)
+        {
+            return Task.FromResult<IReadOnlyList<IssueKey>>([]);
+        }
+
+        return LoadIssueKeysAsync(
+            settings,
+            rejectStatusName,
+            allTasksSnapshot,
+            static snapshot => snapshot.RejectedIssues.Select(static issue => issue.Key),
+            cancellationToken);
+    }
+
+    private Task<IReadOnlyList<ReleaseIssueItem>> LoadReleaseIssuesAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (settings.ReleaseReport is not { } releaseReport)
+        {
+            return Task.FromResult<IReadOnlyList<ReleaseIssueItem>>([]);
+        }
+
+        return _apiClient.GetReleaseIssuesForMonthAsync(
+            releaseReport.ReleaseProjectKey,
+            releaseReport.ProjectLabel,
+            releaseReport.ReleaseDateFieldName,
+            releaseReport.ComponentsFieldName,
+            releaseReport.HotFixRules,
+            releaseReport.RollbackFieldName,
+            releaseReport.EnvironmentFieldName,
+            releaseReport.EnvironmentFieldValue,
+            cancellationToken);
+    }
+
+    private Task<IReadOnlyList<ArchTaskItem>> LoadArchTasksAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (settings.ArchTasksReport is not { } archTasksReport)
+        {
+            return Task.FromResult<IReadOnlyList<ArchTaskItem>>([]);
+        }
+
+        return _apiClient.GetArchTasksAsync(archTasksReport, cancellationToken);
+    }
+
+    private Task<IReadOnlyList<GlobalIncidentItem>> LoadGlobalIncidentsAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (settings.GlobalIncidentsReport is not { } globalIncidentsReport)
+        {
+            return Task.FromResult<IReadOnlyList<GlobalIncidentItem>>([]);
+        }
+
+        return _apiClient.GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken);
+    }
+
+    private Task<IReadOnlyList<StatusIssueTypeSummary>> LoadOpenIssuesByStatusAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (!settings.ShowGeneralStatistics)
+        {
+            return Task.FromResult<IReadOnlyList<StatusIssueTypeSummary>>([]);
+        }
+
+        return _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+            settings.ProjectKey,
+            settings.DoneStatusName,
+            settings.RejectStatusName,
+            cancellationToken);
     }
 }

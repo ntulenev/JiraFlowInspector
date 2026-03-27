@@ -28,7 +28,7 @@ public sealed class JiraTransportTests
         var serializer = new SimpleJsonSerializer();
 
         // Act
-        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer);
+        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer, new JiraRequestTelemetryCollector());
 
         // Assert
         act.Should()
@@ -45,7 +45,7 @@ public sealed class JiraTransportTests
         var serializer = new SimpleJsonSerializer();
 
         // Act
-        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer);
+        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer, new JiraRequestTelemetryCollector());
 
         // Assert
         act.Should()
@@ -62,7 +62,7 @@ public sealed class JiraTransportTests
         ISerializer serializer = null!;
 
         // Act
-        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer);
+        Action act = () => _ = new JiraTransport(http, retryPolicy, serializer, new JiraRequestTelemetryCollector());
 
         // Assert
         act.Should()
@@ -79,7 +79,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
-            new SimpleJsonSerializer());
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
         Uri url = null!;
 
         // Act
@@ -129,7 +130,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
-            new SimpleJsonSerializer());
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -138,6 +140,56 @@ public sealed class JiraTransportTests
         sendCalls.Should().Be(1);
         result.Should().NotBeNull();
         result!.DisplayName.Should().Be("Jane Doe");
+    }
+
+    [Fact(DisplayName = "GetAsync records telemetry summary for completed request")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncWhenResponseIsValidRecordsTelemetry()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/myself");
+        var telemetryCollector = new JiraRequestTelemetryCollector();
+
+        using var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                JsonSerializer.Serialize(new JiraCurrentUserResponse { DisplayName = "Jane Doe" }),
+                Encoding.UTF8,
+                "application/json")
+        };
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get && req.RequestUri == requestUrl),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer(),
+            telemetryCollector);
+
+        // Act
+        _ = await transport.GetAsync<JiraCurrentUserResponse>(
+            new Uri("rest/api/3/myself", UriKind.Relative),
+            cts.Token);
+        var summary = telemetryCollector.GetSummary();
+
+        // Assert
+        summary.RequestCount.Should().Be(1);
+        summary.RetryCount.Should().Be(0);
+        summary.Endpoints.Should().ContainSingle();
+        summary.Endpoints[0].Method.Should().Be("GET");
+        summary.Endpoints[0].Endpoint.Should().Be("rest/api/3/myself");
     }
 
     [Fact(DisplayName = "PostAsync sends JSON payload and returns deserialized DTO")]
@@ -188,7 +240,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
-            new SimpleJsonSerializer());
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
 
         // Act
         var result = await transport.PostAsync<object, JiraBulkIssueFetchResponse>(
@@ -234,7 +287,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
-            new SimpleJsonSerializer());
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -277,7 +331,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
-            new SimpleJsonSerializer());
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
 
         // Act
         Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -331,7 +386,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1))),
-            new SimpleJsonSerializer());
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -377,7 +433,8 @@ public sealed class JiraTransportTests
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
-            serializer.Object);
+            serializer.Object,
+            new JiraRequestTelemetryCollector());
 
         // Act
         var result = await transport.GetAsync<JiraCurrentUserResponse>(

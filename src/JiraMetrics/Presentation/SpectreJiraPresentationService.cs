@@ -857,6 +857,50 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
+    public void ShowExecutionSummary(TimeSpan totalDuration, JiraRequestTelemetrySummary requestTelemetry)
+    {
+        ArgumentNullException.ThrowIfNull(requestTelemetry);
+        StopPendingLoader();
+
+        AnsiConsole.MarkupLine($"[green]Execution completed:[/] {Markup.Escape(FormatExecutionDuration(totalDuration))}");
+        AnsiConsole.MarkupLine(
+            $"[grey]Jira HTTP:[/] requests = {requestTelemetry.RequestCount}, retries = {requestTelemetry.RetryCount}, response payload = {Markup.Escape(FormatBytes(requestTelemetry.ResponseBytes))}, latency = {Markup.Escape(FormatExecutionDuration(requestTelemetry.TotalDuration))}");
+
+        if (requestTelemetry.Endpoints.Count == 0)
+        {
+            return;
+        }
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Endpoint[/]")
+            .AddColumn("[bold]Requests[/]")
+            .AddColumn("[bold]Retries[/]")
+            .AddColumn("[bold]Payload[/]")
+            .AddColumn("[bold]Total[/]")
+            .AddColumn("[bold]Avg[/]")
+            .AddColumn("[bold]Max[/]");
+
+        foreach (var endpoint in requestTelemetry.Endpoints)
+        {
+            var averageDuration = endpoint.RequestCount == 0
+                ? TimeSpan.Zero
+                : TimeSpan.FromTicks(endpoint.TotalDuration.Ticks / endpoint.RequestCount);
+            _ = table.AddRow(
+                Markup.Escape($"{endpoint.Method} {endpoint.Endpoint}"),
+                endpoint.RequestCount.ToString(CultureInfo.InvariantCulture),
+                endpoint.RetryCount.ToString(CultureInfo.InvariantCulture),
+                Markup.Escape(FormatBytes(endpoint.ResponseBytes)),
+                Markup.Escape(FormatExecutionDuration(endpoint.TotalDuration)),
+                Markup.Escape(FormatExecutionDuration(averageDuration)),
+                Markup.Escape(FormatExecutionDuration(endpoint.MaxDuration)));
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    /// <inheritdoc />
     public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
     {
         ArgumentNullException.ThrowIfNull(groups);
@@ -1343,5 +1387,38 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         var escaped = Markup.Escape(value);
         return isHotFix ? $"[red]{escaped}[/]" : escaped;
+    }
+
+    private static string FormatExecutionDuration(TimeSpan duration)
+    {
+        if (duration < TimeSpan.FromSeconds(1))
+        {
+            return $"{duration.TotalMilliseconds:0} ms";
+        }
+
+        if (duration < TimeSpan.FromMinutes(1))
+        {
+            return $"{duration.TotalSeconds:0.##} s";
+        }
+
+        return duration.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        const long kilobyte = 1024;
+        const long megabyte = 1024 * kilobyte;
+
+        if (bytes >= megabyte)
+        {
+            return $"{bytes / (double)megabyte:0.##} MB";
+        }
+
+        if (bytes >= kilobyte)
+        {
+            return $"{bytes / (double)kilobyte:0.##} KB";
+        }
+
+        return $"{bytes} B";
     }
 }

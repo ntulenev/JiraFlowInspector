@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -14,7 +16,7 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
     private readonly IssueSearchSnapshotLoader _issueSearchSnapshotLoader;
     private readonly JiraReportContextLoader _reportContextLoader;
     private readonly JiraIssueTimelineLoader _issueTimelineLoader;
-    private readonly Dictionary<string, IssueSearchSnapshot> _issueSearchSnapshots =
+    private readonly ConcurrentDictionary<string, Lazy<Task<IssueSearchSnapshot>>> _issueSearchSnapshots =
         new(StringComparer.Ordinal);
 
     public JiraApplicationDataFacade(
@@ -90,16 +92,21 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
         CancellationToken cancellationToken)
     {
         var cacheKey = BuildIssueSearchSnapshotCacheKey(issueTypes);
-        if (_issueSearchSnapshots.TryGetValue(cacheKey, out var cachedSnapshot))
-        {
-            return cachedSnapshot;
-        }
+        var cachedSnapshot = _issueSearchSnapshots.GetOrAdd(
+            cacheKey,
+            _ => new Lazy<Task<IssueSearchSnapshot>>(
+                () => _issueSearchSnapshotLoader.LoadAsync(settings, issueTypes, cancellationToken),
+                LazyThreadSafetyMode.ExecutionAndPublication));
 
-        var snapshot = await _issueSearchSnapshotLoader
-            .LoadAsync(settings, issueTypes, cancellationToken)
-            .ConfigureAwait(false);
-        _issueSearchSnapshots[cacheKey] = snapshot;
-        return snapshot;
+        try
+        {
+            return await cachedSnapshot.Value.ConfigureAwait(false);
+        }
+        catch
+        {
+            _ = _issueSearchSnapshots.TryRemove(cacheKey, out _);
+            throw;
+        }
     }
 
     private static string BuildIssueSearchSnapshotCacheKey(IReadOnlyList<IssueTypeName> issueTypes)
