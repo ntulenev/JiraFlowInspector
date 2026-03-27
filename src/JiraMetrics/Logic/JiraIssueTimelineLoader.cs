@@ -10,16 +10,16 @@ namespace JiraMetrics.Logic;
 internal sealed class JiraIssueTimelineLoader
 {
     private readonly IJiraApiClient _apiClient;
-    private readonly IJiraPresentationService _presentationService;
+    private readonly IJiraIssueLoadingProgressPresenter _progressPresenter;
 
     public JiraIssueTimelineLoader(
         IJiraApiClient apiClient,
-        IJiraPresentationService presentationService)
+        IJiraIssueLoadingProgressPresenter progressPresenter)
     {
         ArgumentNullException.ThrowIfNull(apiClient);
-        ArgumentNullException.ThrowIfNull(presentationService);
+        ArgumentNullException.ThrowIfNull(progressPresenter);
         _apiClient = apiClient;
-        _presentationService = presentationService;
+        _progressPresenter = progressPresenter;
     }
 
     public async Task<IssueTimelineLoadResult> LoadAsync(
@@ -31,7 +31,7 @@ internal sealed class JiraIssueTimelineLoader
         ArgumentNullException.ThrowIfNull(rejectIssueKeys);
 
         var uniqueIssueKeys = BuildUniqueIssueKeys(issueKeys, rejectIssueKeys);
-        _presentationService.ShowIssueLoadingStarted(new ItemCount(uniqueIssueKeys.Count));
+        _progressPresenter.ShowIssueLoadingStarted(new ItemCount(uniqueIssueKeys.Count));
 
         var loadOutcomes = await LoadIssuesAsync(uniqueIssueKeys, cancellationToken).ConfigureAwait(false);
         var loadedIssuesByKey = loadOutcomes
@@ -47,10 +47,10 @@ internal sealed class JiraIssueTimelineLoader
         var issues = BuildLoadedIssueList(issueKeys, loadedIssuesByKey);
         var rejectIssues = BuildLoadedIssueList(rejectIssueKeys, loadedIssuesByKey);
 
-        _presentationService.ShowIssueLoadingCompleted(
+        _progressPresenter.ShowIssueLoadingCompleted(
             new ItemCount(loadedIssuesByKey.Count),
             new ItemCount(failures.Count));
-        _presentationService.ShowSpacer();
+        _progressPresenter.ShowSpacer();
 
         return new IssueTimelineLoadResult(
             issues,
@@ -83,12 +83,12 @@ internal sealed class JiraIssueTimelineLoader
         {
             if (loadedIssuesByKey.TryGetValue(issueKey.Value, out var issue))
             {
-                _presentationService.ShowIssueLoaded(issueKey);
+                _progressPresenter.ShowIssueLoaded(issueKey);
                 outcomes.Add(new IssueLoadOutcome(issueKey, issue, null));
             }
             else if (failuresByKey.TryGetValue(issueKey.Value, out var failure))
             {
-                _presentationService.ShowIssueFailed(issueKey);
+                _progressPresenter.ShowIssueFailed(issueKey);
                 outcomes.Add(new IssueLoadOutcome(issueKey, null, failure));
             }
             else
@@ -96,7 +96,7 @@ internal sealed class JiraIssueTimelineLoader
                 var missingIssueFailure = new LoadFailure(
                     issueKey,
                     new ErrorMessage("Issue timeline was not returned by Jira."));
-                _presentationService.ShowIssueFailed(issueKey);
+                _progressPresenter.ShowIssueFailed(issueKey);
                 outcomes.Add(new IssueLoadOutcome(issueKey, null, missingIssueFailure));
             }
         }

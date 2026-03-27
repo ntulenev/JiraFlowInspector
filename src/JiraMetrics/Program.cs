@@ -144,12 +144,27 @@ builder.Services.AddTransient<JiraReportContextLoader>();
 builder.Services.AddTransient<JiraIssueTimelineLoader>();
 builder.Services.AddTransient<IJiraApplicationDataFacade, JiraApplicationDataFacade>();
 builder.Services.AddTransient<IJiraApplicationAnalysisFacade, JiraApplicationAnalysisFacade>();
-builder.Services.AddTransient<IJiraPresentationService, SpectreJiraPresentationService>();
+builder.Services.AddSingleton<SpectreJiraPresentationService>();
+builder.Services.AddSingleton<IJiraPresentationService>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
+builder.Services.AddSingleton<IJiraStatusPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
+builder.Services.AddSingleton<IJiraIssueLoadingProgressPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
+builder.Services.AddSingleton<IJiraReportSectionsPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
+builder.Services.AddSingleton<IJiraAnalysisPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
+builder.Services.AddSingleton<IJiraDiagnosticsPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
 builder.Services.AddTransient<IPdfContentComposer, PdfContentComposer>();
 builder.Services.AddTransient<IPdfReportFileStore, PdfReportFileStore>();
 builder.Services.AddTransient<IPdfReportLauncher, PdfReportLauncher>();
 builder.Services.AddTransient<IPdfReportRenderer, QuestPdfReportRenderer>();
-builder.Services.AddTransient<IJiraApplication, JiraApplication>();
+builder.Services.AddTransient<IJiraApplication>(sp => new JiraApplication(
+    sp.GetRequiredService<IOptions<AppSettings>>(),
+    sp.GetRequiredService<IJiraApplicationDataFacade>(),
+    sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
+    sp.GetRequiredService<IJiraStatusPresenter>(),
+    sp.GetRequiredService<IJiraReportSectionsPresenter>(),
+    sp.GetRequiredService<IJiraAnalysisPresenter>(),
+    sp.GetRequiredService<IJiraDiagnosticsPresenter>(),
+    sp.GetRequiredService<IPdfReportRenderer>(),
+    sp.GetRequiredService<IJiraRequestTelemetryCollector>()));
 
 using var host = builder.Build();
 WriteStartupMessage("Application host built. Starting services...");

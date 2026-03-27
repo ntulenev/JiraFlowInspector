@@ -6,6 +6,7 @@ using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.Logic;
@@ -18,7 +19,10 @@ public sealed class JiraApplication : IJiraApplication
     private readonly AppSettings _settings;
     private readonly IJiraApplicationDataFacade _dataFacade;
     private readonly IJiraApplicationAnalysisFacade _analysisFacade;
-    private readonly IJiraPresentationService _presentationService;
+    private readonly IJiraStatusPresenter _statusPresenter;
+    private readonly IJiraReportSectionsPresenter _reportSectionsPresenter;
+    private readonly IJiraAnalysisPresenter _analysisPresenter;
+    private readonly IJiraDiagnosticsPresenter _diagnosticsPresenter;
     private readonly IPdfReportRenderer _pdfReportRenderer;
     private readonly IJiraRequestTelemetryCollector _requestTelemetryCollector;
 
@@ -41,6 +45,9 @@ public sealed class JiraApplication : IJiraApplication
             dataFacade,
             analysisFacade,
             presentationService,
+            presentationService,
+            presentationService,
+            presentationService,
             pdfReportRenderer,
             NoOpJiraRequestTelemetryCollector.Instance)
     {
@@ -55,11 +62,63 @@ public sealed class JiraApplication : IJiraApplication
     /// <param name="presentationService">Presentation service.</param>
     /// <param name="pdfReportRenderer">PDF report renderer.</param>
     /// <param name="requestTelemetryCollector">Jira transport telemetry collector.</param>
-    public JiraApplication(
+    internal JiraApplication(
         IOptions<AppSettings> settings,
         IJiraApplicationDataFacade dataFacade,
         IJiraApplicationAnalysisFacade analysisFacade,
         IJiraPresentationService presentationService,
+        IPdfReportRenderer pdfReportRenderer,
+        IJiraRequestTelemetryCollector requestTelemetryCollector)
+        : this(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentationService,
+            presentationService,
+            presentationService,
+            presentationService,
+            pdfReportRenderer,
+            requestTelemetryCollector)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JiraApplication"/> class.
+    /// </summary>
+    [ActivatorUtilitiesConstructor]
+    public JiraApplication(
+        IOptions<AppSettings> settings,
+        IJiraApplicationDataFacade dataFacade,
+        IJiraApplicationAnalysisFacade analysisFacade,
+        IJiraStatusPresenter statusPresenter,
+        IJiraReportSectionsPresenter reportSectionsPresenter,
+        IJiraAnalysisPresenter analysisPresenter,
+        IJiraDiagnosticsPresenter diagnosticsPresenter,
+        IPdfReportRenderer pdfReportRenderer)
+        : this(
+            settings,
+            dataFacade,
+            analysisFacade,
+            statusPresenter,
+            reportSectionsPresenter,
+            analysisPresenter,
+            diagnosticsPresenter,
+            pdfReportRenderer,
+            NoOpJiraRequestTelemetryCollector.Instance)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JiraApplication"/> class.
+    /// </summary>
+    public JiraApplication(
+        IOptions<AppSettings> settings,
+        IJiraApplicationDataFacade dataFacade,
+        IJiraApplicationAnalysisFacade analysisFacade,
+        IJiraStatusPresenter statusPresenter,
+        IJiraReportSectionsPresenter reportSectionsPresenter,
+        IJiraAnalysisPresenter analysisPresenter,
+        IJiraDiagnosticsPresenter diagnosticsPresenter,
         IPdfReportRenderer pdfReportRenderer,
         IJiraRequestTelemetryCollector requestTelemetryCollector)
     {
@@ -67,13 +126,19 @@ public sealed class JiraApplication : IJiraApplication
         _settings = settings.Value;
         ArgumentNullException.ThrowIfNull(dataFacade);
         ArgumentNullException.ThrowIfNull(analysisFacade);
-        ArgumentNullException.ThrowIfNull(presentationService);
+        ArgumentNullException.ThrowIfNull(statusPresenter);
+        ArgumentNullException.ThrowIfNull(reportSectionsPresenter);
+        ArgumentNullException.ThrowIfNull(analysisPresenter);
+        ArgumentNullException.ThrowIfNull(diagnosticsPresenter);
         ArgumentNullException.ThrowIfNull(pdfReportRenderer);
         ArgumentNullException.ThrowIfNull(requestTelemetryCollector);
 
         _dataFacade = dataFacade;
         _analysisFacade = analysisFacade;
-        _presentationService = presentationService;
+        _statusPresenter = statusPresenter;
+        _reportSectionsPresenter = reportSectionsPresenter;
+        _analysisPresenter = analysisPresenter;
+        _diagnosticsPresenter = diagnosticsPresenter;
         _pdfReportRenderer = pdfReportRenderer;
         _requestTelemetryCollector = requestTelemetryCollector;
     }
@@ -90,206 +155,111 @@ public sealed class JiraApplication : IJiraApplication
         try
         {
             await AuthenticateAsync(cancellationToken).ConfigureAwait(false);
-
-            _presentationService.ShowReportPeriodContext(_settings.ReportPeriod, _settings.CreatedAfter);
-            _presentationService.ShowSpacer();
-
-            ShowOptionalReportLoadingStarted();
-            _presentationService.ShowAllTasksRatioLoadingStarted();
-
-            var reportContextTask = TryLoadSearchDataAsync(
-                () => _dataFacade.LoadReportContextAsync(_settings, cancellationToken));
-            var allTasksRatioTask = TryLoadSearchDataAsync(
-                () => _dataFacade.LoadIssueRatioAsync(_settings, [], cancellationToken));
-            Task<IssueRatioSnapshot?>? bugRatioTask = null;
-
-            if (_settings.BugIssueNames.Count > 0)
-            {
-                _presentationService.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
-                bugRatioTask = TryLoadSearchDataAsync(
-                    () => _dataFacade.LoadIssueRatioAsync(
-                        _settings,
-                        _settings.BugIssueNames,
-                        cancellationToken));
-            }
-
-            var reportContext = await reportContextTask.ConfigureAwait(false);
-            if (reportContext is null)
+            var reportData = await TryLoadReportDataAsync(cancellationToken).ConfigureAwait(false);
+            if (reportData is null)
             {
                 return;
             }
 
-            ShowOptionalReports(reportContext);
-
-            var allTasksRatio = await allTasksRatioTask.ConfigureAwait(false);
-            if (allTasksRatio is null)
-            {
-                return;
-            }
-
-            _presentationService.ShowAllTasksRatioLoadingCompleted(
-                allTasksRatio.CreatedThisMonth,
-                allTasksRatio.MovedToDoneThisMonth,
-                allTasksRatio.RejectedThisMonth,
-                allTasksRatio.FinishedThisMonth);
-            _presentationService.ShowAllTasksRatio(
-                _settings.CustomFieldName,
-                _settings.CustomFieldValue,
-                allTasksRatio.CreatedThisMonth,
-                allTasksRatio.OpenThisMonth,
-                allTasksRatio.MovedToDoneThisMonth,
-                allTasksRatio.RejectedThisMonth,
-                allTasksRatio.FinishedThisMonth);
-            _presentationService.ShowSpacer();
-
-            IssueRatioSnapshot? bugRatio = null;
-            if (bugRatioTask is not null)
-            {
-                bugRatio = await bugRatioTask.ConfigureAwait(false);
-                if (bugRatio is null)
-                {
-                    return;
-                }
-
-                _presentationService.ShowBugRatioLoadingCompleted(
-                    bugRatio.CreatedThisMonth,
-                    bugRatio.MovedToDoneThisMonth,
-                    bugRatio.RejectedThisMonth,
-                    bugRatio.FinishedThisMonth);
-                _presentationService.ShowBugRatio(
-                    _settings.BugIssueNames,
-                    _settings.CustomFieldName,
-                    _settings.CustomFieldValue,
-                    bugRatio.CreatedThisMonth,
-                    bugRatio.MovedToDoneThisMonth,
-                    bugRatio.RejectedThisMonth,
-                    bugRatio.FinishedThisMonth,
-                    bugRatio.OpenIssues,
-                    bugRatio.DoneIssues,
-                    bugRatio.RejectedIssues);
-                _presentationService.ShowSpacer();
-            }
-
-            _presentationService.ShowReportHeader(_settings, new ItemCount(reportContext.IssueKeys.Count));
-
-            var openIssuesSummaryShown = false;
-
-            void ShowOpenIssuesSummary()
-            {
-                if (openIssuesSummaryShown || !_settings.ShowGeneralStatistics)
-                {
-                    return;
-                }
-
-                _presentationService.ShowOpenIssuesByStatusSummary(
-                    reportContext.OpenIssuesByStatus,
-                    _settings.DoneStatusName,
-                    _settings.RejectStatusName);
-                _presentationService.ShowSpacer();
-                openIssuesSummaryShown = true;
-            }
-
-            if (reportContext.IssueKeys.Count == 0)
-            {
-                _presentationService.ShowNoIssuesMatchedFilter();
-                ShowOpenIssuesSummary();
-                return;
-            }
-
-            var loadResult = await _dataFacade.LoadIssueTimelinesAsync(
-                reportContext.IssueKeys,
-                reportContext.RejectIssueKeys,
-                cancellationToken).ConfigureAwait(false);
-            if (loadResult.DoneIssues.Count == 0)
-            {
-                _presentationService.ShowNoIssuesLoaded();
-                _presentationService.ShowFailures(loadResult.Failures);
-                ShowOpenIssuesSummary();
-                return;
-            }
-
-            _presentationService.ShowProcessingStep(
-                "Applying issue type and required-stage filters...");
-            var analysis = _analysisFacade.Analyze(
-                loadResult.DoneIssues,
-                loadResult.RejectIssues,
-                loadResult.Failures,
-                _settings);
-
-            if (analysis.Outcome == JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter)
-            {
-                _presentationService.ShowNoIssuesMatchedFilter();
-                _presentationService.ShowFailures(loadResult.Failures);
-                ShowOpenIssuesSummary();
-                return;
-            }
-
-            if (analysis.Outcome == JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage)
-            {
-                _presentationService.ShowNoIssuesMatchedRequiredStage();
-                _presentationService.ShowFailures(loadResult.Failures);
-                ShowOpenIssuesSummary();
-                return;
-            }
-
-            _presentationService.ShowProcessingStep(
-                "Calculating transition metrics and percentiles...");
-            _presentationService.ShowDoneIssuesTable(analysis.DoneIssues, _settings.DoneStatusName);
-            _presentationService.ShowSpacer();
-            _presentationService.ShowDoneDaysAtWork75PerType(
-                analysis.DoneDaysAtWork75PerType,
-                _settings.DoneStatusName);
-            _presentationService.ShowSpacer();
-
-            if (_settings.RejectStatusName is { } rejectStatusName)
-            {
-                _presentationService.ShowRejectedIssuesTable(analysis.RejectedIssues, rejectStatusName);
-                _presentationService.ShowSpacer();
-            }
-
-            _presentationService.ShowProcessingStep("Building path groups...");
-            _presentationService.ShowPathGroupsSummary(analysis.PathSummary!);
-            _presentationService.ShowSpacer();
-            _presentationService.ShowPathGroups(analysis.PathGroups);
-            ShowOpenIssuesSummary();
-
-            _presentationService.ShowProcessingStep("Rendering PDF report...");
-            _pdfReportRenderer.RenderReport(JiraPdfReportData.Create(
-                _settings,
-                reportContext,
-                allTasksRatio,
-                bugRatio,
-                analysis,
-                loadResult.Failures));
-
-            if (loadResult.Failures.Count > 0)
-            {
-                _presentationService.ShowSpacer();
-                _presentationService.ShowFailures(loadResult.Failures);
-            }
+            await RunAnalysisAndRenderingAsync(reportData, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             totalStopwatch.Stop();
-            _presentationService.ShowSpacer();
-            _presentationService.ShowExecutionSummary(
+            _statusPresenter.ShowSpacer();
+            _statusPresenter.ShowExecutionSummary(
                 totalStopwatch.Elapsed,
                 _requestTelemetryCollector.GetSummary());
         }
     }
 
+    private async Task<JiraApplicationReportData?> TryLoadReportDataAsync(CancellationToken cancellationToken)
+    {
+        _statusPresenter.ShowReportPeriodContext(_settings.ReportPeriod, _settings.CreatedAfter);
+        _statusPresenter.ShowSpacer();
+
+        ShowOptionalReportLoadingStarted();
+        _reportSectionsPresenter.ShowAllTasksRatioLoadingStarted();
+
+        var reportContextTask = TryLoadSearchDataAsync(
+            () => _dataFacade.LoadReportContextAsync(_settings, cancellationToken));
+        var allTasksRatioTask = TryLoadSearchDataAsync(
+            () => _dataFacade.LoadIssueRatioAsync(_settings, [], cancellationToken));
+        var bugRatioTask = StartBugRatioLoading(cancellationToken);
+
+        var reportContext = await reportContextTask.ConfigureAwait(false);
+        if (reportContext is null)
+        {
+            return null;
+        }
+
+        ShowOptionalReports(reportContext);
+
+        var allTasksRatio = await LoadAndShowAllTasksRatioAsync(allTasksRatioTask).ConfigureAwait(false);
+        if (allTasksRatio is null)
+        {
+            return null;
+        }
+
+        var bugRatio = await LoadAndShowBugRatioAsync(bugRatioTask).ConfigureAwait(false);
+        if (bugRatioTask is not null && bugRatio is null)
+        {
+            return null;
+        }
+
+        return new JiraApplicationReportData(reportContext, allTasksRatio, bugRatio);
+    }
+
+    private async Task RunAnalysisAndRenderingAsync(
+        JiraApplicationReportData reportData,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(reportData);
+
+        var reportContext = reportData.ReportContext;
+        _statusPresenter.ShowReportHeader(_settings, new ItemCount(reportContext.IssueKeys.Count));
+
+        var openIssuesSummaryShown = false;
+        if (TryHandleEmptyReportContext(reportContext, ref openIssuesSummaryShown))
+        {
+            return;
+        }
+
+        var loadResult = await LoadIssueTimelinesAsync(reportContext, cancellationToken).ConfigureAwait(false);
+        if (TryHandleNoLoadedIssues(loadResult, reportContext, ref openIssuesSummaryShown))
+        {
+            return;
+        }
+
+        var analysis = AnalyzeLoadedIssues(loadResult);
+        if (TryHandleUnsuccessfulAnalysis(analysis, loadResult.Failures, reportContext, ref openIssuesSummaryShown))
+        {
+            return;
+        }
+
+        PresentSuccessfulAnalysis(analysis);
+        ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+        RenderPdfReport(reportData, analysis, loadResult.Failures);
+
+        if (loadResult.Failures.Count > 0)
+        {
+            _statusPresenter.ShowSpacer();
+            _diagnosticsPresenter.ShowFailures(loadResult.Failures);
+        }
+    }
+
     private async Task AuthenticateAsync(CancellationToken cancellationToken)
     {
-        _presentationService.ShowAuthenticationStarted();
+        _statusPresenter.ShowAuthenticationStarted();
 
         try
         {
             var user = await _dataFacade.GetCurrentUserAsync(cancellationToken).ConfigureAwait(false);
-            _presentationService.ShowAuthenticationSucceeded(user);
+            _statusPresenter.ShowAuthenticationSucceeded(user);
         }
         catch (Exception ex)
         {
-            _presentationService.ShowAuthenticationFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowAuthenticationFailed(ErrorMessage.FromException(ex));
             throw;
         }
     }
@@ -298,17 +268,17 @@ public sealed class JiraApplication : IJiraApplication
     {
         if (_settings.ReleaseReport is not null)
         {
-            _presentationService.ShowReleaseReportLoadingStarted();
+            _reportSectionsPresenter.ShowReleaseReportLoadingStarted();
         }
 
         if (_settings.ArchTasksReport is not null)
         {
-            _presentationService.ShowArchTasksReportLoadingStarted();
+            _reportSectionsPresenter.ShowArchTasksReportLoadingStarted();
         }
 
         if (_settings.GlobalIncidentsReport is not null)
         {
-            _presentationService.ShowGlobalIncidentsReportLoadingStarted();
+            _reportSectionsPresenter.ShowGlobalIncidentsReportLoadingStarted();
         }
     }
 
@@ -318,30 +288,261 @@ public sealed class JiraApplication : IJiraApplication
 
         if (_settings.ReleaseReport is { } releaseReportSettings)
         {
-            _presentationService.ShowSpacer();
-            _presentationService.ShowReleaseReport(
+            _reportSectionsPresenter.ShowSpacer();
+            _reportSectionsPresenter.ShowReleaseReport(
                 releaseReportSettings,
                 _settings.ReportPeriod,
                 reportContext.ReleaseIssues);
-            _presentationService.ShowSpacer();
+            _reportSectionsPresenter.ShowSpacer();
         }
 
         if (_settings.ArchTasksReport is { } archTasksReportSettings)
         {
-            _presentationService.ShowArchTasksReport(
+            _reportSectionsPresenter.ShowArchTasksReport(
                 archTasksReportSettings,
                 reportContext.ArchTasks);
-            _presentationService.ShowSpacer();
+            _reportSectionsPresenter.ShowSpacer();
         }
 
         if (_settings.GlobalIncidentsReport is { } globalIncidentsReportSettings)
         {
-            _presentationService.ShowGlobalIncidentsReport(
+            _reportSectionsPresenter.ShowGlobalIncidentsReport(
                 globalIncidentsReportSettings,
                 _settings.ReportPeriod,
                 reportContext.GlobalIncidents);
-            _presentationService.ShowSpacer();
+            _reportSectionsPresenter.ShowSpacer();
         }
+    }
+
+    private Task<IssueRatioSnapshot?>? StartBugRatioLoading(CancellationToken cancellationToken)
+    {
+        if (_settings.BugIssueNames.Count == 0)
+        {
+            return null;
+        }
+
+        _reportSectionsPresenter.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
+        return TryLoadSearchDataAsync(
+            () => _dataFacade.LoadIssueRatioAsync(
+                _settings,
+                _settings.BugIssueNames,
+                cancellationToken));
+    }
+
+    private async Task<IssueRatioSnapshot?> LoadAndShowAllTasksRatioAsync(Task<IssueRatioSnapshot?> allTasksRatioTask)
+    {
+        ArgumentNullException.ThrowIfNull(allTasksRatioTask);
+
+        var allTasksRatio = await allTasksRatioTask.ConfigureAwait(false);
+        if (allTasksRatio is null)
+        {
+            return null;
+        }
+
+        _reportSectionsPresenter.ShowAllTasksRatioLoadingCompleted(
+            allTasksRatio.CreatedThisMonth,
+            allTasksRatio.MovedToDoneThisMonth,
+            allTasksRatio.RejectedThisMonth,
+            allTasksRatio.FinishedThisMonth);
+        _reportSectionsPresenter.ShowAllTasksRatio(
+            _settings.CustomFieldName,
+            _settings.CustomFieldValue,
+            allTasksRatio.CreatedThisMonth,
+            allTasksRatio.OpenThisMonth,
+            allTasksRatio.MovedToDoneThisMonth,
+            allTasksRatio.RejectedThisMonth,
+            allTasksRatio.FinishedThisMonth);
+        _reportSectionsPresenter.ShowSpacer();
+
+        return allTasksRatio;
+    }
+
+    private async Task<IssueRatioSnapshot?> LoadAndShowBugRatioAsync(Task<IssueRatioSnapshot?>? bugRatioTask)
+    {
+        if (bugRatioTask is null)
+        {
+            return null;
+        }
+
+        var bugRatio = await bugRatioTask.ConfigureAwait(false);
+        if (bugRatio is null)
+        {
+            return null;
+        }
+
+        _reportSectionsPresenter.ShowBugRatioLoadingCompleted(
+            bugRatio.CreatedThisMonth,
+            bugRatio.MovedToDoneThisMonth,
+            bugRatio.RejectedThisMonth,
+            bugRatio.FinishedThisMonth);
+        _reportSectionsPresenter.ShowBugRatio(
+            _settings.BugIssueNames,
+            _settings.CustomFieldName,
+            _settings.CustomFieldValue,
+            bugRatio.CreatedThisMonth,
+            bugRatio.MovedToDoneThisMonth,
+            bugRatio.RejectedThisMonth,
+            bugRatio.FinishedThisMonth,
+            bugRatio.OpenIssues,
+            bugRatio.DoneIssues,
+            bugRatio.RejectedIssues);
+        _reportSectionsPresenter.ShowSpacer();
+
+        return bugRatio;
+    }
+
+    private async Task<IssueTimelineLoadResult> LoadIssueTimelinesAsync(
+        JiraReportContext reportContext,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(reportContext);
+
+        return await _dataFacade.LoadIssueTimelinesAsync(
+            reportContext.IssueKeys,
+            reportContext.RejectIssueKeys,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private JiraIssueAnalysisResult AnalyzeLoadedIssues(IssueTimelineLoadResult loadResult)
+    {
+        ArgumentNullException.ThrowIfNull(loadResult);
+
+        _statusPresenter.ShowProcessingStep(
+            "Applying issue type and required-stage filters...");
+        return _analysisFacade.Analyze(
+            loadResult.DoneIssues,
+            loadResult.RejectIssues,
+            loadResult.Failures,
+            _settings);
+    }
+
+    private bool TryHandleEmptyReportContext(
+        JiraReportContext reportContext,
+        ref bool openIssuesSummaryShown)
+    {
+        ArgumentNullException.ThrowIfNull(reportContext);
+
+        if (reportContext.IssueKeys.Count > 0)
+        {
+            return false;
+        }
+
+        _statusPresenter.ShowNoIssuesMatchedFilter();
+        ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+        return true;
+    }
+
+    private bool TryHandleNoLoadedIssues(
+        IssueTimelineLoadResult loadResult,
+        JiraReportContext reportContext,
+        ref bool openIssuesSummaryShown)
+    {
+        ArgumentNullException.ThrowIfNull(loadResult);
+        ArgumentNullException.ThrowIfNull(reportContext);
+
+        if (loadResult.DoneIssues.Count > 0)
+        {
+            return false;
+        }
+
+        _statusPresenter.ShowNoIssuesLoaded();
+        _diagnosticsPresenter.ShowFailures(loadResult.Failures);
+        ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+        return true;
+    }
+
+    private bool TryHandleUnsuccessfulAnalysis(
+        JiraIssueAnalysisResult analysis,
+        IReadOnlyList<LoadFailure> failures,
+        JiraReportContext reportContext,
+        ref bool openIssuesSummaryShown)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        ArgumentNullException.ThrowIfNull(failures);
+        ArgumentNullException.ThrowIfNull(reportContext);
+
+        switch (analysis.Outcome)
+        {
+            case JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter:
+                _statusPresenter.ShowNoIssuesMatchedFilter();
+                _diagnosticsPresenter.ShowFailures(failures);
+                ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+                return true;
+            case JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage:
+                _statusPresenter.ShowNoIssuesMatchedRequiredStage();
+                _diagnosticsPresenter.ShowFailures(failures);
+                ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+                return true;
+            case JiraIssueAnalysisOutcome.Success:
+                return false;
+            default:
+                throw new InvalidOperationException($"Unsupported analysis outcome: {analysis.Outcome}.");
+        }
+    }
+
+    private void PresentSuccessfulAnalysis(JiraIssueAnalysisResult analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+
+        _statusPresenter.ShowProcessingStep(
+            "Calculating transition metrics and percentiles...");
+        _analysisPresenter.ShowDoneIssuesTable(analysis.DoneIssues, _settings.DoneStatusName);
+        _analysisPresenter.ShowSpacer();
+        _analysisPresenter.ShowDoneDaysAtWork75PerType(
+            analysis.DoneDaysAtWork75PerType,
+            _settings.DoneStatusName);
+        _analysisPresenter.ShowSpacer();
+
+        if (_settings.RejectStatusName is { } rejectStatusName)
+        {
+            _analysisPresenter.ShowRejectedIssuesTable(analysis.RejectedIssues, rejectStatusName);
+            _analysisPresenter.ShowSpacer();
+        }
+
+        _statusPresenter.ShowProcessingStep("Building path groups...");
+        var pathSummary = analysis.PathSummary
+            ?? throw new InvalidOperationException("Path summary is required for successful analysis.");
+        _analysisPresenter.ShowPathGroupsSummary(pathSummary);
+        _analysisPresenter.ShowSpacer();
+        _analysisPresenter.ShowPathGroups(analysis.PathGroups);
+    }
+
+    private void RenderPdfReport(
+        JiraApplicationReportData reportData,
+        JiraIssueAnalysisResult analysis,
+        IReadOnlyList<LoadFailure> failures)
+    {
+        ArgumentNullException.ThrowIfNull(reportData);
+        ArgumentNullException.ThrowIfNull(analysis);
+        ArgumentNullException.ThrowIfNull(failures);
+
+        _statusPresenter.ShowProcessingStep("Rendering PDF report...");
+        _pdfReportRenderer.RenderReport(JiraPdfReportData.Create(
+            _settings,
+            reportData.ReportContext,
+            reportData.AllTasksRatio,
+            reportData.BugRatio,
+            analysis,
+            failures));
+    }
+
+    private void ShowOpenIssuesSummaryIfNeeded(
+        JiraReportContext reportContext,
+        ref bool openIssuesSummaryShown)
+    {
+        ArgumentNullException.ThrowIfNull(reportContext);
+
+        if (openIssuesSummaryShown || !_settings.ShowGeneralStatistics)
+        {
+            return;
+        }
+
+        _diagnosticsPresenter.ShowOpenIssuesByStatusSummary(
+            reportContext.OpenIssuesByStatus,
+            _settings.DoneStatusName,
+            _settings.RejectStatusName);
+        _diagnosticsPresenter.ShowSpacer();
+        openIssuesSummaryShown = true;
     }
 
     private async Task<T?> TryLoadSearchDataAsync<T>(Func<Task<T>> loadAsync)
@@ -353,32 +554,17 @@ public sealed class JiraApplication : IJiraApplication
         }
         catch (HttpRequestException ex)
         {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
         }
         catch (InvalidOperationException ex)
         {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
         }
         catch (JsonException ex)
         {
-            _presentationService.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
         }
 
         return null;
-    }
-
-    private sealed class NoOpJiraRequestTelemetryCollector : IJiraRequestTelemetryCollector
-    {
-        public static NoOpJiraRequestTelemetryCollector Instance { get; } = new();
-
-        public void Reset()
-        {
-        }
-
-        public void Record(string method, Uri url, TimeSpan duration, int responseBytes, bool isRetry)
-        {
-        }
-
-        public JiraRequestTelemetrySummary GetSummary() => new(0, 0, 0, TimeSpan.Zero, []);
     }
 }
