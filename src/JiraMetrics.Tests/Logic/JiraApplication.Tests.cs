@@ -30,7 +30,11 @@ public sealed class JiraApplicationTests
             dataFacade,
             analysisFacade,
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Assert
         act.Should()
@@ -55,7 +59,11 @@ public sealed class JiraApplicationTests
             dataFacade,
             analysisFacade,
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Assert
         act.Should()
@@ -80,37 +88,93 @@ public sealed class JiraApplicationTests
             dataFacade,
             analysisFacade,
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Assert
         act.Should()
             .Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "Constructor throws when presentation service is null")]
+    [Fact(DisplayName = "Constructor throws when presenter or telemetry dependency is null")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenPresentationServiceIsNullThrowsArgumentNullException()
+    public void ConstructorWhenPresenterOrTelemetryDependencyIsNullThrowsArgumentNullException()
     {
         // Arrange
         var settings = Options.Create(CreateSettings());
         var apiClient = new FakeApiClient();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        IJiraPresentationService presentation = null!;
         var dataFacade = CreateDataFacade(apiClient, new FakePresentationService());
         var analysisFacade = CreateAnalysisFacade(logic);
+        var presentation = new FakePresentationService();
         var pdfReportRenderer = new FakePdfReportRenderer();
+        IJiraStatusPresenter statusPresenter = null!;
+        IJiraReportSectionsPresenter reportSectionsPresenter = null!;
+        IJiraAnalysisPresenter analysisPresenter = null!;
+        IJiraDiagnosticsPresenter diagnosticsPresenter = null!;
+        IJiraRequestTelemetryCollector requestTelemetryCollector = null!;
 
         // Act
-        Action act = () => _ = new JiraApplication(
+        Action nullStatusPresenter = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            statusPresenter,
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
+        Action nullReportSectionsPresenter = () => _ = new JiraApplication(
             settings,
             dataFacade,
             analysisFacade,
             presentation,
-            pdfReportRenderer);
+            reportSectionsPresenter,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
+        Action nullAnalysisPresenter = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            presentation,
+            analysisPresenter,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
+        Action nullDiagnosticsPresenter = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            presentation,
+            presentation,
+            diagnosticsPresenter,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
+        Action nullTelemetryCollector = () => _ = new JiraApplication(
+            settings,
+            dataFacade,
+            analysisFacade,
+            presentation,
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            requestTelemetryCollector);
 
         // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
+        nullStatusPresenter.Should().Throw<ArgumentNullException>();
+        nullReportSectionsPresenter.Should().Throw<ArgumentNullException>();
+        nullAnalysisPresenter.Should().Throw<ArgumentNullException>();
+        nullDiagnosticsPresenter.Should().Throw<ArgumentNullException>();
+        nullTelemetryCollector.Should().Throw<ArgumentNullException>();
     }
 
     [Fact(DisplayName = "Constructor throws when PDF report renderer is null")]
@@ -132,7 +196,11 @@ public sealed class JiraApplicationTests
             dataFacade,
             analysisFacade,
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Assert
         act.Should()
@@ -158,7 +226,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -190,7 +262,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -218,7 +294,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         Func<Task> act = () => app.RunAsync();
@@ -250,7 +330,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -285,7 +369,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -329,7 +417,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -373,7 +465,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -413,7 +509,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -450,7 +550,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -491,7 +595,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -551,7 +659,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -606,7 +718,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -660,7 +776,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -721,7 +841,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -777,7 +901,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -821,7 +949,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -852,7 +984,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -894,7 +1030,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -928,7 +1068,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -970,7 +1114,11 @@ public sealed class JiraApplicationTests
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
             presentation,
-            pdfReportRenderer);
+            presentation,
+            presentation,
+            presentation,
+            pdfReportRenderer,
+            new FakeRequestTelemetryCollector());
 
         // Act
         await app.RunAsync();
@@ -1318,6 +1466,21 @@ public sealed class JiraApplicationTests
         }
     }
 
+    private sealed class FakeRequestTelemetryCollector : IJiraRequestTelemetryCollector
+    {
+        public JiraRequestTelemetrySummary Summary { get; set; } = new(0, 0, 0, TimeSpan.Zero, []);
+
+        public void Reset()
+        {
+        }
+
+        public void Record(string method, Uri url, TimeSpan duration, int responseBytes, bool isRetry)
+        {
+        }
+
+        public JiraRequestTelemetrySummary GetSummary() => Summary;
+    }
+
     private sealed class FakePresentationService : IJiraPresentationService
     {
         public List<string> Calls { get; } = [];
@@ -1592,6 +1755,7 @@ public sealed class JiraApplicationTests
         }
     }
 }
+
 
 
 

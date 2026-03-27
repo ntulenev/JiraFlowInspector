@@ -5,7 +5,6 @@ using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.Logic;
@@ -15,92 +14,18 @@ namespace JiraMetrics.Logic;
 /// </summary>
 public sealed class JiraApplication : IJiraApplication
 {
-
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraApplication"/> class.
     /// </summary>
     /// <param name="settings">Application settings options.</param>
     /// <param name="dataFacade">Application data facade.</param>
     /// <param name="analysisFacade">Application analysis facade.</param>
-    /// <param name="presentationService">Presentation service.</param>
-    /// <param name="pdfReportRenderer">PDF report renderer.</param>
-    internal JiraApplication(
-        IOptions<AppSettings> settings,
-        IJiraApplicationDataFacade dataFacade,
-        IJiraApplicationAnalysisFacade analysisFacade,
-        IJiraPresentationService presentationService,
-        IPdfReportRenderer pdfReportRenderer)
-        : this(
-            settings,
-            dataFacade,
-            analysisFacade,
-            presentationService,
-            presentationService,
-            presentationService,
-            presentationService,
-            pdfReportRenderer,
-            NoOpJiraRequestTelemetryCollector.Instance)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JiraApplication"/> class.
-    /// </summary>
-    /// <param name="settings">Application settings options.</param>
-    /// <param name="dataFacade">Application data facade.</param>
-    /// <param name="analysisFacade">Application analysis facade.</param>
-    /// <param name="presentationService">Presentation service.</param>
+    /// <param name="statusPresenter">Status presenter.</param>
+    /// <param name="reportSectionsPresenter">Report sections presenter.</param>
+    /// <param name="analysisPresenter">Analysis presenter.</param>
+    /// <param name="diagnosticsPresenter">Diagnostics presenter.</param>
     /// <param name="pdfReportRenderer">PDF report renderer.</param>
     /// <param name="requestTelemetryCollector">Jira transport telemetry collector.</param>
-    internal JiraApplication(
-        IOptions<AppSettings> settings,
-        IJiraApplicationDataFacade dataFacade,
-        IJiraApplicationAnalysisFacade analysisFacade,
-        IJiraPresentationService presentationService,
-        IPdfReportRenderer pdfReportRenderer,
-        IJiraRequestTelemetryCollector requestTelemetryCollector)
-        : this(
-            settings,
-            dataFacade,
-            analysisFacade,
-            presentationService,
-            presentationService,
-            presentationService,
-            presentationService,
-            pdfReportRenderer,
-            requestTelemetryCollector)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JiraApplication"/> class.
-    /// </summary>
-    [ActivatorUtilitiesConstructor]
-    public JiraApplication(
-        IOptions<AppSettings> settings,
-        IJiraApplicationDataFacade dataFacade,
-        IJiraApplicationAnalysisFacade analysisFacade,
-        IJiraStatusPresenter statusPresenter,
-        IJiraReportSectionsPresenter reportSectionsPresenter,
-        IJiraAnalysisPresenter analysisPresenter,
-        IJiraDiagnosticsPresenter diagnosticsPresenter,
-        IPdfReportRenderer pdfReportRenderer)
-        : this(
-            settings,
-            dataFacade,
-            analysisFacade,
-            statusPresenter,
-            reportSectionsPresenter,
-            analysisPresenter,
-            diagnosticsPresenter,
-            pdfReportRenderer,
-            NoOpJiraRequestTelemetryCollector.Instance)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JiraApplication"/> class.
-    /// </summary>
     public JiraApplication(
         IOptions<AppSettings> settings,
         IJiraApplicationDataFacade dataFacade,
