@@ -136,7 +136,15 @@ builder.Services.AddTransient<IIssueTimelineMapper, IssueTimelineMapper>();
 builder.Services.AddTransient<IReleaseIssueMapper, ReleaseIssueMapper>();
 builder.Services.AddTransient<IGlobalIncidentMapper, GlobalIncidentMapper>();
 builder.Services.AddTransient<IJiraMapperFacade, JiraMapperFacade>();
-builder.Services.AddTransient<IJiraApiClient, JiraApiClient>();
+builder.Services.AddTransient<IJiraUserClient, JiraUserClient>();
+builder.Services.AddTransient<IJiraIssueSearchClient, JiraIssueSearchClient>();
+builder.Services.AddTransient<IJiraReportDataClient, JiraReportDataClient>();
+builder.Services.AddTransient<IJiraIssueTimelineClient, JiraIssueTimelineClient>();
+builder.Services.AddTransient<IJiraApiClient>(sp => new JiraApiClient(
+    sp.GetRequiredService<IJiraUserClient>(),
+    sp.GetRequiredService<IJiraIssueSearchClient>(),
+    sp.GetRequiredService<IJiraReportDataClient>(),
+    sp.GetRequiredService<IJiraIssueTimelineClient>()));
 builder.Services.AddTransient<IJiraAnalyticsService, JiraAnalyticsService>();
 builder.Services.AddTransient<IJiraLogicService, JiraLogicService>();
 builder.Services.AddTransient<IssueSearchSnapshotLoader>();

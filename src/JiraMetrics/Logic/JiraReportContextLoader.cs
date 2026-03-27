@@ -10,12 +10,17 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraReportContextLoader
 {
-    private readonly IJiraApiClient _apiClient;
+    private readonly IJiraIssueSearchClient _issueSearchClient;
+    private readonly IJiraReportDataClient _reportDataClient;
 
-    public JiraReportContextLoader(IJiraApiClient apiClient)
+    public JiraReportContextLoader(
+        IJiraIssueSearchClient issueSearchClient,
+        IJiraReportDataClient reportDataClient)
     {
-        ArgumentNullException.ThrowIfNull(apiClient);
-        _apiClient = apiClient;
+        ArgumentNullException.ThrowIfNull(issueSearchClient);
+        ArgumentNullException.ThrowIfNull(reportDataClient);
+        _issueSearchClient = issueSearchClient;
+        _reportDataClient = reportDataClient;
     }
 
     public async Task<JiraReportContext> LoadAsync(
@@ -67,7 +72,7 @@ internal sealed class JiraReportContextLoader
             return Task.FromResult<IReadOnlyList<IssueKey>>([.. snapshotSelector(allTasksSnapshot)]);
         }
 
-        return _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
+        return _issueSearchClient.GetIssueKeysMovedToDoneThisMonthAsync(
             settings.ProjectKey,
             statusName,
             settings.CreatedAfter,
@@ -101,7 +106,7 @@ internal sealed class JiraReportContextLoader
             return Task.FromResult<IReadOnlyList<ReleaseIssueItem>>([]);
         }
 
-        return _apiClient.GetReleaseIssuesForMonthAsync(
+        return _reportDataClient.GetReleaseIssuesForMonthAsync(
             releaseReport.ReleaseProjectKey,
             releaseReport.ProjectLabel,
             releaseReport.ReleaseDateFieldName,
@@ -122,7 +127,7 @@ internal sealed class JiraReportContextLoader
             return Task.FromResult<IReadOnlyList<ArchTaskItem>>([]);
         }
 
-        return _apiClient.GetArchTasksAsync(archTasksReport, cancellationToken);
+        return _reportDataClient.GetArchTasksAsync(archTasksReport, cancellationToken);
     }
 
     private Task<IReadOnlyList<GlobalIncidentItem>> LoadGlobalIncidentsAsync(
@@ -134,7 +139,7 @@ internal sealed class JiraReportContextLoader
             return Task.FromResult<IReadOnlyList<GlobalIncidentItem>>([]);
         }
 
-        return _apiClient.GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken);
+        return _reportDataClient.GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken);
     }
 
     private Task<IReadOnlyList<StatusIssueTypeSummary>> LoadOpenIssuesByStatusAsync(
@@ -146,7 +151,7 @@ internal sealed class JiraReportContextLoader
             return Task.FromResult<IReadOnlyList<StatusIssueTypeSummary>>([]);
         }
 
-        return _apiClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+        return _issueSearchClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
             settings.ProjectKey,
             settings.DoneStatusName,
             settings.RejectStatusName,

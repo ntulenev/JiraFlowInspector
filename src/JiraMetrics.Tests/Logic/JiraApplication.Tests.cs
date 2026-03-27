@@ -986,7 +986,7 @@ public sealed class JiraApplicationTests
     }
 
     private static JiraApplicationDataFacade CreateDataFacade(
-        IJiraApiClient apiClient,
+        FakeApiClient apiClient,
         IJiraPresentationService presentationService)
     {
         ArgumentNullException.ThrowIfNull(apiClient);
@@ -995,7 +995,7 @@ public sealed class JiraApplicationTests
         return new JiraApplicationDataFacade(
             apiClient,
             new IssueSearchSnapshotLoader(apiClient),
-            new JiraReportContextLoader(apiClient),
+            new JiraReportContextLoader(apiClient, apiClient),
             new JiraIssueTimelineLoader(apiClient, presentationService));
     }
 
@@ -1056,7 +1056,12 @@ public sealed class JiraApplicationTests
             hasPullRequest: true);
     }
 
-    private sealed class FakeApiClient : IJiraApiClient
+    private sealed class FakeApiClient :
+        IJiraApiClient,
+        IJiraUserClient,
+        IJiraIssueSearchClient,
+        IJiraReportDataClient,
+        IJiraIssueTimelineClient
     {
         public JiraAuthUser CurrentUser { get; set; } = new(new UserDisplayName("unknown"), null, null);
 

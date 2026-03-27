@@ -10,12 +10,12 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class IssueSearchSnapshotLoader
 {
-    private readonly IJiraApiClient _apiClient;
+    private readonly IJiraIssueSearchClient _issueSearchClient;
 
-    public IssueSearchSnapshotLoader(IJiraApiClient apiClient)
+    public IssueSearchSnapshotLoader(IJiraIssueSearchClient issueSearchClient)
     {
-        ArgumentNullException.ThrowIfNull(apiClient);
-        _apiClient = apiClient;
+        ArgumentNullException.ThrowIfNull(issueSearchClient);
+        _issueSearchClient = issueSearchClient;
     }
 
     public async Task<IssueSearchSnapshot> LoadAsync(
@@ -26,11 +26,11 @@ internal sealed class IssueSearchSnapshotLoader
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(issueTypes);
 
-        var createdIssues = await _apiClient.GetIssuesCreatedThisMonthAsync(
+        var createdIssues = await _issueSearchClient.GetIssuesCreatedThisMonthAsync(
             settings.ProjectKey,
             issueTypes,
             cancellationToken).ConfigureAwait(false);
-        var doneIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
+        var doneIssues = await _issueSearchClient.GetIssuesMovedToDoneThisMonthAsync(
             settings.ProjectKey,
             settings.DoneStatusName,
             issueTypes,
@@ -39,7 +39,7 @@ internal sealed class IssueSearchSnapshotLoader
         IReadOnlyList<IssueListItem> rejectedIssues = [];
         if (settings.RejectStatusName is { } rejectStatusName)
         {
-            rejectedIssues = await _apiClient.GetIssuesMovedToDoneThisMonthAsync(
+            rejectedIssues = await _issueSearchClient.GetIssuesMovedToDoneThisMonthAsync(
                 settings.ProjectKey,
                 rejectStatusName,
                 issueTypes,

@@ -34,7 +34,7 @@ public sealed class JiraApplication : IJiraApplication
     /// <param name="analysisFacade">Application analysis facade.</param>
     /// <param name="presentationService">Presentation service.</param>
     /// <param name="pdfReportRenderer">PDF report renderer.</param>
-    public JiraApplication(
+    internal JiraApplication(
         IOptions<AppSettings> settings,
         IJiraApplicationDataFacade dataFacade,
         IJiraApplicationAnalysisFacade analysisFacade,

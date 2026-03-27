@@ -12,7 +12,7 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
 {
-    private readonly IJiraApiClient _apiClient;
+    private readonly IJiraUserClient _userClient;
     private readonly IssueSearchSnapshotLoader _issueSearchSnapshotLoader;
     private readonly JiraReportContextLoader _reportContextLoader;
     private readonly JiraIssueTimelineLoader _issueTimelineLoader;
@@ -20,23 +20,23 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
         new(StringComparer.Ordinal);
 
     public JiraApplicationDataFacade(
-        IJiraApiClient apiClient,
+        IJiraUserClient userClient,
         IssueSearchSnapshotLoader issueSearchSnapshotLoader,
         JiraReportContextLoader reportContextLoader,
         JiraIssueTimelineLoader issueTimelineLoader)
     {
-        ArgumentNullException.ThrowIfNull(apiClient);
+        ArgumentNullException.ThrowIfNull(userClient);
         ArgumentNullException.ThrowIfNull(issueSearchSnapshotLoader);
         ArgumentNullException.ThrowIfNull(reportContextLoader);
         ArgumentNullException.ThrowIfNull(issueTimelineLoader);
-        _apiClient = apiClient;
+        _userClient = userClient;
         _issueSearchSnapshotLoader = issueSearchSnapshotLoader;
         _reportContextLoader = reportContextLoader;
         _issueTimelineLoader = issueTimelineLoader;
     }
 
     public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken) =>
-        _apiClient.GetCurrentUserAsync(cancellationToken);
+        _userClient.GetCurrentUserAsync(cancellationToken);
 
     public Task<JiraReportContext> LoadReportContextAsync(
         AppSettings settings,

@@ -9,16 +9,16 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraIssueTimelineLoader
 {
-    private readonly IJiraApiClient _apiClient;
+    private readonly IJiraIssueTimelineClient _issueTimelineClient;
     private readonly IJiraIssueLoadingProgressPresenter _progressPresenter;
 
     public JiraIssueTimelineLoader(
-        IJiraApiClient apiClient,
+        IJiraIssueTimelineClient issueTimelineClient,
         IJiraIssueLoadingProgressPresenter progressPresenter)
     {
-        ArgumentNullException.ThrowIfNull(apiClient);
+        ArgumentNullException.ThrowIfNull(issueTimelineClient);
         ArgumentNullException.ThrowIfNull(progressPresenter);
-        _apiClient = apiClient;
+        _issueTimelineClient = issueTimelineClient;
         _progressPresenter = progressPresenter;
     }
 
@@ -68,7 +68,7 @@ internal sealed class JiraIssueTimelineLoader
             return [];
         }
 
-        var batchResult = await _apiClient
+        var batchResult = await _issueTimelineClient
             .GetIssueTimelinesAsync(issueKeys, cancellationToken)
             .ConfigureAwait(false);
         var loadedIssuesByKey = batchResult.Issues.ToDictionary(
