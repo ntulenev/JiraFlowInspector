@@ -63,32 +63,6 @@ public sealed class JiraApplicationTests
             .Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "Constructor throws when settings value is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenSettingsValueIsNullThrowsArgumentException()
-    {
-        // Arrange
-        var settings = Options.Create<AppSettings>(null!);
-        var apiClient = new FakeApiClient();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
-        var presentation = new FakePresentationService();
-        var dataFacade = CreateDataFacade(apiClient, presentation);
-        var analysisFacade = CreateAnalysisFacade(logic);
-        var pdfReportRenderer = new FakePdfReportRenderer();
-
-        // Act
-        Action act = () => _ = new JiraApplication(
-            settings,
-            dataFacade,
-            analysisFacade,
-            presentation,
-            pdfReportRenderer);
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentException>();
-    }
-
     [Fact(DisplayName = "Constructor throws when analysis facade is null")]
     [Trait("Category", "Unit")]
     public void ConstructorWhenAnalysisFacadeIsNullThrowsArgumentNullException()

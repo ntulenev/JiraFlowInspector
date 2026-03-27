@@ -21,8 +21,7 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        var resolved = settings.Value
-            ?? throw new ArgumentException("App settings value is required.", nameof(settings));
+        var resolved = settings.Value;
         _customFieldName = string.IsNullOrWhiteSpace(resolved.CustomFieldName)
             ? null
             : resolved.CustomFieldName.Trim();

@@ -22,7 +22,7 @@ public sealed class TransitionBuilder : ITransitionBuilder
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var settings = options.Value ?? throw new ArgumentException("App settings value is required.", nameof(options));
+        var settings = options.Value;
         _excludeWeekend = settings.ExcludeWeekend;
         _excludedDays = new HashSet<DateOnly>(settings.ExcludedDays).ToFrozenSet();
     }

@@ -14,8 +14,7 @@ public sealed class ArchTasksJqlBuilder : IArchTasksJqlBuilder
     public ArchTasksJqlBuilder(IOptions<AppSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _reportPeriod = (settings.Value
-            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).ReportPeriod;
+        _reportPeriod = settings.Value.ReportPeriod;
     }
 
     public string BuildQuery(ArchTasksReportSettings settings)

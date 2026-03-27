@@ -36,9 +36,7 @@ public sealed class JiraApplication : IJiraApplication
         IPdfReportRenderer pdfReportRenderer)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _settings = settings.Value ?? throw new ArgumentException(
-            "App settings value is required.",
-            nameof(settings));
+        _settings = settings.Value;
         ArgumentNullException.ThrowIfNull(dataFacade);
         ArgumentNullException.ThrowIfNull(analysisFacade);
         ArgumentNullException.ThrowIfNull(presentationService);

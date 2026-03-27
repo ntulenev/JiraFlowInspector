@@ -28,8 +28,7 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
         _transitionBuilder = transitionBuilder ?? throw new ArgumentNullException(nameof(transitionBuilder));
         ArgumentNullException.ThrowIfNull(settings);
         _fieldValueReader = fieldValueReader ?? throw new ArgumentNullException(nameof(fieldValueReader));
-        var resolved = settings.Value
-            ?? throw new ArgumentException("App settings value is required.", nameof(settings));
+        var resolved = settings.Value;
         _pullRequestFieldName = resolved.PullRequestFieldName ?? string.Empty;
     }
 
