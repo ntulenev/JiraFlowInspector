@@ -18,24 +18,42 @@ internal sealed class JiraReportContextLoader
         _apiClient = apiClient;
     }
 
-    public async Task<JiraReportContext> LoadAsync(AppSettings settings, CancellationToken cancellationToken)
+    public async Task<JiraReportContext> LoadAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken,
+        IssueSearchSnapshot? allTasksSnapshot = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        var issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
-            settings.ProjectKey,
-            settings.DoneStatusName,
-            settings.CreatedAfter,
-            cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<IssueKey> issueKeys;
+        if (settings.CreatedAfter is null && allTasksSnapshot is not null)
+        {
+            issueKeys = [.. allTasksSnapshot.DoneIssues.Select(static issue => issue.Key)];
+        }
+        else
+        {
+            issueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
+                settings.ProjectKey,
+                settings.DoneStatusName,
+                settings.CreatedAfter,
+                cancellationToken).ConfigureAwait(false);
+        }
 
         IReadOnlyList<IssueKey> rejectIssueKeys = [];
         if (settings.RejectStatusName is { } rejectStatusName)
         {
-            rejectIssueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
-                settings.ProjectKey,
-                rejectStatusName,
-                settings.CreatedAfter,
-                cancellationToken).ConfigureAwait(false);
+            if (settings.CreatedAfter is null && allTasksSnapshot is not null)
+            {
+                rejectIssueKeys = [.. allTasksSnapshot.RejectedIssues.Select(static issue => issue.Key)];
+            }
+            else
+            {
+                rejectIssueKeys = await _apiClient.GetIssueKeysMovedToDoneThisMonthAsync(
+                    settings.ProjectKey,
+                    rejectStatusName,
+                    settings.CreatedAfter,
+                    cancellationToken).ConfigureAwait(false);
+            }
         }
 
         IReadOnlyList<ReleaseIssueItem> releaseIssues = [];

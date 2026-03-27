@@ -4,6 +4,8 @@ using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
+using Microsoft.Extensions.Options;
+
 namespace JiraMetrics.API;
 
 /// <summary>
@@ -16,21 +18,25 @@ public sealed class JiraApiClient : IJiraApiClient
     /// </summary>
     /// <param name="searchExecutor">Search executor.</param>
     /// <param name="jqlFacade">JQL facade.</param>
+    /// <param name="settings">Application settings.</param>
     /// <param name="fieldResolver">Field resolver.</param>
     /// <param name="mapperFacade">Mapping facade.</param>
     public JiraApiClient(
         IJiraSearchExecutor searchExecutor,
         IJiraJqlFacade jqlFacade,
+        IOptions<AppSettings> settings,
         IJiraFieldResolver fieldResolver,
         IJiraMapperFacade mapperFacade)
     {
         ArgumentNullException.ThrowIfNull(searchExecutor);
         ArgumentNullException.ThrowIfNull(jqlFacade);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(fieldResolver);
         ArgumentNullException.ThrowIfNull(mapperFacade);
 
         _searchExecutor = searchExecutor;
         _jqlFacade = jqlFacade;
+        _pullRequestFieldName = settings.Value.PullRequestFieldName;
         _fieldResolver = fieldResolver;
         _mapperFacade = mapperFacade;
     }
@@ -241,8 +247,10 @@ public sealed class JiraApiClient : IJiraApiClient
         IssueKey issueKey,
         CancellationToken cancellationToken)
     {
+        var requestedFields = await BuildIssueTimelineRequestedFieldsAsync(cancellationToken)
+            .ConfigureAwait(false);
         var response = await _searchExecutor
-            .GetIssueWithChangelogAsync(issueKey, cancellationToken)
+            .GetIssueWithChangelogAsync(issueKey, requestedFields, cancellationToken)
             .ConfigureAwait(false);
         if (response is null)
         {
@@ -252,8 +260,55 @@ public sealed class JiraApiClient : IJiraApiClient
         return _mapperFacade.MapIssueTimeline(response, issueKey);
     }
 
+    private async Task<IReadOnlyList<string>?> BuildIssueTimelineRequestedFieldsAsync(
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_pullRequestFieldName))
+        {
+            return null;
+        }
+
+        var pullRequestFieldId = await ResolvePullRequestFieldIdAsync(cancellationToken).ConfigureAwait(false);
+        return string.IsNullOrWhiteSpace(pullRequestFieldId)
+            ? _issueTimelineBaseFields
+            : [.. _issueTimelineBaseFields, pullRequestFieldId];
+    }
+
+    private async Task<string?> ResolvePullRequestFieldIdAsync(CancellationToken cancellationToken)
+    {
+        if (_pullRequestFieldIdResolved)
+        {
+            return _pullRequestFieldId;
+        }
+
+        _pullRequestFieldIdResolved = true;
+        _pullRequestFieldId = IsCustomFieldId(_pullRequestFieldName)
+            ? _pullRequestFieldName
+            : await _fieldResolver.TryResolveFieldIdAsync(_pullRequestFieldName, cancellationToken)
+                .ConfigureAwait(false);
+        return _pullRequestFieldId;
+    }
+
+    private static bool IsCustomFieldId(string? fieldName) =>
+        !string.IsNullOrWhiteSpace(fieldName)
+        && fieldName.StartsWith("customfield_", StringComparison.OrdinalIgnoreCase);
+
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly IJiraJqlFacade _jqlFacade;
+    private readonly string? _pullRequestFieldName;
     private readonly IJiraFieldResolver _fieldResolver;
     private readonly IJiraMapperFacade _mapperFacade;
+    private string? _pullRequestFieldId;
+    private bool _pullRequestFieldIdResolved;
+
+    private static readonly string[] _issueTimelineBaseFields =
+    [
+        "summary",
+        "created",
+        "resolutiondate",
+        "issuetype",
+        "status",
+        "issuelinks",
+        "subtasks"
+    ];
 }

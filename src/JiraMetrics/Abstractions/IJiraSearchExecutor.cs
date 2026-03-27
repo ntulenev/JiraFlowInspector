@@ -16,7 +16,10 @@ public interface IJiraSearchExecutor
     /// <summary>
     /// Loads an issue including changelog.
     /// </summary>
-    Task<JiraIssueResponse?> GetIssueWithChangelogAsync(IssueKey issueKey, CancellationToken cancellationToken);
+    Task<JiraIssueResponse?> GetIssueWithChangelogAsync(
+        IssueKey issueKey,
+        IReadOnlyList<string>? fields,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Executes a paged search query.

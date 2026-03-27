@@ -346,6 +346,84 @@ public sealed class JiraApplicationTests
         pdfReportRenderer.LastReportData!.AllTasksFinishedThisMonth.Should().Be(new ItemCount(2));
     }
 
+    [Fact(DisplayName = "RunAsync reuses all-tasks searches for report context when created-after is not configured")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenCreatedAfterIsMissingReusesAllTasksSearches()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-11")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-11"), new IssueTypeName("Task")),
+            CreatedThisMonthIssues =
+            [
+                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Open task")),
+                new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done task"))
+            ],
+            MovedToDoneThisMonthIssues = [new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done task"))],
+            RejectedThisMonthIssues = [new IssueListItem(new IssueKey("AAA-12"), new IssueSummary("Rejected task"))]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.IssueKeysMovedToDoneThisMonthRequestCount.Should().Be(0);
+        apiClient.MovedToDoneThisMonthIssuesRequestCount.Should().Be(1);
+        apiClient.RejectedThisMonthIssuesRequestCount.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "RunAsync keeps dedicated key search when created-after is configured")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenCreatedAfterIsConfiguredKeepsDedicatedKeySearch()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-11")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-11"), new IssueTypeName("Task")),
+            CreatedThisMonthIssues =
+            [
+                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Open task")),
+                new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done task"))
+            ],
+            MovedToDoneThisMonthIssues = [new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done task"))],
+            RejectedThisMonthIssues = [new IssueListItem(new IssueKey("AAA-12"), new IssueSummary("Rejected task"))]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(
+                issueTypes: [new IssueTypeName("Task")],
+                createdAfter: new CreatedAfterDate("2026-01-01"))),
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.IssueKeysMovedToDoneThisMonthRequestCount.Should().Be(2);
+        apiClient.MovedToDoneThisMonthIssuesRequestCount.Should().Be(1);
+        apiClient.RejectedThisMonthIssuesRequestCount.Should().Be(1);
+    }
+
     [Fact(DisplayName = "RunAsync shows release report section when release report is configured")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenReleaseReportIsConfiguredShowsReleaseReport()
@@ -875,8 +953,8 @@ public sealed class JiraApplicationTests
 
         return new JiraApplicationDataFacade(
             apiClient,
+            new IssueSearchSnapshotLoader(apiClient),
             new JiraReportContextLoader(apiClient),
-            new JiraIssueRatioLoader(apiClient),
             new JiraIssueTimelineLoader(apiClient, presentationService));
     }
 
@@ -893,7 +971,8 @@ public sealed class JiraApplicationTests
         ReleaseReportSettings? releaseReport = null,
         ArchTasksReportSettings? archTasksReport = null,
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
-        bool showGeneralStatistics = true)
+        bool showGeneralStatistics = true,
+        CreatedAfterDate? createdAfter = null)
     {
         return new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -904,7 +983,7 @@ public sealed class JiraApplicationTests
             new StatusName("Reject"),
             [new StageName("Code Review")],
             new MonthLabel("2026-02"),
-            null,
+            createdAfter,
             issueTypes,
             customFieldName: null,
             customFieldValue: null,
@@ -972,6 +1051,12 @@ public sealed class JiraApplicationTests
 
         public bool RejectedThisMonthIssuesRequested { get; private set; }
 
+        public int IssueKeysMovedToDoneThisMonthRequestCount { get; private set; }
+
+        public int MovedToDoneThisMonthIssuesRequestCount { get; private set; }
+
+        public int RejectedThisMonthIssuesRequestCount { get; private set; }
+
         public bool OpenIssuesByStatusRequested { get; private set; }
 
         public bool ReleaseIssuesRequested { get; private set; }
@@ -996,6 +1081,7 @@ public sealed class JiraApplicationTests
             CreatedAfterDate? createdAfter,
             CancellationToken cancellationToken)
         {
+            IssueKeysMovedToDoneThisMonthRequestCount++;
             return Task.FromResult(
                 string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase)
                     ? (RejectIssueKeys.Count == 0 ? IssueKeys : RejectIssueKeys)
@@ -1020,11 +1106,22 @@ public sealed class JiraApplicationTests
             if (string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase))
             {
                 RejectedThisMonthIssuesRequested = true;
-                return Task.FromResult(RejectedThisMonthIssues);
+                RejectedThisMonthIssuesRequestCount++;
+                return Task.FromResult<IReadOnlyList<IssueListItem>>(
+                    RejectedThisMonthIssues.Count > 0
+                        ? RejectedThisMonthIssues
+                        : [.. (RejectIssueKeys.Count == 0 ? IssueKeys : RejectIssueKeys)
+                            .Select(static key => new IssueListItem(key, new IssueSummary($"Summary {key.Value}")))]
+                );
             }
 
             MovedToDoneThisMonthIssuesRequested = true;
-            return Task.FromResult(MovedToDoneThisMonthIssues);
+            MovedToDoneThisMonthIssuesRequestCount++;
+            return Task.FromResult<IReadOnlyList<IssueListItem>>(
+                MovedToDoneThisMonthIssues.Count > 0
+                    ? MovedToDoneThisMonthIssues
+                    : [.. IssueKeys.Select(static key => new IssueListItem(key, new IssueSummary($"Summary {key.Value}")))]
+            );
         }
 
         public Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(

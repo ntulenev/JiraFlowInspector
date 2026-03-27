@@ -26,11 +26,12 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
     public Task<JiraIssueResponse?> GetIssueWithChangelogAsync(
         IssueKey issueKey,
+        IReadOnlyList<string>? fields,
         CancellationToken cancellationToken)
     {
         return _transport.GetAsync<JiraIssueResponse>(
             new Uri(
-                $"rest/api/3/issue/{Uri.EscapeDataString(issueKey.Value)}?expand=changelog",
+                BuildIssueWithChangelogUrl(issueKey, fields),
                 UriKind.Relative),
             cancellationToken);
     }
@@ -91,6 +92,29 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
         }
 
         return searchUrl;
+    }
+
+    private static string BuildIssueWithChangelogUrl(
+        IssueKey issueKey,
+        IReadOnlyList<string>? fields)
+    {
+        var issueUrl = $"rest/api/3/issue/{Uri.EscapeDataString(issueKey.Value)}?expand=changelog";
+        if (fields is null)
+        {
+            return issueUrl;
+        }
+
+        var encodedFields = fields
+            .Where(static field => !string.IsNullOrWhiteSpace(field))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(Uri.EscapeDataString)
+            .ToArray();
+        if (encodedFields.Length == 0)
+        {
+            return issueUrl;
+        }
+
+        return issueUrl + $"&fields={string.Join(",", encodedFields)}";
     }
 
     private readonly IJiraTransport _transport;

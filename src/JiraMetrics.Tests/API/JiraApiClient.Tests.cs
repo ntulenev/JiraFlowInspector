@@ -32,6 +32,7 @@ public sealed class JiraApiClientTests
         Action act = () => _ = new JiraApiClient(
             searchExecutor,
             Mock.Of<IJiraJqlFacade>(),
+            CreateSettings(),
             Mock.Of<IJiraFieldResolver>(),
             Mock.Of<IJiraMapperFacade>());
 
@@ -1614,6 +1615,7 @@ public sealed class JiraApiClientTests
     {
         // Arrange
         using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
         var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":1}}}").RootElement.Clone();
 
         var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
@@ -1621,6 +1623,7 @@ public sealed class JiraApiClientTests
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
                 It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1649,6 +1652,8 @@ public sealed class JiraApiClientTests
 
         // Assert
         issue.HasPullRequest.Should().BeTrue();
+        capturedUrl.Should().Contain("expand=changelog");
+        capturedUrl.Should().Contain("fields=summary,created,resolutiondate,issuetype,status,issuelinks,subtasks,customfield_99999");
     }
 
     [Fact(DisplayName = "GetIssueTimelineAsync detects pull request when pull request field name is not configured")]
@@ -1657,6 +1662,7 @@ public sealed class JiraApiClientTests
     {
         // Arrange
         using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
         var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":1}}}").RootElement.Clone();
 
         var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
@@ -1664,6 +1670,7 @@ public sealed class JiraApiClientTests
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
                 It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1692,6 +1699,8 @@ public sealed class JiraApiClientTests
 
         // Assert
         issue.HasPullRequest.Should().BeTrue();
+        capturedUrl.Should().Contain("expand=changelog");
+        capturedUrl.Should().NotContain("&fields=");
     }
 
     [Fact(DisplayName = "GetIssueTimelineAsync excludes weekends when configured")]
@@ -1898,6 +1907,7 @@ public sealed class JiraApiClientTests
                 new ReleaseIssuesJqlBuilder(resolvedSettings),
                 new ArchTasksJqlBuilder(resolvedSettings),
                 new GlobalIncidentsJqlBuilder(resolvedSettings)),
+            resolvedSettings,
             new JiraFieldResolver(transport),
             new JiraMapperFacade(
                 new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings, fieldValueReader),
