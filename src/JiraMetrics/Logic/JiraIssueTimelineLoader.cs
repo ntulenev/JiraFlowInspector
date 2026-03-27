@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using JiraMetrics.Abstractions;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
@@ -70,86 +68,40 @@ internal sealed class JiraIssueTimelineLoader
             return [];
         }
 
-        var semaphore = new SemaphoreSlim(MAX_CONCURRENT_ISSUE_LOADS);
+        var batchResult = await _apiClient
+            .GetIssueTimelinesAsync(issueKeys, cancellationToken)
+            .ConfigureAwait(false);
+        var loadedIssuesByKey = batchResult.Issues.ToDictionary(
+            static issue => issue.Key.Value,
+            StringComparer.OrdinalIgnoreCase);
+        var failuresByKey = batchResult.Failures.ToDictionary(
+            static failure => failure.IssueKey.Value,
+            StringComparer.OrdinalIgnoreCase);
+        var outcomes = new List<IssueLoadOutcome>(issueKeys.Count);
 
-        try
+        foreach (var issueKey in issueKeys)
         {
-            var presentationSync = new object();
-            var tasks = issueKeys
-                .Select(issueKey => LoadIssueAsync(issueKey, semaphore, presentationSync, cancellationToken))
-                .ToArray();
-
-            return await Task.WhenAll(tasks).ConfigureAwait(false);
-        }
-        finally
-        {
-            semaphore.Dispose();
-        }
-    }
-
-    private async Task<IssueLoadOutcome> LoadIssueAsync(
-        IssueKey issueKey,
-        SemaphoreSlim semaphore,
-        object presentationSync,
-        CancellationToken cancellationToken)
-    {
-        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            try
+            if (loadedIssuesByKey.TryGetValue(issueKey.Value, out var issue))
             {
-                var issue = await _apiClient
-                    .GetIssueTimelineAsync(issueKey, cancellationToken)
-                    .ConfigureAwait(false);
-                lock (presentationSync)
-                {
-                    _presentationService.ShowIssueLoaded(issueKey);
-                }
-
-                return new IssueLoadOutcome(issueKey, issue, null);
+                _presentationService.ShowIssueLoaded(issueKey);
+                outcomes.Add(new IssueLoadOutcome(issueKey, issue, null));
             }
-            catch (HttpRequestException ex)
+            else if (failuresByKey.TryGetValue(issueKey.Value, out var failure))
             {
-                lock (presentationSync)
-                {
-                    _presentationService.ShowIssueFailed(issueKey);
-                }
-
-                return new IssueLoadOutcome(
+                _presentationService.ShowIssueFailed(issueKey);
+                outcomes.Add(new IssueLoadOutcome(issueKey, null, failure));
+            }
+            else
+            {
+                var missingIssueFailure = new LoadFailure(
                     issueKey,
-                    null,
-                    new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-            }
-            catch (InvalidOperationException ex)
-            {
-                lock (presentationSync)
-                {
-                    _presentationService.ShowIssueFailed(issueKey);
-                }
-
-                return new IssueLoadOutcome(
-                    issueKey,
-                    null,
-                    new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-            }
-            catch (JsonException ex)
-            {
-                lock (presentationSync)
-                {
-                    _presentationService.ShowIssueFailed(issueKey);
-                }
-
-                return new IssueLoadOutcome(
-                    issueKey,
-                    null,
-                    new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+                    new ErrorMessage("Issue timeline was not returned by Jira."));
+                _presentationService.ShowIssueFailed(issueKey);
+                outcomes.Add(new IssueLoadOutcome(issueKey, null, missingIssueFailure));
             }
         }
-        finally
-        {
-            _ = semaphore.Release();
-        }
+
+        return outcomes;
     }
 
     private static List<IssueKey> BuildUniqueIssueKeys(
@@ -191,6 +143,4 @@ internal sealed class JiraIssueTimelineLoader
         IssueKey Key,
         IssueTimeline? Issue,
         LoadFailure? Failure);
-
-    private const int MAX_CONCURRENT_ISSUE_LOADS = 8;
 }

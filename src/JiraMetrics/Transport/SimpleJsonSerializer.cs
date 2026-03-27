@@ -10,6 +10,9 @@ namespace JiraMetrics.Transport;
 public sealed class SimpleJsonSerializer : ISerializer
 {
     /// <inheritdoc />
+    public string Serialize<T>(T value) => JsonSerializer.Serialize(value, _jsonOptions);
+
+    /// <inheritdoc />
     public T? Deserialize<T>(string json)
     {
         ArgumentNullException.ThrowIfNull(json);

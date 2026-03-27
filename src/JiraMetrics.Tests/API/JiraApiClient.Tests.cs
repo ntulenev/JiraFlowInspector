@@ -1567,6 +1567,98 @@ public sealed class JiraApiClientTests
         issue.Transitions.Should().ContainSingle();
     }
 
+    [Fact(DisplayName = "GetIssueTimelinesAsync uses bulk endpoints and maps per-key failures")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelinesAsyncWhenBulkResponsesAreValidReturnsMappedIssuesAndMissingFailures()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var developmentField = JsonDocument.Parse("{\"pullrequest\":{\"overall\":{\"count\":1}}}").RootElement.Clone();
+        var changelogCreatedAt = new DateTimeOffset(2026, 2, 1, 11, 0, 0, TimeSpan.Zero);
+        var changelogCreatedAtUnixMilliseconds = changelogCreatedAt.ToUnixTimeMilliseconds();
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.PostAsync<JiraBulkIssueFetchRequest, JiraBulkIssueFetchResponse>(
+                It.Is<Uri>(u => u.ToString() == "rest/api/3/issue/bulkfetch"),
+                It.Is<JiraBulkIssueFetchRequest>(request =>
+                    request.IssueIdsOrKeys.SequenceEqual(_bulkTimelineIssueKeys)),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraBulkIssueFetchResponse
+            {
+                Issues =
+                [
+                    new JiraIssueResponse
+                    {
+                        Id = "10001",
+                        Key = "AAA-1",
+                        Fields = new JiraIssueFieldsResponse
+                        {
+                            Summary = "Fix bug",
+                            IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                            Created = "2026-02-01T10:00:00Z",
+                            ResolutionDate = "2026-02-01T12:00:00Z",
+                            AdditionalFields = new Dictionary<string, JsonElement>
+                            {
+                                ["customfield_10800"] = developmentField
+                            }
+                        }
+                    }
+                ]
+            });
+        transport
+            .Setup(t => t.PostAsync<JiraBulkChangelogFetchRequest, JiraBulkChangelogFetchResponse>(
+                It.Is<Uri>(u => u.ToString() == "rest/api/3/changelog/bulkfetch"),
+                It.Is<JiraBulkChangelogFetchRequest>(request =>
+                    request.IssueIdsOrKeys.SequenceEqual(_bulkTimelineIssueKeys)
+                    && request.MaxResults == 1000
+                    && request.NextPageToken == null),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new JiraBulkChangelogFetchResponse
+            {
+                IssueChangeLogs =
+                [
+                    new JiraBulkIssueChangelogResponse
+                    {
+                        IssueId = "10001",
+                        ChangeHistories =
+                        [
+                            new JiraBulkHistoryResponse
+                            {
+                                Created = JsonDocument.Parse($"{changelogCreatedAtUnixMilliseconds}").RootElement.Clone(),
+                                Items =
+                                [
+                                    new JiraHistoryItemResponse
+                                    {
+                                        Field = "status",
+                                        FromStatus = "Open",
+                                        ToStatus = "Done"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            });
+
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var result = await client.GetIssueTimelinesAsync(
+            [new IssueKey("AAA-1"), new IssueKey("AAA-2")],
+            cts.Token);
+
+        // Assert
+        result.Issues.Should().ContainSingle();
+        result.Issues[0].Key.Value.Should().Be("AAA-1");
+        result.Issues[0].HasPullRequest.Should().BeTrue();
+        result.Issues[0].Transitions.Should().ContainSingle();
+        result.Issues[0].Transitions[0].At.Should().Be(changelogCreatedAt);
+        result.Failures.Should().ContainSingle();
+        result.Failures[0].IssueKey.Value.Should().Be("AAA-2");
+        result.Failures[0].Reason.Value.Should().Contain("not returned by Jira bulk fetch");
+    }
+
     [Fact(DisplayName = "GetIssueTimelineAsync sets no pull request flag when development pullrequest count is zero")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenDevelopmentPullRequestCountIsZeroSetsNoPullRequestFlag()
@@ -1916,4 +2008,6 @@ public sealed class JiraApiClientTests
     }
 
     private static TransitionBuilder CreateTransitionBuilder(IOptions<AppSettings> settings) => new(settings);
+
+    private static readonly string[] _bulkTimelineIssueKeys = ["AAA-1", "AAA-2"];
 }

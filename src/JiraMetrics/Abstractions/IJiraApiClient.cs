@@ -117,6 +117,16 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads issue timelines in batches.
+    /// </summary>
+    /// <param name="issueKeys">Issue keys.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Loaded issues and per-key failures.</returns>
+    Task<IssueTimelineBatchResult> GetIssueTimelinesAsync(
+        IReadOnlyList<IssueKey> issueKeys,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads full issue timeline for a specific issue key.
     /// </summary>
     /// <param name="issueKey">Issue key.</param>

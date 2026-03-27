@@ -6,6 +6,14 @@ namespace JiraMetrics.Abstractions;
 public interface ISerializer
 {
     /// <summary>
+    /// Serializes a value into JSON.
+    /// </summary>
+    /// <typeparam name="T">Source type.</typeparam>
+    /// <param name="value">Value to serialize.</param>
+    /// <returns>Serialized JSON payload.</returns>
+    string Serialize<T>(T value);
+
+    /// <summary>
     /// Deserializes JSON into a <typeparamref name="T"/> instance.
     /// </summary>
     /// <typeparam name="T">Target type.</typeparam>

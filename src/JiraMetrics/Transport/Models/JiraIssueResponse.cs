@@ -8,6 +8,12 @@ namespace JiraMetrics.Transport.Models;
 public sealed class JiraIssueResponse
 {
     /// <summary>
+    /// Gets issue id.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string? Id { get; init; }
+
+    /// <summary>
     /// Gets issue key.
     /// </summary>
     [JsonPropertyName("key")]

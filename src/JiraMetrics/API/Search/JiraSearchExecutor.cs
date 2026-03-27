@@ -36,6 +36,98 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<JiraIssueResponse>> GetIssuesAsync(
+        IReadOnlyList<IssueKey> issueKeys,
+        IReadOnlyList<string>? fields,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(issueKeys);
+
+        if (issueKeys.Count == 0)
+        {
+            return [];
+        }
+
+        var response = await _transport.PostAsync<JiraBulkIssueFetchRequest, JiraBulkIssueFetchResponse>(
+                new Uri("rest/api/3/issue/bulkfetch", UriKind.Relative),
+                new JiraBulkIssueFetchRequest
+                {
+                    Fields = fields,
+                    FieldsByKeys = false,
+                    IssueIdsOrKeys = [.. issueKeys.Select(static key => key.Value)]
+                },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (response is null)
+        {
+            throw new InvalidOperationException("Jira bulk issue response is empty.");
+        }
+
+        return response.Issues;
+    }
+
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<JiraHistoryResponse>>> GetIssueChangelogsAsync(
+        IReadOnlyList<IssueKey> issueKeys,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(issueKeys);
+
+        if (issueKeys.Count == 0)
+        {
+            return new Dictionary<string, IReadOnlyList<JiraHistoryResponse>>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var historiesByIssueId = new Dictionary<string, List<JiraHistoryResponse>>(StringComparer.OrdinalIgnoreCase);
+        string? nextPageToken = null;
+
+        while (true)
+        {
+            var response = await _transport.PostAsync<JiraBulkChangelogFetchRequest, JiraBulkChangelogFetchResponse>(
+                    new Uri("rest/api/3/changelog/bulkfetch", UriKind.Relative),
+                    new JiraBulkChangelogFetchRequest
+                    {
+                        IssueIdsOrKeys = [.. issueKeys.Select(static key => key.Value)],
+                        MaxResults = BULK_CHANGELOG_PAGE_SIZE,
+                        NextPageToken = nextPageToken
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (response is null)
+            {
+                throw new InvalidOperationException("Jira bulk changelog response is empty.");
+            }
+
+            foreach (var issueChangeLog in response.IssueChangeLogs)
+            {
+                if (string.IsNullOrWhiteSpace(issueChangeLog.IssueId))
+                {
+                    continue;
+                }
+
+                if (!historiesByIssueId.TryGetValue(issueChangeLog.IssueId, out var histories))
+                {
+                    histories = [];
+                    historiesByIssueId[issueChangeLog.IssueId] = histories;
+                }
+
+                histories.AddRange(issueChangeLog.ChangeHistories.Select(static history => history.ToHistoryResponse()));
+            }
+
+            nextPageToken = response.NextPageToken;
+            if (string.IsNullOrWhiteSpace(nextPageToken))
+            {
+                break;
+            }
+        }
+
+        return historiesByIssueId.ToDictionary(
+            static pair => pair.Key,
+            static pair => (IReadOnlyList<JiraHistoryResponse>)[.. pair.Value],
+            StringComparer.OrdinalIgnoreCase);
+    }
+
     public async Task<IReadOnlyList<JiraIssueKeyResponse>> SearchIssuesAsync(
         string jql,
         IReadOnlyList<string> fields,
@@ -118,5 +210,6 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
     }
 
     private readonly IJiraTransport _transport;
+    private const int BULK_CHANGELOG_PAGE_SIZE = 1000;
 }
 #pragma warning restore CS1591

@@ -140,6 +140,69 @@ public sealed class JiraTransportTests
         result!.DisplayName.Should().Be("Jane Doe");
     }
 
+    [Fact(DisplayName = "PostAsync sends JSON payload and returns deserialized DTO")]
+    [Trait("Category", "Unit")]
+    public async Task PostAsyncWhenResponseIsValidReturnsDto()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var sendCalls = 0;
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/issue/bulkfetch");
+        var requestBody = new { issueIdsOrKeys = new[] { "AAA-1" } };
+
+        var dto = new JiraBulkIssueFetchResponse
+        {
+            Issues =
+            [
+                new JiraIssueResponse
+                {
+                    Id = "10001",
+                    Key = "AAA-1"
+                }
+            ]
+        };
+        var json = JsonSerializer.Serialize(dto);
+
+        using var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Post
+                    && req.RequestUri == requestUrl
+                    && req.Content != null
+                    && req.Content.Headers.ContentType!.MediaType == "application/json"),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback(() => sendCalls++)
+            .ReturnsAsync(response);
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer());
+
+        // Act
+        var result = await transport.PostAsync<object, JiraBulkIssueFetchResponse>(
+            new Uri("rest/api/3/issue/bulkfetch", UriKind.Relative),
+            requestBody,
+            cts.Token);
+
+        // Assert
+        sendCalls.Should().Be(1);
+        result.Should().NotBeNull();
+        result!.Issues.Should().ContainSingle();
+        result.Issues[0].Key.Should().Be("AAA-1");
+    }
+
     [Fact(DisplayName = "GetAsync returns null when response body is null")]
     [Trait("Category", "Unit")]
     public async Task GetAsyncWhenResponseBodyIsNullReturnsNull()

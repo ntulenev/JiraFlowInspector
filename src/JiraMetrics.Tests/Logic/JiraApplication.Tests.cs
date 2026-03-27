@@ -792,9 +792,9 @@ public sealed class JiraApplicationTests
             "Rendering PDF report...");
     }
 
-    [Fact(DisplayName = "RunAsync loads issue timelines with bounded parallelism")]
+    [Fact(DisplayName = "RunAsync loads issue timelines with bulk API call")]
     [Trait("Category", "Unit")]
-    public async Task RunAsyncWhenMultipleIssueTimelinesAreLoadedUsesParallelRequests()
+    public async Task RunAsyncWhenMultipleIssueTimelinesAreLoadedUsesBulkTimelineFetch()
     {
         // Arrange
         var apiClient = new FakeApiClient
@@ -806,8 +806,7 @@ public sealed class JiraApplicationTests
                 new IssueKey("AAA-2"),
                 new IssueKey("AAA-3"),
                 new IssueKey("AAA-4")
-            ],
-            IssueTimelineDelay = TimeSpan.FromMilliseconds(75)
+            ]
         };
         apiClient.IssuesByKey["AAA-1"] = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task"));
         apiClient.IssuesByKey["AAA-2"] = CreateIssue(new IssueKey("AAA-2"), new IssueTypeName("Task"));
@@ -828,7 +827,8 @@ public sealed class JiraApplicationTests
         await app.RunAsync();
 
         // Assert
-        apiClient.MaxConcurrentIssueTimelineRequests.Should().BeGreaterThan(1);
+        apiClient.IssueTimelinesRequestCount.Should().Be(1);
+        apiClient.SingleIssueTimelineRequestCount.Should().Be(0);
         presentation.IssueLoadingCompletedLoaded.Should().Be(new ItemCount(4));
     }
 
@@ -1105,12 +1105,9 @@ public sealed class JiraApplicationTests
 
         public bool GlobalIncidentsRequested { get; private set; }
 
-        public TimeSpan IssueTimelineDelay { get; set; }
+        public int IssueTimelinesRequestCount { get; private set; }
 
-        public int MaxConcurrentIssueTimelineRequests => _maxConcurrentIssueTimelineRequests;
-
-        private int _activeIssueTimelineRequests;
-        private int _maxConcurrentIssueTimelineRequests;
+        public int SingleIssueTimelineRequestCount { get; private set; }
 
         public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken)
         {
@@ -1212,33 +1209,26 @@ public sealed class JiraApplicationTests
             return Task.FromResult(OpenIssuesByStatus);
         }
 
-        public async Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
+        public Task<IssueTimelineBatchResult> GetIssueTimelinesAsync(
+            IReadOnlyList<IssueKey> issueKeys,
+            CancellationToken cancellationToken)
         {
-            var activeRequests = Interlocked.Increment(ref _activeIssueTimelineRequests);
-            while (activeRequests > _maxConcurrentIssueTimelineRequests)
-            {
-                _ = Interlocked.CompareExchange(
-                    ref _maxConcurrentIssueTimelineRequests,
-                    activeRequests,
-                    _maxConcurrentIssueTimelineRequests);
-            }
+            IssueTimelinesRequestCount++;
 
-            if (FailIssueKeys.Contains(issueKey))
-            {
-                Interlocked.Decrement(ref _activeIssueTimelineRequests);
-                throw new InvalidOperationException("Failed to load issue.");
-            }
+            var issues = new List<IssueTimeline>(issueKeys.Count);
+            var failures = new List<LoadFailure>();
 
-            try
+            foreach (var issueKey in issueKeys)
             {
-                if (IssueTimelineDelay > TimeSpan.Zero)
+                if (FailIssueKeys.Contains(issueKey))
                 {
-                    await Task.Delay(IssueTimelineDelay, cancellationToken);
+                    failures.Add(new LoadFailure(issueKey, new ErrorMessage("Failed to load issue.")));
+                    continue;
                 }
 
                 if (IssuesByKey.TryGetValue(issueKey.Value, out var configuredIssue))
                 {
-                    return new IssueTimeline(
+                    issues.Add(new IssueTimeline(
                         issueKey,
                         configuredIssue.IssueType,
                         configuredIssue.Summary,
@@ -1248,15 +1238,17 @@ public sealed class JiraApplicationTests
                         configuredIssue.PathKey,
                         configuredIssue.PathLabel,
                         configuredIssue.SubItemsCount,
-                        configuredIssue.HasPullRequest);
+                        configuredIssue.HasPullRequest));
+                    continue;
                 }
 
                 if (IssueToReturn is null)
                 {
-                    throw new InvalidOperationException("No issue configured for fake transport.");
+                    failures.Add(new LoadFailure(issueKey, new ErrorMessage("No issue configured for fake transport.")));
+                    continue;
                 }
 
-                return new IssueTimeline(
+                issues.Add(new IssueTimeline(
                     issueKey,
                     IssueToReturn.IssueType,
                     IssueToReturn.Summary,
@@ -1266,12 +1258,52 @@ public sealed class JiraApplicationTests
                     IssueToReturn.PathKey,
                     IssueToReturn.PathLabel,
                     IssueToReturn.SubItemsCount,
-                    IssueToReturn.HasPullRequest);
+                    IssueToReturn.HasPullRequest));
             }
-            finally
+
+            return Task.FromResult(new IssueTimelineBatchResult(issues, failures));
+        }
+
+        public async Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
+        {
+            SingleIssueTimelineRequestCount++;
+
+            if (FailIssueKeys.Contains(issueKey))
             {
-                Interlocked.Decrement(ref _activeIssueTimelineRequests);
+                throw new InvalidOperationException("Failed to load issue.");
             }
+
+            if (IssuesByKey.TryGetValue(issueKey.Value, out var configuredIssue))
+            {
+                return new IssueTimeline(
+                    issueKey,
+                    configuredIssue.IssueType,
+                    configuredIssue.Summary,
+                    configuredIssue.Created,
+                    configuredIssue.EndTime,
+                    configuredIssue.Transitions,
+                    configuredIssue.PathKey,
+                    configuredIssue.PathLabel,
+                    configuredIssue.SubItemsCount,
+                    configuredIssue.HasPullRequest);
+            }
+
+            if (IssueToReturn is null)
+            {
+                throw new InvalidOperationException("No issue configured for fake transport.");
+            }
+
+            return await Task.FromResult(new IssueTimeline(
+                issueKey,
+                IssueToReturn.IssueType,
+                IssueToReturn.Summary,
+                IssueToReturn.Created,
+                IssueToReturn.EndTime,
+                IssueToReturn.Transitions,
+                IssueToReturn.PathKey,
+                IssueToReturn.PathLabel,
+                IssueToReturn.SubItemsCount,
+                IssueToReturn.HasPullRequest));
         }
     }
 

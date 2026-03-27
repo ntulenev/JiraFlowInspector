@@ -22,6 +22,21 @@ public interface IJiraSearchExecutor
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads multiple issues in a single bulk request.
+    /// </summary>
+    Task<IReadOnlyList<JiraIssueResponse>> GetIssuesAsync(
+        IReadOnlyList<IssueKey> issueKeys,
+        IReadOnlyList<string>? fields,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads multiple issue changelogs keyed by Jira issue id.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, IReadOnlyList<JiraHistoryResponse>>> GetIssueChangelogsAsync(
+        IReadOnlyList<IssueKey> issueKeys,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Executes a paged search query.
     /// </summary>
     Task<IReadOnlyList<JiraIssueKeyResponse>> SearchIssuesAsync(

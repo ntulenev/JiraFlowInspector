@@ -1,3 +1,5 @@
+using System.Text;
+
 using JiraMetrics.Abstractions;
 
 namespace JiraMetrics.Transport;
@@ -26,8 +28,41 @@ public sealed class JiraTransport : IJiraTransport
 
     /// <inheritdoc />
     public async Task<TDto?> GetAsync<TDto>(Uri url, CancellationToken cancellationToken)
+        => await SendAsync<TDto>(
+            url,
+            static requestUrl => new HttpRequestMessage(HttpMethod.Get, requestUrl),
+            cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<TDto?> PostAsync<TRequest, TDto>(
+        Uri url,
+        TRequest request,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(request);
+
+        var json = _serializer.Serialize(request);
+        return await SendAsync<TDto>(
+            url,
+            requestUrl =>
+            {
+                var message = new HttpRequestMessage(HttpMethod.Post, requestUrl)
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                return message;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<TDto?> SendAsync<TDto>(
+        Uri url,
+        Func<Uri, HttpRequestMessage> requestFactory,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(requestFactory);
 
         var attempt = 0;
 
@@ -35,7 +70,8 @@ public sealed class JiraTransport : IJiraTransport
         {
             try
             {
-                using var response = await _http.GetAsync(url, cancellationToken).ConfigureAwait(false);
+                using var request = requestFactory(url);
+                using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
                 {
