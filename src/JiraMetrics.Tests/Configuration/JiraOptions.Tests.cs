@@ -179,6 +179,168 @@ public sealed class JiraOptionsTests
         results.Should().Contain(result => result.MemberNames.Contains("CreatedAfter"));
     }
 
+    [Fact(DisplayName = "Validation succeeds when explicit from-to range is configured")]
+    [Trait("Category", "Unit")]
+    public void ValidateWhenFromToRangeIsConfiguredReturnsNoErrors()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
+            },
+            From = "16.03.2026",
+            To = "29.03.2026",
+            RetryCount = 0
+        };
+
+        // Act
+        var results = Validate(options);
+
+        // Assert
+        results.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Validation fails when month label and from-to are configured together")]
+    [Trait("Category", "Unit")]
+    public void ValidateWhenMonthLabelAndFromToAreConfiguredReturnsError()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
+            },
+            MonthLabel = "2026-03",
+            From = "16.03.2026",
+            To = "29.03.2026",
+            RetryCount = 0
+        };
+
+        // Act
+        var results = Validate(options);
+
+        // Assert
+        results.Should().Contain(result =>
+            result.MemberNames.Contains("MonthLabel")
+            && result.MemberNames.Contains("From")
+            && result.MemberNames.Contains("To"));
+    }
+
+    [Fact(DisplayName = "Validation fails when only one explicit date bound is provided")]
+    [Trait("Category", "Unit")]
+    public void ValidateWhenOnlyOneDateBoundIsProvidedReturnsError()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
+            },
+            From = "16.03.2026",
+            RetryCount = 0
+        };
+
+        // Act
+        var results = Validate(options);
+
+        // Assert
+        results.Should().Contain(result =>
+            result.MemberNames.Contains("From")
+            && result.MemberNames.Contains("To"));
+    }
+
+    [Fact(DisplayName = "Validation fails when explicit date range format is invalid")]
+    [Trait("Category", "Unit")]
+    public void ValidateWhenFromToFormatIsInvalidReturnsError()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
+            },
+            From = "2026/03/16",
+            To = "29.03.2026",
+            RetryCount = 0
+        };
+
+        // Act
+        var results = Validate(options);
+
+        // Assert
+        results.Should().Contain(result => result.MemberNames.Contains("From"));
+    }
+
+    [Fact(DisplayName = "Validation fails when explicit from date is after to date")]
+    [Trait("Category", "Unit")]
+    public void ValidateWhenFromDateIsAfterToDateReturnsError()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net", UriKind.Absolute),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"]
+                }
+            },
+            From = "29.03.2026",
+            To = "16.03.2026",
+            RetryCount = 0
+        };
+
+        // Act
+        var results = Validate(options);
+
+        // Assert
+        results.Should().Contain(result =>
+            result.MemberNames.Contains("From")
+            && result.MemberNames.Contains("To"));
+    }
+
     [Fact(DisplayName = "TeamTasksOptions enables general statistics by default")]
     [Trait("Category", "Unit")]
     public void TeamTasksOptionsWhenCreatedWithoutFlagUsesTrue()

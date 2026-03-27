@@ -70,6 +70,7 @@ public sealed class AppSettingsTests
         settings.DoneStatusName.Should().Be(doneStatus);
         settings.RejectStatusName.Should().Be(rejectStatus);
         settings.RequiredPathStages.Should().ContainInOrder(requiredPathStages);
+        settings.ReportPeriod.Should().Be(ReportPeriod.FromMonthLabel(monthLabel));
         settings.MonthLabel.Should().Be(monthLabel);
         settings.CreatedAfter.Should().Be(createdAfter);
         settings.IssueTypes.Select(static issueType => issueType.Value).Should().ContainInOrder("Bug", "Story");
@@ -104,6 +105,30 @@ public sealed class AppSettingsTests
 
         // Assert
         settings.ShowTimeCalculationsInHoursOnly.Should().BeFalse();
+        settings.ReportPeriod.Should().Be(ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")));
         settings.PullRequestFieldName.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Constructor stores explicit date range period")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenReportPeriodIsDateRangeStoresPeriodAndKeepsMonthLabelNull()
+    {
+        // Arrange
+        var reportPeriod = ReportPeriod.FromDateRange(new DateOnly(2026, 3, 16), new DateOnly(2026, 3, 29));
+
+        // Act
+        var settings = new AppSettings(
+            new JiraBaseUrl("https://example.atlassian.net"),
+            new JiraEmail("user@example.com"),
+            new JiraApiToken("token"),
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            [new StageName("Code Review")],
+            reportPeriod);
+
+        // Assert
+        settings.ReportPeriod.Should().Be(reportPeriod);
+        settings.MonthLabel.Should().BeNull();
     }
 }

@@ -56,7 +56,9 @@ public sealed class SpectreJiraPresentationServiceTests
         // Act
         var output = await RunWithTestConsoleAsync(console =>
         {
-            service.ShowReportPeriodContext(new MonthLabel("2026-02"), new CreatedAfterDate("2026-01-01"));
+            service.ShowReportPeriodContext(
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")),
+                new CreatedAfterDate("2026-01-01"));
             return Task.FromResult(console.Output);
         });
 
@@ -78,7 +80,9 @@ public sealed class SpectreJiraPresentationServiceTests
         // Act
         var output = await RunWithTestConsoleAsync(console =>
         {
-            service.ShowReportPeriodContext(new MonthLabel("2026-02"), null);
+            service.ShowReportPeriodContext(
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")),
+                null);
             return Task.FromResult(console.Output);
         });
 
@@ -361,10 +365,10 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Filtered by:");
         output.Should().Contain("NOVA Team = Processing");
         output.Should().NotContain("Created this month");
-        output.Should().Contain("Open this month");
-        output.Should().Contain("Done this month");
-        output.Should().Contain("Rejected this month");
-        output.Should().Contain("Finished this month");
+        output.Should().Contain("Open in selected period");
+        output.Should().Contain("Done in selected period");
+        output.Should().Contain("Rejected in selected period");
+        output.Should().Contain("Finished in selected period");
         output.Should().Contain("62.5%");
         output.Should().Contain("Open issues");
         output.Should().Contain("Done issues");
@@ -407,10 +411,10 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("ADF Team = Processing");
         output.Should().Contain("Issue types");
         output.Should().Contain("All");
-        output.Should().Contain("Open this month");
-        output.Should().Contain("Done this month");
-        output.Should().Contain("Rejected this month");
-        output.Should().Contain("Finished this month");
+        output.Should().Contain("Open in selected period");
+        output.Should().Contain("Done in selected period");
+        output.Should().Contain("Rejected in selected period");
+        output.Should().Contain("Finished in selected period");
         output.Should().Contain("144.68%");
         output.Should().NotContain("Open issues");
         output.Should().NotContain("Done issues");
@@ -445,7 +449,7 @@ public sealed class SpectreJiraPresentationServiceTests
         });
 
         // Assert
-        output.Should().Contain("Issues moved to Rejected this month");
+        output.Should().Contain("Issues moved to Rejected in selected period");
         output.Should().Contain("Created");
         output.Should().Contain("Rejected At");
         output.Should().Contain("Days at");
@@ -555,7 +559,7 @@ public sealed class SpectreJiraPresentationServiceTests
         });
 
         // Assert
-        output.Should().Contain("Issues moved to Rejected this month");
+        output.Should().Contain("Issues moved to Rejected in selected period");
         output.Should().Contain("No issues");
     }
 
@@ -720,7 +724,7 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowReleaseReport(
                 settings,
-                new MonthLabel("2026-02"),
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")),
                 [new ReleaseIssueItem(
                     new IssueKey("RLS-1"),
                     new IssueSummary("Release 1"),
@@ -776,7 +780,7 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowReleaseReport(
                 settings,
-                new MonthLabel("2026-02"),
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")),
                 [
                     new ReleaseIssueItem(
                         new IssueKey("RLS-1"),
@@ -854,7 +858,7 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowReleaseReport(
                 settings,
-                new MonthLabel("2026-02"),
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")),
                 [new ReleaseIssueItem(
                     new IssueKey("RLS-2"),
                     new IssueSummary("Release 2"),
@@ -895,7 +899,7 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowGlobalIncidentsReport(
                 settings,
-                new MonthLabel("2026-03"),
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-03")),
                 [
                     new GlobalIncidentItem(
                         new IssueKey("INC-11861"),
@@ -964,7 +968,7 @@ public sealed class SpectreJiraPresentationServiceTests
         {
             service.ShowGlobalIncidentsReport(
                 settings,
-                new MonthLabel("2026-03"),
+                ReportPeriod.FromMonthLabel(new MonthLabel("2026-03")),
                 [
                     new GlobalIncidentItem(
                         new IssueKey("INC-11861"),

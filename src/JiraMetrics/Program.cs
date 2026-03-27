@@ -39,9 +39,7 @@ builder.Services.AddSingleton(sp =>
 {
     var source = sp.GetRequiredService<IOptions<JiraOptions>>().Value;
     var teamTasks = source.TeamTasks ?? throw new InvalidOperationException("TeamTasks section is required.");
-    var monthLabel = string.IsNullOrWhiteSpace(source.MonthLabel)
-        ? MonthLabel.CurrentUtc()
-        : new MonthLabel(source.MonthLabel);
+    var reportPeriod = ResolveReportPeriod(source);
     var createdAfter = string.IsNullOrWhiteSpace(source.CreatedAfter)
         ? (CreatedAfterDate?)null
         : new CreatedAfterDate(source.CreatedAfter);
@@ -92,7 +90,7 @@ builder.Services.AddSingleton(sp =>
         new StatusName(teamTasks.DoneStatusName),
         rejectStatusName,
         requiredPathStages,
-        monthLabel,
+        reportPeriod,
         createdAfter,
         issueTypes,
         customFieldName,
@@ -185,6 +183,39 @@ static DateOnly ParseExcludedDay(string value)
     }
 
     throw new FormatException($"Invalid excluded day '{value}'. Expected dd.MM.yyyy or yyyy-MM-dd.");
+}
+
+static ReportPeriod ResolveReportPeriod(JiraOptions source)
+{
+    ArgumentNullException.ThrowIfNull(source);
+
+    var hasMonthLabel = !string.IsNullOrWhiteSpace(source.MonthLabel);
+    var hasFrom = !string.IsNullOrWhiteSpace(source.From);
+    var hasTo = !string.IsNullOrWhiteSpace(source.To);
+
+    if (hasMonthLabel && (hasFrom || hasTo))
+    {
+        throw new InvalidOperationException("Use either MonthLabel or From/To, but not both.");
+    }
+
+    if (hasFrom != hasTo)
+    {
+        throw new InvalidOperationException("Both From and To must be provided together.");
+    }
+
+    if (hasFrom)
+    {
+        var fromDate = ReportPeriod.ParseConfiguredDate(source.From!, nameof(source.From));
+        var toDate = ReportPeriod.ParseConfiguredDate(source.To!, nameof(source.To));
+        return ReportPeriod.FromDateRange(fromDate, toDate);
+    }
+
+    if (hasMonthLabel)
+    {
+        return ReportPeriod.FromMonthLabel(new MonthLabel(source.MonthLabel!));
+    }
+
+    return ReportPeriod.CurrentUtcMonth();
 }
 
 static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)

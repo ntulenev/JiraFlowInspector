@@ -56,9 +56,10 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowAuthenticationFailed(ErrorMessage errorMessage) => AnsiConsole.MarkupLine($"[red]Auth failed:[/] {Markup.Escape(errorMessage.Value)}");
 
     /// <inheritdoc />
-    public void ShowReportPeriodContext(MonthLabel monthLabel, CreatedAfterDate? createdAfter)
+    public void ShowReportPeriodContext(ReportPeriod reportPeriod, CreatedAfterDate? createdAfter)
     {
-        AnsiConsole.MarkupLine($"[grey]Month label:[/] {Markup.Escape(monthLabel.Value)}");
+        var periodLabel = reportPeriod.IsMonthBased ? "Month label" : "Date range";
+        AnsiConsole.MarkupLine($"[grey]{periodLabel}:[/] {Markup.Escape(reportPeriod.Label)}");
         if (createdAfter is { } value)
         {
             AnsiConsole.MarkupLine($"[grey]Created after:[/] {Markup.Escape(value.ToString())}");
@@ -79,7 +80,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 .LeftJustified());
 
         AnsiConsole.MarkupLine(
-            $"[grey]Filter:[/] project = {Markup.Escape(settings.ProjectKey.Value)}, moved to {Markup.Escape(settings.DoneStatusName.Value)} in {Markup.Escape(settings.MonthLabel.Value)}");
+            $"[grey]Filter:[/] project = {Markup.Escape(settings.ProjectKey.Value)}, moved to {Markup.Escape(settings.DoneStatusName.Value)} during {Markup.Escape(settings.ReportPeriod.Label)}");
         if (settings.CreatedAfter is { } createdAfter)
         {
             AnsiConsole.MarkupLine($"[grey]Created after:[/] {Markup.Escape(createdAfter.ToString())}");
@@ -154,7 +155,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             return;
         }
 
-        AnsiConsole.MarkupLine("[bold]Issues moved to Done this month[/]");
+        AnsiConsole.MarkupLine("[bold]Issues moved to Done in selected period[/]");
 
         var table = new Table()
             .RoundedBorder()
@@ -244,7 +245,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        AnsiConsole.MarkupLine("[bold]Issues moved to Rejected this month[/]");
+        AnsiConsole.MarkupLine("[bold]Issues moved to Rejected in selected period[/]");
 
         if (issues.Count == 0)
         {
@@ -317,7 +318,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     /// <inheritdoc />
     public void ShowReleaseReport(
         ReleaseReportSettings settings,
-        MonthLabel monthLabel,
+        ReportPeriod reportPeriod,
         IReadOnlyList<ReleaseIssueItem> releases)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -326,7 +327,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         AnsiConsole.MarkupLine("[bold]Release report[/]");
         AnsiConsole.MarkupLine($"[bold red]All releases by label \"{Markup.Escape(settings.ProjectLabel)}\"[/]");
         AnsiConsole.MarkupLine(
-            $"[grey]Project:[/] {Markup.Escape(settings.ReleaseProjectKey.Value)}    [grey]Label:[/] {Markup.Escape(settings.ProjectLabel)}    [grey]Month:[/] {Markup.Escape(monthLabel.Value)}");
+            $"[grey]Project:[/] {Markup.Escape(settings.ReleaseProjectKey.Value)}    [grey]Label:[/] {Markup.Escape(settings.ProjectLabel)}    [grey]Period:[/] {Markup.Escape(reportPeriod.Label)}");
         if (!string.IsNullOrWhiteSpace(settings.ComponentsFieldName))
         {
             AnsiConsole.MarkupLine($"[grey]Components field:[/] {Markup.Escape(settings.ComponentsFieldName)}");
@@ -349,7 +350,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         if (releases.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No releases found for selected month.[/]");
+            AnsiConsole.MarkupLine("[yellow]No releases found for selected period.[/]");
             AnsiConsole.MarkupLine(
                 $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}    [grey]Rollbacks count:[/] {rollbackCount}");
             return;
@@ -521,7 +522,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     /// <inheritdoc />
     public void ShowGlobalIncidentsReport(
         GlobalIncidentsReportSettings settings,
-        MonthLabel monthLabel,
+        ReportPeriod reportPeriod,
         IReadOnlyList<GlobalIncidentItem> incidents)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -529,7 +530,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         AnsiConsole.MarkupLine("[bold]Global incidents report[/]");
         AnsiConsole.MarkupLine(
-            $"[grey]Namespace:[/] {Markup.Escape(settings.Namespace)}    [grey]Month:[/] {Markup.Escape(monthLabel.Value)}");
+            $"[grey]Namespace:[/] {Markup.Escape(settings.Namespace)}    [grey]Period:[/] {Markup.Escape(reportPeriod.Label)}");
         if (!string.IsNullOrWhiteSpace(settings.JqlFilter))
         {
             AnsiConsole.MarkupLine($"[grey]JQL filter:[/] {Markup.Escape(settings.JqlFilter)}");
@@ -547,7 +548,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
         if (incidents.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No incidents found for selected month.[/]");
+            AnsiConsole.MarkupLine("[yellow]No incidents found for selected period.[/]");
             return;
         }
 
@@ -746,10 +747,10 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             .AddColumn("[bold]Value[/]");
 
         _ = table.AddRow(Markup.Escape(scopeLabel), Markup.Escape(scopeValue));
-        _ = table.AddRow("[red]Open this month[/]", $"[red]{openThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[green]Done this month[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[orange1]Rejected this month[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[deepskyblue1]Finished this month[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[red]Open in selected period[/]", $"[red]{openThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[green]Done in selected period[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[orange1]Rejected in selected period[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[deepskyblue1]Finished in selected period[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
         _ = table.AddRow("Finished / Created", BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
 
         return table;

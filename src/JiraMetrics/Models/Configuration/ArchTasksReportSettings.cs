@@ -29,20 +29,21 @@ public sealed record ArchTasksReportSettings
     public string Jql { get; }
 
     /// <summary>
-    /// Builds final JQL for a specific reporting month.
+    /// Builds final JQL for a specific reporting period.
     /// </summary>
-    /// <param name="monthLabel">Reporting month.</param>
+    /// <param name="reportPeriod">Reporting period.</param>
     /// <returns>Resolved JQL string.</returns>
-    public string BuildJql(MonthLabel monthLabel)
+    public string BuildJql(ReportPeriod reportPeriod)
     {
-        var (monthStart, nextMonthStart) = monthLabel.GetMonthRange();
+        var periodStart = reportPeriod.Start;
+        var periodEndExclusive = reportPeriod.EndExclusive;
         var monthResolvedClause =
-            $"(resolved >= \"{monthStart:yyyy-MM-dd}\" AND resolved < \"{nextMonthStart:yyyy-MM-dd}\")";
+            $"(resolved >= \"{periodStart:yyyy-MM-dd}\" AND resolved < \"{periodEndExclusive:yyyy-MM-dd}\")";
 
         return Jql
             .Replace(MONTH_RESOLVED_CLAUSE_TOKEN, monthResolvedClause, StringComparison.OrdinalIgnoreCase)
             .Replace(LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN_RU, monthResolvedClause, StringComparison.OrdinalIgnoreCase)
             .Replace(LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN, monthResolvedClause, StringComparison.OrdinalIgnoreCase)
-            .Replace(MONTH_LABEL_TOKEN, monthLabel.Value.EscapeJqlString(), StringComparison.OrdinalIgnoreCase);
+            .Replace(MONTH_LABEL_TOKEN, reportPeriod.Label.EscapeJqlString(), StringComparison.OrdinalIgnoreCase);
     }
 }

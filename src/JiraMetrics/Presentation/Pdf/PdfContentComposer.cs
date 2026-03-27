@@ -68,12 +68,17 @@ public sealed class PdfContentComposer : IPdfContentComposer
             .FontColor(Colors.Red.Darken2);
         _ = column
             .Item()
+            .Text(
+                $"Project: {releaseReport.ReleaseProjectKey.Value}    Label: {releaseReport.ProjectLabel}    Period: {reportData.Settings.ReportPeriod.Label}")
+            .FontColor(Colors.Grey.Darken1);
+        _ = column
+            .Item()
             .Text($"Hot-fix markers: {BuildHotFixRulesText(releaseReport.HotFixRules)}")
             .FontColor(Colors.Grey.Darken1);
 
         if (reportData.ReleaseIssues.Count == 0)
         {
-            _ = column.Item().Text("No releases found for selected month.").FontColor(Colors.Grey.Darken1);
+            _ = column.Item().Text("No releases found for selected period.").FontColor(Colors.Grey.Darken1);
             _ = column.Item().Text("Total releases: 0    Hotfix count: 0    Rollbacks count: 0").FontColor(Colors.Grey.Darken1);
             return;
         }
@@ -396,7 +401,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
         }
 
         _ = column.Item().Text("Global incidents report").Bold().FontSize(12);
-        _ = column.Item().Text($"Namespace: {globalIncidentsReport.Namespace}").FontColor(Colors.Grey.Darken1);
+        _ = column
+            .Item()
+            .Text($"Namespace: {globalIncidentsReport.Namespace}    Period: {reportData.Settings.ReportPeriod.Label}")
+            .FontColor(Colors.Grey.Darken1);
         if (!string.IsNullOrWhiteSpace(globalIncidentsReport.JqlFilter))
         {
             _ = column.Item().Text($"JQL filter: {globalIncidentsReport.JqlFilter}").FontColor(Colors.Grey.Darken1);
@@ -416,7 +424,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         if (reportData.GlobalIncidents.Count == 0)
         {
-            _ = column.Item().Text("No incidents found for selected month.").FontColor(Colors.Grey.Darken1);
+            _ = column.Item().Text("No incidents found for selected period.").FontColor(Colors.Grey.Darken1);
             return;
         }
 
@@ -595,17 +603,17 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeLabel);
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeValue);
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Open this month");
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Open in selected period");
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(openThisMonth.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Done this month");
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Done in selected period");
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
                 .Text(movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Rejected this month");
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Rejected in selected period");
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
                 .Text(rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished this month");
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished in selected period");
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
                 .Text(finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
@@ -710,7 +718,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         ComposeIssueTimelineSection(
             column,
-            "Issues moved to Done this month",
+            "Issues moved to Done in selected period",
             reportData.DoneIssues,
             reportData.Settings.BaseUrl,
             reportData.Settings.DoneStatusName,
@@ -728,7 +736,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
         {
             ComposeIssueTimelineSection(
                 column,
-                "Issues moved to Rejected this month",
+                "Issues moved to Rejected in selected period",
                 reportData.RejectedIssues,
                 reportData.Settings.BaseUrl,
                 rejectStatusName,

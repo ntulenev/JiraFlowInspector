@@ -17,7 +17,7 @@ public interface IJiraApiClient
     Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Loads issue keys moved to done this month.
+    /// Loads issue keys moved to done during the configured report period.
     /// </summary>
     /// <param name="projectKey">Project key.</param>
     /// <param name="doneStatusName">Done status.</param>
@@ -73,7 +73,7 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Loads release issues for configured month.
+    /// Loads release issues for the configured report period.
     /// </summary>
     /// <param name="releaseProjectKey">Release project key.</param>
     /// <param name="projectLabel">Project label filter.</param>
@@ -84,7 +84,7 @@ public interface IJiraApiClient
     /// <param name="environmentFieldName">Optional environment field name used for filtering.</param>
     /// <param name="environmentFieldValue">Optional environment field value used for filtering.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Release issues in selected month.</returns>
+    /// <returns>Release issues in selected period.</returns>
     Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
         ProjectKey releaseProjectKey,
         string projectLabel,
@@ -107,11 +107,11 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Loads global incidents for configured month.
+    /// Loads global incidents for the configured report period.
     /// </summary>
     /// <param name="settings">Global incidents report settings.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Incident issues in selected month.</returns>
+    /// <returns>Incident issues in selected period.</returns>
     Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken);

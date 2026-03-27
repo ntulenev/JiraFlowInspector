@@ -27,10 +27,27 @@ public sealed class ArchTasksReportSettingsTests
             "project = AAA AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC");
 
         // Act
-        var jql = settings.BuildJql(new MonthLabel("2026-03"));
+        var jql = settings.BuildJql(ReportPeriod.FromMonthLabel(new MonthLabel("2026-03")));
 
         // Assert
         jql.Should().Be(
             "project = AAA AND (resolved IS EMPTY OR (resolved >= \"2026-03-01\" AND resolved < \"2026-04-01\")) ORDER BY created ASC");
+    }
+
+    [Fact(DisplayName = "BuildJql replaces resolved clause with explicit date range")]
+    [Trait("Category", "Unit")]
+    public void BuildJqlWhenPeriodIsDateRangeUsesFromToBounds()
+    {
+        // Arrange
+        var settings = new ArchTasksReportSettings(
+            "project = AAA AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC");
+
+        // Act
+        var jql = settings.BuildJql(
+            ReportPeriod.FromDateRange(new DateOnly(2026, 3, 16), new DateOnly(2026, 3, 29)));
+
+        // Assert
+        jql.Should().Be(
+            "project = AAA AND (resolved IS EMPTY OR (resolved >= \"2026-03-16\" AND resolved < \"2026-03-30\")) ORDER BY created ASC");
     }
 }

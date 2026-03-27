@@ -20,8 +20,8 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
     public ReleaseIssuesJqlBuilder(IOptions<AppSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _monthLabel = (settings.Value
-            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).MonthLabel;
+        _reportPeriod = (settings.Value
+            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).ReportPeriod;
     }
 
     public string BuildQuery(
@@ -31,7 +31,8 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
         string? environmentFieldName,
         string? environmentFieldValue)
     {
-        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var periodStart = _reportPeriod.Start;
+        var periodEndExclusive = _reportPeriod.EndExclusive;
         var escapedProject = releaseProjectKey.Value.EscapeJqlString();
         var escapedLabel = projectLabel.EscapeJqlString();
         var escapedFieldName = releaseDateFieldName.EscapeJqlString();
@@ -39,8 +40,8 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
         {
             $"project = \"{escapedProject}\"",
             $"labels = \"{escapedLabel}\"",
-            $"\"{escapedFieldName}\" >= \"{monthStart:yyyy-MM-dd}\"",
-            $"\"{escapedFieldName}\" < \"{nextMonthStart:yyyy-MM-dd}\""
+            $"\"{escapedFieldName}\" >= \"{periodStart:yyyy-MM-dd}\"",
+            $"\"{escapedFieldName}\" < \"{periodEndExclusive:yyyy-MM-dd}\""
         };
 
         if (!string.IsNullOrWhiteSpace(environmentFieldName)
@@ -54,6 +55,6 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
         return $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedFieldName}\" ASC, key ASC";
     }
 
-    private readonly MonthLabel _monthLabel;
+    private readonly ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591

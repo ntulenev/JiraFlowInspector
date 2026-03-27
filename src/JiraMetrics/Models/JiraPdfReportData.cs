@@ -84,7 +84,7 @@ public sealed class JiraPdfReportData
     public required ItemCount SearchIssueCount { get; init; }
 
     /// <summary>
-    /// Gets or sets release issues for selected month.
+    /// Gets or sets release issues for the selected period.
     /// </summary>
     public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; init; } = [];
 
@@ -94,7 +94,7 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<ArchTaskItem> ArchTasks { get; init; } = [];
 
     /// <summary>
-    /// Gets or sets incidents for selected month.
+    /// Gets or sets incidents for the selected period.
     /// </summary>
     public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; init; } = [];
 
@@ -164,7 +164,7 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus { get; init; } = [];
 
     /// <summary>
-    /// Gets or sets issues moved to done this month.
+    /// Gets or sets issues moved to done in the selected period.
     /// </summary>
     public IReadOnlyList<IssueTimeline> DoneIssues { get; init; } = [];
 
@@ -174,7 +174,7 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; init; } = [];
 
     /// <summary>
-    /// Gets or sets issues moved to rejected this month.
+    /// Gets or sets issues moved to rejected in the selected period.
     /// </summary>
     public IReadOnlyList<IssueTimeline> RejectedIssues { get; init; } = [];
 

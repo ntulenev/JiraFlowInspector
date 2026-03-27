@@ -79,7 +79,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                         + reportData.Settings.ProjectKey.Value
                         + "    Done status: "
                         + reportData.Settings.DoneStatusName.Value);
-                    _ = column.Item().Text("Month: " + reportData.Settings.MonthLabel.Value);
+                    _ = column.Item().Text("Period: " + reportData.Settings.ReportPeriod.Label);
                     if (reportData.Settings.CreatedAfter is { } createdAfter)
                     {
                         _ = column.Item().Text("Created after: " + createdAfter);

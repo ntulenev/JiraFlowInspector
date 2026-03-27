@@ -58,7 +58,7 @@ public sealed class JiraApplication : IJiraApplication
     {
         await AuthenticateAsync(cancellationToken).ConfigureAwait(false);
 
-        _presentationService.ShowReportPeriodContext(_settings.MonthLabel, _settings.CreatedAfter);
+        _presentationService.ShowReportPeriodContext(_settings.ReportPeriod, _settings.CreatedAfter);
         _presentationService.ShowSpacer();
 
         ShowOptionalReportLoadingStarted();
@@ -270,7 +270,7 @@ public sealed class JiraApplication : IJiraApplication
             _presentationService.ShowSpacer();
             _presentationService.ShowReleaseReport(
                 releaseReportSettings,
-                _settings.MonthLabel,
+                _settings.ReportPeriod,
                 reportContext.ReleaseIssues);
             _presentationService.ShowSpacer();
         }
@@ -287,7 +287,7 @@ public sealed class JiraApplication : IJiraApplication
         {
             _presentationService.ShowGlobalIncidentsReport(
                 globalIncidentsReportSettings,
-                _settings.MonthLabel,
+                _settings.ReportPeriod,
                 reportContext.GlobalIncidents);
             _presentationService.ShowSpacer();
         }

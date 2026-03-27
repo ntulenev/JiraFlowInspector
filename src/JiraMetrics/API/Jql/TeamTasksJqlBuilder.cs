@@ -29,7 +29,7 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
         _customFieldValue = string.IsNullOrWhiteSpace(resolved.CustomFieldValue)
             ? null
             : resolved.CustomFieldValue.Trim();
-        _monthLabel = resolved.MonthLabel;
+        _reportPeriod = resolved.ReportPeriod;
     }
 
     public string BuildMovedToDoneIssueKeysQuery(
@@ -37,9 +37,10 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
         StatusName doneStatusName,
         CreatedAfterDate? createdAfter)
     {
-        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var periodStart = _reportPeriod.Start;
+        var periodEndExclusive = _reportPeriod.EndExclusive;
         var clauses = BuildProjectClauses(projectKey);
-        clauses.Add(BuildMovedToDoneClause(doneStatusName, monthStart, nextMonthStart));
+        clauses.Add(BuildMovedToDoneClause(doneStatusName, periodStart, periodEndExclusive));
 
         if (createdAfter is { } createdAfterDate)
         {
@@ -53,10 +54,11 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
     {
         ArgumentNullException.ThrowIfNull(issueTypes);
 
-        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var periodStart = _reportPeriod.Start;
+        var periodEndExclusive = _reportPeriod.EndExclusive;
         var clauses = BuildProjectClauses(projectKey);
-        clauses.Add($"created >= \"{monthStart:yyyy-MM-dd}\"");
-        clauses.Add($"created < \"{nextMonthStart:yyyy-MM-dd}\"");
+        clauses.Add($"created >= \"{periodStart:yyyy-MM-dd}\"");
+        clauses.Add($"created < \"{periodEndExclusive:yyyy-MM-dd}\"");
         AddIssueTypesClause(clauses, issueTypes);
 
         return $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
@@ -69,9 +71,10 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
     {
         ArgumentNullException.ThrowIfNull(issueTypes);
 
-        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var periodStart = _reportPeriod.Start;
+        var periodEndExclusive = _reportPeriod.EndExclusive;
         var clauses = BuildProjectClauses(projectKey);
-        clauses.Add(BuildMovedToDoneClause(doneStatusName, monthStart, nextMonthStart));
+        clauses.Add(BuildMovedToDoneClause(doneStatusName, periodStart, periodEndExclusive));
         AddIssueTypesClause(clauses, issueTypes);
 
         return $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
@@ -125,13 +128,13 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
 
     private static string BuildMovedToDoneClause(
         StatusName doneStatusName,
-        DateOnly monthStart,
-        DateOnly nextMonthStart)
+        DateOnly periodStart,
+        DateOnly periodEndExclusive)
     {
         var escapedDoneStatus = doneStatusName.Value.EscapeJqlString();
         return
-            $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{monthStart:yyyy-MM-dd}\" "
-            + $"BEFORE \"{nextMonthStart:yyyy-MM-dd}\" AND status = \"{escapedDoneStatus}\"";
+            $"status CHANGED TO \"{escapedDoneStatus}\" AFTER \"{periodStart:yyyy-MM-dd}\" "
+            + $"BEFORE \"{periodEndExclusive:yyyy-MM-dd}\" AND status = \"{escapedDoneStatus}\"";
     }
 
     private static string BuildExcludedStatusesClause(StatusName doneStatusName, StatusName? rejectStatusName)
@@ -154,6 +157,6 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
 
     private readonly string? _customFieldName;
     private readonly string? _customFieldValue;
-    private readonly MonthLabel _monthLabel;
+    private readonly ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591

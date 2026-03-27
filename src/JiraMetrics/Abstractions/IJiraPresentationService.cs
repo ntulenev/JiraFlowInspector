@@ -27,11 +27,11 @@ public interface IJiraPresentationService
     void ShowAuthenticationFailed(ErrorMessage errorMessage);
 
     /// <summary>
-    /// Shows top-level period context (month and optional created-after).
+    /// Shows top-level period context and optional created-after.
     /// </summary>
-    /// <param name="monthLabel">Selected month label.</param>
+    /// <param name="reportPeriod">Selected report period.</param>
     /// <param name="createdAfter">Optional created-after date.</param>
-    void ShowReportPeriodContext(MonthLabel monthLabel, CreatedAfterDate? createdAfter);
+    void ShowReportPeriodContext(ReportPeriod reportPeriod, CreatedAfterDate? createdAfter);
 
     /// <summary>
     /// Shows issue search failure message.
@@ -145,11 +145,11 @@ public interface IJiraPresentationService
     /// Shows release report section.
     /// </summary>
     /// <param name="settings">Release report settings.</param>
-    /// <param name="monthLabel">Selected month label.</param>
-    /// <param name="releases">Release issues in month.</param>
+    /// <param name="reportPeriod">Selected report period.</param>
+    /// <param name="releases">Release issues in period.</param>
     void ShowReleaseReport(
         ReleaseReportSettings settings,
-        MonthLabel monthLabel,
+        ReportPeriod reportPeriod,
         IReadOnlyList<ReleaseIssueItem> releases);
 
     /// <summary>
@@ -165,11 +165,11 @@ public interface IJiraPresentationService
     /// Shows global incidents report section.
     /// </summary>
     /// <param name="settings">Global incidents report settings.</param>
-    /// <param name="monthLabel">Selected month label.</param>
-    /// <param name="incidents">Incident issues in month.</param>
+    /// <param name="reportPeriod">Selected report period.</param>
+    /// <param name="incidents">Incident issues in period.</param>
     void ShowGlobalIncidentsReport(
         GlobalIncidentsReportSettings settings,
-        MonthLabel monthLabel,
+        ReportPeriod reportPeriod,
         IReadOnlyList<GlobalIncidentItem> incidents);
 
     /// <summary>
@@ -238,9 +238,9 @@ public interface IJiraPresentationService
     /// <param name="movedToDoneThisMonth">Count of issues moved to done in month.</param>
     /// <param name="rejectedThisMonth">Count of issues moved to rejected in month.</param>
     /// <param name="finishedThisMonth">Count of finished issues in month (done + rejected).</param>
-    /// <param name="openIssues">Issues created this month and not moved to done/rejected this month.</param>
-    /// <param name="doneIssues">Issues moved to done this month.</param>
-    /// <param name="rejectedIssues">Issues moved to rejected this month.</param>
+    /// <param name="openIssues">Issues created in the selected period and not moved to done/rejected in that period.</param>
+    /// <param name="doneIssues">Issues moved to done in the selected period.</param>
+    /// <param name="rejectedIssues">Issues moved to rejected in the selected period.</param>
     void ShowBugRatio(
         IReadOnlyList<IssueTypeName> bugIssueNames,
         string? customFieldName,

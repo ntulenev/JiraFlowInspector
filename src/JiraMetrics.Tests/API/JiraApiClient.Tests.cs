@@ -257,6 +257,44 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().Contain("2026-02-01");
     }
 
+    [Fact(DisplayName = "GetIssueKeysMovedToDoneThisMonthAsync uses explicit from-to range in JQL")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueKeysMovedToDoneThisMonthAsyncWhenExplicitRangeIsConfiguredUsesRangeBounds()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues = [new JiraIssueKeyResponse { Key = "AAA-1" }],
+            IsLast = true,
+            NextPageToken = null
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(reportPeriod: ReportPeriod.FromDateRange(new DateOnly(2026, 3, 16), new DateOnly(2026, 3, 29)));
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        _ = await client.GetIssueKeysMovedToDoneThisMonthAsync(
+            new ProjectKey("AAA"),
+            new StatusName("Done"),
+            null,
+            cts.Token);
+
+        // Assert
+        capturedUrl.Should().Contain("2026-03-16");
+        capturedUrl.Should().Contain("2026-03-30");
+    }
+
     [Fact(DisplayName = "GetIssuesCreatedThisMonthAsync returns issue details with Jira id and title")]
     [Trait("Category", "Unit")]
     public async Task GetIssuesCreatedThisMonthAsyncWhenCalledReturnsIssueDetails()
@@ -1824,6 +1862,7 @@ public sealed class JiraApiClientTests
         string? customFieldName = null,
         string? customFieldValue = null,
         string monthLabel = "2026-02",
+        ReportPeriod? reportPeriod = null,
         string? pullRequestFieldName = null)
     {
         var settings = new AppSettings(
@@ -1834,7 +1873,7 @@ public sealed class JiraApiClientTests
             new StatusName("Done"),
             null,
             [new StageName("Code Review")],
-            new MonthLabel(monthLabel),
+            reportPeriod ?? ReportPeriod.FromMonthLabel(new MonthLabel(monthLabel)),
             createdAfter: null,
             issueTypes: null,
             customFieldName: customFieldName,

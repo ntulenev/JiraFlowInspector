@@ -1216,7 +1216,7 @@ public sealed class JiraApplicationTests
         {
         }
 
-        public void ShowReportPeriodContext(MonthLabel monthLabel, CreatedAfterDate? createdAfter) => Calls.Add("ReportPeriodContext");
+        public void ShowReportPeriodContext(ReportPeriod reportPeriod, CreatedAfterDate? createdAfter) => Calls.Add("ReportPeriodContext");
 
         public void ShowReportHeader(AppSettings settings, ItemCount issueCount) => Calls.Add("ReportHeader");
 
@@ -1288,7 +1288,7 @@ public sealed class JiraApplicationTests
 
         public void ShowReleaseReport(
             ReleaseReportSettings settings,
-            MonthLabel monthLabel,
+            ReportPeriod reportPeriod,
             IReadOnlyList<ReleaseIssueItem> releases)
         {
             ReleaseReportShown = true;
@@ -1323,7 +1323,7 @@ public sealed class JiraApplicationTests
 
         public void ShowGlobalIncidentsReport(
             GlobalIncidentsReportSettings settings,
-            MonthLabel monthLabel,
+            ReportPeriod reportPeriod,
             IReadOnlyList<GlobalIncidentItem> incidents)
         {
             GlobalIncidentsReportShown = true;

@@ -43,4 +43,5 @@
 		<InternalsVisibleTo Include="JiraMetrics.Tests" />
 	</ItemGroup>
 
+
 </Project>

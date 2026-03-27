@@ -21,8 +21,8 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
     public GlobalIncidentsJqlBuilder(IOptions<AppSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _monthLabel = (settings.Value
-            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).MonthLabel;
+        _reportPeriod = (settings.Value
+            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).ReportPeriod;
     }
 
     public string BuildQuery(
@@ -31,12 +31,13 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        var (monthStart, nextMonthStart) = _monthLabel.GetMonthRange();
+        var periodStart = _reportPeriod.Start;
+        var periodEndExclusive = _reportPeriod.EndExclusive;
         var escapedNamespace = settings.Namespace.EscapeJqlString();
         var clauses = new List<string>
         {
             $"project = \"{escapedNamespace}\"",
-            BuildDateRangeClause(incidentStartFields, monthStart, nextMonthStart)
+            BuildDateRangeClause(incidentStartFields, periodStart, periodEndExclusive)
         };
 
         if (!string.IsNullOrWhiteSpace(settings.JqlFilter))
@@ -53,16 +54,16 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
 
     private static string BuildDateRangeClause(
         IReadOnlyList<ResolvedJiraField> fields,
-        DateOnly monthStart,
-        DateOnly nextMonthStart)
+        DateOnly periodStart,
+        DateOnly periodEndExclusive)
     {
         var fieldClauses = fields
             .Select(field =>
             {
                 var escapedField = field.FieldName.EscapeJqlString();
                 return
-                    $"(\"{escapedField}\" >= \"{monthStart:yyyy-MM-dd}\""
-                    + $" AND \"{escapedField}\" < \"{nextMonthStart:yyyy-MM-dd}\")";
+                    $"(\"{escapedField}\" >= \"{periodStart:yyyy-MM-dd}\""
+                    + $" AND \"{escapedField}\" < \"{periodEndExclusive:yyyy-MM-dd}\")";
             })
             .ToArray();
 
@@ -93,6 +94,6 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
         }
     }
 
-    private readonly MonthLabel _monthLabel;
+    private readonly ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591

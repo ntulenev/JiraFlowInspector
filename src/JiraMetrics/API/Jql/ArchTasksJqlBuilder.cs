@@ -14,16 +14,16 @@ public sealed class ArchTasksJqlBuilder : IArchTasksJqlBuilder
     public ArchTasksJqlBuilder(IOptions<AppSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _monthLabel = (settings.Value
-            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).MonthLabel;
+        _reportPeriod = (settings.Value
+            ?? throw new ArgumentException("App settings value is required.", nameof(settings))).ReportPeriod;
     }
 
     public string BuildQuery(ArchTasksReportSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return settings.BuildJql(_monthLabel);
+        return settings.BuildJql(_reportPeriod);
     }
 
-    private readonly JiraMetrics.Models.ValueObjects.MonthLabel _monthLabel;
+    private readonly JiraMetrics.Models.ValueObjects.ReportPeriod _reportPeriod;
 }
 #pragma warning restore CS1591

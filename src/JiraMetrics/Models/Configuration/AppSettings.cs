@@ -55,6 +55,80 @@ public sealed record AppSettings
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         PdfReportSettings? pdfReport = null,
         string? pullRequestFieldName = null)
+        : this(
+            baseUrl,
+            email,
+            apiToken,
+            projectKey,
+            doneStatusName,
+            rejectStatusName,
+            requiredPathStages,
+            ReportPeriod.FromMonthLabel(monthLabel),
+            createdAfter,
+            issueTypes,
+            customFieldName,
+            customFieldValue,
+            showTimeCalculationsInHoursOnly,
+            excludeWeekend,
+            excludedDays,
+            bugIssueNames,
+            showGeneralStatistics,
+            releaseReport,
+            archTasksReport,
+            globalIncidentsReport,
+            pdfReport,
+            pullRequestFieldName)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppSettings"/> class.
+    /// </summary>
+    /// <param name="baseUrl">Jira base url.</param>
+    /// <param name="email">Jira account email.</param>
+    /// <param name="apiToken">Jira API token.</param>
+    /// <param name="projectKey">Jira project key.</param>
+    /// <param name="doneStatusName">Done status name.</param>
+    /// <param name="rejectStatusName">Optional reject status name.</param>
+    /// <param name="requiredPathStages">Required path stages.</param>
+    /// <param name="reportPeriod">Report period used in output and JQL.</param>
+    /// <param name="createdAfter">Optional lower bound for issue creation date.</param>
+    /// <param name="issueTypes">Optional issue types filter.</param>
+    /// <param name="customFieldName">Optional custom field name for filtering.</param>
+    /// <param name="customFieldValue">Optional custom field value for filtering.</param>
+    /// <param name="showTimeCalculationsInHoursOnly">Whether all time calculations should be shown strictly in hours.</param>
+    /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
+    /// <param name="excludedDays">Optional list of excluded days.</param>
+    /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
+    /// <param name="releaseReport">Optional release report settings.</param>
+    /// <param name="archTasksReport">Optional architecture tasks report settings.</param>
+    /// <param name="globalIncidentsReport">Optional global incidents report settings.</param>
+    /// <param name="pdfReport">PDF report settings.</param>
+    /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
+    public AppSettings(
+        JiraBaseUrl baseUrl,
+        JiraEmail email,
+        JiraApiToken apiToken,
+        ProjectKey projectKey,
+        StatusName doneStatusName,
+        StatusName? rejectStatusName,
+        IReadOnlyList<StageName> requiredPathStages,
+        ReportPeriod reportPeriod,
+        CreatedAfterDate? createdAfter = null,
+        IReadOnlyList<IssueTypeName>? issueTypes = null,
+        string? customFieldName = null,
+        string? customFieldValue = null,
+        bool showTimeCalculationsInHoursOnly = false,
+        bool excludeWeekend = false,
+        IReadOnlyList<DateOnly>? excludedDays = null,
+        IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        bool showGeneralStatistics = true,
+        ReleaseReportSettings? releaseReport = null,
+        ArchTasksReportSettings? archTasksReport = null,
+        GlobalIncidentsReportSettings? globalIncidentsReport = null,
+        PdfReportSettings? pdfReport = null,
+        string? pullRequestFieldName = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -63,7 +137,8 @@ public sealed record AppSettings
         DoneStatusName = doneStatusName;
         RejectStatusName = rejectStatusName;
         RequiredPathStages = requiredPathStages is null ? [] : [.. requiredPathStages];
-        MonthLabel = monthLabel;
+        ReportPeriod = reportPeriod;
+        MonthLabel = reportPeriod.MonthLabel;
         CreatedAfter = createdAfter;
         IssueTypes = issueTypes is null ? [] : [.. issueTypes];
         CustomFieldName = string.IsNullOrWhiteSpace(customFieldName) ? null : customFieldName.Trim();
@@ -118,9 +193,14 @@ public sealed record AppSettings
     public IReadOnlyList<StageName> RequiredPathStages { get; }
 
     /// <summary>
-    /// Gets month label.
+    /// Gets month label when report period is month-based.
     /// </summary>
-    public MonthLabel MonthLabel { get; }
+    public MonthLabel? MonthLabel { get; }
+
+    /// <summary>
+    /// Gets report period.
+    /// </summary>
+    public ReportPeriod ReportPeriod { get; }
 
     /// <summary>
     /// Gets optional lower bound for issue creation date.

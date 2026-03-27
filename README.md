@@ -26,7 +26,8 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 
 1. Loads `Jira` settings from `appsettings.json`.
 2. Authenticates with Jira.
-3. Resolves reporting period from `MonthLabel` (or current UTC month if omitted).
+3. Resolves reporting period from either `MonthLabel` or explicit `From`/`To` dates.
+   If none are configured, current UTC month is used.
 4. Loads keys for issues that:
    `status CHANGED TO "<DoneStatusName>"` in month range
    and currently have `status = "<DoneStatusName>"`.
@@ -45,6 +46,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Final status is required for done/rejected searches:
   issues that were moved to Done (or Reject) and later reopened are excluded.
 - `CreatedAfter` applies to transition analytics key search only.
+- Use either `MonthLabel` or `From` + `To` for the main report period, but not both at the same time.
 - `CustomFieldName` + `CustomFieldValue` are applied only when both are provided.
 - Required stages use case-insensitive substring matching against both transition `From` and `To` statuses.
 - Path grouping for transition analytics is built only from issues with detected code activity (`HasPullRequest = true`).
@@ -56,13 +58,13 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Report context:
   month, optional created-after date.
 - Release report (optional):
-  all releases in `MonthLabel` by `ProjectLabel`, with tasks/components/environment details.
+  all releases in the selected report period by `ProjectLabel`, with tasks/components/environment details.
 - Architecture tasks report (optional):
   tasks loaded by configured JQL, with `Created At`, `Resolved At`, and `Days in work`.
   Open tasks use `Created At -> now`; resolved tasks use `Created At -> Resolved At`.
   Open items are highlighted in red in console and PDF.
 - Global incidents report (optional):
-  incidents in `MonthLabel` by configured namespace/project and optional JQL filter.
+  incidents in the selected report period by configured namespace/project and optional JQL filter.
 - Bug ratio (optional):
   open/done/rejected/finished counts and finished/created rate.
 - Bug ratio details (optional):
@@ -322,7 +324,12 @@ Notes:
 - `ShowTimeCalculationsInHoursOnly` (`bool`, optional, default `false`):
   renders duration values strictly in hours instead of day-based work metrics/default duration labels.
 - `MonthLabel` (`string`, optional, format `yyyy-MM`):
-  reporting month, defaults to current UTC month.
+  month-based reporting period.
+- `From` (`string`, optional, format `dd.MM.yyyy` or `yyyy-MM-dd`):
+  explicit report start date. Must be used together with `To`.
+- `To` (`string`, optional, format `dd.MM.yyyy` or `yyyy-MM-dd`):
+  explicit report end date. Must be used together with `From`.
+- `MonthLabel` and `From`/`To` are mutually exclusive.
 - `CreatedAfter` (`string`, optional, format `yyyy-MM-dd`):
   created-date lower bound for transition source query.
 - `RetryCount` (`int`, optional, range `0..10`, default `0`):
@@ -388,9 +395,11 @@ Notes:
       "OpenAfterGeneration": true,
       "OutputPath": "jiraflowinspector-report.pdf"
     },
+    "MonthLabel": "2026-02",
+    //"From": "16.03.2026",
+    //"To": "29.03.2026",
     "ShowTimeCalculationsInHoursOnly": false,
     "CreatedAfter": "2026-01-01",
-    "MonthLabel": "2026-02",
     "RetryCount": 0
   }
 }
