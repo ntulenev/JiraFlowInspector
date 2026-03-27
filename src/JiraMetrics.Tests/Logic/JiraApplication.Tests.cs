@@ -464,6 +464,61 @@ public sealed class JiraApplicationTests
         releaseIndex.Should().BeLessThan(headerIndex);
     }
 
+    [Fact(DisplayName = "RunAsync shows architecture tasks report immediately after release report")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenReleaseAndArchTasksAreConfiguredShowsArchTasksAfterRelease()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [new IssueKey("AAA-1")],
+            IssueToReturn = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task")),
+            ReleaseIssues = [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release item"), new DateOnly(2026, 2, 14))],
+            ArchTasks =
+            [
+                new ArchTaskItem(
+                    new IssueKey("ADF-7"),
+                    new IssueSummary("Architecture review"),
+                    new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero))
+            ]
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(
+                issueTypes: [new IssueTypeName("Task")],
+                releaseReport: new ReleaseReportSettings(
+                    new ProjectKey("RLS"),
+                    "ADF",
+                    "Change completion date"),
+                archTasksReport: new ArchTasksReportSettings(
+                    "project = ADF AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC"))),
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.ReleaseIssuesRequested.Should().BeTrue();
+        apiClient.ArchTasksRequested.Should().BeTrue();
+        presentation.ReleaseReportShown.Should().BeTrue();
+        presentation.ArchTasksReportShown.Should().BeTrue();
+
+        var releaseIndex = presentation.Calls.IndexOf("ReleaseReport");
+        var archTasksIndex = presentation.Calls.IndexOf("ArchTasksReport");
+        var globalIncidentsIndex = presentation.Calls.IndexOf("GlobalIncidentsReport");
+        releaseIndex.Should().BeGreaterThanOrEqualTo(0);
+        archTasksIndex.Should().BeGreaterThanOrEqualTo(0);
+        archTasksIndex.Should().BeGreaterThan(releaseIndex);
+        globalIncidentsIndex.Should().Be(-1);
+    }
+
     [Fact(DisplayName = "RunAsync shows global incidents report after release report")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenReleaseAndGlobalIncidentsAreConfiguredShowsGlobalIncidentsAfterRelease()
@@ -862,6 +917,7 @@ public sealed class JiraApplicationTests
         IReadOnlyList<IssueTypeName>? issueTypes = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
         ReleaseReportSettings? releaseReport = null,
+        ArchTasksReportSettings? archTasksReport = null,
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         bool showGeneralStatistics = true)
     {
@@ -882,6 +938,7 @@ public sealed class JiraApplicationTests
             bugIssueNames: bugIssueNames,
             showGeneralStatistics: showGeneralStatistics,
             releaseReport: releaseReport,
+            archTasksReport: archTasksReport,
             globalIncidentsReport: globalIncidentsReport);
     }
 
@@ -931,6 +988,8 @@ public sealed class JiraApplicationTests
 
         public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; set; } = [];
 
+        public IReadOnlyList<ArchTaskItem> ArchTasks { get; set; } = [];
+
         public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; set; } = [];
 
         public bool CreatedThisMonthIssuesRequested { get; private set; }
@@ -942,6 +1001,8 @@ public sealed class JiraApplicationTests
         public bool OpenIssuesByStatusRequested { get; private set; }
 
         public bool ReleaseIssuesRequested { get; private set; }
+
+        public bool ArchTasksRequested { get; private set; }
 
         public bool GlobalIncidentsRequested { get; private set; }
 
@@ -1005,6 +1066,14 @@ public sealed class JiraApplicationTests
         {
             ReleaseIssuesRequested = true;
             return Task.FromResult(ReleaseIssues);
+        }
+
+        public Task<IReadOnlyList<ArchTaskItem>> GetArchTasksAsync(
+            ArchTasksReportSettings settings,
+            CancellationToken cancellationToken)
+        {
+            ArchTasksRequested = true;
+            return Task.FromResult(ArchTasks);
         }
 
         public Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
@@ -1108,6 +1177,10 @@ public sealed class JiraApplicationTests
         public bool ReleaseReportShown { get; private set; }
 
         public bool ReleaseReportLoadingStartedShown { get; private set; }
+
+        public bool ArchTasksReportShown { get; private set; }
+
+        public bool ArchTasksReportLoadingStartedShown { get; private set; }
 
         public bool GlobalIncidentsReportShown { get; private set; }
 
@@ -1226,6 +1299,20 @@ public sealed class JiraApplicationTests
         {
             ReleaseReportLoadingStartedShown = true;
             Calls.Add("ReleaseReportLoadingStarted");
+        }
+
+        public void ShowArchTasksReportLoadingStarted()
+        {
+            ArchTasksReportLoadingStartedShown = true;
+            Calls.Add("ArchTasksReportLoadingStarted");
+        }
+
+        public void ShowArchTasksReport(
+            ArchTasksReportSettings settings,
+            IReadOnlyList<ArchTaskItem> tasks)
+        {
+            ArchTasksReportShown = true;
+            Calls.Add("ArchTasksReport");
         }
 
         public void ShowGlobalIncidentsReportLoadingStarted()

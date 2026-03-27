@@ -28,6 +28,7 @@ public sealed record AppSettings
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
     /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
+    /// <param name="archTasksReport">Optional architecture tasks report settings.</param>
     /// <param name="globalIncidentsReport">Optional global incidents report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
@@ -50,6 +51,7 @@ public sealed record AppSettings
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
         bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
+        ArchTasksReportSettings? archTasksReport = null,
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         PdfReportSettings? pdfReport = null,
         string? pullRequestFieldName = null)
@@ -72,6 +74,7 @@ public sealed record AppSettings
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
         ShowGeneralStatistics = showGeneralStatistics;
         ReleaseReport = releaseReport;
+        ArchTasksReport = archTasksReport;
         GlobalIncidentsReport = globalIncidentsReport;
         PdfReport = pdfReport ?? new PdfReportSettings();
         PullRequestFieldName = string.IsNullOrWhiteSpace(pullRequestFieldName)
@@ -143,6 +146,11 @@ public sealed record AppSettings
     /// Gets optional release report settings.
     /// </summary>
     public ReleaseReportSettings? ReleaseReport { get; }
+
+    /// <summary>
+    /// Gets optional architecture tasks report settings.
+    /// </summary>
+    public ArchTasksReportSettings? ArchTasksReport { get; }
 
     /// <summary>
     /// Gets optional global incidents report settings.

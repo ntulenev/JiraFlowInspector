@@ -12,6 +12,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
 - Optional release report by label, custom release date field, and optional environment filter.
+- Optional architecture tasks report driven by custom JQL or JQL template.
 - Optional global incidents report by namespace/project and JQL filter.
 - P75 transition timing per path group.
 - Timeline diagrams in console and PDF.
@@ -31,12 +32,13 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
    and currently have `status = "<DoneStatusName>"`.
 5. Optionally loads keys for `RejectStatusName` with the same final-status rule.
 6. Optionally loads release issues for the month.
-7. Optionally loads global incidents for the month.
-8. Optionally loads bug-ratio datasets.
-9. Loads changelogs for selected issues and builds transition timelines.
-10. Applies issue-type and required-stage filters.
-11. Shows console sections.
-12. Optionally writes PDF report.
+7. Optionally loads architecture tasks for the report.
+8. Optionally loads global incidents for the month.
+9. Optionally loads bug-ratio datasets.
+10. Loads changelogs for selected issues and builds transition timelines.
+11. Applies issue-type and required-stage filters.
+12. Shows console sections.
+13. Optionally writes PDF report.
 
 ## Important Behavior Rules
 
@@ -55,6 +57,10 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   month, optional created-after date.
 - Release report (optional):
   all releases in `MonthLabel` by `ProjectLabel`, with tasks/components/environment details.
+- Architecture tasks report (optional):
+  tasks loaded by configured JQL, with `Created At`, `Resolved At`, and `Days in work`.
+  Open tasks use `Created At -> now`; resolved tasks use `Created At -> Resolved At`.
+  Open items are highlighted in red in console and PDF.
 - Global incidents report (optional):
   incidents in `MonthLabel` by configured namespace/project and optional JQL filter.
 - Bug ratio (optional):
@@ -78,6 +84,7 @@ When `Jira:Pdf:Enabled` is `true`, PDF includes:
 
 - Header (`Jira Analytics`, generation timestamp, project, done status, month, optional created-after/custom-field filter).
 - Release report (if configured).
+- Architecture tasks report (if configured).
 - Global incidents report (if configured).
 - Bug ratio (if configured) and bug detail tables.
 - Transition analysis tables (Done and optional Rejected).
@@ -151,6 +158,25 @@ When `ReleaseReport.ComponentsFieldName` is configured, report also shows
 
 - `Component name`
 - `Release counts` (ordered descending)
+
+### Architecture Tasks Report
+
+Architecture tasks query uses the raw `ArchTasks.Jql` value.
+
+- You can provide a fixed JQL query.
+- You can also provide a JQL template using `{{MonthResolvedClause}}`.
+  The placeholder is replaced with the current `MonthLabel` range clause for resolved date filtering.
+
+Per task row:
+
+- `Created At`:
+  Jira issue creation timestamp.
+- `Resolved At`:
+  Jira resolution timestamp, or `-` when task is still open.
+- `Days in work`:
+  `Resolved At - Created At` for resolved tasks, or `now - Created At` for open tasks.
+- Open tasks are rendered in red in the `Days in work` column.
+- Summary line shows `Total tasks`, `Resolved`, and `Open`.
 
 ### Global Incidents Report
 
@@ -230,6 +256,12 @@ All options live under `Jira`.
   issue types treated as bug-like.
 - `ReleaseReport` (`object`, optional):
   release report settings.
+- `ArchTasks` (`object`, optional):
+  architecture-tasks report settings.
+- `ArchTasks.Jql` (`string`, required when `ArchTasks` used):
+  raw JQL or JQL template used to load architecture-review items.
+  Example:
+  `project = CORE AND type = "Architecture Review" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC`
 - `ReleaseReport.ReleaseProjectKey` (`string`, required when `ReleaseReport` used):
   project containing release issues.
 - `ReleaseReport.ProjectLabel` (`string`, required when `ReleaseReport` used):
@@ -336,6 +368,9 @@ Notes:
         "Change type": [ "Emergency" ],
         "Change reason": [ "Repair", "Mitigation" ]
       }
+    },
+    "ArchTasks": {
+      "Jql": "project = CORE AND type = \"Architecture Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC"
     },
     "GlobalIncidents": {
       "Namespace": "Incidents",

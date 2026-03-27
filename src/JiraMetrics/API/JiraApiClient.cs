@@ -173,6 +173,21 @@ public sealed class JiraApiClient : IJiraApiClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<ArchTaskItem>> GetArchTasksAsync(
+        ArchTasksReportSettings settings,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var jql = _jqlFacade.BuildArchTasksQuery(settings);
+        var issues = await _searchExecutor
+            .SearchIssuesAsync(jql, ["key", "summary", "created", "resolutiondate"], cancellationToken)
+            .ConfigureAwait(false);
+
+        return _mapperFacade.MapArchTaskItems(issues);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken)

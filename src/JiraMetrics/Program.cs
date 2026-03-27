@@ -74,6 +74,7 @@ builder.Services.AddSingleton(sp =>
         ? (StatusName?)null
         : new StatusName(teamTasks.RejectStatusName);
     var releaseReport = ResolveReleaseReport(source.ReleaseReport);
+    var archTasksReport = ResolveArchTasksReport(source.ArchTasks);
     var globalIncidentsReport = ResolveGlobalIncidentsReport(source.GlobalIncidents);
     var pdfReport = ResolvePdfReport(source.Pdf);
     DateOnly[] excludedDays = teamTasks.IssueTransitions?.ExcludedDays is null
@@ -102,6 +103,7 @@ builder.Services.AddSingleton(sp =>
         bugIssueNames,
         teamTasks.ShowGeneralStatistics,
         releaseReport,
+        archTasksReport,
         globalIncidentsReport,
         pdfReport,
         source.PullRequestFieldName);
@@ -127,6 +129,7 @@ builder.Services.AddTransient<IJiraSearchExecutor, JiraSearchExecutor>();
 builder.Services.AddTransient<IJiraFieldResolver, JiraFieldResolver>();
 builder.Services.AddTransient<ITeamTasksJqlBuilder, TeamTasksJqlBuilder>();
 builder.Services.AddTransient<IReleaseIssuesJqlBuilder, ReleaseIssuesJqlBuilder>();
+builder.Services.AddTransient<IArchTasksJqlBuilder, ArchTasksJqlBuilder>();
 builder.Services.AddTransient<IGlobalIncidentsJqlBuilder, GlobalIncidentsJqlBuilder>();
 builder.Services.AddTransient<IJiraJqlFacade, JiraJqlFacade>();
 builder.Services.AddSingleton<JiraFieldValueReader>();
@@ -226,6 +229,16 @@ static ReleaseReportSettings? ResolveReleaseReport(ReleaseReportOptions? source)
         source.RollbackFieldName,
         source.EnvironmentFieldName,
         source.EnvironmentFieldValue);
+}
+
+static ArchTasksReportSettings? ResolveArchTasksReport(ArchTasksReportOptions? source)
+{
+    if (source is null || string.IsNullOrWhiteSpace(source.Jql))
+    {
+        return null;
+    }
+
+    return new ArchTasksReportSettings(source.Jql);
 }
 
 static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalIncidentsReportOptions? source)

@@ -67,6 +67,11 @@ public sealed class JiraOptions
     public ReleaseReportOptions? ReleaseReport { get; init; }
 
     /// <summary>
+    /// Gets or sets optional architecture tasks report settings.
+    /// </summary>
+    public ArchTasksReportOptions? ArchTasks { get; init; }
+
+    /// <summary>
     /// Gets or sets optional global incidents report settings.
     /// </summary>
     public GlobalIncidentsReportOptions? GlobalIncidents { get; init; }
@@ -126,6 +131,7 @@ public sealed class TeamTasksOptions
     /// Gets or sets whether general statistics should be shown.
     /// </summary>
     public bool ShowGeneralStatistics { get; init; } = true;
+
 }
 
 /// <summary>
@@ -211,6 +217,17 @@ public sealed class ReleaseReportOptions
     /// Gets or sets optional environment field value used for release filtering.
     /// </summary>
     public string? EnvironmentFieldValue { get; init; }
+}
+
+/// <summary>
+/// Architecture tasks report options.
+/// </summary>
+public sealed class ArchTasksReportOptions
+{
+    /// <summary>
+    /// Gets or sets raw JQL or JQL template used for architecture tasks search.
+    /// </summary>
+    public string? Jql { get; init; }
 }
 
 /// <summary>

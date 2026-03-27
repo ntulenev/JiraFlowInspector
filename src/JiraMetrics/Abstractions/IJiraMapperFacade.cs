@@ -26,6 +26,11 @@ public interface IJiraMapperFacade
     IReadOnlyList<StatusIssueTypeSummary> MapStatusIssueTypeSummaries(IReadOnlyList<JiraIssueKeyResponse> issues);
 
     /// <summary>
+    /// Maps search issues into architecture task rows.
+    /// </summary>
+    IReadOnlyList<ArchTaskItem> MapArchTaskItems(IReadOnlyList<JiraIssueKeyResponse> issues);
+
+    /// <summary>
     /// Builds the field list required for release mapping.
     /// </summary>
     IReadOnlyList<string> BuildReleaseRequestedFields(ReleaseIssueMappingContext context);

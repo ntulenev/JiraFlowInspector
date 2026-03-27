@@ -49,6 +49,11 @@ public interface IJiraJqlFacade
         string? environmentFieldValue);
 
     /// <summary>
+    /// Builds the architecture tasks search query.
+    /// </summary>
+    string BuildArchTasksQuery(ArchTasksReportSettings settings);
+
+    /// <summary>
     /// Builds the global incidents search query.
     /// </summary>
     string BuildGlobalIncidentsQuery(

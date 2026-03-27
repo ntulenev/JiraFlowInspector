@@ -137,6 +137,11 @@ public interface IJiraPresentationService
     void ShowGlobalIncidentsReportLoadingStarted();
 
     /// <summary>
+    /// Shows architecture tasks report loading start message.
+    /// </summary>
+    void ShowArchTasksReportLoadingStarted();
+
+    /// <summary>
     /// Shows release report section.
     /// </summary>
     /// <param name="settings">Release report settings.</param>
@@ -146,6 +151,15 @@ public interface IJiraPresentationService
         ReleaseReportSettings settings,
         MonthLabel monthLabel,
         IReadOnlyList<ReleaseIssueItem> releases);
+
+    /// <summary>
+    /// Shows architecture tasks report section.
+    /// </summary>
+    /// <param name="settings">Architecture tasks settings.</param>
+    /// <param name="tasks">Architecture tasks.</param>
+    void ShowArchTasksReport(
+        ArchTasksReportSettings settings,
+        IReadOnlyList<ArchTaskItem> tasks);
 
     /// <summary>
     /// Shows global incidents report section.

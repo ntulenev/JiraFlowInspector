@@ -250,6 +250,11 @@ public sealed class JiraApplication : IJiraApplication
             _presentationService.ShowReleaseReportLoadingStarted();
         }
 
+        if (_settings.ArchTasksReport is not null)
+        {
+            _presentationService.ShowArchTasksReportLoadingStarted();
+        }
+
         if (_settings.GlobalIncidentsReport is not null)
         {
             _presentationService.ShowGlobalIncidentsReportLoadingStarted();
@@ -267,6 +272,14 @@ public sealed class JiraApplication : IJiraApplication
                 releaseReportSettings,
                 _settings.MonthLabel,
                 reportContext.ReleaseIssues);
+            _presentationService.ShowSpacer();
+        }
+
+        if (_settings.ArchTasksReport is { } archTasksReportSettings)
+        {
+            _presentationService.ShowArchTasksReport(
+                archTasksReportSettings,
+                reportContext.ArchTasks);
             _presentationService.ShowSpacer();
         }
 

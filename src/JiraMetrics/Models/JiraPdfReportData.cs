@@ -49,6 +49,7 @@ public sealed class JiraPdfReportData
             Settings = settings,
             SearchIssueCount = new ItemCount(reportContext.IssueKeys.Count),
             ReleaseIssues = reportContext.ReleaseIssues,
+            ArchTasks = reportContext.ArchTasks,
             GlobalIncidents = reportContext.GlobalIncidents,
             AllTasksCreatedThisMonth = allTasksRatio.CreatedThisMonth,
             AllTasksOpenThisMonth = allTasksRatio.OpenThisMonth,
@@ -86,6 +87,11 @@ public sealed class JiraPdfReportData
     /// Gets or sets release issues for selected month.
     /// </summary>
     public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets architecture tasks for selected report query.
+    /// </summary>
+    public IReadOnlyList<ArchTaskItem> ArchTasks { get; init; } = [];
 
     /// <summary>
     /// Gets or sets incidents for selected month.

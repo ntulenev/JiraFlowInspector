@@ -486,6 +486,61 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().NotContain("status%20NOT%20IN");
     }
 
+    [Fact(DisplayName = "GetArchTasksAsync returns created and resolved timestamps")]
+    [Trait("Category", "Unit")]
+    public async Task GetArchTasksAsyncWhenCalledReturnsArchitectureTasks()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "AAA-7",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Architecture review",
+                        Created = "2026-03-02T09:30:00Z",
+                        ResolutionDate = "2026-03-05T12:00:00Z"
+                    }
+                }
+            ],
+            IsLast = true
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var settings = CreateSettings(monthLabel: "2026-03");
+        var client = CreateClient(transport.Object, settings);
+
+        // Act
+        var tasks = await client.GetArchTasksAsync(
+            new ArchTasksReportSettings(
+                "project = AAA AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC"),
+            cts.Token);
+
+        // Assert
+        tasks.Should().ContainSingle();
+        tasks[0].Key.Value.Should().Be("AAA-7");
+        tasks[0].Title.Value.Should().Be("Architecture review");
+        tasks[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 3, 2, 9, 30, 0, TimeSpan.Zero));
+        tasks[0].ResolvedAt.Should().Be(new DateTimeOffset(2026, 3, 5, 12, 0, 0, TimeSpan.Zero));
+        capturedUrl.Should().Contain("resolved");
+        capturedUrl.Should().Contain("2026-03-01");
+        capturedUrl.Should().Contain("2026-04-01");
+        capturedUrl.Should().Contain("fields=key,summary,created,resolutiondate");
+    }
+
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
     [Trait("Category", "Unit")]
     public async Task GetReleaseIssuesForMonthAsyncWhenCalledReturnsReleaseIssues()
@@ -1802,6 +1857,7 @@ public sealed class JiraApiClientTests
             new JiraJqlFacade(
                 new TeamTasksJqlBuilder(resolvedSettings),
                 new ReleaseIssuesJqlBuilder(resolvedSettings),
+                new ArchTasksJqlBuilder(resolvedSettings),
                 new GlobalIncidentsJqlBuilder(resolvedSettings)),
             new JiraFieldResolver(transport),
             new JiraMapperFacade(

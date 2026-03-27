@@ -14,14 +14,17 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
     public JiraJqlFacade(
         ITeamTasksJqlBuilder teamTasksJqlBuilder,
         IReleaseIssuesJqlBuilder releaseIssuesJqlBuilder,
+        IArchTasksJqlBuilder archTasksJqlBuilder,
         IGlobalIncidentsJqlBuilder globalIncidentsJqlBuilder)
     {
         ArgumentNullException.ThrowIfNull(teamTasksJqlBuilder);
         ArgumentNullException.ThrowIfNull(releaseIssuesJqlBuilder);
+        ArgumentNullException.ThrowIfNull(archTasksJqlBuilder);
         ArgumentNullException.ThrowIfNull(globalIncidentsJqlBuilder);
 
         _teamTasksJqlBuilder = teamTasksJqlBuilder;
         _releaseIssuesJqlBuilder = releaseIssuesJqlBuilder;
+        _archTasksJqlBuilder = archTasksJqlBuilder;
         _globalIncidentsJqlBuilder = globalIncidentsJqlBuilder;
     }
 
@@ -62,6 +65,9 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
             environmentFieldName,
             environmentFieldValue);
 
+    public string BuildArchTasksQuery(ArchTasksReportSettings settings) =>
+        _archTasksJqlBuilder.BuildQuery(settings);
+
     public string BuildGlobalIncidentsQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields) =>
@@ -69,6 +75,7 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
 
     private readonly ITeamTasksJqlBuilder _teamTasksJqlBuilder;
     private readonly IReleaseIssuesJqlBuilder _releaseIssuesJqlBuilder;
+    private readonly IArchTasksJqlBuilder _archTasksJqlBuilder;
     private readonly IGlobalIncidentsJqlBuilder _globalIncidentsJqlBuilder;
 }
 #pragma warning restore CS1591

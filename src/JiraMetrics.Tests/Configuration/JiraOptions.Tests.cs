@@ -33,6 +33,10 @@ public sealed class JiraOptionsTests
                     BugIssueNames = ["Bug"]
                 }
             },
+            ArchTasks = new ArchTasksReportOptions
+            {
+                Jql = "project = AAA AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC"
+            },
             GlobalIncidents = new GlobalIncidentsReportOptions
             {
                 Namespace = "Incidents",
@@ -192,7 +196,6 @@ public sealed class JiraOptionsTests
 
         // Act
         var showGeneralStatistics = options.ShowGeneralStatistics;
-
         // Assert
         showGeneralStatistics.Should().BeTrue();
     }

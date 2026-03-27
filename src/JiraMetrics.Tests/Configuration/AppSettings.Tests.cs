@@ -24,6 +24,8 @@ public sealed class AppSettingsTests
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
         var bugIssueNames = new List<IssueTypeName> { new("Bug") };
         var releaseReport = new ReleaseReportSettings(new ProjectKey("RLS"), "Processing", "Change completion date");
+        var archTasksReport = new ArchTasksReportSettings(
+            "project = AAA AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC");
         var globalIncidentsReport = new GlobalIncidentsReportSettings(
             namespaceName: "Incidents",
             jqlFilter: "labels = SERVICE",
@@ -55,6 +57,7 @@ public sealed class AppSettingsTests
             bugIssueNames: bugIssueNames,
             showGeneralStatistics: false,
             releaseReport: releaseReport,
+            archTasksReport: archTasksReport,
             globalIncidentsReport: globalIncidentsReport,
             pdfReport: pdfReport,
             pullRequestFieldName: pullRequestFieldName);
@@ -78,6 +81,7 @@ public sealed class AppSettingsTests
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
         settings.ShowGeneralStatistics.Should().BeFalse();
         settings.ReleaseReport.Should().Be(releaseReport);
+        settings.ArchTasksReport.Should().Be(archTasksReport);
         settings.GlobalIncidentsReport.Should().Be(globalIncidentsReport);
         settings.PdfReport.Should().Be(pdfReport);
         settings.PullRequestFieldName.Should().Be(pullRequestFieldName);

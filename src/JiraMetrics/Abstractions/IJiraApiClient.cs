@@ -97,6 +97,16 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads architecture tasks for configured query.
+    /// </summary>
+    /// <param name="settings">Architecture tasks report settings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Architecture task rows.</returns>
+    Task<IReadOnlyList<ArchTaskItem>> GetArchTasksAsync(
+        ArchTasksReportSettings settings,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads global incidents for configured month.
     /// </summary>
     /// <param name="settings">Global incidents report settings.</param>

@@ -9,5 +9,6 @@ public sealed record JiraReportContext(
     IReadOnlyList<IssueKey> IssueKeys,
     IReadOnlyList<IssueKey> RejectIssueKeys,
     IReadOnlyList<ReleaseIssueItem> ReleaseIssues,
+    IReadOnlyList<ArchTaskItem> ArchTasks,
     IReadOnlyList<GlobalIncidentItem> GlobalIncidents,
     IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus);

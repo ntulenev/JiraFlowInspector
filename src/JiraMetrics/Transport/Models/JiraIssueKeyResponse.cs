@@ -40,6 +40,26 @@ public sealed class JiraIssueKeyResponse
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 
+    internal static IReadOnlyList<ArchTaskItem> ToArchTaskItems(IReadOnlyList<JiraIssueKeyResponse> issues) =>
+        [.. issues
+            .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
+            .Select(issue => new
+            {
+                Key = issue.Key!.Trim(),
+                Title = string.IsNullOrWhiteSpace(issue.Fields?.Summary) ? "No summary" : issue.Fields.Summary,
+                CreatedAt = issue.Fields?.Created.ParseNullableDateTimeOffset(),
+                ResolvedAt = issue.Fields?.ResolutionDate.ParseNullableDateTimeOffset()
+            })
+            .Where(static issue => issue.CreatedAt.HasValue)
+            .Select(issue => new ArchTaskItem(
+                new IssueKey(issue.Key),
+                new IssueSummary(issue.Title),
+                issue.CreatedAt!.Value,
+                issue.ResolvedAt))
+            .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static issue => issue.CreatedAt)
+            .ThenBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+
     internal static IReadOnlyList<StatusIssueTypeSummary> ToStatusIssueTypeSummaries(
         IReadOnlyList<JiraIssueKeyResponse> issues)
     {

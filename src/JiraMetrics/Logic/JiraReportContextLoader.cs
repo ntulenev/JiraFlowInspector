@@ -53,6 +53,14 @@ internal sealed class JiraReportContextLoader
                 cancellationToken).ConfigureAwait(false);
         }
 
+        IReadOnlyList<ArchTaskItem> archTasks = [];
+        if (settings.ArchTasksReport is { } archTasksReport)
+        {
+            archTasks = await _apiClient
+                .GetArchTasksAsync(archTasksReport, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         IReadOnlyList<GlobalIncidentItem> globalIncidents = [];
         if (settings.GlobalIncidentsReport is { } globalIncidentsReport)
         {
@@ -75,6 +83,7 @@ internal sealed class JiraReportContextLoader
             issueKeys,
             rejectIssueKeys,
             releaseIssues,
+            archTasks,
             globalIncidents,
             openIssuesByStatus);
     }

@@ -83,6 +83,8 @@ public sealed class PdfContentComposerTests
                 "Change completion date",
                 environmentFieldName: "customfield_10865",
                 environmentFieldValue: "P005"),
+            archTasksReport: new ArchTasksReportSettings(
+                "project = AAA AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC"),
             globalIncidentsReport: new GlobalIncidentsReportSettings(
                 namespaceName: "Incidents",
                 jqlFilter: "(labels = SERVICE OR summary ~ \"SERVICE\") AND (summary ~ \"downtime\")",
@@ -125,6 +127,14 @@ public sealed class PdfContentComposerTests
                     tasks: 3,
                     components: 2,
                     environmentNames: ["P005", "S005"])
+            ],
+            ArchTasks =
+            [
+                new ArchTaskItem(
+                    new IssueKey("AAA-7"),
+                    new IssueSummary("Architecture review"),
+                    new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2026, 2, 5, 12, 0, 0, TimeSpan.Zero))
             ],
             GlobalIncidents =
             [

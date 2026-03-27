@@ -645,6 +645,65 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Loading global incidents report data...");
     }
 
+    [Fact(DisplayName = "ShowArchTasksReportLoadingStarted writes loader line")]
+    [Trait("Category", "Unit")]
+    public async Task ShowArchTasksReportLoadingStartedWhenCalledWritesOutput()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowArchTasksReportLoadingStarted();
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Loading architecture tasks report data...");
+    }
+
+    [Fact(DisplayName = "ShowArchTasksReport writes tasks table")]
+    [Trait("Category", "Unit")]
+    public async Task ShowArchTasksReportWhenCalledWritesTaskRows()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new ArchTasksReportSettings(
+            "project = ADF AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC");
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowArchTasksReport(
+                settings,
+                [
+                    new ArchTaskItem(
+                        new IssueKey("ADF-1"),
+                        new IssueSummary("Architecture review for wallet flow"),
+                        new DateTimeOffset(2026, 3, 2, 9, 30, 0, TimeSpan.Zero),
+                        new DateTimeOffset(2026, 3, 5, 12, 0, 0, TimeSpan.Zero))
+                ]);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Architecture tasks report");
+        output.Should().Contain("JQL:");
+        output.Should().Contain("project = ADF");
+        output.Should().Contain("Jira ID");
+        output.Should().Contain("Created At");
+        output.Should().Contain("Resolved At");
+        output.Should().Contain("Days in work");
+        output.Should().Contain("Title");
+        output.Should().Contain("ADF-1");
+        output.Should().Contain("Architecture");
+        output.Should().Contain("review for");
+        output.Should().Contain("Total tasks:");
+        output.Should().Contain("Resolved:");
+        output.Should().Contain("Open:");
+    }
+
     [Fact(DisplayName = "ShowReleaseReport writes release table")]
     [Trait("Category", "Unit")]
     public async Task ShowReleaseReportWhenCalledWritesReleaseRows()
