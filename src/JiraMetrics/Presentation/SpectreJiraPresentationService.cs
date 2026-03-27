@@ -17,7 +17,11 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 public sealed class SpectreJiraPresentationService : IJiraPresentationService
 {
+    private static readonly char[] _pendingLoaderFrames = ['|', '/', '-', '\\'];
     private readonly bool _showTimeCalculationsInHoursOnly;
+    private readonly object _pendingLoaderSync = new();
+    private CancellationTokenSource? _pendingLoaderCancellation;
+    private Task? _pendingLoaderTask;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SpectreJiraPresentationService"/> class.
@@ -67,12 +71,17 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
-    public void ShowIssueSearchFailed(ErrorMessage errorMessage) => AnsiConsole.MarkupLine($"[red]Failed to load issues:[/] {Markup.Escape(errorMessage.Value)}");
+    public void ShowIssueSearchFailed(ErrorMessage errorMessage)
+    {
+        StopPendingLoader();
+        AnsiConsole.MarkupLine($"[red]Failed to load issues:[/] {Markup.Escape(errorMessage.Value)}");
+    }
 
     /// <inheritdoc />
     public void ShowReportHeader(AppSettings settings, ItemCount issueCount)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        StopPendingLoader();
 
         AnsiConsole.Write(
             new Rule($"[bold cyan]Jira Transition Analytics[/] - [bold]{issueCount.Value} issue(s)[/]")
@@ -106,11 +115,16 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
-    public void ShowNoIssuesMatchedFilter() => AnsiConsole.MarkupLine("[yellow]No issues matched this filter.[/]");
+    public void ShowNoIssuesMatchedFilter()
+    {
+        StopPendingLoader();
+        AnsiConsole.MarkupLine("[yellow]No issues matched this filter.[/]");
+    }
 
     /// <inheritdoc />
     public void ShowIssueLoadingStarted(ItemCount totalIssues)
     {
+        StopPendingLoader();
         _issueLoadTotal = totalIssues.Value;
         _issueLoadProcessed = 0;
         _issueLoadFailed = 0;
@@ -133,22 +147,36 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowProcessingStep(string message)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        StopPendingLoader();
         AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
     }
 
     /// <inheritdoc />
-    public void ShowSpacer() => AnsiConsole.WriteLine();
+    public void ShowSpacer()
+    {
+        StopPendingLoader();
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc />
-    public void ShowNoIssuesLoaded() => AnsiConsole.MarkupLine("[red]No issues were loaded successfully.[/]");
+    public void ShowNoIssuesLoaded()
+    {
+        StopPendingLoader();
+        AnsiConsole.MarkupLine("[red]No issues were loaded successfully.[/]");
+    }
 
     /// <inheritdoc />
-    public void ShowNoIssuesMatchedRequiredStage() => AnsiConsole.MarkupLine("[yellow]No issues matched the required stages in path.[/]");
+    public void ShowNoIssuesMatchedRequiredStage()
+    {
+        StopPendingLoader();
+        AnsiConsole.MarkupLine("[yellow]No issues matched the required stages in path.[/]");
+    }
 
     /// <inheritdoc />
     public void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName)
     {
         ArgumentNullException.ThrowIfNull(issues);
+        StopPendingLoader();
 
         if (issues.Count == 0)
         {
@@ -211,6 +239,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         StatusName doneStatusName)
     {
         ArgumentNullException.ThrowIfNull(summaries);
+        StopPendingLoader();
 
         AnsiConsole.MarkupLine($"[bold]{GetWorkDuration75Title()} per type (moved to {Markup.Escape(doneStatusName.Value)})[/]");
         if (summaries.Count == 0)
@@ -244,6 +273,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName)
     {
         ArgumentNullException.ThrowIfNull(issues);
+        StopPendingLoader();
 
         AnsiConsole.MarkupLine("[bold]Issues moved to Rejected in selected period[/]");
 
@@ -300,6 +330,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowPathGroupsSummary(PathGroupsSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
+        StopPendingLoader();
 
         AnsiConsole.MarkupLine(
             $"[grey]Successful:[/] {summary.SuccessfulCount.Value}    [grey]Matched stage:[/] {summary.MatchedStageCount.Value}    [grey]Failed:[/] {summary.FailedCount.Value}    [grey]Path groups:[/] {summary.PathGroupCount.Value}");
@@ -307,13 +338,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
-    public void ShowReleaseReportLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading release report data...[/]");
+    public void ShowReleaseReportLoadingStarted() => StartPendingLoader("Loading release report data...");
 
     /// <inheritdoc />
-    public void ShowGlobalIncidentsReportLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading global incidents report data...[/]");
+    public void ShowGlobalIncidentsReportLoadingStarted() => StartPendingLoader("Loading global incidents report data...");
 
     /// <inheritdoc />
-    public void ShowArchTasksReportLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading architecture tasks report data...[/]");
+    public void ShowArchTasksReportLoadingStarted() => StartPendingLoader("Loading architecture tasks report data...");
 
     /// <inheritdoc />
     public void ShowReleaseReport(
@@ -323,6 +354,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(releases);
+        StopPendingLoader();
 
         AnsiConsole.MarkupLine("[bold]Release report[/]");
         AnsiConsole.MarkupLine($"[bold red]All releases by label \"{Markup.Escape(settings.ProjectLabel)}\"[/]");
@@ -467,6 +499,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(tasks);
+        StopPendingLoader();
 
         AnsiConsole.MarkupLine("[bold]Architecture tasks report[/]");
         AnsiConsole.MarkupLine($"[grey]JQL:[/] {Markup.Escape(settings.Jql)}");
@@ -527,6 +560,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(incidents);
+        StopPendingLoader();
 
         AnsiConsole.MarkupLine("[bold]Global incidents report[/]");
         AnsiConsole.MarkupLine(
@@ -609,7 +643,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
-    public void ShowAllTasksRatioLoadingStarted() => AnsiConsole.MarkupLine("[grey]Loading all tasks ratio data...[/]");
+    public void ShowAllTasksRatioLoadingStarted() => StartPendingLoader("Loading all tasks ratio data...");
 
     /// <inheritdoc />
     public void ShowAllTasksRatioLoadingCompleted(
@@ -618,6 +652,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         ItemCount rejectedThisMonth,
         ItemCount finishedThisMonth)
     {
+        StopPendingLoader();
         AnsiConsole.MarkupLine(
             $"[green]All tasks ratio data loaded:[/] created = {createdThisMonth.Value}, done = {movedToDoneThisMonth.Value}, rejected = {rejectedThisMonth.Value}, finished = {finishedThisMonth.Value}");
     }
@@ -632,6 +667,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         ItemCount rejectedThisMonth,
         ItemCount finishedThisMonth)
     {
+        StopPendingLoader();
         AnsiConsole.MarkupLine("[bold]All tasks ratio[/]");
         if (!string.IsNullOrWhiteSpace(customFieldName)
             && !string.IsNullOrWhiteSpace(customFieldValue))
@@ -658,7 +694,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         var bugTypes = bugIssueNames.Count == 0
             ? "-"
             : string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
-        AnsiConsole.MarkupLine($"[grey]Loading bug ratio data for:[/] {Markup.Escape(bugTypes)}");
+        StartPendingLoader($"Loading bug ratio data for: {bugTypes}");
     }
 
     /// <inheritdoc />
@@ -668,6 +704,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         ItemCount rejectedThisMonth,
         ItemCount finishedThisMonth)
     {
+        StopPendingLoader();
         AnsiConsole.MarkupLine(
             $"[green]Bug ratio data loaded:[/] created = {createdThisMonth.Value}, done = {movedToDoneThisMonth.Value}, rejected = {rejectedThisMonth.Value}, finished = {finishedThisMonth.Value}");
     }
@@ -689,6 +726,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         ArgumentNullException.ThrowIfNull(openIssues);
         ArgumentNullException.ThrowIfNull(doneIssues);
         ArgumentNullException.ThrowIfNull(rejectedIssues);
+        StopPendingLoader();
 
         if (bugIssueNames.Count == 0)
         {
@@ -770,6 +808,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         StatusName? rejectStatusName)
     {
         ArgumentNullException.ThrowIfNull(statusSummaries);
+        StopPendingLoader();
 
         var excludedStatuses = rejectStatusName is { } rejectStatus
             ? $"{doneStatusName.Value}, {rejectStatus.Value}"
@@ -821,6 +860,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
     {
         ArgumentNullException.ThrowIfNull(groups);
+        StopPendingLoader();
 
         for (var i = 0; i < groups.Count; i++)
         {
@@ -873,6 +913,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)
     {
         ArgumentNullException.ThrowIfNull(failures);
+        StopPendingLoader();
 
         if (failures.Count == 0)
         {
@@ -1093,6 +1134,88 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 $"[grey]Loading issue timelines:[/] {_issueLoadProcessed}/{_issueLoadTotal} ({percent:0}%)  [grey]failed:[/] {_issueLoadFailed}");
         }
     }
+
+    private void StartPendingLoader(string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        StopPendingLoader();
+
+        if (!CanAnimatePendingLoader())
+        {
+            AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
+            return;
+        }
+
+        var cancellation = new CancellationTokenSource();
+        lock (_pendingLoaderSync)
+        {
+            _pendingLoaderCancellation = cancellation;
+            _pendingLoaderTask = Task.Run(async () =>
+            {
+                var index = 0;
+
+                while (!cancellation.Token.IsCancellationRequested)
+                {
+                    lock (_pendingLoaderSync)
+                    {
+                        AnsiConsole.Markup($"\r[grey]{Markup.Escape(message)} {_pendingLoaderFrames[index]}[/]");
+                    }
+
+                    index = (index + 1) % _pendingLoaderFrames.Length;
+
+                    try
+                    {
+                        await Task.Delay(120, cancellation.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
+            }, cancellation.Token);
+        }
+    }
+
+    private void StopPendingLoader()
+    {
+        CancellationTokenSource? cancellation = null;
+        Task? task = null;
+
+        lock (_pendingLoaderSync)
+        {
+            if (_pendingLoaderCancellation is null)
+            {
+                return;
+            }
+
+            cancellation = _pendingLoaderCancellation;
+            task = _pendingLoaderTask;
+            _pendingLoaderCancellation = null;
+            _pendingLoaderTask = null;
+        }
+
+        cancellation.Cancel();
+        try
+        {
+            _ = task?.Wait(250);
+        }
+        catch (AggregateException)
+        {
+        }
+        finally
+        {
+            cancellation.Dispose();
+        }
+
+        lock (_pendingLoaderSync)
+        {
+            AnsiConsole.WriteLine();
+        }
+    }
+
+    private static bool CanAnimatePendingLoader() =>
+        !Console.IsOutputRedirected && AnsiConsole.Console.GetType().Name != "TestConsole";
 
     private int _issueLoadTotal;
     private int _issueLoadProcessed;

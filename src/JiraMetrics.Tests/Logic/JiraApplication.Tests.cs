@@ -792,6 +792,46 @@ public sealed class JiraApplicationTests
             "Rendering PDF report...");
     }
 
+    [Fact(DisplayName = "RunAsync loads issue timelines with bounded parallelism")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenMultipleIssueTimelinesAreLoadedUsesParallelRequests()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys =
+            [
+                new IssueKey("AAA-1"),
+                new IssueKey("AAA-2"),
+                new IssueKey("AAA-3"),
+                new IssueKey("AAA-4")
+            ],
+            IssueTimelineDelay = TimeSpan.FromMilliseconds(75)
+        };
+        apiClient.IssuesByKey["AAA-1"] = CreateIssue(new IssueKey("AAA-1"), new IssueTypeName("Task"));
+        apiClient.IssuesByKey["AAA-2"] = CreateIssue(new IssueKey("AAA-2"), new IssueTypeName("Task"));
+        apiClient.IssuesByKey["AAA-3"] = CreateIssue(new IssueKey("AAA-3"), new IssueTypeName("Task"));
+        apiClient.IssuesByKey["AAA-4"] = CreateIssue(new IssueKey("AAA-4"), new IssueTypeName("Task"));
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var pdfReportRenderer = new FakePdfReportRenderer();
+        var app = new JiraApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
+            presentation,
+            pdfReportRenderer);
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        apiClient.MaxConcurrentIssueTimelineRequests.Should().BeGreaterThan(1);
+        presentation.IssueLoadingCompletedLoaded.Should().Be(new ItemCount(4));
+    }
+
     [Fact(DisplayName = "RunAsync renders PDF report after transition analysis")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenAnalysisCompletesRendersPdfReport()
@@ -1065,6 +1105,13 @@ public sealed class JiraApplicationTests
 
         public bool GlobalIncidentsRequested { get; private set; }
 
+        public TimeSpan IssueTimelineDelay { get; set; }
+
+        public int MaxConcurrentIssueTimelineRequests => _maxConcurrentIssueTimelineRequests;
+
+        private int _activeIssueTimelineRequests;
+        private int _maxConcurrentIssueTimelineRequests;
+
         public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken)
         {
             if (ThrowOnAuth)
@@ -1165,44 +1212,66 @@ public sealed class JiraApplicationTests
             return Task.FromResult(OpenIssuesByStatus);
         }
 
-        public Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
+        public async Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken)
         {
+            var activeRequests = Interlocked.Increment(ref _activeIssueTimelineRequests);
+            while (activeRequests > _maxConcurrentIssueTimelineRequests)
+            {
+                _ = Interlocked.CompareExchange(
+                    ref _maxConcurrentIssueTimelineRequests,
+                    activeRequests,
+                    _maxConcurrentIssueTimelineRequests);
+            }
+
             if (FailIssueKeys.Contains(issueKey))
             {
+                Interlocked.Decrement(ref _activeIssueTimelineRequests);
                 throw new InvalidOperationException("Failed to load issue.");
             }
 
-            if (IssuesByKey.TryGetValue(issueKey.Value, out var configuredIssue))
+            try
             {
-                return Task.FromResult(new IssueTimeline(
+                if (IssueTimelineDelay > TimeSpan.Zero)
+                {
+                    await Task.Delay(IssueTimelineDelay, cancellationToken);
+                }
+
+                if (IssuesByKey.TryGetValue(issueKey.Value, out var configuredIssue))
+                {
+                    return new IssueTimeline(
+                        issueKey,
+                        configuredIssue.IssueType,
+                        configuredIssue.Summary,
+                        configuredIssue.Created,
+                        configuredIssue.EndTime,
+                        configuredIssue.Transitions,
+                        configuredIssue.PathKey,
+                        configuredIssue.PathLabel,
+                        configuredIssue.SubItemsCount,
+                        configuredIssue.HasPullRequest);
+                }
+
+                if (IssueToReturn is null)
+                {
+                    throw new InvalidOperationException("No issue configured for fake transport.");
+                }
+
+                return new IssueTimeline(
                     issueKey,
-                    configuredIssue.IssueType,
-                    configuredIssue.Summary,
-                    configuredIssue.Created,
-                    configuredIssue.EndTime,
-                    configuredIssue.Transitions,
-                    configuredIssue.PathKey,
-                    configuredIssue.PathLabel,
-                    configuredIssue.SubItemsCount,
-                    configuredIssue.HasPullRequest));
+                    IssueToReturn.IssueType,
+                    IssueToReturn.Summary,
+                    IssueToReturn.Created,
+                    IssueToReturn.EndTime,
+                    IssueToReturn.Transitions,
+                    IssueToReturn.PathKey,
+                    IssueToReturn.PathLabel,
+                    IssueToReturn.SubItemsCount,
+                    IssueToReturn.HasPullRequest);
             }
-
-            if (IssueToReturn is null)
+            finally
             {
-                throw new InvalidOperationException("No issue configured for fake transport.");
+                Interlocked.Decrement(ref _activeIssueTimelineRequests);
             }
-
-            return Task.FromResult(new IssueTimeline(
-                issueKey,
-                IssueToReturn.IssueType,
-                IssueToReturn.Summary,
-                IssueToReturn.Created,
-                IssueToReturn.EndTime,
-                IssueToReturn.Transitions,
-                IssueToReturn.PathKey,
-                IssueToReturn.PathLabel,
-                IssueToReturn.SubItemsCount,
-                IssueToReturn.HasPullRequest));
         }
     }
 

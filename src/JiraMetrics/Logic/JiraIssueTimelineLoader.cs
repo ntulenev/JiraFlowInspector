@@ -32,48 +32,22 @@ internal sealed class JiraIssueTimelineLoader
         ArgumentNullException.ThrowIfNull(issueKeys);
         ArgumentNullException.ThrowIfNull(rejectIssueKeys);
 
-        var uniqueIssueKeysToLoad = issueKeys
-            .Concat(rejectIssueKeys)
-            .Select(static key => key.Value)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Count();
+        var uniqueIssueKeys = BuildUniqueIssueKeys(issueKeys, rejectIssueKeys);
+        _presentationService.ShowIssueLoadingStarted(new ItemCount(uniqueIssueKeys.Count));
 
-        _presentationService.ShowIssueLoadingStarted(new ItemCount(uniqueIssueKeysToLoad));
-
-        var issues = new List<IssueTimeline>();
-        var rejectIssues = new List<IssueTimeline>();
-        var loadedIssuesByKey = new Dictionary<string, IssueTimeline>(StringComparer.OrdinalIgnoreCase);
-        var failures = new List<LoadFailure>();
-
-        foreach (var issueKey in issueKeys)
-        {
-            var issue = await TryLoadIssueAsync(issueKey, failures, cancellationToken).ConfigureAwait(false);
-            if (issue is null)
-            {
-                continue;
-            }
-
-            issues.Add(issue);
-            loadedIssuesByKey[issue.Key.Value] = issue;
-        }
-
-        foreach (var issueKey in rejectIssueKeys)
-        {
-            if (loadedIssuesByKey.TryGetValue(issueKey.Value, out var loadedIssue))
-            {
-                rejectIssues.Add(loadedIssue);
-                continue;
-            }
-
-            var issue = await TryLoadIssueAsync(issueKey, failures, cancellationToken).ConfigureAwait(false);
-            if (issue is null)
-            {
-                continue;
-            }
-
-            rejectIssues.Add(issue);
-            loadedIssuesByKey[issue.Key.Value] = issue;
-        }
+        var loadOutcomes = await LoadIssuesAsync(uniqueIssueKeys, cancellationToken).ConfigureAwait(false);
+        var loadedIssuesByKey = loadOutcomes
+            .Where(static outcome => outcome.Issue is not null)
+            .ToDictionary(
+                static outcome => outcome.Key.Value,
+                static outcome => outcome.Issue!,
+                StringComparer.OrdinalIgnoreCase);
+        var failures = loadOutcomes
+            .Where(static outcome => outcome.Failure is not null)
+            .Select(static outcome => outcome.Failure!)
+            .ToList();
+        var issues = BuildLoadedIssueList(issueKeys, loadedIssuesByKey);
+        var rejectIssues = BuildLoadedIssueList(rejectIssueKeys, loadedIssuesByKey);
 
         _presentationService.ShowIssueLoadingCompleted(
             new ItemCount(loadedIssuesByKey.Count),
@@ -87,33 +61,136 @@ internal sealed class JiraIssueTimelineLoader
             new ItemCount(loadedIssuesByKey.Count));
     }
 
-    private async Task<IssueTimeline?> TryLoadIssueAsync(
-        IssueKey issueKey,
-        List<LoadFailure> failures,
+    private async Task<IReadOnlyList<IssueLoadOutcome>> LoadIssuesAsync(
+        List<IssueKey> issueKeys,
         CancellationToken cancellationToken)
     {
-        try
+        if (issueKeys.Count == 0)
         {
-            var issue = await _apiClient
-                .GetIssueTimelineAsync(issueKey, cancellationToken)
-                .ConfigureAwait(false);
-            _presentationService.ShowIssueLoaded(issueKey);
-            return issue;
-        }
-        catch (HttpRequestException ex)
-        {
-            failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-        }
-        catch (InvalidOperationException ex)
-        {
-            failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
-        }
-        catch (JsonException ex)
-        {
-            failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+            return [];
         }
 
-        _presentationService.ShowIssueFailed(issueKey);
-        return null;
+        var semaphore = new SemaphoreSlim(MAX_CONCURRENT_ISSUE_LOADS);
+
+        try
+        {
+            var presentationSync = new object();
+            var tasks = issueKeys
+                .Select(issueKey => LoadIssueAsync(issueKey, semaphore, presentationSync, cancellationToken))
+                .ToArray();
+
+            return await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        finally
+        {
+            semaphore.Dispose();
+        }
     }
+
+    private async Task<IssueLoadOutcome> LoadIssueAsync(
+        IssueKey issueKey,
+        SemaphoreSlim semaphore,
+        object presentationSync,
+        CancellationToken cancellationToken)
+    {
+        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            try
+            {
+                var issue = await _apiClient
+                    .GetIssueTimelineAsync(issueKey, cancellationToken)
+                    .ConfigureAwait(false);
+                lock (presentationSync)
+                {
+                    _presentationService.ShowIssueLoaded(issueKey);
+                }
+
+                return new IssueLoadOutcome(issueKey, issue, null);
+            }
+            catch (HttpRequestException ex)
+            {
+                lock (presentationSync)
+                {
+                    _presentationService.ShowIssueFailed(issueKey);
+                }
+
+                return new IssueLoadOutcome(
+                    issueKey,
+                    null,
+                    new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+            }
+            catch (InvalidOperationException ex)
+            {
+                lock (presentationSync)
+                {
+                    _presentationService.ShowIssueFailed(issueKey);
+                }
+
+                return new IssueLoadOutcome(
+                    issueKey,
+                    null,
+                    new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+            }
+            catch (JsonException ex)
+            {
+                lock (presentationSync)
+                {
+                    _presentationService.ShowIssueFailed(issueKey);
+                }
+
+                return new IssueLoadOutcome(
+                    issueKey,
+                    null,
+                    new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
+            }
+        }
+        finally
+        {
+            _ = semaphore.Release();
+        }
+    }
+
+    private static List<IssueKey> BuildUniqueIssueKeys(
+        IReadOnlyList<IssueKey> issueKeys,
+        IReadOnlyList<IssueKey> rejectIssueKeys)
+    {
+        var uniqueIssueKeys = new List<IssueKey>(issueKeys.Count + rejectIssueKeys.Count);
+        var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var issueKey in issueKeys.Concat(rejectIssueKeys))
+        {
+            if (seenKeys.Add(issueKey.Value))
+            {
+                uniqueIssueKeys.Add(issueKey);
+            }
+        }
+
+        return uniqueIssueKeys;
+    }
+
+    private static List<IssueTimeline> BuildLoadedIssueList(
+        IReadOnlyList<IssueKey> issueKeys,
+        Dictionary<string, IssueTimeline> loadedIssuesByKey)
+    {
+        var issues = new List<IssueTimeline>(issueKeys.Count);
+
+        foreach (var issueKey in issueKeys)
+        {
+            if (loadedIssuesByKey.TryGetValue(issueKey.Value, out var issue))
+            {
+                issues.Add(issue);
+            }
+        }
+
+        return issues;
+    }
+
+    private sealed record IssueLoadOutcome(
+        IssueKey Key,
+        IssueTimeline? Issue,
+        LoadFailure? Failure);
+
+    private const int MAX_CONCURRENT_ISSUE_LOADS = 8;
 }
