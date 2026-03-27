@@ -11,18 +11,6 @@ internal static class PdfPresentationFormatting
     public const string DONE_ISSUE_COLOR_HEX = "#16a34a";
     public const string REJECTED_ISSUE_COLOR_HEX = "#f97316";
 
-    private static readonly string[] _timelinePaletteHex =
-    [
-        "#0ea5e9",
-        "#3b82f6",
-        "#22d3ee",
-        "#22c55e",
-        "#eab308",
-        "#f97316",
-        "#f59e0b",
-        "#9ca3af"
-    ];
-
     public static string BuildLastStatusAtText(IssueTimeline issue, StatusName statusName)
     {
         var lastTimestamp = issue.Transitions
@@ -194,4 +182,16 @@ internal static class PdfPresentationFormatting
             .OrderByDescending(static pair => pair.releaseCount)
             .ThenBy(static pair => pair.componentName, StringComparer.OrdinalIgnoreCase)];
     }
+
+    private static readonly string[] _timelinePaletteHex =
+    [
+        "#0ea5e9",
+        "#3b82f6",
+        "#22d3ee",
+        "#22c55e",
+        "#eab308",
+        "#f97316",
+        "#f59e0b",
+        "#9ca3af"
+    ];
 }

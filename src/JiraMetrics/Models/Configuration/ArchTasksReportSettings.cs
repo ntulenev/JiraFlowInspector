@@ -8,10 +8,6 @@ namespace JiraMetrics.Models.Configuration;
 /// </summary>
 public sealed record ArchTasksReportSettings
 {
-    private const string MONTH_LABEL_TOKEN = "{{MonthLabel}}";
-    private const string MONTH_RESOLVED_CLAUSE_TOKEN = "{{MonthResolvedClause}}";
-    private const string LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN = "resolved in MonthLabel";
-    private const string LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN_RU = "resolved попадает в MonthLabel";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ArchTasksReportSettings"/> class.
@@ -46,4 +42,8 @@ public sealed record ArchTasksReportSettings
             .Replace(LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN, monthResolvedClause, StringComparison.OrdinalIgnoreCase)
             .Replace(MONTH_LABEL_TOKEN, reportPeriod.Label.EscapeJqlString(), StringComparison.OrdinalIgnoreCase);
     }
+    private const string MONTH_LABEL_TOKEN = "{{MonthLabel}}";
+    private const string MONTH_RESOLVED_CLAUSE_TOKEN = "{{MonthResolvedClause}}";
+    private const string LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN = "resolved in MonthLabel";
+    private const string LEGACY_MONTH_RESOLVED_CLAUSE_TOKEN_RU = "resolved попадает в MonthLabel";
 }

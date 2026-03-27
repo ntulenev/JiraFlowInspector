@@ -15,15 +15,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 public sealed class JiraApplication : IJiraApplication
 {
-    private readonly AppSettings _settings;
-    private readonly IJiraApplicationDataFacade _dataFacade;
-    private readonly IJiraApplicationAnalysisFacade _analysisFacade;
-    private readonly IJiraStatusPresenter _statusPresenter;
-    private readonly IJiraReportSectionsPresenter _reportSectionsPresenter;
-    private readonly IJiraAnalysisPresenter _analysisPresenter;
-    private readonly IJiraDiagnosticsPresenter _diagnosticsPresenter;
-    private readonly IPdfReportRenderer _pdfReportRenderer;
-    private readonly IJiraRequestTelemetryCollector _requestTelemetryCollector;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraApplication"/> class.
@@ -566,5 +557,14 @@ public sealed class JiraApplication : IJiraApplication
 
         return null;
     }
+    private readonly AppSettings _settings;
+    private readonly IJiraApplicationDataFacade _dataFacade;
+    private readonly IJiraApplicationAnalysisFacade _analysisFacade;
+    private readonly IJiraStatusPresenter _statusPresenter;
+    private readonly IJiraReportSectionsPresenter _reportSectionsPresenter;
+    private readonly IJiraAnalysisPresenter _analysisPresenter;
+    private readonly IJiraDiagnosticsPresenter _diagnosticsPresenter;
+    private readonly IPdfReportRenderer _pdfReportRenderer;
+    private readonly IJiraRequestTelemetryCollector _requestTelemetryCollector;
 }
 

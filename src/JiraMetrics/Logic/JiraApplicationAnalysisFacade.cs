@@ -9,7 +9,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFacade
 {
-    private readonly IJiraLogicService _logicService;
 
     public JiraApplicationAnalysisFacade(IJiraLogicService logicService)
     {
@@ -73,5 +72,6 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             groups,
             pathSummary);
     }
+    private readonly IJiraLogicService _logicService;
 }
 

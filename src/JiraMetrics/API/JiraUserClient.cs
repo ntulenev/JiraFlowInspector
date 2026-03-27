@@ -5,7 +5,6 @@ namespace JiraMetrics.API;
 
 internal sealed class JiraUserClient : IJiraUserClient
 {
-    private readonly IJiraSearchExecutor _searchExecutor;
 
     public JiraUserClient(IJiraSearchExecutor searchExecutor)
     {
@@ -30,5 +29,6 @@ internal sealed class JiraUserClient : IJiraUserClient
             ?? "unknown";
         return new JiraAuthUser(new UserDisplayName(displayName), response.EmailAddress, response.AccountId);
     }
+    private readonly IJiraSearchExecutor _searchExecutor;
 }
 

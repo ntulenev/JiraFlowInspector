@@ -10,7 +10,6 @@ namespace JiraMetrics.Presentation;
 
 internal sealed class SpectreGlobalIncidentsSection
 {
-    private readonly bool _showTimeCalculationsInHoursOnly;
 
     public SpectreGlobalIncidentsSection(bool showTimeCalculationsInHoursOnly)
     {
@@ -101,4 +100,5 @@ internal sealed class SpectreGlobalIncidentsSection
         var totalDuration = SpectrePresentationFormatting.SumIncidentDurations(orderedIncidents);
         AnsiConsole.MarkupLine($"[grey]Total duration:[/] {Markup.Escape(SpectrePresentationFormatting.FormatIncidentDuration(totalDuration, _showTimeCalculationsInHoursOnly))}");
     }
+    private readonly bool _showTimeCalculationsInHoursOnly;
 }

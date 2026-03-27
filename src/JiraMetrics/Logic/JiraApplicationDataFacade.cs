@@ -11,12 +11,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
 {
-    private readonly IJiraUserClient _userClient;
-    private readonly IssueSearchSnapshotLoader _issueSearchSnapshotLoader;
-    private readonly JiraReportContextLoader _reportContextLoader;
-    private readonly JiraIssueTimelineLoader _issueTimelineLoader;
-    private readonly ConcurrentDictionary<string, Lazy<Task<IssueSearchSnapshot>>> _issueSearchSnapshots =
-        new(StringComparer.Ordinal);
 
     public JiraApplicationDataFacade(
         IJiraUserClient userClient,
@@ -122,5 +116,11 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(static value => value, StringComparer.OrdinalIgnoreCase));
     }
+    private readonly IJiraUserClient _userClient;
+    private readonly IssueSearchSnapshotLoader _issueSearchSnapshotLoader;
+    private readonly JiraReportContextLoader _reportContextLoader;
+    private readonly JiraIssueTimelineLoader _issueTimelineLoader;
+    private readonly ConcurrentDictionary<string, Lazy<Task<IssueSearchSnapshot>>> _issueSearchSnapshots =
+        new(StringComparer.Ordinal);
 }
 

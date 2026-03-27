@@ -7,11 +7,6 @@ namespace JiraMetrics.Models.ValueObjects;
 /// </summary>
 public readonly record struct ReportPeriod
 {
-    private static readonly string[] _supportedDateFormats =
-    [
-        "dd.MM.yyyy",
-        "yyyy-MM-dd"
-    ];
 
     private ReportPeriod(
         DateOnly start,
@@ -137,4 +132,9 @@ public readonly record struct ReportPeriod
     /// </summary>
     /// <returns>Period label.</returns>
     public override string ToString() => Label;
+    private static readonly string[] _supportedDateFormats =
+    [
+        "dd.MM.yyyy",
+        "yyyy-MM-dd"
+    ];
 }

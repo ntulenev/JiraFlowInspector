@@ -12,7 +12,6 @@ namespace JiraMetrics.Presentation;
 
 internal sealed class SpectreTransitionSection
 {
-    private readonly bool _showTimeCalculationsInHoursOnly;
 
     public SpectreTransitionSection(bool showTimeCalculationsInHoursOnly)
     {
@@ -320,4 +319,5 @@ internal sealed class SpectreTransitionSection
         6 => "gold1",
         _ => "grey82"
     };
+    private readonly bool _showTimeCalculationsInHoursOnly;
 }

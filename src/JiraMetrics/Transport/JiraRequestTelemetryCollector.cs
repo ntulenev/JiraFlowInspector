@@ -94,14 +94,6 @@ public sealed class JiraRequestTelemetryCollector : IJiraRequestTelemetryCollect
         return string.IsNullOrWhiteSpace(path) ? "/" : path;
     }
 
-    private readonly object _sync = new();
-    private readonly Dictionary<string, EndpointMetrics> _endpointMetrics =
-        new(StringComparer.OrdinalIgnoreCase);
-    private int _requestCount;
-    private int _retryCount;
-    private long _responseBytes;
-    private TimeSpan _totalDuration;
-
     private sealed class EndpointMetrics
     {
         public EndpointMetrics(string method, string endpoint)
@@ -124,5 +116,13 @@ public sealed class JiraRequestTelemetryCollector : IJiraRequestTelemetryCollect
 
         public TimeSpan MaxDuration { get; set; }
     }
+
+    private readonly object _sync = new();
+    private readonly Dictionary<string, EndpointMetrics> _endpointMetrics =
+        new(StringComparer.OrdinalIgnoreCase);
+    private int _requestCount;
+    private int _retryCount;
+    private long _responseBytes;
+    private TimeSpan _totalDuration;
 }
 

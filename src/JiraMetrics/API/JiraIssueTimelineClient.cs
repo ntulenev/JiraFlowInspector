@@ -11,25 +11,6 @@ namespace JiraMetrics.API;
 
 internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
 {
-    private readonly IJiraSearchExecutor _searchExecutor;
-    private readonly string? _pullRequestFieldName;
-    private readonly IJiraFieldResolver _fieldResolver;
-    private readonly IJiraMapperFacade _mapperFacade;
-    private string? _pullRequestFieldId;
-    private bool _pullRequestFieldIdResolved;
-
-    private const int ISSUE_TIMELINE_BULK_FETCH_BATCH_SIZE = 100;
-
-    private static readonly string[] _issueTimelineBaseFields =
-    [
-        "summary",
-        "created",
-        "resolutiondate",
-        "issuetype",
-        "status",
-        "issuelinks",
-        "subtasks"
-    ];
 
     public JiraIssueTimelineClient(
         IJiraSearchExecutor searchExecutor,
@@ -214,5 +195,24 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
             yield return batch;
         }
     }
+    private readonly IJiraSearchExecutor _searchExecutor;
+    private readonly string? _pullRequestFieldName;
+    private readonly IJiraFieldResolver _fieldResolver;
+    private readonly IJiraMapperFacade _mapperFacade;
+    private string? _pullRequestFieldId;
+    private bool _pullRequestFieldIdResolved;
+
+    private const int ISSUE_TIMELINE_BULK_FETCH_BATCH_SIZE = 100;
+
+    private static readonly string[] _issueTimelineBaseFields =
+    [
+        "summary",
+        "created",
+        "resolutiondate",
+        "issuetype",
+        "status",
+        "issuelinks",
+        "subtasks"
+    ];
 }
 

@@ -13,22 +13,6 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 public sealed class SpectreJiraPresentationService : IJiraPresentationService
 {
-    private static readonly char[] _pendingLoaderFrames = ['|', '/', '-', '\\'];
-    private readonly object _pendingLoaderSync = new();
-    private readonly SpectreStatusSection _statusSection;
-    private readonly SpectreRatioSection _ratioSection;
-    private readonly SpectreReleaseSection _releaseSection;
-    private readonly SpectreArchTasksSection _archTasksSection;
-    private readonly SpectreGlobalIncidentsSection _globalIncidentsSection;
-    private readonly SpectreTransitionSection _transitionSection;
-    private readonly SpectreGeneralStatisticsSection _generalStatisticsSection;
-    private readonly SpectreFailuresSection _failuresSection;
-    private CancellationTokenSource? _pendingLoaderCancellation;
-    private Task? _pendingLoaderTask;
-    private int _issueLoadTotal;
-    private int _issueLoadProcessed;
-    private int _issueLoadFailed;
-    private int _issueLoadStep = 1;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SpectreJiraPresentationService"/> class.
@@ -465,5 +449,21 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
 
     private static bool CanAnimatePendingLoader() =>
         !Console.IsOutputRedirected && AnsiConsole.Console.GetType().Name != "TestConsole";
+    private static readonly char[] _pendingLoaderFrames = ['|', '/', '-', '\\'];
+    private readonly object _pendingLoaderSync = new();
+    private readonly SpectreStatusSection _statusSection;
+    private readonly SpectreRatioSection _ratioSection;
+    private readonly SpectreReleaseSection _releaseSection;
+    private readonly SpectreArchTasksSection _archTasksSection;
+    private readonly SpectreGlobalIncidentsSection _globalIncidentsSection;
+    private readonly SpectreTransitionSection _transitionSection;
+    private readonly SpectreGeneralStatisticsSection _generalStatisticsSection;
+    private readonly SpectreFailuresSection _failuresSection;
+    private CancellationTokenSource? _pendingLoaderCancellation;
+    private Task? _pendingLoaderTask;
+    private int _issueLoadTotal;
+    private int _issueLoadProcessed;
+    private int _issueLoadFailed;
+    private int _issueLoadStep = 1;
 }
 

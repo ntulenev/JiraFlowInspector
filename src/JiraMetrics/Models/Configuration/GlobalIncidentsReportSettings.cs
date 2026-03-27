@@ -5,11 +5,6 @@ namespace JiraMetrics.Models.Configuration;
 /// </summary>
 public sealed record GlobalIncidentsReportSettings
 {
-    private const string DEFAULT_NAMESPACE = "Incidents";
-    private const string DEFAULT_INCIDENT_START_FIELD_NAME = "Incident Start date/time UTC";
-    private const string DEFAULT_INCIDENT_RECOVERY_FIELD_NAME = "Incident Recovery date/time UTC";
-    private const string DEFAULT_IMPACT_FIELD_NAME = "Impact";
-    private const string DEFAULT_URGENCY_FIELD_NAME = "Urgency";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobalIncidentsReportSettings"/> class.
@@ -115,4 +110,9 @@ public sealed record GlobalIncidentsReportSettings
     /// Gets optional additional field names shown in the report.
     /// </summary>
     public IReadOnlyList<string> AdditionalFieldNames { get; }
+    private const string DEFAULT_NAMESPACE = "Incidents";
+    private const string DEFAULT_INCIDENT_START_FIELD_NAME = "Incident Start date/time UTC";
+    private const string DEFAULT_INCIDENT_RECOVERY_FIELD_NAME = "Incident Recovery date/time UTC";
+    private const string DEFAULT_IMPACT_FIELD_NAME = "Impact";
+    private const string DEFAULT_URGENCY_FIELD_NAME = "Urgency";
 }

@@ -7,10 +7,6 @@ namespace JiraMetrics.API;
 
 internal sealed class JiraReportDataClient : IJiraReportDataClient
 {
-    private readonly IJiraSearchExecutor _searchExecutor;
-    private readonly IJiraJqlFacade _jqlFacade;
-    private readonly IJiraFieldResolver _fieldResolver;
-    private readonly IJiraMapperFacade _mapperFacade;
 
     public JiraReportDataClient(
         IJiraSearchExecutor searchExecutor,
@@ -148,5 +144,9 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
 
         return _mapperFacade.MapGlobalIncidents(issues, context);
     }
+    private readonly IJiraSearchExecutor _searchExecutor;
+    private readonly IJiraJqlFacade _jqlFacade;
+    private readonly IJiraFieldResolver _fieldResolver;
+    private readonly IJiraMapperFacade _mapperFacade;
 }
 

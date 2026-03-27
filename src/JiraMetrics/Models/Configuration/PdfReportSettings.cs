@@ -7,7 +7,6 @@ namespace JiraMetrics.Models.Configuration;
 /// </summary>
 public sealed record PdfReportSettings
 {
-    private const string DEFAULT_OUTPUT_PATH = "jiraflowinspector-report.pdf";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PdfReportSettings"/> class.
@@ -68,4 +67,5 @@ public sealed record PdfReportSettings
             ? datedFileName
             : Path.Combine(directoryPath, datedFileName);
     }
+    private const string DEFAULT_OUTPUT_PATH = "jiraflowinspector-report.pdf";
 }

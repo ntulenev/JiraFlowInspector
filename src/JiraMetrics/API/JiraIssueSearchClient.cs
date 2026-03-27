@@ -5,9 +5,6 @@ namespace JiraMetrics.API;
 
 internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
 {
-    private readonly IJiraSearchExecutor _searchExecutor;
-    private readonly IJiraJqlFacade _jqlFacade;
-    private readonly IJiraMapperFacade _mapperFacade;
 
     public JiraIssueSearchClient(
         IJiraSearchExecutor searchExecutor,
@@ -76,5 +73,8 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
             .ConfigureAwait(false);
         return _mapperFacade.MapStatusIssueTypeSummaries(issues);
     }
+    private readonly IJiraSearchExecutor _searchExecutor;
+    private readonly IJiraJqlFacade _jqlFacade;
+    private readonly IJiraMapperFacade _mapperFacade;
 }
 

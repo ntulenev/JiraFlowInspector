@@ -9,7 +9,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class IssueSearchSnapshotLoader
 {
-    private readonly IJiraIssueSearchClient _issueSearchClient;
 
     public IssueSearchSnapshotLoader(IJiraIssueSearchClient issueSearchClient)
     {
@@ -47,5 +46,6 @@ internal sealed class IssueSearchSnapshotLoader
 
         return new IssueSearchSnapshot(createdIssues, doneIssues, rejectedIssues);
     }
+    private readonly IJiraIssueSearchClient _issueSearchClient;
 }
 

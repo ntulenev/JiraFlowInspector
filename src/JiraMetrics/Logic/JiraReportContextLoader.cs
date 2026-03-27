@@ -9,8 +9,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraReportContextLoader
 {
-    private readonly IJiraIssueSearchClient _issueSearchClient;
-    private readonly IJiraReportDataClient _reportDataClient;
 
     public JiraReportContextLoader(
         IJiraIssueSearchClient issueSearchClient,
@@ -156,5 +154,7 @@ internal sealed class JiraReportContextLoader
             settings.RejectStatusName,
             cancellationToken);
     }
+    private readonly IJiraIssueSearchClient _issueSearchClient;
+    private readonly IJiraReportDataClient _reportDataClient;
 }
 

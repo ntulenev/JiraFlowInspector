@@ -7,9 +7,6 @@ namespace JiraMetrics.Models.Configuration;
 /// </summary>
 public sealed record ReleaseReportSettings
 {
-    private const string DEFAULT_HOT_FIX_FIELD_NAME = "Change type";
-    private const string DEFAULT_HOT_FIX_FIELD_VALUE = "Emergency";
-    private const string DEFAULT_ROLLBACK_FIELD_NAME = "Rollback type";
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ReleaseReportSettings"/> class.
@@ -121,4 +118,7 @@ public sealed record ReleaseReportSettings
 
         return normalized;
     }
+    private const string DEFAULT_HOT_FIX_FIELD_NAME = "Change type";
+    private const string DEFAULT_HOT_FIX_FIELD_VALUE = "Emergency";
+    private const string DEFAULT_ROLLBACK_FIELD_NAME = "Rollback type";
 }

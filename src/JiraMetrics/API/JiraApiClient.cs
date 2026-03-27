@@ -11,10 +11,6 @@ namespace JiraMetrics.API;
 /// </summary>
 public sealed class JiraApiClient : IJiraApiClient
 {
-    private readonly IJiraUserClient _userClient;
-    private readonly IJiraIssueSearchClient _issueSearchClient;
-    private readonly IJiraReportDataClient _reportDataClient;
-    private readonly IJiraIssueTimelineClient _issueTimelineClient;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraApiClient"/> class.
@@ -140,5 +136,9 @@ public sealed class JiraApiClient : IJiraApiClient
         IReadOnlyList<IssueKey> issueKeys,
         CancellationToken cancellationToken) =>
         _issueTimelineClient.GetIssueTimelinesAsync(issueKeys, cancellationToken);
+    private readonly IJiraUserClient _userClient;
+    private readonly IJiraIssueSearchClient _issueSearchClient;
+    private readonly IJiraReportDataClient _reportDataClient;
+    private readonly IJiraIssueTimelineClient _issueTimelineClient;
 }
 

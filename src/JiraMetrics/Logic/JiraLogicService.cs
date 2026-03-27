@@ -8,7 +8,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 public sealed class JiraLogicService : IJiraLogicService
 {
-    private readonly IJiraAnalyticsService _analytics;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraLogicService"/> class.
@@ -133,6 +132,7 @@ public sealed class JiraLogicService : IJiraLogicService
             .OrderByDescending(group => group.Issues.Count)
             .ThenBy(group => group.PathLabel.Value, StringComparer.OrdinalIgnoreCase)];
     }
+    private readonly IJiraAnalyticsService _analytics;
 
 }
 

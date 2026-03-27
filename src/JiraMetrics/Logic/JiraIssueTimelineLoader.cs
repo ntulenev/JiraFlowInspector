@@ -8,8 +8,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraIssueTimelineLoader
 {
-    private readonly IJiraIssueTimelineClient _issueTimelineClient;
-    private readonly IJiraIssueLoadingProgressPresenter _progressPresenter;
 
     public JiraIssueTimelineLoader(
         IJiraIssueTimelineClient issueTimelineClient,
@@ -142,5 +140,7 @@ internal sealed class JiraIssueTimelineLoader
         IssueKey Key,
         IssueTimeline? Issue,
         LoadFailure? Failure);
+    private readonly IJiraIssueTimelineClient _issueTimelineClient;
+    private readonly IJiraIssueLoadingProgressPresenter _progressPresenter;
 }
 

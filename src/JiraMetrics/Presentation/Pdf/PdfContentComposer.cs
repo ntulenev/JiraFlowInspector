@@ -9,7 +9,6 @@ namespace JiraMetrics.Presentation.Pdf;
 /// </summary>
 public sealed class PdfContentComposer : IPdfContentComposer
 {
-    private readonly IReadOnlyList<IPdfReportSection> _sections;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PdfContentComposer"/> class.
@@ -48,5 +47,6 @@ public sealed class PdfContentComposer : IPdfContentComposer
             section.Compose(column, reportData);
         }
     }
+    private readonly IReadOnlyList<IPdfReportSection> _sections;
 }
 

@@ -7,7 +7,6 @@ namespace JiraMetrics.Tests.Logic;
 
 public sealed class JiraAnalyticsServiceTests
 {
-    private readonly JiraAnalyticsService _service = new();
 
     [Fact(DisplayName = "CalculatePercentile returns zero when values are empty")]
     [Trait("Category", "Unit")]
@@ -55,5 +54,6 @@ public sealed class JiraAnalyticsServiceTests
         // Assert
         result.Should().Be(TimeSpan.FromHours(3.5));
     }
+    private readonly JiraAnalyticsService _service = new();
 
 }
