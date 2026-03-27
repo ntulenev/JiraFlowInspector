@@ -210,10 +210,7 @@ public sealed class ServiceCollectionExtensionsTests
         services.AddSingleton<IOptions<AppSettings>>(Options.Create(CreateAppSettings()));
         services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(Mock.Of<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>());
         services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(Mock.Of<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>());
-        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraStatusPresenter>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraStatusPresenter>());
-        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraReportSectionsPresenter>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraReportSectionsPresenter>());
-        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraAnalysisPresenter>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraAnalysisPresenter>());
-        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraDiagnosticsPresenter>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraDiagnosticsPresenter>());
+        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>());
         services.AddSingleton<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(Mock.Of<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>());
         services.AddSingleton<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(Mock.Of<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>());
         services.AddJiraApplication();

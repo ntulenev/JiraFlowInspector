@@ -12,15 +12,13 @@ internal static class ApplicationServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        return services.AddTransient<IJiraApplication>(sp => new JiraApplication(
-            sp.GetRequiredService<IOptions<AppSettings>>(),
-            sp.GetRequiredService<IJiraApplicationDataFacade>(),
-            sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
-            sp.GetRequiredService<IJiraStatusPresenter>(),
-            sp.GetRequiredService<IJiraReportSectionsPresenter>(),
-            sp.GetRequiredService<IJiraAnalysisPresenter>(),
-            sp.GetRequiredService<IJiraDiagnosticsPresenter>(),
-            sp.GetRequiredService<IPdfReportRenderer>(),
-            sp.GetRequiredService<IJiraRequestTelemetryCollector>()));
+        return services
+            .AddTransient<IJiraApplicationReportingFacade, JiraApplicationReportingFacade>()
+            .AddTransient<IJiraApplication>(sp => new JiraApplication(
+                sp.GetRequiredService<IOptions<AppSettings>>(),
+                sp.GetRequiredService<IJiraApplicationDataFacade>(),
+                sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
+                sp.GetRequiredService<IJiraApplicationReportingFacade>(),
+                sp.GetRequiredService<IJiraRequestTelemetryCollector>()));
     }
 }

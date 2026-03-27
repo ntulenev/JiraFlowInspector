@@ -14,11 +14,7 @@ internal sealed class SpectreRatioSection
     public void ShowAllTasksRatio(
         string? customFieldName,
         string? customFieldValue,
-        ItemCount createdThisMonth,
-        ItemCount openThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+        IssueRatioSnapshot snapshot)
     {
         AnsiConsole.MarkupLine("[bold]All tasks ratio[/]");
         if (!string.IsNullOrWhiteSpace(customFieldName)
@@ -31,34 +27,24 @@ internal sealed class SpectreRatioSection
         AnsiConsole.Write(CreateRatioSummaryTable(
             "Issue types",
             "All",
-            createdThisMonth,
-            openThisMonth,
-            movedToDoneThisMonth,
-            rejectedThisMonth,
-            finishedThisMonth));
+            snapshot.CreatedThisMonth,
+            snapshot.OpenThisMonth,
+            snapshot.MovedToDoneThisMonth,
+            snapshot.RejectedThisMonth,
+            snapshot.FinishedThisMonth));
     }
 
-    public void ShowAllTasksRatioLoadingCompleted(
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+    public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
         AnsiConsole.MarkupLine(
-            $"[green]All tasks ratio data loaded:[/] created = {createdThisMonth.Value}, done = {movedToDoneThisMonth.Value}, rejected = {rejectedThisMonth.Value}, finished = {finishedThisMonth.Value}");
+            $"[green]All tasks ratio data loaded:[/] created = {snapshot.CreatedThisMonth.Value}, done = {snapshot.MovedToDoneThisMonth.Value}, rejected = {snapshot.RejectedThisMonth.Value}, finished = {snapshot.FinishedThisMonth.Value}");
     }
 
     public void ShowBugRatio(
         IReadOnlyList<IssueTypeName> bugIssueNames,
         string? customFieldName,
         string? customFieldValue,
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth,
-        IReadOnlyList<IssueListItem> openIssues,
-        IReadOnlyList<IssueListItem> doneIssues,
-        IReadOnlyList<IssueListItem> rejectedIssues)
+        IssueRatioSnapshot snapshot)
     {
         if (bugIssueNames.Count == 0)
         {
@@ -78,13 +64,13 @@ internal sealed class SpectreRatioSection
         AnsiConsole.Write(CreateRatioSummaryTable(
             "Bug issue types",
             bugTypes,
-            createdThisMonth,
-            new ItemCount(openIssues.Count),
-            movedToDoneThisMonth,
-            rejectedThisMonth,
-            finishedThisMonth));
+            snapshot.CreatedThisMonth,
+            snapshot.OpenThisMonth,
+            snapshot.MovedToDoneThisMonth,
+            snapshot.RejectedThisMonth,
+            snapshot.FinishedThisMonth));
 
-        if (openIssues.Count == 0 && doneIssues.Count == 0 && rejectedIssues.Count == 0)
+        if (snapshot.OpenIssues.Count == 0 && snapshot.DoneIssues.Count == 0 && snapshot.RejectedIssues.Count == 0)
         {
             return;
         }
@@ -92,23 +78,19 @@ internal sealed class SpectreRatioSection
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Bug ratio details[/]");
         AnsiConsole.MarkupLine("[bold red]Open issues[/]");
-        RenderBugIssueDetailsTable(openIssues, "red", includeCreationDate: true);
+        RenderBugIssueDetailsTable(snapshot.OpenIssues, "red", includeCreationDate: true);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold green]Done issues[/]");
-        RenderBugIssueDetailsTable(doneIssues, "green", includeCreationDate: true);
+        RenderBugIssueDetailsTable(snapshot.DoneIssues, "green", includeCreationDate: true);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold orange1]Rejected issues[/]");
-        RenderBugIssueDetailsTable(rejectedIssues, "orange1", includeCreationDate: false);
+        RenderBugIssueDetailsTable(snapshot.RejectedIssues, "orange1", includeCreationDate: false);
     }
 
-    public void ShowBugRatioLoadingCompleted(
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+    public void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
         AnsiConsole.MarkupLine(
-            $"[green]Bug ratio data loaded:[/] created = {createdThisMonth.Value}, done = {movedToDoneThisMonth.Value}, rejected = {rejectedThisMonth.Value}, finished = {finishedThisMonth.Value}");
+            $"[green]Bug ratio data loaded:[/] created = {snapshot.CreatedThisMonth.Value}, done = {snapshot.MovedToDoneThisMonth.Value}, rejected = {snapshot.RejectedThisMonth.Value}, finished = {snapshot.FinishedThisMonth.Value}");
     }
 
     private static Table CreateRatioSummaryTable(

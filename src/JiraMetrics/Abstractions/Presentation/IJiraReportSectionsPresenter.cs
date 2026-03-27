@@ -63,34 +63,19 @@ public interface IJiraReportSectionsPresenter
     /// <summary>
     /// Shows all-tasks ratio loading completion message.
     /// </summary>
-    /// <param name="createdThisMonth">Created issues count.</param>
-    /// <param name="movedToDoneThisMonth">Done issues count.</param>
-    /// <param name="rejectedThisMonth">Rejected issues count.</param>
-    /// <param name="finishedThisMonth">Finished issues count.</param>
-    void ShowAllTasksRatioLoadingCompleted(
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth);
+    /// <param name="snapshot">All-tasks ratio snapshot.</param>
+    void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot);
 
     /// <summary>
     /// Shows all-tasks ratio section.
     /// </summary>
     /// <param name="customFieldName">Optional custom field filter name.</param>
     /// <param name="customFieldValue">Optional custom field filter value.</param>
-    /// <param name="createdThisMonth">Created issues count.</param>
-    /// <param name="openThisMonth">Open issues count.</param>
-    /// <param name="movedToDoneThisMonth">Done issues count.</param>
-    /// <param name="rejectedThisMonth">Rejected issues count.</param>
-    /// <param name="finishedThisMonth">Finished issues count.</param>
+    /// <param name="snapshot">All-tasks ratio snapshot.</param>
     void ShowAllTasksRatio(
         string? customFieldName,
         string? customFieldValue,
-        ItemCount createdThisMonth,
-        ItemCount openThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth);
+        IssueRatioSnapshot snapshot);
 
     /// <summary>
     /// Shows bug ratio loading start message.
@@ -101,15 +86,8 @@ public interface IJiraReportSectionsPresenter
     /// <summary>
     /// Shows bug ratio loading completion message.
     /// </summary>
-    /// <param name="createdThisMonth">Created issues count.</param>
-    /// <param name="movedToDoneThisMonth">Done issues count.</param>
-    /// <param name="rejectedThisMonth">Rejected issues count.</param>
-    /// <param name="finishedThisMonth">Finished issues count.</param>
-    void ShowBugRatioLoadingCompleted(
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth);
+    /// <param name="snapshot">Bug-ratio snapshot.</param>
+    void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot);
 
     /// <summary>
     /// Shows bug ratio section and issue lists.
@@ -117,24 +95,12 @@ public interface IJiraReportSectionsPresenter
     /// <param name="bugIssueNames">Configured bug-like issue types.</param>
     /// <param name="customFieldName">Optional custom field filter name.</param>
     /// <param name="customFieldValue">Optional custom field filter value.</param>
-    /// <param name="createdThisMonth">Created issues count.</param>
-    /// <param name="movedToDoneThisMonth">Done issues count.</param>
-    /// <param name="rejectedThisMonth">Rejected issues count.</param>
-    /// <param name="finishedThisMonth">Finished issues count.</param>
-    /// <param name="openIssues">Open issues in the selected period.</param>
-    /// <param name="doneIssues">Done issues in the selected period.</param>
-    /// <param name="rejectedIssues">Rejected issues in the selected period.</param>
+    /// <param name="snapshot">Bug-ratio snapshot.</param>
     void ShowBugRatio(
         IReadOnlyList<IssueTypeName> bugIssueNames,
         string? customFieldName,
         string? customFieldValue,
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth,
-        IReadOnlyList<IssueListItem> openIssues,
-        IReadOnlyList<IssueListItem> doneIssues,
-        IReadOnlyList<IssueListItem> rejectedIssues);
+        IssueRatioSnapshot snapshot);
 
     /// <summary>
     /// Shows a spacer line between sections.

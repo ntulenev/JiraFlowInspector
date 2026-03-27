@@ -219,39 +219,25 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowAllTasksRatioLoadingStarted() => StartPendingLoader("Loading all tasks ratio data...");
 
     /// <inheritdoc />
-    public void ShowAllTasksRatioLoadingCompleted(
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+    public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
+        ArgumentNullException.ThrowIfNull(snapshot);
         StopPendingLoader();
-        _ratioSection.ShowAllTasksRatioLoadingCompleted(
-            createdThisMonth,
-            movedToDoneThisMonth,
-            rejectedThisMonth,
-            finishedThisMonth);
+        _ratioSection.ShowAllTasksRatioLoadingCompleted(snapshot);
     }
 
     /// <inheritdoc />
     public void ShowAllTasksRatio(
         string? customFieldName,
         string? customFieldValue,
-        ItemCount createdThisMonth,
-        ItemCount openThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+        IssueRatioSnapshot snapshot)
     {
+        ArgumentNullException.ThrowIfNull(snapshot);
         StopPendingLoader();
         _ratioSection.ShowAllTasksRatio(
             customFieldName,
             customFieldValue,
-            createdThisMonth,
-            openThisMonth,
-            movedToDoneThisMonth,
-            rejectedThisMonth,
-            finishedThisMonth);
+            snapshot);
     }
 
     /// <inheritdoc />
@@ -266,18 +252,11 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
-    public void ShowBugRatioLoadingCompleted(
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+    public void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
+        ArgumentNullException.ThrowIfNull(snapshot);
         StopPendingLoader();
-        _ratioSection.ShowBugRatioLoadingCompleted(
-            createdThisMonth,
-            movedToDoneThisMonth,
-            rejectedThisMonth,
-            finishedThisMonth);
+        _ratioSection.ShowBugRatioLoadingCompleted(snapshot);
     }
 
     /// <inheritdoc />
@@ -285,30 +264,16 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         IReadOnlyList<IssueTypeName> bugIssueNames,
         string? customFieldName,
         string? customFieldValue,
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth,
-        IReadOnlyList<IssueListItem> openIssues,
-        IReadOnlyList<IssueListItem> doneIssues,
-        IReadOnlyList<IssueListItem> rejectedIssues)
+        IssueRatioSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(bugIssueNames);
-        ArgumentNullException.ThrowIfNull(openIssues);
-        ArgumentNullException.ThrowIfNull(doneIssues);
-        ArgumentNullException.ThrowIfNull(rejectedIssues);
+        ArgumentNullException.ThrowIfNull(snapshot);
         StopPendingLoader();
         _ratioSection.ShowBugRatio(
             bugIssueNames,
             customFieldName,
             customFieldValue,
-            createdThisMonth,
-            movedToDoneThisMonth,
-            rejectedThisMonth,
-            finishedThisMonth,
-            openIssues,
-            doneIssues,
-            rejectedIssues);
+            snapshot);
     }
 
     /// <inheritdoc />

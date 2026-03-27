@@ -350,13 +350,15 @@ public sealed class SpectreJiraPresentationServiceTests
                 [new IssueTypeName("Bug")],
                 "NOVA Team",
                 "Processing",
-                new ItemCount(8),
-                new ItemCount(4),
-                new ItemCount(1),
-                new ItemCount(5),
-                [new IssueListItem(new IssueKey("AAA-1"), new IssueSummary("Open issue"), new DateTimeOffset(2026, 2, 3, 10, 0, 0, TimeSpan.Zero))],
-                [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Done issue"), new DateTimeOffset(2026, 2, 5, 10, 0, 0, TimeSpan.Zero))],
-                [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Rejected issue"))]);
+                new IssueRatioSnapshot(
+                    new ItemCount(8),
+                    new ItemCount(1),
+                    new ItemCount(4),
+                    new ItemCount(1),
+                    new ItemCount(5),
+                    [new IssueListItem(new IssueKey("AAA-1"), new IssueSummary("Open issue"), new DateTimeOffset(2026, 2, 3, 10, 0, 0, TimeSpan.Zero))],
+                    [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Done issue"), new DateTimeOffset(2026, 2, 5, 10, 0, 0, TimeSpan.Zero))],
+                    [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Rejected issue"))]));
             return Task.FromResult(console.Output);
         });
 
@@ -397,11 +399,15 @@ public sealed class SpectreJiraPresentationServiceTests
             service.ShowAllTasksRatio(
                 "ADF Team",
                 "Processing",
-                new ItemCount(47),
-                new ItemCount(33),
-                new ItemCount(31),
-                new ItemCount(37),
-                new ItemCount(68));
+                new IssueRatioSnapshot(
+                    new ItemCount(47),
+                    new ItemCount(33),
+                    new ItemCount(31),
+                    new ItemCount(37),
+                    new ItemCount(68),
+                    [],
+                    [],
+                    []));
             return Task.FromResult(console.Output);
         });
 
@@ -574,7 +580,15 @@ public sealed class SpectreJiraPresentationServiceTests
         var output = await RunWithTestConsoleAsync(console =>
         {
             service.ShowBugRatioLoadingStarted([new IssueTypeName("Bug")]);
-            service.ShowBugRatioLoadingCompleted(new ItemCount(3), new ItemCount(2), new ItemCount(1), new ItemCount(3));
+            service.ShowBugRatioLoadingCompleted(new IssueRatioSnapshot(
+                new ItemCount(3),
+                new ItemCount(0),
+                new ItemCount(2),
+                new ItemCount(1),
+                new ItemCount(3),
+                [],
+                [],
+                []));
             return Task.FromResult(console.Output);
         });
 
@@ -599,7 +613,15 @@ public sealed class SpectreJiraPresentationServiceTests
         var output = await RunWithTestConsoleAsync(console =>
         {
             service.ShowAllTasksRatioLoadingStarted();
-            service.ShowAllTasksRatioLoadingCompleted(new ItemCount(47), new ItemCount(31), new ItemCount(37), new ItemCount(68));
+            service.ShowAllTasksRatioLoadingCompleted(new IssueRatioSnapshot(
+                new ItemCount(47),
+                new ItemCount(33),
+                new ItemCount(31),
+                new ItemCount(37),
+                new ItemCount(68),
+                [],
+                [],
+                []));
             return Task.FromResult(console.Output);
         });
 
