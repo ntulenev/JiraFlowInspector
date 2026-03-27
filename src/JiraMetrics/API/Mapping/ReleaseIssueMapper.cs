@@ -23,7 +23,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         _fieldValueReader = fieldValueReader ?? throw new ArgumentNullException(nameof(fieldValueReader));
     }
 
-    public IReadOnlyList<string> BuildRequestedFields(ReleaseIssueMappingContext context)
+    public JiraSearchFields BuildRequestedFields(ReleaseIssueMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -33,39 +33,39 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
             "summary",
             "status",
             "issuelinks",
-            context.ReleaseFieldId
+            context.ReleaseFieldId.Value
         };
 
-        if (!string.IsNullOrWhiteSpace(context.ComponentsFieldId))
+        if (context.ComponentsFieldId is { } componentsFieldId)
         {
-            fields.Add(context.ComponentsFieldId);
+            fields.Add(componentsFieldId.Value);
         }
 
         foreach (var hotFixFieldId in context.HotFixRules
             .Select(static rule => rule.FieldId)
-            .Where(static fieldId => !string.IsNullOrWhiteSpace(fieldId))
+            .Where(static fieldId => fieldId is not null)
+            .Select(static fieldId => fieldId!.Value.Value)
             .Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            fields.Add(hotFixFieldId!);
+            fields.Add(hotFixFieldId);
         }
 
-        if (!string.IsNullOrWhiteSpace(context.RollbackFieldId))
+        if (context.RollbackFieldId is { } rollbackFieldId)
         {
-            fields.Add(context.RollbackFieldId);
+            fields.Add(rollbackFieldId.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(context.EnvironmentFieldId))
+        if (context.EnvironmentFieldId is { } environmentFieldId)
         {
-            fields.Add(context.EnvironmentFieldId);
+            fields.Add(environmentFieldId.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(context.ComponentsFieldId)
-            || !string.IsNullOrWhiteSpace(context.ComponentsFieldName))
+        if (context.ComponentsFieldId is not null || context.ComponentsFieldName is not null)
         {
             fields.Add("components");
         }
 
-        return fields;
+        return new JiraSearchFields(fields);
     }
 
     public IReadOnlyList<ReleaseIssueItem> MapIssues(
@@ -134,16 +134,16 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
     private static DateOnly? TryParseReleaseDate(
         JiraIssueFieldsResponse? fields,
-        string releaseFieldId,
-        string releaseDateFieldName)
+        JiraFieldId releaseFieldId,
+        JiraFieldName releaseDateFieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
             return null;
         }
 
-        if (!fields.AdditionalFields.TryGetValue(releaseFieldId, out var rawDate)
-            && !fields.AdditionalFields.TryGetValue(releaseDateFieldName, out rawDate))
+        if (!fields.AdditionalFields.TryGetValue(releaseFieldId.Value, out var rawDate)
+            && !fields.AdditionalFields.TryGetValue(releaseDateFieldName.Value, out rawDate))
         {
             return null;
         }
@@ -183,8 +183,8 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
     private IReadOnlyList<string> ResolveComponentNames(
         JiraIssueFieldsResponse? fields,
-        string? componentsFieldId,
-        string? componentsFieldName)
+        JiraFieldId? componentsFieldId,
+        JiraFieldName? componentsFieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
@@ -193,8 +193,8 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
         if (_fieldValueReader.TryGetAdditionalFieldValue(
             fields.AdditionalFields,
-            componentsFieldId,
-            componentsFieldName,
+            componentsFieldId?.Value,
+            componentsFieldName?.Value,
             out var rawComponents))
         {
             var resolvedValues = _fieldValueReader.ParseComponentValues(rawComponents);
@@ -214,8 +214,8 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
     private IReadOnlyList<string> ResolveEnvironmentNames(
         JiraIssueFieldsResponse? fields,
-        string? environmentFieldId,
-        string? environmentFieldName)
+        JiraFieldId? environmentFieldId,
+        JiraFieldName? environmentFieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
@@ -224,8 +224,8 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
         if (!_fieldValueReader.TryGetAdditionalFieldValue(
             fields.AdditionalFields,
-            environmentFieldId,
-            environmentFieldName,
+            environmentFieldId?.Value,
+            environmentFieldName?.Value,
             out var rawEnvironments))
         {
             return [];
@@ -277,14 +277,18 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         {
             if (!_fieldValueReader.TryGetAdditionalFieldValue(
                 fields.AdditionalFields,
-                hotFixRule.FieldId,
-                hotFixRule.FieldName,
+                hotFixRule.FieldId?.Value,
+                hotFixRule.FieldName.Value,
                 out var rawValue))
             {
                 continue;
             }
 
-            if (_fieldValueReader.ParseRawFieldValues(rawValue).Any(hotFixRule.Values.Contains))
+            if (_fieldValueReader.ParseRawFieldValues(rawValue)
+                .Select(JiraFieldValue.FromNullable)
+                .Where(static value => value is not null)
+                .Select(static value => value!.Value)
+                .Any(hotFixRule.Values.Contains))
             {
                 return true;
             }
@@ -295,8 +299,8 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
     private string? ResolveRollbackPayload(
         JiraIssueFieldsResponse? fields,
-        string? rollbackFieldId,
-        string rollbackFieldName)
+        JiraFieldId? rollbackFieldId,
+        JiraFieldName rollbackFieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
@@ -305,8 +309,8 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
         if (!_fieldValueReader.TryGetAdditionalFieldValue(
             fields.AdditionalFields,
-            rollbackFieldId,
-            rollbackFieldName,
+            rollbackFieldId?.Value,
+            rollbackFieldName.Value,
             out var rawRollback))
         {
             return null;
@@ -333,14 +337,14 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 }
 
 public sealed record ReleaseIssueMappingContext(
-    string ReleaseFieldId,
-    string ReleaseDateFieldName,
-    string? ComponentsFieldId,
-    string? ComponentsFieldName,
+    JiraFieldId ReleaseFieldId,
+    JiraFieldName ReleaseDateFieldName,
+    JiraFieldId? ComponentsFieldId,
+    JiraFieldName? ComponentsFieldName,
     IReadOnlyList<ResolvedHotFixRule> HotFixRules,
-    string? RollbackFieldId,
-    string RollbackFieldName,
-    string? EnvironmentFieldId,
-    string? EnvironmentFieldName);
+    JiraFieldId? RollbackFieldId,
+    JiraFieldName RollbackFieldName,
+    JiraFieldId? EnvironmentFieldId,
+    JiraFieldName? EnvironmentFieldName);
 #pragma warning restore CS1591
 

@@ -8,6 +8,7 @@ using JiraMetrics.API.Jql;
 using JiraMetrics.API.Mapping;
 using JiraMetrics.API.Search;
 using JiraMetrics.Logic;
+using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
@@ -679,17 +680,7 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            null,
-            new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"]
-            },
-            "Rollback type",
-            environmentFieldName: null,
-            environmentFieldValue: null,
+            CreateReleaseIssueReadRequest(),
             cts.Token);
 
         // Assert
@@ -775,17 +766,9 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            componentsFieldName: null,
-            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"]
-            },
-            rollbackFieldName: "Rollback type",
-            environmentFieldName: "customfield_10865",
-            environmentFieldValue: "P005",
+            CreateReleaseIssueReadRequest(
+                environmentFieldName: "customfield_10865",
+                environmentFieldValue: "P005"),
             cancellationToken: cts.Token);
 
         // Assert
@@ -850,17 +833,7 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            null,
-            new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"]
-            },
-            "Rollback type",
-            environmentFieldName: null,
-            environmentFieldValue: null,
+            CreateReleaseIssueReadRequest(),
             cts.Token);
 
         // Assert
@@ -945,17 +918,10 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            "Components",
-            new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"]
-            },
-            "Rollback type",
-            environmentFieldName: "customfield_10865",
-            environmentFieldValue: "P005",
+            CreateReleaseIssueReadRequest(
+                componentsFieldName: "Components",
+                environmentFieldName: "customfield_10865",
+                environmentFieldValue: "P005"),
             cts.Token);
 
         // Assert
@@ -1036,17 +1002,7 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            componentsFieldName: null,
-            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"]
-            },
-            rollbackFieldName: "Rollback type",
-            environmentFieldName: null,
-            environmentFieldValue: null,
+            CreateReleaseIssueReadRequest(),
             cancellationToken: cts.Token);
 
         // Assert
@@ -1119,17 +1075,7 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            componentsFieldName: null,
-            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"]
-            },
-            rollbackFieldName: "Rollback type",
-            environmentFieldName: null,
-            environmentFieldValue: null,
+            CreateReleaseIssueReadRequest(),
             cancellationToken: cts.Token);
 
         // Assert
@@ -1207,18 +1153,12 @@ public sealed class JiraApiClientTests
 
         // Act
         var releases = await client.GetReleaseIssuesForMonthAsync(
-            new ProjectKey("RLS"),
-            "Processing",
-            "Change completion date",
-            componentsFieldName: null,
-            hotFixRules: new Dictionary<string, IReadOnlyList<string>>
-            {
-                ["Change type"] = ["Emergency"],
-                ["Change reason"] = ["Repair", "Mitigation"]
-            },
-            rollbackFieldName: "Rollback type",
-            environmentFieldName: null,
-            environmentFieldValue: null,
+            CreateReleaseIssueReadRequest(
+                hotFixRules: new Dictionary<string, IReadOnlyList<string>>
+                {
+                    ["Change type"] = ["Emergency"],
+                    ["Change reason"] = ["Repair", "Mitigation"]
+                }),
             cancellationToken: cts.Token);
 
         // Assert
@@ -2007,6 +1947,34 @@ public sealed class JiraApiClientTests
     }
 
     private static TransitionBuilder CreateTransitionBuilder(IOptions<AppSettings> settings) => new(settings);
+
+    private static ReleaseIssueReadRequest CreateReleaseIssueReadRequest(
+        string? componentsFieldName = null,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? hotFixRules = null,
+        string rollbackFieldName = "Rollback type",
+        string? environmentFieldName = null,
+        string? environmentFieldValue = null)
+    {
+        var resolvedHotFixRules = hotFixRules
+            ?? new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Change type"] = ["Emergency"]
+            };
+
+        return new ReleaseIssueReadRequest(
+            new ProjectKey("RLS"),
+            new JiraLabel("Processing"),
+            new JiraFieldName("Change completion date"),
+            JiraFieldName.FromNullable(componentsFieldName),
+            [.. resolvedHotFixRules.Select(static pair => new HotFixRule(
+                new JiraFieldName(pair.Key),
+                [.. pair.Value.Select(static value => new JiraFieldValue(value))]))],
+            new JiraFieldName(rollbackFieldName),
+            JiraFieldName.FromNullable(environmentFieldName) is { } resolvedEnvironmentFieldName
+                && JiraFieldValue.FromNullable(environmentFieldValue) is { } resolvedEnvironmentFieldValue
+                    ? new ReleaseEnvironmentFilter(resolvedEnvironmentFieldName, resolvedEnvironmentFieldValue)
+                    : null);
+    }
 
     private static readonly string[] _bulkTimelineIssueKeys = ["AAA-1", "AAA-2"];
 }

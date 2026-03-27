@@ -1,4 +1,5 @@
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Models.ValueObjects;
 
 using Microsoft.Extensions.Options;
 
@@ -16,10 +17,10 @@ public sealed class ArchTasksJqlBuilder : IArchTasksJqlBuilder
         _reportPeriod = settings.Value.ReportPeriod;
     }
 
-    public string BuildQuery(ArchTasksReportSettings settings)
+    public JqlQuery BuildQuery(ArchTasksReportSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return settings.BuildJql(_reportPeriod);
+        return new JqlQuery(settings.BuildJql(_reportPeriod));
     }
 
     private readonly JiraMetrics.Models.ValueObjects.ReportPeriod _reportPeriod;

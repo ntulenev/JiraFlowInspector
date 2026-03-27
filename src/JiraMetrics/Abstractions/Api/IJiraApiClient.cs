@@ -75,25 +75,11 @@ public interface IJiraApiClient
     /// <summary>
     /// Loads release issues for the configured report period.
     /// </summary>
-    /// <param name="releaseProjectKey">Release project key.</param>
-    /// <param name="projectLabel">Project label filter.</param>
-    /// <param name="releaseDateFieldName">Release date field name.</param>
-    /// <param name="componentsFieldName">Optional components field name.</param>
-    /// <param name="hotFixRules">Hot-fix marker rules in format <c>field name -&gt; values</c>.</param>
-    /// <param name="rollbackFieldName">Rollback field name.</param>
-    /// <param name="environmentFieldName">Optional environment field name used for filtering.</param>
-    /// <param name="environmentFieldValue">Optional environment field value used for filtering.</param>
+    /// <param name="request">Typed release issue read request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Release issues in selected period.</returns>
     Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? componentsFieldName,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
-        string rollbackFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue,
+        ReleaseIssueReadRequest request,
         CancellationToken cancellationToken);
 
     /// <summary>

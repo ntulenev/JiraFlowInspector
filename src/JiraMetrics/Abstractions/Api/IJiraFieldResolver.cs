@@ -1,3 +1,5 @@
+using JiraMetrics.Models;
+using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.API.FieldResolution;
 
 namespace JiraMetrics.Abstractions.Api;
@@ -11,25 +13,25 @@ public interface IJiraFieldResolver
     /// Resolves a primary date field and optional fallback field.
     /// </summary>
     Task<IReadOnlyList<ResolvedJiraField>> ResolveDateFieldsAsync(
-        string primaryFieldName,
-        string? fallbackFieldName,
+        JiraFieldName primaryFieldName,
+        JiraFieldName? fallbackFieldName,
         CancellationToken cancellationToken);
 
     /// <summary>
     /// Resolves a required field id.
     /// </summary>
-    Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken);
+    Task<JiraFieldId> ResolveFieldIdAsync(JiraFieldName fieldName, CancellationToken cancellationToken);
 
     /// <summary>
     /// Resolves an optional field id.
     /// </summary>
-    Task<string?> TryResolveFieldIdAsync(string? fieldName, CancellationToken cancellationToken);
+    Task<JiraFieldId?> TryResolveFieldIdAsync(JiraFieldName? fieldName, CancellationToken cancellationToken);
 
     /// <summary>
     /// Resolves hot-fix rules into field ids and normalized values.
     /// </summary>
     Task<IReadOnlyList<ResolvedHotFixRule>> ResolveHotFixRulesAsync(
-        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
+        IReadOnlyList<HotFixRule> hotFixRules,
         CancellationToken cancellationToken);
 }
 

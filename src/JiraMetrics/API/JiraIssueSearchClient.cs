@@ -28,7 +28,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
     {
         var jql = _jqlFacade.BuildMovedToDoneIssueKeysQuery(projectKey, doneStatusName, createdAfter);
         var issues = await _searchExecutor
-            .SearchIssuesAsync(jql, ["key"], cancellationToken)
+            .SearchIssuesAsync(jql, JiraSearchFields.From("key"), cancellationToken)
             .ConfigureAwait(false);
         return _mapperFacade.MapIssueKeys(issues);
     }
@@ -40,7 +40,10 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
     {
         var jql = _jqlFacade.BuildCreatedIssuesQuery(projectKey, issueTypes);
         var issues = await _searchExecutor
-            .SearchIssuesAsync(jql, ["key", "summary", "created"], cancellationToken)
+            .SearchIssuesAsync(
+                jql,
+                JiraSearchFields.From("key", "summary", "created"),
+                cancellationToken)
             .ConfigureAwait(false);
         return _mapperFacade.MapIssueListItems(issues);
     }
@@ -53,7 +56,10 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
     {
         var jql = _jqlFacade.BuildMovedToDoneIssuesQuery(projectKey, doneStatusName, issueTypes);
         var issues = await _searchExecutor
-            .SearchIssuesAsync(jql, ["key", "summary", "created"], cancellationToken)
+            .SearchIssuesAsync(
+                jql,
+                JiraSearchFields.From("key", "summary", "created"),
+                cancellationToken)
             .ConfigureAwait(false);
         return _mapperFacade.MapIssueListItems(issues);
     }
@@ -69,7 +75,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
             doneStatusName,
             rejectStatusName);
         var issues = await _searchExecutor
-            .SearchIssuesAsync(jql, ["status", "issuetype"], cancellationToken)
+            .SearchIssuesAsync(jql, JiraSearchFields.From("status", "issuetype"), cancellationToken)
             .ConfigureAwait(false);
         return _mapperFacade.MapStatusIssueTypeSummaries(issues);
     }

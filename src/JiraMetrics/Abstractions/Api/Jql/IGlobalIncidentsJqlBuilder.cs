@@ -1,5 +1,6 @@
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Abstractions.Api.Jql;
 
@@ -11,7 +12,7 @@ public interface IGlobalIncidentsJqlBuilder
     /// <summary>
     /// Builds the global incidents search query.
     /// </summary>
-    string BuildQuery(
+    JqlQuery BuildQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields);
 }

@@ -1,3 +1,5 @@
+using JiraMetrics.Models;
+using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
 
 #pragma warning disable CS1591
@@ -18,8 +20,8 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
     }
 
     public async Task<IReadOnlyList<ResolvedJiraField>> ResolveDateFieldsAsync(
-        string primaryFieldName,
-        string? fallbackFieldName,
+        JiraFieldName primaryFieldName,
+        JiraFieldName? fallbackFieldName,
         CancellationToken cancellationToken)
     {
         var primaryFieldId = await ResolveFieldIdAsync(primaryFieldName, cancellationToken)
@@ -29,42 +31,44 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
             new(primaryFieldName, primaryFieldId)
         };
 
-        if (!string.IsNullOrWhiteSpace(fallbackFieldName))
+        if (fallbackFieldName is { } fallbackName)
         {
-            var fallbackFieldId = await TryResolveFieldIdAsync(fallbackFieldName, cancellationToken)
+            var fallbackFieldId = await TryResolveFieldIdAsync(fallbackName, cancellationToken)
                 .ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(fallbackFieldId)
+            if (fallbackFieldId is not null
                 && !fields.Any(field => string.Equals(
-                    field.FieldId,
-                    fallbackFieldId,
+                    field.FieldId.Value,
+                    fallbackFieldId.Value.Value,
                     StringComparison.OrdinalIgnoreCase)))
             {
-                fields.Add(new ResolvedJiraField(fallbackFieldName, fallbackFieldId));
+                fields.Add(new ResolvedJiraField(fallbackName, fallbackFieldId.Value));
             }
         }
 
         return fields;
     }
 
-    public async Task<string> ResolveFieldIdAsync(string fieldName, CancellationToken cancellationToken)
+    public async Task<JiraFieldId> ResolveFieldIdAsync(JiraFieldName fieldName, CancellationToken cancellationToken)
     {
         var fieldId = await TryResolveFieldIdAsync(fieldName, cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(fieldId))
+        if (fieldId is null)
         {
-            throw new InvalidOperationException($"Release date field '{fieldName}' was not found.");
+            throw new InvalidOperationException($"Release date field '{fieldName.Value}' was not found.");
         }
 
-        return fieldId;
+        return fieldId.Value;
     }
 
-    public async Task<string?> TryResolveFieldIdAsync(string? fieldName, CancellationToken cancellationToken)
+    public async Task<JiraFieldId?> TryResolveFieldIdAsync(
+        JiraFieldName? fieldName,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(fieldName))
+        if (fieldName is null)
         {
             return null;
         }
 
-        var trimmedFieldName = fieldName.Trim();
+        var trimmedFieldName = fieldName.Value.Value;
         lock (_cacheSync)
         {
             if (_resolvedFieldIds.TryGetValue(trimmedFieldName, out var cachedFieldId))
@@ -85,39 +89,22 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
     }
 
     public async Task<IReadOnlyList<ResolvedHotFixRule>> ResolveHotFixRulesAsync(
-        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
+        IReadOnlyList<HotFixRule> hotFixRules,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(hotFixRules);
 
-        var normalizedRules = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var normalizedRules = new Dictionary<JiraFieldName, HashSet<JiraFieldValue>>();
 
-        foreach (var (rawFieldName, rawValues) in hotFixRules)
+        foreach (var rule in hotFixRules)
         {
-            if (string.IsNullOrWhiteSpace(rawFieldName) || rawValues is null)
+            if (!normalizedRules.TryGetValue(rule.FieldName, out var values))
             {
-                continue;
+                values = [];
+                normalizedRules[rule.FieldName] = values;
             }
 
-            var fieldName = rawFieldName.Trim();
-            if (!normalizedRules.TryGetValue(fieldName, out var values))
-            {
-                values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                normalizedRules[fieldName] = values;
-            }
-
-            foreach (var rawValue in rawValues)
-            {
-                if (!string.IsNullOrWhiteSpace(rawValue))
-                {
-                    _ = values.Add(rawValue.Trim());
-                }
-            }
-
-            if (values.Count == 0)
-            {
-                _ = normalizedRules.Remove(fieldName);
-            }
+            values.UnionWith(rule.Values);
         }
 
         if (normalizedRules.Count == 0)
@@ -127,7 +114,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
 
         var resolvedRules = new List<ResolvedHotFixRule>(normalizedRules.Count);
         foreach (var (fieldName, values) in normalizedRules.OrderBy(
-            static pair => pair.Key,
+            static pair => pair.Key.Value,
             StringComparer.OrdinalIgnoreCase))
         {
             var fieldId = await TryResolveFieldIdAsync(fieldName, cancellationToken).ConfigureAwait(false);
@@ -195,7 +182,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
         return _cachedFields;
     }
 
-    private static string? ResolveFieldId(
+    private static JiraFieldId? ResolveFieldId(
         string trimmedFieldName,
         IReadOnlyList<JiraFieldResponse> candidates)
     {
@@ -203,7 +190,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
             string.Equals(field.Id!.Trim(), trimmedFieldName, StringComparison.OrdinalIgnoreCase));
         if (!string.IsNullOrWhiteSpace(idMatch?.Id))
         {
-            return idMatch.Id.Trim();
+            return new JiraFieldId(idMatch.Id.Trim());
         }
 
         var exactNameMatches = candidates
@@ -217,7 +204,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
                 .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
                 .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
                 .First();
-            return preferredExactName.Id!.Trim();
+            return new JiraFieldId(preferredExactName.Id!.Trim());
         }
 
         var normalizedTarget = NormalizeFieldName(trimmedFieldName);
@@ -240,7 +227,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
                 .OrderBy(static field => IsCustomFieldId(field.Id!) ? 1 : 0)
                 .ThenBy(static field => field.Id, StringComparer.OrdinalIgnoreCase)
                 .First();
-            return preferredNormalized.Id!.Trim();
+            return new JiraFieldId(preferredNormalized.Id!.Trim());
         }
 
         return null;
@@ -258,12 +245,15 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
     private readonly object _cacheSync = new();
     private IReadOnlyList<JiraFieldResponse>? _cachedFields;
     private Task<IReadOnlyList<JiraFieldResponse>>? _cachedFieldsTask;
-    private readonly Dictionary<string, string?> _resolvedFieldIds =
+    private readonly Dictionary<string, JiraFieldId?> _resolvedFieldIds =
         new(StringComparer.OrdinalIgnoreCase);
 }
 
-public readonly record struct ResolvedJiraField(string FieldName, string FieldId);
+public readonly record struct ResolvedJiraField(JiraFieldName FieldName, JiraFieldId FieldId);
 
-public sealed record ResolvedHotFixRule(string FieldName, string? FieldId, HashSet<string> Values);
+public sealed record ResolvedHotFixRule(
+    JiraFieldName FieldName,
+    JiraFieldId? FieldId,
+    IReadOnlySet<JiraFieldValue> Values);
 #pragma warning restore CS1591
 

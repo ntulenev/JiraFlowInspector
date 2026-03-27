@@ -26,53 +26,38 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
     }
 
     public async Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? componentsFieldName,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
-        string rollbackFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue,
+        ReleaseIssueReadRequest request,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(projectLabel);
-        ArgumentException.ThrowIfNullOrWhiteSpace(releaseDateFieldName);
-        ArgumentNullException.ThrowIfNull(hotFixRules);
-        ArgumentException.ThrowIfNullOrWhiteSpace(rollbackFieldName);
+        ArgumentNullException.ThrowIfNull(request);
 
         var releaseFieldId = await _fieldResolver
-            .ResolveFieldIdAsync(releaseDateFieldName, cancellationToken)
+            .ResolveFieldIdAsync(request.ReleaseDateFieldName, cancellationToken)
             .ConfigureAwait(false);
         var componentsFieldId = await _fieldResolver
-            .TryResolveFieldIdAsync(componentsFieldName, cancellationToken)
+            .TryResolveFieldIdAsync(request.ComponentsFieldName, cancellationToken)
             .ConfigureAwait(false);
         var resolvedHotFixRules = await _fieldResolver
-            .ResolveHotFixRulesAsync(hotFixRules, cancellationToken)
+            .ResolveHotFixRulesAsync(request.HotFixRules, cancellationToken)
             .ConfigureAwait(false);
         var rollbackFieldId = await _fieldResolver
-            .TryResolveFieldIdAsync(rollbackFieldName, cancellationToken)
+            .TryResolveFieldIdAsync(request.RollbackFieldName, cancellationToken)
             .ConfigureAwait(false);
         var environmentFieldId = await _fieldResolver
-            .TryResolveFieldIdAsync(environmentFieldName, cancellationToken)
+            .TryResolveFieldIdAsync(request.EnvironmentFilter?.FieldName, cancellationToken)
             .ConfigureAwait(false);
 
-        var jql = _jqlFacade.BuildReleaseIssuesQuery(
-            releaseProjectKey,
-            projectLabel,
-            releaseDateFieldName,
-            environmentFieldName,
-            environmentFieldValue);
+        var jql = _jqlFacade.BuildReleaseIssuesQuery(request);
         var context = new ReleaseIssueMappingContext(
             releaseFieldId,
-            releaseDateFieldName,
+            request.ReleaseDateFieldName,
             componentsFieldId,
-            componentsFieldName,
+            request.ComponentsFieldName,
             resolvedHotFixRules,
             rollbackFieldId,
-            rollbackFieldName,
+            request.RollbackFieldName,
             environmentFieldId,
-            environmentFieldName);
+            request.EnvironmentFilter?.FieldName);
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 jql,
@@ -91,7 +76,10 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
 
         var jql = _jqlFacade.BuildArchTasksQuery(settings);
         var issues = await _searchExecutor
-            .SearchIssuesAsync(jql, ["key", "summary", "created", "resolutiondate"], cancellationToken)
+            .SearchIssuesAsync(
+                jql,
+                JiraSearchFields.From("key", "summary", "created", "resolutiondate"),
+                cancellationToken)
             .ConfigureAwait(false);
 
         return _mapperFacade.MapArchTaskItems(issues);
@@ -104,25 +92,26 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         ArgumentNullException.ThrowIfNull(settings);
 
         var startFields = await _fieldResolver.ResolveDateFieldsAsync(
-            settings.IncidentStartFieldName,
-            settings.IncidentStartFallbackFieldName,
+            new JiraFieldName(settings.IncidentStartFieldName),
+            JiraFieldName.FromNullable(settings.IncidentStartFallbackFieldName),
             cancellationToken).ConfigureAwait(false);
         var recoveryFields = await _fieldResolver.ResolveDateFieldsAsync(
-            settings.IncidentRecoveryFieldName,
-            settings.IncidentRecoveryFallbackFieldName,
+            new JiraFieldName(settings.IncidentRecoveryFieldName),
+            JiraFieldName.FromNullable(settings.IncidentRecoveryFallbackFieldName),
             cancellationToken).ConfigureAwait(false);
         var impactFieldId = await _fieldResolver
-            .TryResolveFieldIdAsync(settings.ImpactFieldName, cancellationToken)
+            .TryResolveFieldIdAsync(new JiraFieldName(settings.ImpactFieldName), cancellationToken)
             .ConfigureAwait(false);
         var urgencyFieldId = await _fieldResolver
-            .TryResolveFieldIdAsync(settings.UrgencyFieldName, cancellationToken)
+            .TryResolveFieldIdAsync(new JiraFieldName(settings.UrgencyFieldName), cancellationToken)
             .ConfigureAwait(false);
 
-        var additionalFieldIds = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var additionalFieldIds = new Dictionary<JiraFieldName, JiraFieldId?>();
         foreach (var additionalFieldName in settings.AdditionalFieldNames)
         {
-            additionalFieldIds[additionalFieldName] = await _fieldResolver
-                .TryResolveFieldIdAsync(additionalFieldName, cancellationToken)
+            var fieldName = new JiraFieldName(additionalFieldName);
+            additionalFieldIds[fieldName] = await _fieldResolver
+                .TryResolveFieldIdAsync(fieldName, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -131,9 +120,9 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
             startFields,
             recoveryFields,
             impactFieldId,
-            settings.ImpactFieldName,
+            new JiraFieldName(settings.ImpactFieldName),
             urgencyFieldId,
-            settings.UrgencyFieldName,
+            new JiraFieldName(settings.UrgencyFieldName),
             additionalFieldIds);
         var issues = await _searchExecutor
             .SearchIssuesAsync(

@@ -10,7 +10,7 @@ public interface ITeamTasksJqlBuilder
     /// <summary>
     /// Builds the query for keys moved to a target status in the configured month.
     /// </summary>
-    string BuildMovedToDoneIssueKeysQuery(
+    JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         CreatedAfterDate? createdAfter);
@@ -18,12 +18,12 @@ public interface ITeamTasksJqlBuilder
     /// <summary>
     /// Builds the query for issues created in the configured month.
     /// </summary>
-    string BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes);
+    JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes);
 
     /// <summary>
     /// Builds the query for issues moved to a target status in the configured month.
     /// </summary>
-    string BuildMovedToDoneIssuesQuery(
+    JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes);
@@ -31,7 +31,7 @@ public interface ITeamTasksJqlBuilder
     /// <summary>
     /// Builds the query for grouped status counts excluding terminal statuses.
     /// </summary>
-    string BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
+    JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         StatusName? rejectStatusName);

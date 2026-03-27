@@ -120,7 +120,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
         return new IssueTimelineBatchResult(issues, failures);
     }
 
-    private async Task<IReadOnlyList<string>?> BuildIssueTimelineRequestedFieldsAsync(
+    private async Task<JiraSearchFields?> BuildIssueTimelineRequestedFieldsAsync(
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(_pullRequestFieldName))
@@ -129,12 +129,12 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
         }
 
         var pullRequestFieldId = await ResolvePullRequestFieldIdAsync(cancellationToken).ConfigureAwait(false);
-        return string.IsNullOrWhiteSpace(pullRequestFieldId)
+        return pullRequestFieldId is null
             ? _issueTimelineBaseFields
-            : [.. _issueTimelineBaseFields, pullRequestFieldId];
+            : new JiraSearchFields([.. _issueTimelineBaseFields, pullRequestFieldId.Value.Value]);
     }
 
-    private async Task<string?> ResolvePullRequestFieldIdAsync(CancellationToken cancellationToken)
+    private async Task<JiraFieldId?> ResolvePullRequestFieldIdAsync(CancellationToken cancellationToken)
     {
         if (_pullRequestFieldIdResolved)
         {
@@ -143,8 +143,10 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
 
         _pullRequestFieldIdResolved = true;
         _pullRequestFieldId = IsCustomFieldId(_pullRequestFieldName)
-            ? _pullRequestFieldName
-            : await _fieldResolver.TryResolveFieldIdAsync(_pullRequestFieldName, cancellationToken)
+            ? new JiraFieldId(_pullRequestFieldName!)
+            : await _fieldResolver.TryResolveFieldIdAsync(
+                JiraFieldName.FromNullable(_pullRequestFieldName),
+                cancellationToken)
                 .ConfigureAwait(false);
         return _pullRequestFieldId;
     }
@@ -199,20 +201,19 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
     private readonly string? _pullRequestFieldName;
     private readonly IJiraFieldResolver _fieldResolver;
     private readonly IJiraMapperFacade _mapperFacade;
-    private string? _pullRequestFieldId;
+    private JiraFieldId? _pullRequestFieldId;
     private bool _pullRequestFieldIdResolved;
 
     private const int ISSUE_TIMELINE_BULK_FETCH_BATCH_SIZE = 100;
 
-    private static readonly string[] _issueTimelineBaseFields =
-    [
-        "summary",
-        "created",
-        "resolutiondate",
-        "issuetype",
-        "status",
-        "issuelinks",
-        "subtasks"
-    ];
+    private static readonly JiraSearchFields _issueTimelineBaseFields =
+        JiraSearchFields.From(
+            "summary",
+            "created",
+            "resolutiondate",
+            "issuetype",
+            "status",
+            "issuelinks",
+            "subtasks");
 }
 

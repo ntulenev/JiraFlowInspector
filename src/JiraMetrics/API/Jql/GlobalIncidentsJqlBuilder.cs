@@ -23,7 +23,7 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
         _reportPeriod = settings.Value.ReportPeriod;
     }
 
-    public string BuildQuery(
+    public JqlQuery BuildQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields)
     {
@@ -47,7 +47,7 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
             AddTextSearchClauses(clauses, settings.SearchPhrase);
         }
 
-        return $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
+        return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
     private static string BuildDateRangeClause(
@@ -58,7 +58,7 @@ public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
         var fieldClauses = fields
             .Select(field =>
             {
-                var escapedField = field.FieldName.EscapeJqlString();
+                var escapedField = field.FieldName.Value.EscapeJqlString();
                 return
                     $"(\"{escapedField}\" >= \"{periodStart:yyyy-MM-dd}\""
                     + $" AND \"{escapedField}\" < \"{periodEndExclusive:yyyy-MM-dd}\")";

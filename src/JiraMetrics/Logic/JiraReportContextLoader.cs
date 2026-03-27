@@ -104,14 +104,7 @@ internal sealed class JiraReportContextLoader
         }
 
         return _reportDataClient.GetReleaseIssuesForMonthAsync(
-            releaseReport.ReleaseProjectKey,
-            releaseReport.ProjectLabel,
-            releaseReport.ReleaseDateFieldName,
-            releaseReport.ComponentsFieldName,
-            releaseReport.HotFixRules,
-            releaseReport.RollbackFieldName,
-            releaseReport.EnvironmentFieldName,
-            releaseReport.EnvironmentFieldValue,
+            BuildReleaseIssueReadRequest(releaseReport),
             cancellationToken);
     }
 
@@ -156,5 +149,29 @@ internal sealed class JiraReportContextLoader
     }
     private readonly IJiraIssueSearchClient _issueSearchClient;
     private readonly IJiraReportDataClient _reportDataClient;
+
+    private static ReleaseIssueReadRequest BuildReleaseIssueReadRequest(ReleaseReportSettings releaseReport)
+    {
+        ArgumentNullException.ThrowIfNull(releaseReport);
+
+        var hotFixRules = releaseReport.HotFixRules
+            .Select(static pair => new HotFixRule(
+                new JiraFieldName(pair.Key),
+                [.. pair.Value.Select(static value => new JiraFieldValue(value))]))
+            .ToArray();
+        var environmentFilter = JiraFieldName.FromNullable(releaseReport.EnvironmentFieldName) is { } environmentFieldName
+            && JiraFieldValue.FromNullable(releaseReport.EnvironmentFieldValue) is { } environmentFieldValue
+                ? new ReleaseEnvironmentFilter(environmentFieldName, environmentFieldValue)
+                : null;
+
+        return new ReleaseIssueReadRequest(
+            releaseReport.ReleaseProjectKey,
+            new JiraLabel(releaseReport.ProjectLabel),
+            new JiraFieldName(releaseReport.ReleaseDateFieldName),
+            JiraFieldName.FromNullable(releaseReport.ComponentsFieldName),
+            hotFixRules,
+            new JiraFieldName(releaseReport.RollbackFieldName),
+            environmentFilter);
+    }
 }
 

@@ -18,7 +18,7 @@ public interface IJiraSearchExecutor
     /// </summary>
     Task<JiraIssueResponse?> GetIssueWithChangelogAsync(
         IssueKey issueKey,
-        IReadOnlyList<string>? fields,
+        JiraSearchFields? fields,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -26,7 +26,7 @@ public interface IJiraSearchExecutor
     /// </summary>
     Task<IReadOnlyList<JiraIssueResponse>> GetIssuesAsync(
         IReadOnlyList<IssueKey> issueKeys,
-        IReadOnlyList<string>? fields,
+        JiraSearchFields? fields,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -40,8 +40,8 @@ public interface IJiraSearchExecutor
     /// Executes a paged search query.
     /// </summary>
     Task<IReadOnlyList<JiraIssueKeyResponse>> SearchIssuesAsync(
-        string jql,
-        IReadOnlyList<string> fields,
+        JqlQuery jql,
+        JiraSearchFields fields,
         CancellationToken cancellationToken);
 }
 

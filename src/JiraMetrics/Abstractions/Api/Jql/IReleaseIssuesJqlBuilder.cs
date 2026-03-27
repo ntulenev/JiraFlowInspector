@@ -1,3 +1,4 @@
+using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Abstractions.Api.Jql;
@@ -10,11 +11,6 @@ public interface IReleaseIssuesJqlBuilder
     /// <summary>
     /// Builds the release issue search query.
     /// </summary>
-    string BuildQuery(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue);
+    JqlQuery BuildQuery(ReleaseIssueReadRequest request);
 }
 

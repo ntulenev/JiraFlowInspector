@@ -1,4 +1,5 @@
 using JiraMetrics.API.FieldResolution;
+using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
@@ -27,22 +28,22 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
         _globalIncidentsJqlBuilder = globalIncidentsJqlBuilder;
     }
 
-    public string BuildMovedToDoneIssueKeysQuery(
+    public JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         CreatedAfterDate? createdAfter) =>
         _teamTasksJqlBuilder.BuildMovedToDoneIssueKeysQuery(projectKey, doneStatusName, createdAfter);
 
-    public string BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes) =>
+    public JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes) =>
         _teamTasksJqlBuilder.BuildCreatedIssuesQuery(projectKey, issueTypes);
 
-    public string BuildMovedToDoneIssuesQuery(
+    public JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes) =>
         _teamTasksJqlBuilder.BuildMovedToDoneIssuesQuery(projectKey, doneStatusName, issueTypes);
 
-    public string BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
+    public JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         StatusName? rejectStatusName) =>
@@ -51,23 +52,13 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
             doneStatusName,
             rejectStatusName);
 
-    public string BuildReleaseIssuesQuery(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue) =>
-        _releaseIssuesJqlBuilder.BuildQuery(
-            releaseProjectKey,
-            projectLabel,
-            releaseDateFieldName,
-            environmentFieldName,
-            environmentFieldValue);
+    public JqlQuery BuildReleaseIssuesQuery(ReleaseIssueReadRequest request) =>
+        _releaseIssuesJqlBuilder.BuildQuery(request);
 
-    public string BuildArchTasksQuery(ArchTasksReportSettings settings) =>
+    public JqlQuery BuildArchTasksQuery(ArchTasksReportSettings settings) =>
         _archTasksJqlBuilder.BuildQuery(settings);
 
-    public string BuildGlobalIncidentsQuery(
+    public JqlQuery BuildGlobalIncidentsQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields) =>
         _globalIncidentsJqlBuilder.BuildQuery(settings, incidentStartFields);

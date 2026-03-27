@@ -1,5 +1,6 @@
 using JiraMetrics.API.Mapping;
 using JiraMetrics.Models;
+using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
 
 namespace JiraMetrics.Abstractions.Api.Mapping;
@@ -12,7 +13,7 @@ public interface IGlobalIncidentMapper
     /// <summary>
     /// Builds the field list required for global incident mapping.
     /// </summary>
-    IReadOnlyList<string> BuildRequestedFields(GlobalIncidentMappingContext context);
+    JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context);
 
     /// <summary>
     /// Maps search issues into global incident rows.

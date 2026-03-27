@@ -30,7 +30,7 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
         _reportPeriod = resolved.ReportPeriod;
     }
 
-    public string BuildMovedToDoneIssueKeysQuery(
+    public JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         CreatedAfterDate? createdAfter)
@@ -45,10 +45,10 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
             clauses.Add($"created >= \"{createdAfterDate}\"");
         }
 
-        return $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
+        return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
-    public string BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes)
+    public JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes)
     {
         ArgumentNullException.ThrowIfNull(issueTypes);
 
@@ -59,10 +59,10 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
         clauses.Add($"created < \"{periodEndExclusive:yyyy-MM-dd}\"");
         AddIssueTypesClause(clauses, issueTypes);
 
-        return $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
+        return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
-    public string BuildMovedToDoneIssuesQuery(
+    public JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes)
@@ -75,10 +75,10 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
         clauses.Add(BuildMovedToDoneClause(doneStatusName, periodStart, periodEndExclusive));
         AddIssueTypesClause(clauses, issueTypes);
 
-        return $"{string.Join(" AND ", clauses)} ORDER BY key ASC";
+        return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
-    public string BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
+    public JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         StatusName? rejectStatusName)
@@ -86,7 +86,7 @@ public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
         var clauses = BuildProjectClauses(projectKey);
         clauses.Add(BuildExcludedStatusesClause(doneStatusName, rejectStatusName));
 
-        return $"{string.Join(" AND ", clauses)} ORDER BY status ASC, key ASC";
+        return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY status ASC, key ASC");
     }
 
     private List<string> BuildProjectClauses(ProjectKey projectKey)

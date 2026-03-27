@@ -23,7 +23,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         _fieldValueReader = fieldValueReader ?? throw new ArgumentNullException(nameof(fieldValueReader));
     }
 
-    public IReadOnlyList<string> BuildRequestedFields(GlobalIncidentMappingContext context)
+    public JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -51,7 +51,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
             AddFieldIfNeeded(fields, additionalFieldId);
         }
 
-        return fields;
+        return new JiraSearchFields(fields);
     }
 
     public IReadOnlyList<GlobalIncidentItem> MapIssues(
@@ -105,11 +105,11 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
             .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)];
     }
 
-    private static void AddFieldIfNeeded(List<string> fields, string? fieldId)
+    private static void AddFieldIfNeeded(List<string> fields, JiraFieldId? fieldId)
     {
-        if (!string.IsNullOrWhiteSpace(fieldId))
+        if (fieldId is { } resolvedFieldId)
         {
-            fields.Add(fieldId);
+            fields.Add(resolvedFieldId.Value);
         }
     }
 
@@ -134,8 +134,8 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 
     private DateTimeOffset? TryParseConfiguredDateTimeField(
         JiraIssueFieldsResponse? fields,
-        string? fieldId,
-        string? fieldName)
+        JiraFieldId? fieldId,
+        JiraFieldName? fieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
@@ -144,8 +144,8 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 
         if (!_fieldValueReader.TryGetAdditionalFieldValue(
             fields.AdditionalFields,
-            fieldId,
-            fieldName,
+            fieldId?.Value,
+            fieldName?.Value,
             out var rawDateTime))
         {
             return null;
@@ -192,8 +192,8 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 
     private string? ResolveFieldDisplayValue(
         JiraIssueFieldsResponse? fields,
-        string? fieldId,
-        string? fieldName)
+        JiraFieldId? fieldId,
+        JiraFieldName? fieldName)
     {
         if (fields?.AdditionalFields is null || fields.AdditionalFields.Count == 0)
         {
@@ -202,8 +202,8 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 
         if (!_fieldValueReader.TryGetAdditionalFieldValue(
             fields.AdditionalFields,
-            fieldId,
-            fieldName,
+            fieldId?.Value,
+            fieldName?.Value,
             out var rawValue))
         {
             return null;
@@ -223,7 +223,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 
     private Dictionary<string, string?> ResolveAdditionalFieldValues(
         JiraIssueFieldsResponse? fields,
-        IReadOnlyDictionary<string, string?> additionalFieldIds)
+        IReadOnlyDictionary<JiraFieldName, JiraFieldId?> additionalFieldIds)
     {
         if (additionalFieldIds.Count == 0)
         {
@@ -233,7 +233,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var (fieldName, fieldId) in additionalFieldIds)
         {
-            values[fieldName] = ResolveFieldDisplayValue(fields, fieldId, fieldName);
+            values[fieldName.Value] = ResolveFieldDisplayValue(fields, fieldId, fieldName);
         }
 
         return values;
@@ -245,10 +245,10 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 public sealed record GlobalIncidentMappingContext(
     IReadOnlyList<ResolvedJiraField> IncidentStartFields,
     IReadOnlyList<ResolvedJiraField> IncidentRecoveryFields,
-    string? ImpactFieldId,
-    string ImpactFieldName,
-    string? UrgencyFieldId,
-    string UrgencyFieldName,
-    IReadOnlyDictionary<string, string?> AdditionalFieldIds);
+    JiraFieldId? ImpactFieldId,
+    JiraFieldName ImpactFieldName,
+    JiraFieldId? UrgencyFieldId,
+    JiraFieldName UrgencyFieldName,
+    IReadOnlyDictionary<JiraFieldName, JiraFieldId?> AdditionalFieldIds);
 #pragma warning restore CS1591
 

@@ -33,7 +33,7 @@ public interface IJiraMapperFacade
     /// <summary>
     /// Builds the field list required for release mapping.
     /// </summary>
-    IReadOnlyList<string> BuildReleaseRequestedFields(ReleaseIssueMappingContext context);
+    JiraSearchFields BuildReleaseRequestedFields(ReleaseIssueMappingContext context);
 
     /// <summary>
     /// Maps search issues into release issue rows.
@@ -45,7 +45,7 @@ public interface IJiraMapperFacade
     /// <summary>
     /// Builds the field list required for global incident mapping.
     /// </summary>
-    IReadOnlyList<string> BuildGlobalIncidentRequestedFields(GlobalIncidentMappingContext context);
+    JiraSearchFields BuildGlobalIncidentRequestedFields(GlobalIncidentMappingContext context);
 
     /// <summary>
     /// Maps search issues into global incident rows.

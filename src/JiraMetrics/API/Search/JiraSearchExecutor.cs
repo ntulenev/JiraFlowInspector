@@ -25,7 +25,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
     public Task<JiraIssueResponse?> GetIssueWithChangelogAsync(
         IssueKey issueKey,
-        IReadOnlyList<string>? fields,
+        JiraSearchFields? fields,
         CancellationToken cancellationToken)
     {
         return _transport.GetAsync<JiraIssueResponse>(
@@ -37,7 +37,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
     public async Task<IReadOnlyList<JiraIssueResponse>> GetIssuesAsync(
         IReadOnlyList<IssueKey> issueKeys,
-        IReadOnlyList<string>? fields,
+        JiraSearchFields? fields,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(issueKeys);
@@ -129,10 +129,12 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
     }
 
     public async Task<IReadOnlyList<JiraIssueKeyResponse>> SearchIssuesAsync(
-        string jql,
-        IReadOnlyList<string> fields,
+        JqlQuery jql,
+        JiraSearchFields fields,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(fields);
+
         var issues = new List<JiraIssueKeyResponse>();
         const int pageSize = 100;
         string? nextPageToken = null;
@@ -165,8 +167,8 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
     }
 
     private static string BuildSearchUrl(
-        string jql,
-        IReadOnlyList<string> fields,
+        JqlQuery jql,
+        JiraSearchFields fields,
         int pageSize,
         string? nextPageToken)
     {
@@ -175,7 +177,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(Uri.EscapeDataString);
         var searchUrl =
-            $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql)}"
+            $"rest/api/3/search/jql?jql={Uri.EscapeDataString(jql.Value)}"
             + $"&fields={string.Join(",", encodedFields)}&maxResults={pageSize}";
 
         if (!string.IsNullOrWhiteSpace(nextPageToken))
@@ -188,7 +190,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
     private static string BuildIssueWithChangelogUrl(
         IssueKey issueKey,
-        IReadOnlyList<string>? fields)
+        JiraSearchFields? fields)
     {
         var issueUrl = $"rest/api/3/issue/{Uri.EscapeDataString(issueKey.Value)}?expand=changelog";
         if (fields is null)

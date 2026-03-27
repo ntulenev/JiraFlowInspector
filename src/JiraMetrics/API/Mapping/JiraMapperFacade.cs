@@ -38,7 +38,7 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     public IReadOnlyList<ArchTaskItem> MapArchTaskItems(IReadOnlyList<JiraIssueKeyResponse> issues) =>
         JiraIssueKeyResponse.ToArchTaskItems(issues ?? throw new ArgumentNullException(nameof(issues)));
 
-    public IReadOnlyList<string> BuildReleaseRequestedFields(ReleaseIssueMappingContext context) =>
+    public JiraSearchFields BuildReleaseRequestedFields(ReleaseIssueMappingContext context) =>
         _releaseIssueMapper.BuildRequestedFields(context);
 
     public IReadOnlyList<ReleaseIssueItem> MapReleaseIssues(
@@ -46,7 +46,7 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
         ReleaseIssueMappingContext context) =>
         _releaseIssueMapper.MapIssues(issues, context);
 
-    public IReadOnlyList<string> BuildGlobalIncidentRequestedFields(GlobalIncidentMappingContext context) =>
+    public JiraSearchFields BuildGlobalIncidentRequestedFields(GlobalIncidentMappingContext context) =>
         _globalIncidentMapper.BuildRequestedFields(context);
 
     public IReadOnlyList<GlobalIncidentItem> MapGlobalIncidents(

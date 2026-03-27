@@ -1,20 +1,12 @@
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
-using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Abstractions.Api;
 
 internal interface IJiraReportDataClient
 {
     Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? componentsFieldName,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
-        string rollbackFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue,
+        ReleaseIssueReadRequest request,
         CancellationToken cancellationToken);
 
     Task<IReadOnlyList<ArchTaskItem>> GetArchTasksAsync(

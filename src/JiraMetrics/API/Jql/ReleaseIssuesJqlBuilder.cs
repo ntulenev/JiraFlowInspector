@@ -1,4 +1,5 @@
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Helpers;
 
@@ -22,18 +23,15 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
         _reportPeriod = settings.Value.ReportPeriod;
     }
 
-    public string BuildQuery(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue)
+    public JqlQuery BuildQuery(ReleaseIssueReadRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var periodStart = _reportPeriod.Start;
         var periodEndExclusive = _reportPeriod.EndExclusive;
-        var escapedProject = releaseProjectKey.Value.EscapeJqlString();
-        var escapedLabel = projectLabel.EscapeJqlString();
-        var escapedFieldName = releaseDateFieldName.EscapeJqlString();
+        var escapedProject = request.ReleaseProjectKey.Value.EscapeJqlString();
+        var escapedLabel = request.ProjectLabel.Value.EscapeJqlString();
+        var escapedFieldName = request.ReleaseDateFieldName.Value.EscapeJqlString();
         var clauses = new List<string>
         {
             $"project = \"{escapedProject}\"",
@@ -42,15 +40,14 @@ public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
             $"\"{escapedFieldName}\" < \"{periodEndExclusive:yyyy-MM-dd}\""
         };
 
-        if (!string.IsNullOrWhiteSpace(environmentFieldName)
-            && !string.IsNullOrWhiteSpace(environmentFieldValue))
+        if (request.EnvironmentFilter is { } environmentFilter)
         {
-            var escapedEnvironmentFieldName = environmentFieldName.EscapeJqlString();
-            var escapedEnvironmentFieldValue = environmentFieldValue.EscapeJqlString();
+            var escapedEnvironmentFieldName = environmentFilter.FieldName.Value.EscapeJqlString();
+            var escapedEnvironmentFieldValue = environmentFilter.Value.Value.EscapeJqlString();
             clauses.Add($"\"{escapedEnvironmentFieldName}\" = \"{escapedEnvironmentFieldValue}\"");
         }
 
-        return $"{string.Join(" AND ", clauses)} ORDER BY \"{escapedFieldName}\" ASC, key ASC";
+        return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY \"{escapedFieldName}\" ASC, key ASC");
     }
 
     private readonly ReportPeriod _reportPeriod;

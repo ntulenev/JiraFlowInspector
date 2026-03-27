@@ -1,4 +1,5 @@
 using JiraMetrics.API.FieldResolution;
+using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
@@ -12,7 +13,7 @@ public interface IJiraJqlFacade
     /// <summary>
     /// Builds the query for keys moved to a target status in the configured month.
     /// </summary>
-    string BuildMovedToDoneIssueKeysQuery(
+    JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         CreatedAfterDate? createdAfter);
@@ -20,12 +21,12 @@ public interface IJiraJqlFacade
     /// <summary>
     /// Builds the query for issues created in the configured month.
     /// </summary>
-    string BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes);
+    JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes);
 
     /// <summary>
     /// Builds the query for issues moved to a target status in the configured month.
     /// </summary>
-    string BuildMovedToDoneIssuesQuery(
+    JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes);
@@ -33,7 +34,7 @@ public interface IJiraJqlFacade
     /// <summary>
     /// Builds the query for grouped status counts excluding terminal statuses.
     /// </summary>
-    string BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
+    JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
         StatusName? rejectStatusName);
@@ -41,22 +42,17 @@ public interface IJiraJqlFacade
     /// <summary>
     /// Builds the release issue search query.
     /// </summary>
-    string BuildReleaseIssuesQuery(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue);
+    JqlQuery BuildReleaseIssuesQuery(ReleaseIssueReadRequest request);
 
     /// <summary>
     /// Builds the architecture tasks search query.
     /// </summary>
-    string BuildArchTasksQuery(ArchTasksReportSettings settings);
+    JqlQuery BuildArchTasksQuery(ArchTasksReportSettings settings);
 
     /// <summary>
     /// Builds the global incidents search query.
     /// </summary>
-    string BuildGlobalIncidentsQuery(
+    JqlQuery BuildGlobalIncidentsQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields);
 }

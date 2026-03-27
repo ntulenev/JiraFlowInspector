@@ -95,24 +95,10 @@ public sealed class JiraApiClient : IJiraApiClient
 
     /// <inheritdoc />
     public Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
-        ProjectKey releaseProjectKey,
-        string projectLabel,
-        string releaseDateFieldName,
-        string? componentsFieldName,
-        IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
-        string rollbackFieldName,
-        string? environmentFieldName,
-        string? environmentFieldValue,
+        ReleaseIssueReadRequest request,
         CancellationToken cancellationToken) =>
         _reportDataClient.GetReleaseIssuesForMonthAsync(
-            releaseProjectKey,
-            projectLabel,
-            releaseDateFieldName,
-            componentsFieldName,
-            hotFixRules,
-            rollbackFieldName,
-            environmentFieldName,
-            environmentFieldValue,
+            request,
             cancellationToken);
 
     /// <inheritdoc />

@@ -1174,14 +1174,7 @@ public sealed class JiraApplicationTests
         }
 
         public Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
-            ProjectKey releaseProjectKey,
-            string projectLabel,
-            string releaseDateFieldName,
-            string? componentsFieldName,
-            IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules,
-            string rollbackFieldName,
-            string? environmentFieldName,
-            string? environmentFieldValue,
+            ReleaseIssueReadRequest request,
             CancellationToken cancellationToken)
         {
             ReleaseIssuesRequested = true;

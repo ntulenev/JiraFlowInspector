@@ -1,4 +1,5 @@
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Abstractions.Api.Jql;
 
@@ -12,6 +13,6 @@ public interface IArchTasksJqlBuilder
     /// </summary>
     /// <param name="settings">Architecture tasks settings.</param>
     /// <returns>Final JQL query.</returns>
-    string BuildQuery(ArchTasksReportSettings settings);
+    JqlQuery BuildQuery(ArchTasksReportSettings settings);
 }
 
