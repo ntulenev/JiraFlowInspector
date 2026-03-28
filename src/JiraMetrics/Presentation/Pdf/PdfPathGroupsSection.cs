@@ -8,8 +8,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders grouped transition-path analytics for the PDF report.
+/// </summary>
 internal sealed class PdfPathGroupsSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         ComposePathSummarySection(column, reportData.PathSummary);
