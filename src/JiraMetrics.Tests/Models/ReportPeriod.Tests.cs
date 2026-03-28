@@ -54,4 +54,55 @@ public sealed class ReportPeriodTests
         parsed.Should().BeTrue();
         date.Should().Be(new DateOnly(2026, 3, 16));
     }
+
+    [Fact(DisplayName = "FromDateRange throws when end date is earlier than start date")]
+    [Trait("Category", "Unit")]
+    public void FromDateRangeWhenEndDateIsEarlierThanStartDateThrowsArgumentException()
+    {
+        // Act
+        Action act = () => _ = ReportPeriod.FromDateRange(
+            new DateOnly(2026, 3, 29),
+            new DateOnly(2026, 3, 16));
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact(DisplayName = "TryParseConfiguredDate returns false for blank input")]
+    [Trait("Category", "Unit")]
+    public void TryParseConfiguredDateWhenInputIsBlankReturnsFalse()
+    {
+        // Act
+        var parsed = ReportPeriod.TryParseConfiguredDate(" ", out var date);
+
+        // Assert
+        parsed.Should().BeFalse();
+        date.Should().Be(default);
+    }
+
+    [Fact(DisplayName = "ParseConfiguredDate throws for unsupported format")]
+    [Trait("Category", "Unit")]
+    public void ParseConfiguredDateWhenFormatIsUnsupportedThrowsArgumentException()
+    {
+        // Act
+        Action act = () => _ = ReportPeriod.ParseConfiguredDate("03/16/2026", "startDate");
+
+        // Assert
+        act.Should().Throw<ArgumentException>()
+            .WithParameterName("startDate");
+    }
+
+    [Fact(DisplayName = "ToString returns display label")]
+    [Trait("Category", "Unit")]
+    public void ToStringWhenCalledReturnsLabel()
+    {
+        // Arrange
+        var period = ReportPeriod.FromDateRange(new DateOnly(2026, 3, 16), new DateOnly(2026, 3, 29));
+
+        // Act
+        var text = period.ToString();
+
+        // Assert
+        text.Should().Be(period.Label);
+    }
 }
