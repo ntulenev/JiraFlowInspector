@@ -8,8 +8,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders ratio sections for all tasks and bug tasks in the PDF report.
+/// </summary>
 internal sealed class PdfRatiosSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         ComposeAllTasksRatioSection(column, reportData);
