@@ -8,8 +8,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders the architecture tasks section of the PDF report.
+/// </summary>
 internal sealed class PdfArchTasksSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         if (reportData.Settings.ArchTasksReport is not { } archTasksReport)
