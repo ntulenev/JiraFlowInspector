@@ -8,8 +8,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders issue transition analysis sections for the PDF report.
+/// </summary>
 internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         _ = column.Item().Text("Transition analysis").Bold().FontSize(12);
