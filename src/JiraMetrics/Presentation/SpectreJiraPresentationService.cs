@@ -68,7 +68,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     /// <inheritdoc />
     public void ShowIssueSearchFailed(ErrorMessage errorMessage)
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowIssueSearchFailed(errorMessage);
     }
 
@@ -76,27 +76,33 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowReportHeader(AppSettings settings, ItemCount issueCount)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowReportHeader(settings, issueCount);
     }
 
     /// <inheritdoc />
     public void ShowNoIssuesMatchedFilter()
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowNoIssuesMatchedFilter();
     }
 
     /// <inheritdoc />
     public void ShowIssueLoadingStarted(ItemCount totalIssues)
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _issueLoadTotal = totalIssues.Value;
         _issueLoadProcessed = 0;
         _issueLoadFailed = 0;
         _issueLoadStep = Math.Max(1, _issueLoadTotal / 10);
 
-        AnsiConsole.MarkupLine($"[grey]Loading issue timelines:[/] 0/{_issueLoadTotal}");
+        if (CanAnimatePendingLoader())
+        {
+            StartPendingLoader(BuildIssueLoadProgressMessage);
+            return;
+        }
+
+        AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
     }
 
     /// <inheritdoc />
@@ -106,34 +112,37 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowIssueFailed(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: true);
 
     /// <inheritdoc />
-    public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues) =>
+    public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues)
+    {
+        StopAllLoaders();
         _statusSection.ShowIssueLoadingCompleted(loadedIssues, failedIssues);
+    }
 
     /// <inheritdoc />
     public void ShowProcessingStep(string message)
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowProcessingStep(message);
     }
 
     /// <inheritdoc />
     public void ShowSpacer()
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowSpacer();
     }
 
     /// <inheritdoc />
     public void ShowNoIssuesLoaded()
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowNoIssuesLoaded();
     }
 
     /// <inheritdoc />
     public void ShowNoIssuesMatchedRequiredStage()
     {
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowNoIssuesMatchedRequiredStage();
     }
 
@@ -141,7 +150,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName)
     {
         ArgumentNullException.ThrowIfNull(issues);
-        StopPendingLoader();
+        StopAllLoaders();
         _transitionSection.ShowDoneIssuesTable(issues, doneStatusName);
     }
 
@@ -151,7 +160,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         StatusName doneStatusName)
     {
         ArgumentNullException.ThrowIfNull(summaries);
-        StopPendingLoader();
+        StopAllLoaders();
         _transitionSection.ShowDoneDaysAtWork75PerType(summaries, doneStatusName);
     }
 
@@ -159,7 +168,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName)
     {
         ArgumentNullException.ThrowIfNull(issues);
-        StopPendingLoader();
+        StopAllLoaders();
         _transitionSection.ShowRejectedIssuesTable(issues, rejectStatusName);
     }
 
@@ -167,7 +176,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowPathGroupsSummary(PathGroupsSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
-        StopPendingLoader();
+        StopAllLoaders();
         _transitionSection.ShowPathGroupsSummary(summary);
     }
 
@@ -188,7 +197,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(releases);
-        StopPendingLoader();
+        StopAllLoaders();
         _releaseSection.ShowReleaseReport(settings, reportPeriod, releases);
     }
 
@@ -199,7 +208,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(tasks);
-        StopPendingLoader();
+        StopAllLoaders();
         _archTasksSection.ShowArchTasksReport(settings, tasks);
     }
 
@@ -211,7 +220,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(incidents);
-        StopPendingLoader();
+        StopAllLoaders();
         _globalIncidentsSection.ShowGlobalIncidentsReport(settings, reportPeriod, incidents);
     }
 
@@ -222,7 +231,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        StopPendingLoader();
+        StopAllLoaders();
         _ratioSection.ShowAllTasksRatioLoadingCompleted(snapshot);
     }
 
@@ -233,7 +242,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         IssueRatioSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        StopPendingLoader();
+        StopAllLoaders();
         _ratioSection.ShowAllTasksRatio(
             customFieldName,
             customFieldValue,
@@ -255,7 +264,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        StopPendingLoader();
+        StopAllLoaders();
         _ratioSection.ShowBugRatioLoadingCompleted(snapshot);
     }
 
@@ -268,7 +277,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         ArgumentNullException.ThrowIfNull(bugIssueNames);
         ArgumentNullException.ThrowIfNull(snapshot);
-        StopPendingLoader();
+        StopAllLoaders();
         _ratioSection.ShowBugRatio(
             bugIssueNames,
             customFieldName,
@@ -283,7 +292,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
         StatusName? rejectStatusName)
     {
         ArgumentNullException.ThrowIfNull(statusSummaries);
-        StopPendingLoader();
+        StopAllLoaders();
         _generalStatisticsSection.ShowOpenIssuesByStatusSummary(statusSummaries, doneStatusName, rejectStatusName);
     }
 
@@ -291,7 +300,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
     {
         ArgumentNullException.ThrowIfNull(groups);
-        StopPendingLoader();
+        StopAllLoaders();
         _transitionSection.ShowPathGroups(groups);
     }
 
@@ -299,7 +308,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowExecutionSummary(TimeSpan totalDuration, JiraRequestTelemetrySummary requestTelemetry)
     {
         ArgumentNullException.ThrowIfNull(requestTelemetry);
-        StopPendingLoader();
+        StopAllLoaders();
         _statusSection.ShowExecutionSummary(totalDuration, requestTelemetry);
     }
 
@@ -307,7 +316,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)
     {
         ArgumentNullException.ThrowIfNull(failures);
-        StopPendingLoader();
+        StopAllLoaders();
         _failuresSection.ShowFailures(failures);
     }
 
@@ -324,26 +333,54 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             _issueLoadFailed++;
         }
 
+        if (_pendingLoaderCancellation is not null)
+        {
+            return;
+        }
+
         if (_issueLoadProcessed == _issueLoadTotal
             || _issueLoadProcessed % _issueLoadStep == 0)
         {
-            var percent = _issueLoadProcessed * 100.0 / _issueLoadTotal;
-            AnsiConsole.MarkupLine(
-                $"[grey]Loading issue timelines:[/] {_issueLoadProcessed}/{_issueLoadTotal} ({percent:0}%)  [grey]failed:[/] {_issueLoadFailed}");
+            AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
         }
+    }
+
+    private string BuildIssueLoadProgressMessage()
+    {
+        if (_issueLoadTotal <= 0)
+        {
+            return "[grey]Loading issue timelines:[/] 0/0";
+        }
+
+        if (_issueLoadProcessed == 0 && _issueLoadFailed == 0)
+        {
+            return $"[grey]Loading issue timelines:[/] 0/{_issueLoadTotal}";
+        }
+
+        var percent = _issueLoadProcessed * 100.0 / _issueLoadTotal;
+        return $"[grey]Loading issue timelines:[/] {_issueLoadProcessed}/{_issueLoadTotal} ({percent:0}%)  [grey]failed:[/] {_issueLoadFailed}";
     }
 
     private void StartPendingLoader(string message)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
-        StopPendingLoader();
+        StopAllLoaders();
 
         if (!CanAnimatePendingLoader())
         {
             AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
             return;
         }
+
+        StartPendingLoader(() => $"[grey]{Markup.Escape(message)}[/]");
+    }
+
+    private void StartPendingLoader(Func<string> messageFactory)
+    {
+        ArgumentNullException.ThrowIfNull(messageFactory);
+
+        StopAllLoaders();
 
         var cancellation = new CancellationTokenSource();
         lock (_pendingLoaderSync)
@@ -357,7 +394,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
                 {
                     lock (_pendingLoaderSync)
                     {
-                        AnsiConsole.Markup($"\r[grey]{Markup.Escape(message)} {_pendingLoaderFrames[index]}[/]");
+                        AnsiConsole.Markup($"\r{messageFactory()} {_pendingLoaderFrames[index]}");
                     }
 
                     index = (index + 1) % _pendingLoaderFrames.Length;
@@ -374,6 +411,8 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
             }, cancellation.Token);
         }
     }
+
+    private void StopAllLoaders() => StopPendingLoader();
 
     private void StopPendingLoader()
     {
