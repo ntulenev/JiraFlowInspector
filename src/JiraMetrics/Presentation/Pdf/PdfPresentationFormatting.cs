@@ -5,6 +5,9 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Provides formatting helpers used by PDF report sections.
+/// </summary>
 internal static class PdfPresentationFormatting
 {
     public const string OPEN_ISSUE_COLOR_HEX = "#dc2626";
