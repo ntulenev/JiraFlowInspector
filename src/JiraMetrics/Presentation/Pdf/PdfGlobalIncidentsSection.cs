@@ -8,8 +8,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders the global incidents section of the PDF report.
+/// </summary>
 internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         if (reportData.Settings.GlobalIncidentsReport is not { } globalIncidentsReport)
