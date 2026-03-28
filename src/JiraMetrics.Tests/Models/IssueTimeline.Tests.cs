@@ -310,4 +310,99 @@ public sealed class IssueTimelineTests
         // Assert
         matchesAllStages.Should().BeFalse();
     }
+
+    [Fact(DisplayName = "UsesStage returns true when stage is present in transitions")]
+    [Trait("Category", "Unit")]
+    public void UsesStageWhenStageIsPresentReturnsTrue()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("Code Review"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1))
+            ],
+            endTime: created.AddHours(2));
+
+        // Act
+        var usesStage = issue.UsesStage(new StageName("Code Review"));
+
+        // Assert
+        usesStage.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "IsOfType returns true when issue type matches ignoring case")]
+    [Trait("Category", "Unit")]
+    public void IsOfTypeWhenIssueTypeMatchesIgnoringCaseReturnsTrue()
+    {
+        // Arrange
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Bug"),
+            new IssueSummary("Summary"),
+            DateTimeOffset.UtcNow.AddHours(-2),
+            [],
+            endTime: DateTimeOffset.UtcNow);
+
+        // Act
+        var isOfType = issue.IsOfType(new IssueTypeName("bug"));
+
+        // Assert
+        isOfType.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "MatchesAnyType returns true when one of provided types matches")]
+    [Trait("Category", "Unit")]
+    public void MatchesAnyTypeWhenAnyTypeMatchesReturnsTrue()
+    {
+        // Arrange
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Bug"),
+            new IssueSummary("Summary"),
+            DateTimeOffset.UtcNow.AddHours(-2),
+            [],
+            endTime: DateTimeOffset.UtcNow);
+
+        // Act
+        var matchesAnyType = issue.MatchesAnyType(
+            [new IssueTypeName("Story"), new IssueTypeName("Bug")]);
+
+        // Assert
+        matchesAnyType.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "TryGetLastReachedAt returns null when status was not reached")]
+    [Trait("Category", "Unit")]
+    public void TryGetLastReachedAtWhenStatusWasNotReachedReturnsNull()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("In Progress"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1))
+            ],
+            endTime: created.AddHours(2));
+
+        // Act
+        var lastReachedAt = issue.TryGetLastReachedAt(new StatusName("Done"));
+
+        // Assert
+        lastReachedAt.Should().BeNull();
+    }
 }
