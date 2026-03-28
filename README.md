@@ -76,9 +76,29 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   that only tasks with code artefacts are included.
 - Path groups:
   path, issue list, timeline diagram, P75 transition table.
+- Execution summary:
+  total runtime, Jira HTTP request count, retry count, total response payload size,
+  total Jira latency, and per-endpoint telemetry table.
 - Failed issues table (when any request fails per issue).
 
 All list tables include `#` index column.
+
+The execution summary endpoint table includes:
+
+- `Endpoint`:
+  HTTP method and Jira REST path.
+- `Requests`:
+  number of calls sent to that endpoint.
+- `Retries`:
+  retry attempts triggered by transient-failure policy.
+- `Payload`:
+  total response size received from that endpoint.
+- `Total`:
+  cumulative latency across all calls to that endpoint.
+- `Avg`:
+  average latency per call.
+- `Max`:
+  slowest single-call latency.
 
 ### PDF Output
 
