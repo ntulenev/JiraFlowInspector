@@ -117,7 +117,7 @@ public sealed class JiraRequestTelemetryCollector : IJiraRequestTelemetryCollect
         public TimeSpan MaxDuration { get; set; }
     }
 
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
     private readonly Dictionary<string, EndpointMetrics> _endpointMetrics =
         new(StringComparer.OrdinalIgnoreCase);
     private int _requestCount;

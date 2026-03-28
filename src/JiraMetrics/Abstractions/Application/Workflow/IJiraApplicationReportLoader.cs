@@ -1,6 +1,6 @@
 using JiraMetrics.Models;
 
-namespace JiraMetrics.Logic;
+namespace JiraMetrics.Abstractions.Application.Workflow;
 
 /// <summary>
 /// Loads report data required before detailed issue analysis starts.

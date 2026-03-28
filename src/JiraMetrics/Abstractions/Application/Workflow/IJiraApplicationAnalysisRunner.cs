@@ -1,6 +1,6 @@
 using JiraMetrics.Models;
 
-namespace JiraMetrics.Logic;
+namespace JiraMetrics.Abstractions.Application.Workflow;
 
 /// <summary>
 /// Runs timeline loading, analysis, presentation, and rendering for prepared report data.
