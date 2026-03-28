@@ -36,8 +36,7 @@ public sealed class JiraLogicService : IJiraLogicService
             return issues;
         }
 
-        return [.. issues.Where(issue =>
-            requiredPathStages.All(stage => issue.Transitions.Any(stage.IsUsedInTransition)))];
+        return [.. new IssueTimelineSet(issues).FilterByRequiredStages(requiredPathStages)];
     }
 
     /// <summary>
@@ -58,11 +57,7 @@ public sealed class JiraLogicService : IJiraLogicService
             return issues;
         }
 
-        var allowedTypes = issueTypes
-            .Select(static issueType => issueType.Value)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        return [.. issues.Where(issue => allowedTypes.Contains(issue.IssueType.Value))];
+        return [.. new IssueTimelineSet(issues).FilterByIssueTypes(issueTypes)];
     }
 
     /// <summary>
@@ -77,26 +72,9 @@ public sealed class JiraLogicService : IJiraLogicService
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        return [.. issues
-            .Select(issue => (issue.IssueType, workDuration: issue.TryBuildWorkDuration(targetStatusName)))
-            .Where(static sample => sample.workDuration.HasValue)
-            .GroupBy(static sample => sample.IssueType.Value, StringComparer.OrdinalIgnoreCase)
-            .Select(group =>
-            {
-                var issueType = group.First().IssueType;
-                var samples = group
-                    .Select(static sample => sample.workDuration!.Value)
-                    .ToList();
-                var p75 = _analytics.CalculatePercentile(samples, new PercentileValue(0.75));
-
-                return new IssueTypeWorkDays75Summary(
-                    issueType,
-                    new ItemCount(samples.Count),
-                    p75);
-            })
-            .OrderByDescending(static summary => summary.DaysAtWorkP75)
-            .ThenByDescending(static summary => summary.IssueCount.Value)
-            .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)];
+        return new IssueTimelineSet(issues).BuildDaysAtWork75PerType(
+            targetStatusName,
+            _analytics.CalculatePercentile);
     }
 
     /// <summary>
@@ -108,29 +86,7 @@ public sealed class JiraLogicService : IJiraLogicService
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        return [.. issues
-            .GroupBy(issue => issue.PathKey.Value, StringComparer.OrdinalIgnoreCase)
-            .Select(group =>
-            {
-                var groupedIssues = group.ToList();
-                var template = groupedIssues[0].Transitions;
-                var p75Transitions = new List<PercentileTransition>(template.Count);
-
-                for (var i = 0; i < template.Count; i++)
-                {
-                    var samples = groupedIssues
-                        .Select(issue => issue.Transitions[i].SincePrevious)
-                        .ToList();
-
-                    var p75 = _analytics.CalculatePercentile(samples, new PercentileValue(0.75));
-                    p75Transitions.Add(new PercentileTransition(template[i].From, template[i].To, p75));
-                }
-
-                var totalP75 = p75Transitions.Aggregate(TimeSpan.Zero, (acc, item) => acc + item.P75Duration);
-                return new PathGroup(groupedIssues[0].PathLabel, groupedIssues, p75Transitions, totalP75);
-            })
-            .OrderByDescending(group => group.Issues.Count)
-            .ThenBy(group => group.PathLabel.Value, StringComparer.OrdinalIgnoreCase)];
+        return new IssueTimelineSet(issues).BuildPathGroups(_analytics.CalculatePercentile);
     }
     private readonly IJiraAnalyticsService _analytics;
 

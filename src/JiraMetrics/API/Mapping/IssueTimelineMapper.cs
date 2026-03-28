@@ -48,19 +48,12 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
 
         var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created);
 
-        var endTime = DateTimeOffset.UtcNow;
-        if (!string.IsNullOrWhiteSpace(response.Fields.ResolutionDate)
-            && DateTimeOffset.TryParse(response.Fields.ResolutionDate, out var parsedResolutionDate))
-        {
-            endTime = parsedResolutionDate;
-        }
+        DateTimeOffset? endTime = !string.IsNullOrWhiteSpace(response.Fields.ResolutionDate)
+            && DateTimeOffset.TryParse(response.Fields.ResolutionDate, out var parsedResolutionDate)
+                ? parsedResolutionDate
+                : null;
 
-        if (endTime < created)
-        {
-            endTime = created;
-        }
-
-        return new IssueTimeline(
+        return IssueTimeline.Create(
             !string.IsNullOrWhiteSpace(response.Key) ? new IssueKey(response.Key.Trim()) : fallbackKey,
             IssueTypeName.FromNullable(response.Fields.IssueType?.Name),
             new IssueSummary(
@@ -68,10 +61,8 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
                     ? "No summary"
                     : response.Fields.Summary),
             created,
-            endTime,
             transitions,
-            PathKey.FromTransitions(transitions),
-            PathLabel.FromTransitions(transitions),
+            endTime,
             response.Fields.Subtasks.Count,
             HasPullRequest(response.Fields));
     }

@@ -25,18 +25,18 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     }
 
     public IReadOnlyList<IssueKey> MapIssueKeys(IReadOnlyList<JiraIssueKeyResponse> issues) =>
-        JiraIssueKeyResponse.ToIssueKeys(issues ?? throw new ArgumentNullException(nameof(issues)));
+        JiraSearchIssueMapper.ToIssueKeys(issues ?? throw new ArgumentNullException(nameof(issues)));
 
     public IReadOnlyList<IssueListItem> MapIssueListItems(IReadOnlyList<JiraIssueKeyResponse> issues) =>
-        JiraIssueKeyResponse.ToIssueListItems(issues ?? throw new ArgumentNullException(nameof(issues)));
+        JiraSearchIssueMapper.ToIssueListItems(issues ?? throw new ArgumentNullException(nameof(issues)));
 
     public IReadOnlyList<StatusIssueTypeSummary> MapStatusIssueTypeSummaries(
         IReadOnlyList<JiraIssueKeyResponse> issues) =>
-        JiraIssueKeyResponse.ToStatusIssueTypeSummaries(
+        JiraSearchIssueMapper.ToStatusIssueTypeSummaries(
             issues ?? throw new ArgumentNullException(nameof(issues)));
 
     public IReadOnlyList<ArchTaskItem> MapArchTaskItems(IReadOnlyList<JiraIssueKeyResponse> issues) =>
-        JiraIssueKeyResponse.ToArchTaskItems(issues ?? throw new ArgumentNullException(nameof(issues)));
+        JiraSearchIssueMapper.ToArchTaskItems(issues ?? throw new ArgumentNullException(nameof(issues)));
 
     public JiraSearchFields BuildReleaseRequestedFields(ReleaseIssueMappingContext context) =>
         _releaseIssueMapper.BuildRequestedFields(context);

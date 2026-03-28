@@ -16,11 +16,7 @@ internal static class PdfPresentationFormatting
 
     public static string BuildLastStatusAtText(IssueTimeline issue, StatusName statusName)
     {
-        var lastTimestamp = issue.Transitions
-            .Where(transition => string.Equals(transition.To.Value, statusName.Value, StringComparison.OrdinalIgnoreCase))
-            .Select(static transition => (DateTimeOffset?)transition.At)
-            .OrderByDescending(static timestamp => timestamp)
-            .FirstOrDefault();
+        var lastTimestamp = issue.TryGetLastReachedAt(statusName);
 
         return lastTimestamp.HasValue
             ? lastTimestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
@@ -32,22 +28,13 @@ internal static class PdfPresentationFormatting
         StatusName targetStatusName,
         bool showTimeCalculationsInHoursOnly)
     {
-        var targetTransitionIndex = issue.Transitions
-            .Select(static (transition, index) => (transition, index))
-            .Where(item => string.Equals(item.transition.To.Value, targetStatusName.Value, StringComparison.OrdinalIgnoreCase))
-            .Select(static item => item.index)
-            .DefaultIfEmpty(-1)
-            .Max();
-        if (targetTransitionIndex < 0)
+        var workDuration = issue.TryBuildWorkDuration(targetStatusName);
+        if (!workDuration.HasValue)
         {
             return "-";
         }
 
-        var workDuration = issue.Transitions
-            .Take(targetTransitionIndex + 1)
-            .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
-
-        return FormatWorkDurationValue(workDuration, showTimeCalculationsInHoursOnly);
+        return FormatWorkDurationValue(workDuration.Value, showTimeCalculationsInHoursOnly);
     }
 
     public static string FormatIncidentDateTimeUtc(DateTimeOffset? value) =>

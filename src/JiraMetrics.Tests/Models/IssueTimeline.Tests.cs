@@ -206,4 +206,108 @@ public sealed class IssueTimelineTests
         // Assert
         duration.Should().Be(TimeSpan.Zero);
     }
+
+    [Fact(DisplayName = "Create derives path metadata and clamps end time")]
+    [Trait("Category", "Unit")]
+    public void CreateWhenEndTimeIsEarlierThanCreatedNormalizesTimeline()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var transitions = new List<TransitionEvent>
+        {
+            new(
+                new StatusName("Open"),
+                new StatusName("Code Review"),
+                created.AddHours(2),
+                TimeSpan.FromHours(2))
+        };
+
+        // Act
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            transitions,
+            endTime: created.AddMinutes(-5),
+            subItemsCount: 2,
+            hasPullRequest: true);
+
+        // Assert
+        issue.EndTime.Should().Be(created);
+        issue.PathKey.Should().Be(PathKey.FromTransitions(transitions));
+        issue.PathLabel.Should().Be(PathLabel.FromTransitions(transitions));
+        issue.SubItemsCount.Should().Be(2);
+        issue.HasPullRequest.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "TryGetLastReachedAt returns timestamp of the latest matching status transition")]
+    [Trait("Category", "Unit")]
+    public void TryGetLastReachedAtWhenStatusWasReachedReturnsLatestTimestamp()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("In Progress"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1)),
+                new TransitionEvent(
+                    new StatusName("In Progress"),
+                    new StatusName("Done"),
+                    created.AddHours(2),
+                    TimeSpan.FromHours(1)),
+                new TransitionEvent(
+                    new StatusName("Done"),
+                    new StatusName("Done"),
+                    created.AddHours(3),
+                    TimeSpan.FromHours(1))
+            ],
+            endTime: created.AddHours(4));
+
+        // Act
+        var lastReachedAt = issue.TryGetLastReachedAt(new StatusName("Done"));
+
+        // Assert
+        lastReachedAt.Should().Be(created.AddHours(3));
+    }
+
+    [Fact(DisplayName = "MatchesAllStages returns true only when every required stage is used")]
+    [Trait("Category", "Unit")]
+    public void MatchesAllStagesWhenAnyRequiredStageIsMissingReturnsFalse()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("Code Review"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1)),
+                new TransitionEvent(
+                    new StatusName("Code Review"),
+                    new StatusName("Done"),
+                    created.AddHours(2),
+                    TimeSpan.FromHours(1))
+            ],
+            endTime: created.AddHours(3));
+
+        // Act
+        var matchesAllStages = issue.MatchesAllStages(
+            [new StageName("Code Review"), new StageName("Deploy")]);
+
+        // Assert
+        matchesAllStages.Should().BeFalse();
+    }
 }

@@ -8,6 +8,49 @@ namespace JiraMetrics.Models;
 public sealed record IssueTimeline
 {
     /// <summary>
+    /// Creates a normalized issue timeline and derives path metadata from transitions.
+    /// </summary>
+    /// <param name="key">Issue key.</param>
+    /// <param name="issueType">Issue type.</param>
+    /// <param name="summary">Issue summary.</param>
+    /// <param name="created">Issue creation timestamp.</param>
+    /// <param name="transitions">Ordered status transition events.</param>
+    /// <param name="endTime">Optional issue end timestamp used for analytics.</param>
+    /// <param name="subItemsCount">Number of sub-items.</param>
+    /// <param name="hasPullRequest">Whether issue has linked pull request(s).</param>
+    /// <returns>Normalized issue timeline.</returns>
+    public static IssueTimeline Create(
+        IssueKey key,
+        IssueTypeName issueType,
+        IssueSummary summary,
+        DateTimeOffset created,
+        IReadOnlyList<TransitionEvent> transitions,
+        DateTimeOffset? endTime = null,
+        int subItemsCount = 0,
+        bool hasPullRequest = false)
+    {
+        ArgumentNullException.ThrowIfNull(transitions);
+
+        var resolvedEndTime = endTime ?? DateTimeOffset.UtcNow;
+        if (resolvedEndTime < created)
+        {
+            resolvedEndTime = created;
+        }
+
+        return new IssueTimeline(
+            key,
+            issueType,
+            summary,
+            created,
+            resolvedEndTime,
+            transitions,
+            PathKey.FromTransitions(transitions),
+            PathLabel.FromTransitions(transitions),
+            subItemsCount,
+            hasPullRequest);
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="IssueTimeline"/> class.
     /// </summary>
     /// <param name="key">Issue key.</param>
@@ -106,6 +149,58 @@ public sealed record IssueTimeline
     public bool HasPullRequest { get; }
 
     /// <summary>
+    /// Determines whether the issue includes the specified stage in any transition.
+    /// </summary>
+    /// <param name="stageName">Stage name.</param>
+    /// <returns><see langword="true"/> when the stage appears in the transition path.</returns>
+    public bool UsesStage(StageName stageName) => Transitions.Any(stageName.IsUsedInTransition);
+
+    /// <summary>
+    /// Determines whether the issue contains all required stages.
+    /// </summary>
+    /// <param name="requiredStages">Required stages.</param>
+    /// <returns><see langword="true"/> when every required stage is present.</returns>
+    public bool MatchesAllStages(IReadOnlyList<StageName> requiredStages)
+    {
+        ArgumentNullException.ThrowIfNull(requiredStages);
+
+        return requiredStages.Count == 0 || requiredStages.All(UsesStage);
+    }
+
+    /// <summary>
+    /// Determines whether the issue type matches the specified issue type.
+    /// </summary>
+    /// <param name="issueType">Issue type.</param>
+    /// <returns><see langword="true"/> when issue types match ignoring case.</returns>
+    public bool IsOfType(IssueTypeName issueType) =>
+        string.Equals(IssueType.Value, issueType.Value, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Determines whether the issue matches any of the provided issue types.
+    /// </summary>
+    /// <param name="issueTypes">Allowed issue types.</param>
+    /// <returns><see langword="true"/> when the issue matches at least one type.</returns>
+    public bool MatchesAnyType(IReadOnlyList<IssueTypeName> issueTypes)
+    {
+        ArgumentNullException.ThrowIfNull(issueTypes);
+
+        return issueTypes.Count == 0 || issueTypes.Any(IsOfType);
+    }
+
+    /// <summary>
+    /// Tries to get the timestamp of the last transition into the target status.
+    /// </summary>
+    /// <param name="targetStatusName">Target status.</param>
+    /// <returns>Timestamp of the last transition into the target status, or <c>null</c>.</returns>
+    public DateTimeOffset? TryGetLastReachedAt(StatusName targetStatusName)
+    {
+        var targetTransitionIndex = GetLastReachedTransitionIndex(targetStatusName);
+        return targetTransitionIndex < 0
+            ? null
+            : Transitions[targetTransitionIndex].At;
+    }
+
+    /// <summary>
     /// Tries to calculate cumulative work duration until the issue first reaches the target status.
     /// </summary>
     /// <param name="targetStatusName">Target status used as work completion point.</param>
@@ -115,15 +210,7 @@ public sealed record IssueTimeline
     /// </returns>
     public TimeSpan? TryBuildWorkDuration(StatusName targetStatusName)
     {
-        var targetTransitionIndex = Transitions
-            .Select(static (transition, index) => (transition, index))
-            .Where(item => string.Equals(
-                item.transition.To.Value,
-                targetStatusName.Value,
-                StringComparison.OrdinalIgnoreCase))
-            .Select(static item => item.index)
-            .DefaultIfEmpty(-1)
-            .Max();
+        var targetTransitionIndex = GetLastReachedTransitionIndex(targetStatusName);
         if (targetTransitionIndex < 0)
         {
             return null;
@@ -134,5 +221,18 @@ public sealed record IssueTimeline
             .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
 
         return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+    }
+
+    private int GetLastReachedTransitionIndex(StatusName targetStatusName)
+    {
+        return Transitions
+            .Select(static (transition, index) => (transition, index))
+            .Where(item => string.Equals(
+                item.transition.To.Value,
+                targetStatusName.Value,
+                StringComparison.OrdinalIgnoreCase))
+            .Select(static item => item.index)
+            .DefaultIfEmpty(-1)
+            .Max();
     }
 }
