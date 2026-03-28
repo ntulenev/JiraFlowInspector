@@ -7,8 +7,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders the failed issue loading section of the PDF report.
+/// </summary>
 internal sealed class PdfFailuresSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         if (reportData.Failures.Count == 0)
