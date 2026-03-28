@@ -8,8 +8,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders the release report section of the PDF output.
+/// </summary>
 internal sealed class PdfReleaseSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         if (reportData.Settings.ReleaseReport is not { } releaseReport)
