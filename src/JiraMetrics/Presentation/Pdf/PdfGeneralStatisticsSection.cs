@@ -7,8 +7,12 @@ using QuestPDF.Helpers;
 
 namespace JiraMetrics.Presentation.Pdf;
 
+/// <summary>
+/// Renders the general statistics section of the PDF report.
+/// </summary>
 internal sealed class PdfGeneralStatisticsSection : IPdfReportSection
 {
+    /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
     {
         if (!reportData.Settings.ShowGeneralStatistics)
