@@ -28,6 +28,11 @@ public sealed class PdfContentComposer : IPdfContentComposer
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PdfContentComposer"/> class
+    /// with the provided report sections.
+    /// </summary>
+    /// <param name="sections">Ordered PDF report sections.</param>
     internal PdfContentComposer(IReadOnlyList<IPdfReportSection> sections)
     {
         ArgumentNullException.ThrowIfNull(sections);
