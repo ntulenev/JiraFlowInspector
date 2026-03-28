@@ -241,14 +241,5 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 
     private readonly JiraFieldValueReader _fieldValueReader;
 }
-
-public sealed record GlobalIncidentMappingContext(
-    IReadOnlyList<ResolvedJiraField> IncidentStartFields,
-    IReadOnlyList<ResolvedJiraField> IncidentRecoveryFields,
-    JiraFieldId? ImpactFieldId,
-    JiraFieldName ImpactFieldName,
-    JiraFieldId? UrgencyFieldId,
-    JiraFieldName UrgencyFieldName,
-    IReadOnlyDictionary<JiraFieldName, JiraFieldId?> AdditionalFieldIds);
 #pragma warning restore CS1591
 

@@ -335,16 +335,5 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
     private readonly JiraFieldValueReader _fieldValueReader;
 }
-
-public sealed record ReleaseIssueMappingContext(
-    JiraFieldId ReleaseFieldId,
-    JiraFieldName ReleaseDateFieldName,
-    JiraFieldId? ComponentsFieldId,
-    JiraFieldName? ComponentsFieldName,
-    IReadOnlyList<ResolvedHotFixRule> HotFixRules,
-    JiraFieldId? RollbackFieldId,
-    JiraFieldName RollbackFieldName,
-    JiraFieldId? EnvironmentFieldId,
-    JiraFieldName? EnvironmentFieldName);
 #pragma warning restore CS1591
 

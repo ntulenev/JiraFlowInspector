@@ -242,18 +242,11 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
         fieldId.StartsWith("customfield_", StringComparison.OrdinalIgnoreCase);
 
     private readonly IJiraTransport _transport;
-    private readonly object _cacheSync = new();
+    private readonly Lock _cacheSync = new();
     private IReadOnlyList<JiraFieldResponse>? _cachedFields;
     private Task<IReadOnlyList<JiraFieldResponse>>? _cachedFieldsTask;
     private readonly Dictionary<string, JiraFieldId?> _resolvedFieldIds =
         new(StringComparer.OrdinalIgnoreCase);
 }
-
-public readonly record struct ResolvedJiraField(JiraFieldName FieldName, JiraFieldId FieldId);
-
-public sealed record ResolvedHotFixRule(
-    JiraFieldName FieldName,
-    JiraFieldId? FieldId,
-    IReadOnlySet<JiraFieldValue> Values);
 #pragma warning restore CS1591
 

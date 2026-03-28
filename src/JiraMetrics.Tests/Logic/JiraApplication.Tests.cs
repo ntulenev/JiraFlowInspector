@@ -13,108 +13,80 @@ public sealed class JiraApplicationTests
 {
     [Fact(DisplayName = "Constructor throws when settings are null")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenSettingsAreNullThrowsArgumentNullException()
+    public void ConstructorWhenReportingFacadeIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IOptions<AppSettings> settings = null!;
-        var apiClient = new FakeApiClient();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
-        var presentation = new FakePresentationService();
-        var dataFacade = CreateDataFacade(apiClient, presentation);
-        var analysisFacade = CreateAnalysisFacade(logic);
-
-        // Act
-        Action act = () => _ = new JiraApplication(
-            settings,
-            dataFacade,
-            analysisFacade,
-            presentation,
-            new FakeRequestTelemetryCollector());
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Constructor throws when data facade is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenDataFacadeIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        var settings = Options.Create(CreateSettings());
-        var logic = new JiraLogicService(new JiraAnalyticsService());
-        IJiraApplicationDataFacade dataFacade = null!;
-        var analysisFacade = CreateAnalysisFacade(logic);
-        var presentation = new FakePresentationService();
-
-        // Act
-        Action act = () => _ = new JiraApplication(
-            settings,
-            dataFacade,
-            analysisFacade,
-            presentation,
-            new FakeRequestTelemetryCollector());
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Constructor throws when analysis facade is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenAnalysisFacadeIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        var settings = Options.Create(CreateSettings());
-        var apiClient = new FakeApiClient();
-        var presentation = new FakePresentationService();
-        var dataFacade = CreateDataFacade(apiClient, presentation);
-        IJiraApplicationAnalysisFacade analysisFacade = null!;
-
-        // Act
-        Action act = () => _ = new JiraApplication(
-            settings,
-            dataFacade,
-            analysisFacade,
-            presentation,
-            new FakeRequestTelemetryCollector());
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Constructor throws when reporting facade or telemetry dependency is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenReportingFacadeOrTelemetryDependencyIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        var settings = Options.Create(CreateSettings());
-        var apiClient = new FakeApiClient();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
-        var dataFacade = CreateDataFacade(apiClient, new FakePresentationService());
-        var analysisFacade = CreateAnalysisFacade(logic);
-        var presentation = new FakePresentationService();
         IJiraApplicationReportingFacade reportingFacade = null!;
+
+        // Act
+        Action act = () => _ = new JiraApplication(
+            reportingFacade,
+            new FakeRequestTelemetryCollector(),
+            new NoOpReportLoader(),
+            new NoOpAnalysisRunner());
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when telemetry collector is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenTelemetryCollectorIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var presentation = new FakePresentationService();
         IJiraRequestTelemetryCollector requestTelemetryCollector = null!;
 
         // Act
-        Action nullReportingFacade = () => _ = new JiraApplication(
-            settings,
-            dataFacade,
-            analysisFacade,
-            reportingFacade,
-            new FakeRequestTelemetryCollector());
-        Action nullTelemetryCollector = () => _ = new JiraApplication(
-            settings,
-            dataFacade,
-            analysisFacade,
+        Action act = () => _ = new JiraApplication(
             presentation,
-            requestTelemetryCollector);
+            requestTelemetryCollector,
+            new NoOpReportLoader(),
+            new NoOpAnalysisRunner());
 
         // Assert
-        nullReportingFacade.Should().Throw<ArgumentNullException>();
-        nullTelemetryCollector.Should().Throw<ArgumentNullException>();
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when report loader is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenReportLoaderIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var presentation = new FakePresentationService();
+        IJiraApplicationReportLoader reportLoader = null!;
+
+        // Act
+        Action act = () => _ = new JiraApplication(
+            presentation,
+            new FakeRequestTelemetryCollector(),
+            reportLoader,
+            new NoOpAnalysisRunner());
+
+        // Assert
+        act.Should()
+            .Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Constructor throws when analysis runner is null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenAnalysisRunnerIsNullThrowsArgumentNullException()
+    {
+        // Arrange
+        var presentation = new FakePresentationService();
+        IJiraApplicationAnalysisRunner analysisRunner = null!;
+
+        // Act
+        Action act = () => _ = new JiraApplication(
+            presentation,
+            new FakeRequestTelemetryCollector(),
+            new NoOpReportLoader(),
+            analysisRunner);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact(DisplayName = "RunAsync shows no issues matched filter when search returns empty list")]
@@ -130,7 +102,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings()),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -161,7 +133,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings()),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -188,7 +160,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings()),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -219,7 +191,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings([new IssueTypeName("Bug"), new IssueTypeName("Story")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -251,7 +223,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
                 bugIssueNames: [new IssueTypeName("Bug")])),
@@ -296,7 +268,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -339,7 +311,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -376,7 +348,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
                 createdAfter: new CreatedAfterDate("2026-01-01"))),
@@ -409,7 +381,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
                 releaseReport: new ReleaseReportSettings(
@@ -448,7 +420,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
                 bugIssueNames: [new IssueTypeName("Bug")],
@@ -506,7 +478,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
                 releaseReport: new ReleaseReportSettings(
@@ -561,7 +533,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
                 releaseReport: new ReleaseReportSettings(
@@ -620,7 +592,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -680,7 +652,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -735,7 +707,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -778,7 +750,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -808,7 +780,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -849,7 +821,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -882,7 +854,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
             CreateAnalysisFacade(logic),
@@ -921,7 +893,7 @@ public sealed class JiraApplicationTests
 
         var presentation = new FakePresentationService();
         var logic = new JiraLogicService(new JiraAnalyticsService());
-        var app = new JiraApplication(
+        var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
                 showGeneralStatistics: false)),
@@ -961,6 +933,31 @@ public sealed class JiraApplicationTests
         ArgumentNullException.ThrowIfNull(logicService);
 
         return new JiraApplicationAnalysisFacade(logicService);
+    }
+
+    private static JiraApplication CreateApplication(
+        IOptions<AppSettings> settings,
+        JiraApplicationDataFacade dataFacade,
+        JiraApplicationAnalysisFacade analysisFacade,
+        FakePresentationService presentation,
+        FakeRequestTelemetryCollector requestTelemetryCollector)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(dataFacade);
+        ArgumentNullException.ThrowIfNull(analysisFacade);
+        ArgumentNullException.ThrowIfNull(presentation);
+        ArgumentNullException.ThrowIfNull(requestTelemetryCollector);
+
+        var appSettings = settings.Value;
+        return new JiraApplication(
+            presentation,
+            requestTelemetryCollector,
+            new JiraApplicationReportLoader(appSettings, dataFacade, presentation),
+            new JiraApplicationAnalysisRunner(
+                appSettings,
+                dataFacade,
+                analysisFacade,
+                presentation));
     }
 
     private static AppSettings CreateSettings(
@@ -1276,6 +1273,21 @@ public sealed class JiraApplicationTests
         }
 
         public JiraRequestTelemetrySummary GetSummary() => Summary;
+    }
+
+    private sealed class NoOpReportLoader : IJiraApplicationReportLoader
+    {
+        public Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(new JiraAuthUser(new UserDisplayName("Test"), "user@example.com", "1"));
+
+        public Task<JiraApplicationReportData?> TryLoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<JiraApplicationReportData?>(null);
+    }
+
+    private sealed class NoOpAnalysisRunner : IJiraApplicationAnalysisRunner
+    {
+        public Task RunAsync(JiraApplicationReportData reportData, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakePresentationService : IJiraPresentationService, IJiraApplicationReportingFacade

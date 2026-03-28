@@ -7,8 +7,6 @@ using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
-using Microsoft.Extensions.Options;
-
 using Moq;
 
 namespace JiraMetrics.Tests.Logic;
@@ -312,11 +310,14 @@ public sealed class JiraApplicationBranchesTests
         Mock<IJiraRequestTelemetryCollector> telemetryCollector)
     {
         return new JiraApplication(
-            Options.Create(settings),
-            dataFacade.Object,
-            analysisFacade.Object,
             reportingFacade.Object,
-            telemetryCollector.Object);
+            telemetryCollector.Object,
+            new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object),
+            new JiraApplicationAnalysisRunner(
+                settings,
+                dataFacade.Object,
+                analysisFacade.Object,
+                reportingFacade.Object));
     }
 
     private static AppSettings CreateSettings(IReadOnlyList<IssueTypeName>? bugIssueNames = null)
