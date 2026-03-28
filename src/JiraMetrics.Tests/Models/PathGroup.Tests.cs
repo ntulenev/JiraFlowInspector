@@ -65,4 +65,24 @@ public sealed class PathGroupTests
         group.P75Transitions.Should().BeSameAs(transitions);
         group.TotalP75.Should().Be(TimeSpan.FromHours(2));
     }
+
+    [Fact(DisplayName = "Create derives total p75 duration from transitions")]
+    [Trait("Category", "Unit")]
+    public void CreateWhenCalledAggregatesTotalP75Duration()
+    {
+        // Arrange
+        var issues = new List<IssueTimeline>();
+        var transitions = new List<PercentileTransition>
+        {
+            new(new StatusName("Open"), new StatusName("Code Review"), TimeSpan.FromHours(2)),
+            new(new StatusName("Code Review"), new StatusName("Done"), TimeSpan.FromHours(3))
+        };
+
+        // Act
+        var group = PathGroup.Create(new PathLabel("Open -> Code Review -> Done"), issues, transitions);
+
+        // Assert
+        group.TotalP75.Should().Be(TimeSpan.FromHours(5));
+        group.P75Transitions.Should().BeSameAs(transitions);
+    }
 }
