@@ -9,6 +9,49 @@ namespace JiraMetrics.Models;
 public sealed class JiraPdfReportData
 {
     /// <summary>
+    /// Creates aggregated PDF report data when transition analysis is unavailable,
+    /// while keeping optional sections such as release and ratio reports.
+    /// </summary>
+    /// <param name="settings">Application settings.</param>
+    /// <param name="reportContext">Preloaded report context.</param>
+    /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
+    /// <param name="bugRatio">Bug ratio snapshot.</param>
+    /// <param name="failures">Issue load failures.</param>
+    /// <param name="successfulCount">Count of successfully loaded issues for the main analysis set.</param>
+    /// <param name="matchedStageCount">Count of issues that matched transition-analysis prerequisites.</param>
+    /// <returns>Aggregated PDF report data.</returns>
+    public static JiraPdfReportData CreateWithoutTransitionAnalysis(
+        AppSettings settings,
+        JiraReportContext reportContext,
+        IssueRatioSnapshot allTasksRatio,
+        IssueRatioSnapshot? bugRatio,
+        IReadOnlyList<LoadFailure> failures,
+        ItemCount successfulCount,
+        ItemCount matchedStageCount)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(reportContext);
+        ArgumentNullException.ThrowIfNull(allTasksRatio);
+        ArgumentNullException.ThrowIfNull(failures);
+
+        return CreateCore(
+            settings,
+            reportContext,
+            allTasksRatio,
+            bugRatio,
+            doneIssues: [],
+            doneDaysAtWork75PerType: [],
+            rejectedIssues: [],
+            pathSummary: new PathGroupsSummary(
+                successfulCount,
+                matchedStageCount,
+                new ItemCount(failures.Count),
+                new ItemCount(0)),
+            pathGroups: [],
+            failures);
+    }
+
+    /// <summary>
     /// Creates aggregated PDF report data for a successful analysis run.
     /// </summary>
     /// <param name="settings">Application settings.</param>
@@ -44,7 +87,31 @@ public sealed class JiraPdfReportData
                 "Successful analysis must include path summary data.");
         }
 
-        return new JiraPdfReportData
+        return CreateCore(
+            settings,
+            reportContext,
+            allTasksRatio,
+            bugRatio,
+            analysis.DoneIssues,
+            analysis.DoneDaysAtWork75PerType,
+            analysis.RejectedIssues,
+            analysis.PathSummary,
+            analysis.PathGroups,
+            failures);
+    }
+
+    private static JiraPdfReportData CreateCore(
+        AppSettings settings,
+        JiraReportContext reportContext,
+        IssueRatioSnapshot allTasksRatio,
+        IssueRatioSnapshot? bugRatio,
+        IReadOnlyList<IssueTimeline> doneIssues,
+        IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
+        IReadOnlyList<IssueTimeline> rejectedIssues,
+        PathGroupsSummary pathSummary,
+        IReadOnlyList<PathGroup> pathGroups,
+        IReadOnlyList<LoadFailure> failures) =>
+        new()
         {
             Settings = settings,
             SearchIssueCount = new ItemCount(reportContext.IssueKeys.Count),
@@ -64,14 +131,13 @@ public sealed class JiraPdfReportData
             BugDoneIssues = bugRatio?.DoneIssues ?? [],
             BugRejectedIssues = bugRatio?.RejectedIssues ?? [],
             OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
-            DoneIssues = analysis.DoneIssues,
-            DoneDaysAtWork75PerType = analysis.DoneDaysAtWork75PerType,
-            RejectedIssues = analysis.RejectedIssues,
-            PathSummary = analysis.PathSummary,
-            PathGroups = analysis.PathGroups,
+            DoneIssues = doneIssues,
+            DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
+            RejectedIssues = rejectedIssues,
+            PathSummary = pathSummary,
+            PathGroups = pathGroups,
             Failures = failures
         };
-    }
 
     /// <summary>
     /// Gets or sets application settings.

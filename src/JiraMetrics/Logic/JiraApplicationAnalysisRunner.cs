@@ -36,7 +36,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         _reportingFacade.ShowReportHeader(_settings, new ItemCount(reportContext.IssueKeys.Count));
 
         var openIssuesSummaryShown = false;
-        if (TryHandleEmptyReportContext(reportContext, ref openIssuesSummaryShown))
+        if (TryHandleEmptyReportContext(reportData, ref openIssuesSummaryShown))
         {
             return;
         }
@@ -45,13 +45,13 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
             reportContext.IssueKeys,
             reportContext.RejectIssueKeys,
             cancellationToken).ConfigureAwait(false);
-        if (TryHandleNoLoadedIssues(loadResult, reportContext, ref openIssuesSummaryShown))
+        if (TryHandleNoLoadedIssues(reportData, loadResult, ref openIssuesSummaryShown))
         {
             return;
         }
 
         var analysis = AnalyzeLoadedIssues(loadResult);
-        if (TryHandleUnsuccessfulAnalysis(analysis, loadResult.Failures, reportContext, ref openIssuesSummaryShown))
+        if (TryHandleUnsuccessfulAnalysis(reportData, analysis, loadResult, ref openIssuesSummaryShown))
         {
             return;
         }
@@ -79,9 +79,10 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
     }
 
     private bool TryHandleEmptyReportContext(
-        JiraReportContext reportContext,
+        JiraApplicationReportData reportData,
         ref bool openIssuesSummaryShown)
     {
+        var reportContext = reportData.ReportContext;
         if (reportContext.IssueKeys.Count > 0)
         {
             return false;
@@ -89,14 +90,20 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
 
         _reportingFacade.ShowNoIssuesMatchedFilter();
         ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+        RenderPdfReportWithoutTransitionAnalysis(
+            reportData,
+            failures: [],
+            successfulCount: new ItemCount(0),
+            matchedStageCount: new ItemCount(0));
         return true;
     }
 
     private bool TryHandleNoLoadedIssues(
+        JiraApplicationReportData reportData,
         IssueTimelineLoadResult loadResult,
-        JiraReportContext reportContext,
         ref bool openIssuesSummaryShown)
     {
+        var reportContext = reportData.ReportContext;
         if (loadResult.DoneIssues.Count > 0)
         {
             return false;
@@ -105,26 +112,43 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         _reportingFacade.ShowNoIssuesLoaded();
         _reportingFacade.ShowFailures(loadResult.Failures);
         ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+        RenderPdfReportWithoutTransitionAnalysis(
+            reportData,
+            loadResult.Failures,
+            successfulCount: loadResult.LoadedIssueCount,
+            matchedStageCount: new ItemCount(0));
         return true;
     }
 
     private bool TryHandleUnsuccessfulAnalysis(
+        JiraApplicationReportData reportData,
         JiraIssueAnalysisResult analysis,
-        IReadOnlyList<LoadFailure> failures,
-        JiraReportContext reportContext,
+        IssueTimelineLoadResult loadResult,
         ref bool openIssuesSummaryShown)
     {
+        var reportContext = reportData.ReportContext;
+
         switch (analysis.Outcome)
         {
             case JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter:
                 _reportingFacade.ShowNoIssuesMatchedFilter();
-                _reportingFacade.ShowFailures(failures);
+                _reportingFacade.ShowFailures(loadResult.Failures);
                 ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+                RenderPdfReportWithoutTransitionAnalysis(
+                    reportData,
+                    loadResult.Failures,
+                    successfulCount: loadResult.LoadedIssueCount,
+                    matchedStageCount: new ItemCount(0));
                 return true;
             case JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage:
                 _reportingFacade.ShowNoIssuesMatchedRequiredStage();
-                _reportingFacade.ShowFailures(failures);
+                _reportingFacade.ShowFailures(loadResult.Failures);
                 ShowOpenIssuesSummaryIfNeeded(reportContext, ref openIssuesSummaryShown);
+                RenderPdfReportWithoutTransitionAnalysis(
+                    reportData,
+                    loadResult.Failures,
+                    successfulCount: loadResult.LoadedIssueCount,
+                    matchedStageCount: new ItemCount(0));
                 return true;
             case JiraIssueAnalysisOutcome.Success:
                 return false;
@@ -171,6 +195,23 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
             reportData.BugRatio,
             analysis,
             failures));
+    }
+
+    private void RenderPdfReportWithoutTransitionAnalysis(
+        JiraApplicationReportData reportData,
+        IReadOnlyList<LoadFailure> failures,
+        ItemCount successfulCount,
+        ItemCount matchedStageCount)
+    {
+        _reportingFacade.ShowProcessingStep("Rendering PDF report...");
+        _reportingFacade.RenderReport(JiraPdfReportData.CreateWithoutTransitionAnalysis(
+            _settings,
+            reportData.ReportContext,
+            reportData.AllTasksRatio,
+            reportData.BugRatio,
+            failures,
+            successfulCount,
+            matchedStageCount));
     }
 
     private void ShowOpenIssuesSummaryIfNeeded(

@@ -118,6 +118,57 @@ public sealed class JiraApplicationTests
         presentation.ExecutionSummaryShown.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "RunAsync renders PDF even when transition search returns no issues")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenTransitionSearchReturnsNoIssuesStillRendersPdfWithOptionalSections()
+    {
+        // Arrange
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [],
+            ReleaseIssues = [new ReleaseIssueItem(new IssueKey("RLS-1"), new IssueSummary("Release item"), new DateOnly(2026, 2, 14))],
+            CreatedThisMonthIssues =
+            [
+                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Open bug"))
+            ],
+            MovedToDoneThisMonthIssues =
+            [
+                new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Done bug"))
+            ],
+            RejectedThisMonthIssues = []
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var app = CreateApplication(
+            Options.Create(CreateSettings(
+                bugIssueNames: [new IssueTypeName("Bug")],
+                releaseReport: new ReleaseReportSettings(
+                    new ProjectKey("RLS"),
+                    "Processing",
+                    "Change completion date"),
+                createdAfter: new CreatedAfterDate("2026-01-01"))),
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
+            presentation,
+            new FakeRequestTelemetryCollector());
+
+        // Act
+        await app.RunAsync();
+
+        // Assert
+        presentation.NoIssuesMatchedFilterShown.Should().BeTrue();
+        presentation.ReportRendered.Should().BeTrue();
+        presentation.LastReportData.Should().NotBeNull();
+        presentation.LastReportData!.SearchIssueCount.Should().Be(new ItemCount(0));
+        presentation.LastReportData.ReleaseIssues.Should().ContainSingle();
+        presentation.LastReportData.BugCreatedThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.BugMovedToDoneThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.DoneIssues.Should().BeEmpty();
+        presentation.LastReportData.PathSummary.PathGroupCount.Should().Be(new ItemCount(0));
+    }
+
     [Fact(DisplayName = "RunAsync shows failures when issue loading fails")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenIssueLoadingFailsShowsFailures()

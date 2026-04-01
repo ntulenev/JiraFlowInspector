@@ -191,7 +191,14 @@ public sealed class JiraApplicationBranchesTests
                 settings.DoneStatusName,
                 settings.RejectStatusName),
             Times.Once);
-        reportingFacade.Verify(facade => facade.RenderReport(It.IsAny<JiraPdfReportData>()), Times.Never);
+        reportingFacade.Verify(
+            facade => facade.RenderReport(It.Is<JiraPdfReportData>(report =>
+                report.SearchIssueCount == new ItemCount(1)
+                && report.DoneIssues.Count == 0
+                && report.PathSummary.SuccessfulCount == new ItemCount(0)
+                && report.PathSummary.PathGroupCount == new ItemCount(0)
+                && report.Failures.Count == 1)),
+            Times.Once);
         analysisFacade.Verify(
             facade => facade.Analyze(
                 It.IsAny<IReadOnlyList<IssueTimeline>>(),
@@ -249,7 +256,15 @@ public sealed class JiraApplicationBranchesTests
         // Assert
         reportingFacade.Verify(facade => facade.ShowNoIssuesMatchedRequiredStage(), Times.Once);
         reportingFacade.Verify(facade => facade.ShowFailures(failures), Times.Once);
-        reportingFacade.Verify(facade => facade.RenderReport(It.IsAny<JiraPdfReportData>()), Times.Never);
+        reportingFacade.Verify(
+            facade => facade.RenderReport(It.Is<JiraPdfReportData>(report =>
+                report.SearchIssueCount == new ItemCount(1)
+                && report.DoneIssues.Count == 0
+                && report.PathSummary.SuccessfulCount == new ItemCount(1)
+                && report.PathSummary.MatchedStageCount == new ItemCount(0)
+                && report.PathSummary.PathGroupCount == new ItemCount(0)
+                && report.Failures.Count == 1)),
+            Times.Once);
     }
 
     [Fact(DisplayName = "RunAsync rethrows when analysis outcome is unsupported")]
