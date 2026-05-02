@@ -33,6 +33,10 @@ public sealed class AppSettingsTests
             additionalFieldNames: ["Business Impact"]);
         var pdfReport = new PdfReportSettings(enabled: true, outputPath: "report.pdf");
         var excludedDays = new List<DateOnly> { new(2026, 2, 3), new(2026, 2, 4) };
+        var customTransitionAnalysis = new CustomTransitionAnalysisSettings(
+            new StatusName("Release Candidate"),
+            new StatusName("Done"),
+            codeOnly: true);
         const string customFieldName = "Team";
         const string customFieldValue = "Import";
         const string pullRequestFieldName = "customfield_22222";
@@ -60,7 +64,8 @@ public sealed class AppSettingsTests
             archTasksReport: archTasksReport,
             globalIncidentsReport: globalIncidentsReport,
             pdfReport: pdfReport,
-            pullRequestFieldName: pullRequestFieldName);
+            pullRequestFieldName: pullRequestFieldName,
+            customTransitionAnalysis: customTransitionAnalysis);
 
         // Assert
         settings.BaseUrl.Should().Be(baseUrl);
@@ -86,6 +91,8 @@ public sealed class AppSettingsTests
         settings.GlobalIncidentsReport.Should().Be(globalIncidentsReport);
         settings.PdfReport.Should().Be(pdfReport);
         settings.PullRequestFieldName.Should().Be(pullRequestFieldName);
+        settings.CustomTransitionAnalysis.Should().Be(customTransitionAnalysis);
+        settings.CustomTransitionAnalysis!.CodeOnly.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Constructor keeps pull request field name unset when value is not provided")]
@@ -107,6 +114,7 @@ public sealed class AppSettingsTests
         settings.ShowTimeCalculationsInHoursOnly.Should().BeFalse();
         settings.ReportPeriod.Should().Be(ReportPeriod.FromMonthLabel(new MonthLabel("2026-02")));
         settings.PullRequestFieldName.Should().BeNull();
+        settings.CustomTransitionAnalysis.Should().BeNull();
     }
 
     [Fact(DisplayName = "Constructor stores explicit date range period")]

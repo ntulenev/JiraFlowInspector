@@ -278,6 +278,82 @@ public sealed class IssueTimelineTests
         lastReachedAt.Should().Be(created.AddHours(3));
     }
 
+    [Fact(DisplayName = "TryGetLastTransitionDuration returns latest matching transition duration")]
+    [Trait("Category", "Unit")]
+    public void TryGetLastTransitionDurationWhenTransitionExistsReturnsLatestDuration()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            [
+                new TransitionEvent(
+                    new StatusName("Release Candidate"),
+                    new StatusName("Done"),
+                    created.AddHours(2),
+                    TimeSpan.FromHours(2)),
+                new TransitionEvent(
+                    new StatusName("Done"),
+                    new StatusName("Release Candidate"),
+                    created.AddHours(3),
+                    TimeSpan.FromHours(1)),
+                new TransitionEvent(
+                    new StatusName("Release Candidate"),
+                    new StatusName("Done"),
+                    created.AddHours(5),
+                    TimeSpan.FromHours(2))
+            ],
+            endTime: created.AddHours(6));
+
+        // Act
+        var transitionAt = issue.TryGetLastTransitionAt(
+            new StatusName("Release Candidate"),
+            new StatusName("Done"));
+        var duration = issue.TryGetLastTransitionDuration(
+            new StatusName("Release Candidate"),
+            new StatusName("Done"));
+
+        // Assert
+        transitionAt.Should().Be(created.AddHours(5));
+        duration.Should().Be(TimeSpan.FromHours(2));
+    }
+
+    [Fact(DisplayName = "TryGetLastTransitionDuration returns null when transition is absent")]
+    [Trait("Category", "Unit")]
+    public void TryGetLastTransitionDurationWhenTransitionIsAbsentReturnsNull()
+    {
+        // Arrange
+        var created = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = IssueTimeline.Create(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Story"),
+            new IssueSummary("Summary"),
+            created,
+            [
+                new TransitionEvent(
+                    new StatusName("Open"),
+                    new StatusName("In Progress"),
+                    created.AddHours(1),
+                    TimeSpan.FromHours(1))
+            ],
+            endTime: created.AddHours(2));
+
+        // Act
+        var transitionAt = issue.TryGetLastTransitionAt(
+            new StatusName("Release Candidate"),
+            new StatusName("Done"));
+        var duration = issue.TryGetLastTransitionDuration(
+            new StatusName("Release Candidate"),
+            new StatusName("Done"));
+
+        // Assert
+        transitionAt.Should().BeNull();
+        duration.Should().BeNull();
+    }
+
     [Fact(DisplayName = "MatchesAllStages returns true only when every required stage is used")]
     [Trait("Category", "Unit")]
     public void MatchesAllStagesWhenAnyRequiredStageIsMissingReturnsFalse()

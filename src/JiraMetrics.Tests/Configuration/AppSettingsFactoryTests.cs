@@ -33,7 +33,13 @@ public sealed class AppSettingsFactoryTests
                     RequiredPathStages = [" Code Review ", "QA", "code review"],
                     IssueTypes = [" Story ", "Bug", "story"],
                     ExcludeWeekend = true,
-                    ExcludedDays = ["01.03.2026", "2026-03-02", "01.03.2026"]
+                    ExcludedDays = ["01.03.2026", "2026-03-02", "01.03.2026"],
+                    CustomTransitionAnalysis = new CustomTransitionAnalysisOptions
+                    {
+                        FromStatusName = " Release Candidate ",
+                        ToStatusName = " Done ",
+                        CodeOnly = true
+                    }
                 },
                 BugRatio = new BugRatioOptions
                 {
@@ -83,6 +89,8 @@ public sealed class AppSettingsFactoryTests
         settings.GlobalIncidentsReport.Should().NotBeNull();
         settings.PdfReport.Enabled.Should().BeTrue();
         settings.PdfReport.OpenAfterGeneration.Should().BeTrue();
+        settings.CustomTransitionAnalysis!.Label.Should().Be("Release Candidate -> Done");
+        settings.CustomTransitionAnalysis.CodeOnly.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Create requires at least one required path stage")]
@@ -145,5 +153,39 @@ public sealed class AppSettingsFactoryTests
         // Assert
         action.Should().Throw<InvalidOperationException>()
             .WithMessage("ReleaseReport requires ReleaseProjectKey, ProjectLabel, and ReleaseDateFieldName when configured.");
+    }
+
+    [Fact(DisplayName = "Create requires both custom transition statuses when configured")]
+    [Trait("Category", "Unit")]
+    public void CreateWhenCustomTransitionAnalysisIsIncompleteThrows()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net"),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"],
+                    CustomTransitionAnalysis = new CustomTransitionAnalysisOptions
+                    {
+                        FromStatusName = "Release Candidate",
+                        ToStatusName = " "
+                    }
+                }
+            }
+        };
+
+        // Act
+        var action = () => AppSettingsFactory.Create(options);
+
+        // Assert
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("CustomTransitionAnalysis requires both FromStatusName and ToStatusName when configured.");
     }
 }

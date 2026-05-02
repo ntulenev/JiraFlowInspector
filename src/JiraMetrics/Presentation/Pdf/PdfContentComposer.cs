@@ -23,7 +23,8 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 new PdfTransitionAnalysisSection(),
                 new PdfPathGroupsSection(),
                 new PdfGeneralStatisticsSection(),
-                new PdfFailuresSection()
+                new PdfFailuresSection(),
+                new PdfCustomTransitionAnalysisSection()
             ])
     {
     }

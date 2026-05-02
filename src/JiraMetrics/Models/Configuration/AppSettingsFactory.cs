@@ -40,7 +40,8 @@ internal static class AppSettingsFactory
             ResolveArchTasksReport(source.ArchTasks),
             ResolveGlobalIncidentsReport(source.GlobalIncidents),
             ResolvePdfReport(source.Pdf),
-            source.PullRequestFieldName);
+            source.PullRequestFieldName,
+            ResolveCustomTransitionAnalysis(teamTasks.IssueTransitions?.CustomTransitionAnalysis));
     }
 
     private static StatusName? CreateOptionalStatusName(string? value) =>
@@ -204,5 +205,32 @@ internal static class AppSettingsFactory
         }
 
         return new PdfReportSettings(source.Enabled, source.OutputPath, source.OpenAfterGeneration);
+    }
+
+    private static CustomTransitionAnalysisSettings? ResolveCustomTransitionAnalysis(
+        CustomTransitionAnalysisOptions? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(source.FromStatusName)
+            && string.IsNullOrWhiteSpace(source.ToStatusName))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(source.FromStatusName)
+            || string.IsNullOrWhiteSpace(source.ToStatusName))
+        {
+            throw new InvalidOperationException(
+                "CustomTransitionAnalysis requires both FromStatusName and ToStatusName when configured.");
+        }
+
+        return new CustomTransitionAnalysisSettings(
+            new StatusName(source.FromStatusName),
+            new StatusName(source.ToStatusName),
+            source.CodeOnly);
     }
 }

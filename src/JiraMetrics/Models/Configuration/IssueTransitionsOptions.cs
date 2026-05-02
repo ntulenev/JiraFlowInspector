@@ -28,4 +28,9 @@ public sealed class IssueTransitionsOptions
     /// Gets or sets optional list of excluded days in dd.MM.yyyy or yyyy-MM-dd format.
     /// </summary>
     public IReadOnlyList<string>? ExcludedDays { get; init; }
+
+    /// <summary>
+    /// Gets or sets optional dedicated transition analysis settings.
+    /// </summary>
+    public CustomTransitionAnalysisOptions? CustomTransitionAnalysis { get; init; }
 }

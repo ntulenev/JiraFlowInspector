@@ -89,7 +89,10 @@ public sealed class PdfContentComposerTests
                 namespaceName: "Incidents",
                 jqlFilter: "(labels = SERVICE OR summary ~ \"SERVICE\") AND (summary ~ \"downtime\")",
                 additionalFieldNames: ["Business Impact"]),
-            pdfReport: new PdfReportSettings(true, "report.pdf"));
+            pdfReport: new PdfReportSettings(true, "report.pdf"),
+            customTransitionAnalysis: new CustomTransitionAnalysisSettings(
+                new StatusName("Code Review"),
+                new StatusName("Done")));
 
         var transitions = new List<TransitionEvent>
         {

@@ -223,6 +223,38 @@ public sealed record IssueTimeline
         return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
     }
 
+    /// <summary>
+    /// Tries to get the timestamp of the last matching status transition.
+    /// </summary>
+    /// <param name="fromStatusName">Source status.</param>
+    /// <param name="toStatusName">Destination status.</param>
+    /// <returns>Timestamp of the last matching transition, or <c>null</c>.</returns>
+    public DateTimeOffset? TryGetLastTransitionAt(StatusName fromStatusName, StatusName toStatusName)
+    {
+        var targetTransitionIndex = GetLastTransitionIndex(fromStatusName, toStatusName);
+        return targetTransitionIndex < 0
+            ? null
+            : Transitions[targetTransitionIndex].At;
+    }
+
+    /// <summary>
+    /// Tries to get duration of the last matching status transition.
+    /// </summary>
+    /// <param name="fromStatusName">Source status.</param>
+    /// <param name="toStatusName">Destination status.</param>
+    /// <returns>Transition duration, or <c>null</c>.</returns>
+    public TimeSpan? TryGetLastTransitionDuration(StatusName fromStatusName, StatusName toStatusName)
+    {
+        var targetTransitionIndex = GetLastTransitionIndex(fromStatusName, toStatusName);
+        if (targetTransitionIndex < 0)
+        {
+            return null;
+        }
+
+        var duration = Transitions[targetTransitionIndex].SincePrevious;
+        return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+    }
+
     private int GetLastReachedTransitionIndex(StatusName targetStatusName)
     {
         return Transitions
@@ -231,6 +263,24 @@ public sealed record IssueTimeline
                 item.transition.To.Value,
                 targetStatusName.Value,
                 StringComparison.OrdinalIgnoreCase))
+            .Select(static item => item.index)
+            .DefaultIfEmpty(-1)
+            .Max();
+    }
+
+    private int GetLastTransitionIndex(StatusName fromStatusName, StatusName toStatusName)
+    {
+        return Transitions
+            .Select(static (transition, index) => (transition, index))
+            .Where(item =>
+                string.Equals(
+                    item.transition.From.Value,
+                    fromStatusName.Value,
+                    StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    item.transition.To.Value,
+                    toStatusName.Value,
+                    StringComparison.OrdinalIgnoreCase))
             .Select(static item => item.index)
             .DefaultIfEmpty(-1)
             .Max();
