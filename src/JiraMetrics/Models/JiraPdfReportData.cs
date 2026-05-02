@@ -41,6 +41,8 @@ public sealed class JiraPdfReportData
             bugRatio,
             doneIssues: [],
             doneDaysAtWork75PerType: [],
+            customTransitionIssues: [],
+            customTransitionDuration75PerType: [],
             rejectedIssues: [],
             pathSummary: new PathGroupsSummary(
                 successfulCount,
@@ -94,6 +96,8 @@ public sealed class JiraPdfReportData
             bugRatio,
             analysis.DoneIssues,
             analysis.DoneDaysAtWork75PerType,
+            analysis.CustomTransitionIssues,
+            analysis.CustomTransitionDuration75PerType,
             analysis.RejectedIssues,
             analysis.PathSummary,
             analysis.PathGroups,
@@ -107,6 +111,8 @@ public sealed class JiraPdfReportData
         IssueRatioSnapshot? bugRatio,
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
+        IReadOnlyList<CustomTransitionIssue> customTransitionIssues,
+        IReadOnlyList<IssueTypeDuration75Summary> customTransitionDuration75PerType,
         IReadOnlyList<IssueTimeline> rejectedIssues,
         PathGroupsSummary pathSummary,
         IReadOnlyList<PathGroup> pathGroups,
@@ -133,6 +139,8 @@ public sealed class JiraPdfReportData
             OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
             DoneIssues = doneIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
+            CustomTransitionIssues = customTransitionIssues,
+            CustomTransitionDuration75PerType = customTransitionDuration75PerType,
             RejectedIssues = rejectedIssues,
             PathSummary = pathSummary,
             PathGroups = pathGroups,
@@ -238,6 +246,16 @@ public sealed class JiraPdfReportData
     /// Gets or sets days-at-work P75 grouped by issue type for done issues.
     /// </summary>
     public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets issues matched by configured custom transition analysis.
+    /// </summary>
+    public IReadOnlyList<CustomTransitionIssue> CustomTransitionIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets custom transition P75 duration summaries per issue type.
+    /// </summary>
+    public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; init; } = [];
 
     /// <summary>
     /// Gets or sets issues moved to rejected in the selected period.

@@ -39,6 +39,30 @@ public interface IJiraLogicService
         StatusName targetStatusName);
 
     /// <summary>
+    /// Builds issues that contain a specific status transition.
+    /// </summary>
+    /// <param name="doneIssues">Done issues.</param>
+    /// <param name="rejectedIssues">Rejected issues.</param>
+    /// <param name="fromStatusName">Source status.</param>
+    /// <param name="toStatusName">Destination status.</param>
+    /// <param name="codeOnly">Whether only issues with code activity should be included.</param>
+    /// <returns>Matching issues ordered by transition duration descending.</returns>
+    IReadOnlyList<CustomTransitionIssue> BuildCustomTransitionIssues(
+        IReadOnlyList<IssueTimeline> doneIssues,
+        IReadOnlyList<IssueTimeline> rejectedIssues,
+        StatusName fromStatusName,
+        StatusName toStatusName,
+        bool codeOnly);
+
+    /// <summary>
+    /// Calculates P75 transition duration grouped by issue type.
+    /// </summary>
+    /// <param name="issues">Custom transition issues.</param>
+    /// <returns>P75 summaries per issue type.</returns>
+    IReadOnlyList<IssueTypeDuration75Summary> BuildDuration75PerType(
+        IReadOnlyList<CustomTransitionIssue> issues);
+
+    /// <summary>
     /// Groups issues by transition path and calculates per-transition P75 durations.
     /// </summary>
     /// <param name="issues">Issues.</param>

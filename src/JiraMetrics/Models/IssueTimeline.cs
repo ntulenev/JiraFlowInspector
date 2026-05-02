@@ -231,10 +231,8 @@ public sealed record IssueTimeline
     /// <returns>Timestamp of the last matching transition, or <c>null</c>.</returns>
     public DateTimeOffset? TryGetLastTransitionAt(StatusName fromStatusName, StatusName toStatusName)
     {
-        var targetTransitionIndex = GetLastTransitionIndex(fromStatusName, toStatusName);
-        return targetTransitionIndex < 0
-            ? null
-            : Transitions[targetTransitionIndex].At;
+        var transition = TryGetLastTransition(fromStatusName, toStatusName);
+        return transition?.At;
     }
 
     /// <summary>
@@ -245,14 +243,28 @@ public sealed record IssueTimeline
     /// <returns>Transition duration, or <c>null</c>.</returns>
     public TimeSpan? TryGetLastTransitionDuration(StatusName fromStatusName, StatusName toStatusName)
     {
-        var targetTransitionIndex = GetLastTransitionIndex(fromStatusName, toStatusName);
-        if (targetTransitionIndex < 0)
+        var transition = TryGetLastTransition(fromStatusName, toStatusName);
+        if (transition is null)
         {
             return null;
         }
 
-        var duration = Transitions[targetTransitionIndex].SincePrevious;
+        var duration = transition.SincePrevious;
         return duration < TimeSpan.Zero ? TimeSpan.Zero : duration;
+    }
+
+    /// <summary>
+    /// Tries to get the last matching status transition.
+    /// </summary>
+    /// <param name="fromStatusName">Source status.</param>
+    /// <param name="toStatusName">Destination status.</param>
+    /// <returns>Last matching transition, or <c>null</c>.</returns>
+    public TransitionEvent? TryGetLastTransition(StatusName fromStatusName, StatusName toStatusName)
+    {
+        var targetTransitionIndex = GetLastTransitionIndex(fromStatusName, toStatusName);
+        return targetTransitionIndex < 0
+            ? null
+            : Transitions[targetTransitionIndex];
     }
 
     private int GetLastReachedTransitionIndex(StatusName targetStatusName)

@@ -55,6 +55,19 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
         var doneDaysAtWork75PerType = _logicService.BuildDaysAtWork75PerType(
             filteredIssues,
             settings.DoneStatusName);
+        IReadOnlyList<CustomTransitionIssue> customTransitionIssues = [];
+        IReadOnlyList<IssueTypeDuration75Summary> customTransitionDuration75PerType = [];
+        if (settings.CustomTransitionAnalysis is { } customTransitionSettings)
+        {
+            customTransitionIssues = _logicService.BuildCustomTransitionIssues(
+                filteredIssues,
+                filteredRejectedIssues,
+                customTransitionSettings.FromStatusName,
+                customTransitionSettings.ToStatusName,
+                customTransitionSettings.CodeOnly);
+            customTransitionDuration75PerType = _logicService.BuildDuration75PerType(customTransitionIssues);
+        }
+
         var groupedIssues = filteredIssues
             .Where(static issue => issue.HasPullRequest)
             .ToList();
@@ -69,6 +82,8 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             filteredIssues,
             filteredRejectedIssues,
             doneDaysAtWork75PerType,
+            customTransitionIssues,
+            customTransitionDuration75PerType,
             groups,
             pathSummary);
     }

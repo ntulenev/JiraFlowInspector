@@ -26,7 +26,7 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
             return;
         }
 
-        var issues = FindMatchingIssues(reportData, settings);
+        var issues = reportData.CustomTransitionIssues;
 
         _ = column.Item().Text("Custom transition analysis").Bold().FontSize(12);
         _ = column.Item().Text($"Issues with {settings.Label} transition").Bold();
@@ -41,26 +41,15 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
         ComposeTransitionP75PerTypeSection(
             column,
             settings,
-            issues,
+            reportData.CustomTransitionDuration75PerType,
             reportData.Settings.ShowTimeCalculationsInHoursOnly);
     }
-
-    private static IReadOnlyList<IssueTimeline> FindMatchingIssues(
-        JiraPdfReportData reportData,
-        CustomTransitionAnalysisSettings settings) =>
-        [.. reportData.DoneIssues
-            .Concat(reportData.RejectedIssues)
-            .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .Where(issue => issue.TryGetLastTransitionDuration(settings.FromStatusName, settings.ToStatusName).HasValue)
-            .Where(issue => !settings.CodeOnly || issue.HasPullRequest)
-            .OrderByDescending(issue => issue.TryGetLastTransitionDuration(settings.FromStatusName, settings.ToStatusName)!.Value)
-            .ThenBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 
     private static void ComposeIssueTable(
         ColumnDescriptor column,
         JiraPdfReportData reportData,
         CustomTransitionAnalysisSettings settings,
-        IReadOnlyList<IssueTimeline> issues)
+        IReadOnlyList<CustomTransitionIssue> issues)
     {
         column.Item().Table(table =>
         {
@@ -94,7 +83,8 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
 
             for (var i = 0; i < issues.Count; i++)
             {
-                var issue = issues[i];
+                var item = issues[i];
+                var issue = item.Issue;
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
                 var issueUrl = PdfPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, issue.Key);
                 _ = table.Cell()
@@ -111,12 +101,11 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
                     .Text(issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(BuildTransitionAtText(issue, settings));
+                    .Text(item.TransitionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(BuildTransitionDurationText(
-                        issue,
-                        settings,
+                    .Text(PdfPresentationFormatting.FormatWorkDurationValue(
+                        item.Duration,
                         reportData.Settings.ShowTimeCalculationsInHoursOnly));
             }
         });
@@ -125,12 +114,11 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
     private static void ComposeTransitionP75PerTypeSection(
         ColumnDescriptor column,
         CustomTransitionAnalysisSettings settings,
-        IReadOnlyList<IssueTimeline> issues,
+        IReadOnlyList<IssueTypeDuration75Summary> summaries,
         bool showTimeCalculationsInHoursOnly)
     {
         _ = column.Item().Text($"{BuildDuration75Title(settings, showTimeCalculationsInHoursOnly)} per type").Bold();
 
-        var summaries = BuildTransitionP75PerType(settings, issues);
         if (summaries.Count == 0)
         {
             _ = column.Item().Text("No data.").FontColor(Colors.Grey.Darken1);
@@ -162,73 +150,10 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
                     .Text(PdfPresentationFormatting.FormatWorkDurationValue(
-                        summary.DaysAtWorkP75,
+                        summary.DurationP75,
                         showTimeCalculationsInHoursOnly));
             }
         });
-    }
-
-    private static IReadOnlyList<IssueTypeWorkDays75Summary> BuildTransitionP75PerType(
-        CustomTransitionAnalysisSettings settings,
-        IReadOnlyList<IssueTimeline> issues) =>
-        [.. issues
-            .Select(issue => (issue.IssueType, duration: issue.TryGetLastTransitionDuration(settings.FromStatusName, settings.ToStatusName)))
-            .Where(static sample => sample.duration.HasValue)
-            .GroupBy(static sample => sample.IssueType.Value, StringComparer.OrdinalIgnoreCase)
-            .Select(static group =>
-            {
-                var issueType = group.First().IssueType;
-                var samples = group.Select(static sample => sample.duration!.Value).ToList();
-
-                return new IssueTypeWorkDays75Summary(
-                    issueType,
-                    new ItemCount(samples.Count),
-                    CalculatePercentile(samples, 0.75));
-            })
-            .OrderByDescending(static summary => summary.DaysAtWorkP75)
-            .ThenByDescending(static summary => summary.IssueCount.Value)
-            .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)];
-
-    private static TimeSpan CalculatePercentile(IReadOnlyList<TimeSpan> values, double percentile)
-    {
-        var sorted = values
-            .Select(static value => Math.Max(0.0, value.TotalSeconds))
-            .OrderBy(static value => value)
-            .ToList();
-        if (sorted.Count == 0)
-        {
-            return TimeSpan.Zero;
-        }
-
-        if (sorted.Count == 1)
-        {
-            return TimeSpan.FromSeconds(sorted[0]);
-        }
-
-        var rank = (sorted.Count - 1) * percentile;
-        var lowerIndex = (int)Math.Floor(rank);
-        var upperIndex = (int)Math.Ceiling(rank);
-        var fraction = rank - lowerIndex;
-        return TimeSpan.FromSeconds(sorted[lowerIndex] + ((sorted[upperIndex] - sorted[lowerIndex]) * fraction));
-    }
-
-    private static string BuildTransitionAtText(IssueTimeline issue, CustomTransitionAnalysisSettings settings)
-    {
-        var transitionAt = issue.TryGetLastTransitionAt(settings.FromStatusName, settings.ToStatusName);
-        return transitionAt.HasValue
-            ? transitionAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
-            : "-";
-    }
-
-    private static string BuildTransitionDurationText(
-        IssueTimeline issue,
-        CustomTransitionAnalysisSettings settings,
-        bool showTimeCalculationsInHoursOnly)
-    {
-        var duration = issue.TryGetLastTransitionDuration(settings.FromStatusName, settings.ToStatusName);
-        return duration.HasValue
-            ? PdfPresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly)
-            : "-";
     }
 
     private static string BuildDurationColumnLabel(

@@ -26,6 +26,16 @@ public sealed record JiraIssueAnalysisResult
     public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; init; } = [];
 
     /// <summary>
+    /// Gets issues matched by configured custom transition analysis.
+    /// </summary>
+    public IReadOnlyList<CustomTransitionIssue> CustomTransitionIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets custom transition P75 duration summaries per issue type.
+    /// </summary>
+    public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; init; } = [];
+
+    /// <summary>
     /// Gets grouped issue paths.
     /// </summary>
     public IReadOnlyList<PathGroup> PathGroups { get; init; } = [];
@@ -42,12 +52,16 @@ public sealed record JiraIssueAnalysisResult
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTimeline> rejectedIssues,
         IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
+        IReadOnlyList<CustomTransitionIssue> customTransitionIssues,
+        IReadOnlyList<IssueTypeDuration75Summary> customTransitionDuration75PerType,
         IReadOnlyList<PathGroup> pathGroups,
         PathGroupsSummary pathSummary)
     {
         ArgumentNullException.ThrowIfNull(doneIssues);
         ArgumentNullException.ThrowIfNull(rejectedIssues);
         ArgumentNullException.ThrowIfNull(doneDaysAtWork75PerType);
+        ArgumentNullException.ThrowIfNull(customTransitionIssues);
+        ArgumentNullException.ThrowIfNull(customTransitionDuration75PerType);
         ArgumentNullException.ThrowIfNull(pathGroups);
         ArgumentNullException.ThrowIfNull(pathSummary);
 
@@ -57,6 +71,8 @@ public sealed record JiraIssueAnalysisResult
             DoneIssues = doneIssues,
             RejectedIssues = rejectedIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
+            CustomTransitionIssues = customTransitionIssues,
+            CustomTransitionDuration75PerType = customTransitionDuration75PerType,
             PathGroups = pathGroups,
             PathSummary = pathSummary
         };
