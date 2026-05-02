@@ -242,17 +242,86 @@ public sealed class JiraLogicServiceTests
         result[1].PathLabel.Value.Should().Be("Beta");
     }
 
-    private static IssueTimeline CreateIssue(IssueKey key, IReadOnlyList<TransitionEvent> transitions)
+    [Fact(DisplayName = "BuildCustomTransitionIssues orders by duration and applies code-only filter")]
+    [Trait("Category", "Unit")]
+    public void BuildCustomTransitionIssuesWhenCodeOnlyIsEnabledReturnsCodeIssuesOrderedByDuration()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var longCodeIssue = CreateIssue(
+            new IssueKey("AAA-1"),
+            [
+                new TransitionEvent(new StatusName("Release Candidate"), new StatusName("Done"), now, TimeSpan.FromHours(5))
+            ],
+            hasPullRequest: true);
+        var shortCodeIssue = CreateIssue(
+            new IssueKey("AAA-2"),
+            [
+                new TransitionEvent(new StatusName("Release Candidate"), new StatusName("Done"), now, TimeSpan.FromHours(2))
+            ],
+            hasPullRequest: true);
+        var noCodeIssue = CreateIssue(
+            new IssueKey("AAA-3"),
+            [
+                new TransitionEvent(new StatusName("Release Candidate"), new StatusName("Done"), now, TimeSpan.FromHours(8))
+            ]);
+
+        // Act
+        var result = service.BuildCustomTransitionIssues(
+            [shortCodeIssue, noCodeIssue, longCodeIssue],
+            [],
+            new StatusName("Release Candidate"),
+            new StatusName("Done"),
+            codeOnly: true);
+
+        // Assert
+        result.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-1", "AAA-2");
+        result.Select(static item => item.Duration).Should().Equal(TimeSpan.FromHours(5), TimeSpan.FromHours(2));
+    }
+
+    [Fact(DisplayName = "BuildDuration75PerType calculates P75 grouped by issue type")]
+    [Trait("Category", "Unit")]
+    public void BuildDuration75PerTypeWhenMultipleSamplesExistCalculatesP75()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var now = DateTimeOffset.UtcNow;
+        var story = CreateIssue(new IssueKey("AAA-1"), [], issueType: new IssueTypeName("Story"));
+        var bug = CreateIssue(new IssueKey("AAA-2"), [], issueType: new IssueTypeName("Bug"));
+
+        // Act
+        var result = service.BuildDuration75PerType(
+            [
+                new CustomTransitionIssue(story, now, TimeSpan.FromHours(2)),
+                new CustomTransitionIssue(story, now, TimeSpan.FromHours(6)),
+                new CustomTransitionIssue(bug, now, TimeSpan.FromHours(10))
+            ]);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result[0].IssueType.Value.Should().Be("Bug");
+        result[0].DurationP75.Should().Be(TimeSpan.FromHours(10));
+        result[1].IssueType.Value.Should().Be("Story");
+        result[1].DurationP75.Should().Be(TimeSpan.FromHours(5));
+    }
+
+    private static IssueTimeline CreateIssue(
+        IssueKey key,
+        IReadOnlyList<TransitionEvent> transitions,
+        IssueTypeName? issueType = null,
+        bool hasPullRequest = false)
     {
         return new IssueTimeline(
             key,
-            new IssueTypeName("Story"),
+            issueType ?? new IssueTypeName("Story"),
             new IssueSummary($"Summary {key.Value}"),
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow,
             transitions,
             PathKey.FromTransitions(transitions),
-            PathLabel.FromTransitions(transitions));
+            PathLabel.FromTransitions(transitions),
+            hasPullRequest: hasPullRequest);
     }
 
     private static IssueTimeline CreateIssueWithPath(IssueKey key, PathKey pathKey, PathLabel pathLabel)
