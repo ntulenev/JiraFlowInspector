@@ -9,6 +9,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 
 - Jira Cloud authentication with `Email` + `ApiToken`.
 - Transition analytics for issues moved to `Done` in a selected month.
+- Optional custom transition analysis for a configured `FromStatusName -> ToStatusName` transition.
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
 - Optional release report by label, custom release date field, and optional environment filter.
@@ -40,6 +41,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 11. Applies issue-type and required-stage filters.
 12. Shows console sections.
 13. Optionally writes PDF report.
+14. Optionally appends custom transition analysis to the end of the PDF report.
 
 ## Important Behavior Rules
 
@@ -50,6 +52,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - `CustomFieldName` + `CustomFieldValue` are applied only when both are provided.
 - Required stages use case-insensitive substring matching against both transition `From` and `To` statuses.
 - Path grouping for transition analytics is built only from issues with detected code activity (`HasPullRequest = true`).
+- `CustomTransitionAnalysis.CodeOnly = true` limits the custom transition PDF section to issues with detected code activity.
 
 ## Report Sections
 
@@ -80,6 +83,8 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   total runtime, Jira HTTP request count, retry count, total response payload size,
   total Jira latency, and per-endpoint telemetry table.
 - Failed issues table (when any request fails per issue).
+- Custom transition analysis (optional, PDF only):
+  issues that contain the configured `FromStatusName -> ToStatusName` transition, ordered by transition duration from highest to lowest.
 
 All list tables include `#` index column.
 
@@ -113,6 +118,7 @@ When `Jira:Pdf:Enabled` is `true`, PDF includes:
 - Path groups summary.
 - Path groups with timeline diagrams and P75 tables.
 - Failed issues (if any).
+- Custom transition analysis (if configured), rendered at the very end of the report.
 
 Jira issue identifiers are clickable links in PDF sections:
 release table, bug detail tables, done/rejected tables, path-group issue list, and failures table.
@@ -129,6 +135,18 @@ release table, bug detail tables, done/rejected tables, path-group issue list, a
 - Required path stages are enforced after issue-type filtering.
 - Path groups are built from filtered issues with code activity only.
 - P75 is calculated per transition index within each path group.
+
+### Custom Transition Analysis
+
+`TeamTasks.IssueTransitions.CustomTransitionAnalysis` enables an extra PDF-only section at the end of the report.
+
+- Matching issues are taken from the already loaded Done and Rejected transition-analysis issue sets.
+- A row is included when the issue changelog contains the configured `FromStatusName -> ToStatusName` status transition.
+- If the same transition happened more than once, the latest matching transition is used.
+- The duration column is named `Days for "FromStatusName -> ToStatusName"` or `Hours for ...` when `ShowTimeCalculationsInHoursOnly = true`.
+- Rows are ordered by that duration from highest to lowest, then by issue key.
+- The section includes a P75 table per issue type for the configured transition.
+- If `CodeOnly = true`, only issues with detected code activity (`HasPullRequest = true`) are shown.
 
 ### Bug Ratio
 
@@ -272,6 +290,14 @@ All options live under `Jira`.
   exclude weekend time from durations.
 - `TeamTasks.IssueTransitions.ExcludedDays` (`string[]`, optional):
   exact days excluded from durations.
+- `TeamTasks.IssueTransitions.CustomTransitionAnalysis` (`object`, optional):
+  PDF-only custom transition table rendered at the end of the report.
+- `TeamTasks.IssueTransitions.CustomTransitionAnalysis.FromStatusName` (`string`, required when `CustomTransitionAnalysis` used):
+  source status name for the configured transition.
+- `TeamTasks.IssueTransitions.CustomTransitionAnalysis.ToStatusName` (`string`, required when `CustomTransitionAnalysis` used):
+  destination status name for the configured transition.
+- `TeamTasks.IssueTransitions.CustomTransitionAnalysis.CodeOnly` (`bool`, optional, default `false`):
+  when `true`, shows only issues with detected code activity.
 - `TeamTasks.BugRatio` (`object`, optional):
   bug ratio settings.
 - `TeamTasks.BugRatio.BugIssueNames` (`string[]`, optional):
@@ -375,7 +401,12 @@ Notes:
         "ExcludedDays": [
           "01.01.2026",
           "02.01.2026"
-        ]
+        ],
+        "CustomTransitionAnalysis": {
+          "FromStatusName": "Release Candidate",
+          "ToStatusName": "Done",
+          "CodeOnly": true
+        }
       },
       "BugRatio": {
         "BugIssueNames": [ "Bug" ]
