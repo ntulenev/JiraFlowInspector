@@ -130,6 +130,60 @@ public sealed class QuestPdfReportRendererTests
         openCalls.Should().Be(1);
     }
 
+    [Fact(DisplayName = "RenderReport stores and opens custom transition PDF when enabled")]
+    [Trait("Category", "Unit")]
+    public void RenderReportWhenCustomTransitionSeparateReportEnabledStoresAndOpensAdditionalPdf()
+    {
+        // Arrange
+        var settings = CreateSettings(
+            pdfEnabled: true,
+            outputPath: Path.Combine("reports", "result.pdf"),
+            customTransitionAnalysis: new CustomTransitionAnalysisSettings(
+                new StatusName("Open"),
+                new StatusName("Done"),
+                generateSeparateReport: true));
+        var options = Options.Create(settings);
+        var reportData = CreateReportData(settings);
+        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var expectedMainPath = Path.GetFullPath(
+            Path.Combine("reports", $"result_{dateSuffix}.pdf"),
+            Directory.GetCurrentDirectory());
+        var expectedCustomTransitionPath = Path.GetFullPath(
+            Path.Combine("reports", $"CustomTransition_result_{dateSuffix}.pdf"),
+            Directory.GetCurrentDirectory());
+
+        var composer = new Mock<IPdfContentComposer>(MockBehavior.Strict);
+        composer
+            .Setup(x => x.ComposeContent(
+                It.IsAny<QuestPDF.Fluent.ColumnDescriptor>(),
+                It.Is<JiraPdfReportData>(data => ReferenceEquals(data, reportData))));
+
+        var savedPaths = new List<string>();
+        var fileStore = new Mock<IPdfReportFileStore>(MockBehavior.Strict);
+        fileStore
+            .Setup(x => x.Save(It.IsAny<string>(), It.Is<IDocument>(document => document != null)))
+            .Callback<string, IDocument>((path, document) =>
+            {
+                savedPaths.Add(path);
+                document.GeneratePdf().Should().NotBeEmpty();
+            });
+
+        var openedPaths = new List<string>();
+        var launcher = new Mock<IPdfReportLauncher>(MockBehavior.Strict);
+        launcher
+            .Setup(x => x.Open(It.IsAny<string>()))
+            .Callback<string>(openedPaths.Add);
+
+        var renderer = new QuestPdfReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
+
+        // Act
+        renderer.RenderReport(reportData);
+
+        // Assert
+        savedPaths.Should().Equal(expectedMainPath, expectedCustomTransitionPath);
+        openedPaths.Should().Equal(expectedMainPath, expectedCustomTransitionPath);
+    }
+
     [Fact(DisplayName = "RenderReport stores PDF but does not open it when auto-open is disabled")]
     [Trait("Category", "Unit")]
     public void RenderReportWhenAutoOpenDisabledStoresPdfWithoutOpeningIt()
@@ -164,7 +218,11 @@ public sealed class QuestPdfReportRendererTests
         launcher.Verify(x => x.Open(It.IsAny<string>()), Times.Never);
     }
 
-    private static AppSettings CreateSettings(bool pdfEnabled, string outputPath = "report.pdf", bool openAfterGeneration = true)
+    private static AppSettings CreateSettings(
+        bool pdfEnabled,
+        string outputPath = "report.pdf",
+        bool openAfterGeneration = true,
+        CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
     {
         return new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -181,7 +239,8 @@ public sealed class QuestPdfReportRendererTests
             customFieldValue: "Processing",
             excludeWeekend: false,
             bugIssueNames: [new IssueTypeName("Bug")],
-            pdfReport: new PdfReportSettings(pdfEnabled, outputPath, openAfterGeneration));
+            pdfReport: new PdfReportSettings(pdfEnabled, outputPath, openAfterGeneration),
+            customTransitionAnalysis: customTransitionAnalysis);
     }
 
     private static JiraPdfReportData CreateReportData(AppSettings settings)
@@ -217,6 +276,14 @@ public sealed class QuestPdfReportRendererTests
             Settings = settings,
             SearchIssueCount = new ItemCount(1),
             DoneIssues = [issue],
+            CustomTransitionIssues =
+            [
+                new CustomTransitionIssue(issue, transitions[0].At, transitions[0].SincePrevious)
+            ],
+            CustomTransitionDuration75PerType =
+            [
+                new IssueTypeDuration75Summary(issue.IssueType, new ItemCount(1), transitions[0].SincePrevious)
+            ],
             RejectedIssues = [],
             PathSummary = summary,
             PathGroups = [group]

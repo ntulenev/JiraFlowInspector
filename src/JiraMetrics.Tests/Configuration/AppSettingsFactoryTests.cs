@@ -38,7 +38,8 @@ public sealed class AppSettingsFactoryTests
                     {
                         FromStatusName = " Release Candidate ",
                         ToStatusName = " Done ",
-                        CodeOnly = true
+                        CodeOnly = true,
+                        GenerateSeparateReport = true
                     }
                 },
                 BugRatio = new BugRatioOptions
@@ -91,6 +92,7 @@ public sealed class AppSettingsFactoryTests
         settings.PdfReport.OpenAfterGeneration.Should().BeTrue();
         settings.CustomTransitionAnalysis!.Label.Should().Be("Release Candidate -> Done");
         settings.CustomTransitionAnalysis.CodeOnly.Should().BeTrue();
+        settings.CustomTransitionAnalysis.GenerateSeparateReport.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Create requires at least one required path stage")]

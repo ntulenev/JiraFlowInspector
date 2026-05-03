@@ -147,6 +147,8 @@ release table, bug detail tables, done/rejected tables, path-group issue list, a
 - Rows are ordered by that duration from highest to lowest, then by issue key.
 - The section includes a P75 table per issue type for the configured transition.
 - If `CodeOnly = true`, only issues with detected code activity (`HasPullRequest = true`) are shown.
+- If `GenerateSeparateReport = true`, a second PDF containing only the custom transition analysis is generated and opened automatically.
+  Its filename uses the configured `Pdf.OutputPath` filename with `CustomTransition_` prefix and the same date suffix.
 
 ### Bug Ratio
 
@@ -298,6 +300,9 @@ All options live under `Jira`.
   destination status name for the configured transition.
 - `TeamTasks.IssueTransitions.CustomTransitionAnalysis.CodeOnly` (`bool`, optional, default `false`):
   when `true`, shows only issues with detected code activity.
+- `TeamTasks.IssueTransitions.CustomTransitionAnalysis.GenerateSeparateReport` (`bool`, optional, default `false`):
+  when `true`, generates and opens a separate PDF containing only the custom transition analysis.
+  For `Pdf.OutputPath = reports/result.pdf`, the extra file is named like `reports/CustomTransition_result_<dd_MM_yyyy>.pdf`.
 - `TeamTasks.BugRatio` (`object`, optional):
   bug ratio settings.
 - `TeamTasks.BugRatio.BugIssueNames` (`string[]`, optional):
@@ -405,7 +410,8 @@ Notes:
         "CustomTransitionAnalysis": {
           "FromStatusName": "Release Candidate",
           "ToStatusName": "Done",
-          "CodeOnly": true
+          "CodeOnly": true,
+          "GenerateSeparateReport": true
         }
       },
       "BugRatio": {

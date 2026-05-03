@@ -83,4 +83,22 @@ public sealed class PdfReportSettingsTests
         // Assert
         result.Should().Be(expected);
     }
+
+    [Fact(DisplayName = "ResolveOutputPath prepends filename prefix")]
+    [Trait("Category", "Unit")]
+    public void ResolveOutputPathWhenPrefixIsProvidedPrependsPrefix()
+    {
+        // Arrange
+        var settings = new PdfReportSettings(enabled: true, outputPath: Path.Combine("reports", "result.pdf"));
+        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var expected = Path.GetFullPath(
+            Path.Combine("reports", $"CustomTransition_result_{dateSuffix}.pdf"),
+            Directory.GetCurrentDirectory());
+
+        // Act
+        var result = settings.ResolveOutputPath("CustomTransition");
+
+        // Assert
+        result.Should().Be(expected);
+    }
 }

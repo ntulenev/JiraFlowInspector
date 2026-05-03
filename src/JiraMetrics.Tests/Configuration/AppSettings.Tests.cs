@@ -36,7 +36,8 @@ public sealed class AppSettingsTests
         var customTransitionAnalysis = new CustomTransitionAnalysisSettings(
             new StatusName("Release Candidate"),
             new StatusName("Done"),
-            codeOnly: true);
+            codeOnly: true,
+            generateSeparateReport: true);
         const string customFieldName = "Team";
         const string customFieldValue = "Import";
         const string pullRequestFieldName = "customfield_22222";
@@ -93,6 +94,7 @@ public sealed class AppSettingsTests
         settings.PullRequestFieldName.Should().Be(pullRequestFieldName);
         settings.CustomTransitionAnalysis.Should().Be(customTransitionAnalysis);
         settings.CustomTransitionAnalysis!.CodeOnly.Should().BeTrue();
+        settings.CustomTransitionAnalysis.GenerateSeparateReport.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Constructor keeps pull request field name unset when value is not provided")]
