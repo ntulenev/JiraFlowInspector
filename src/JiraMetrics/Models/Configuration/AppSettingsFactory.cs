@@ -231,6 +231,7 @@ internal static class AppSettingsFactory
         return new CustomTransitionAnalysisSettings(
             new StatusName(source.FromStatusName),
             new StatusName(source.ToStatusName),
-            source.CodeOnly);
+            source.CodeOnly,
+            source.GenerateSeparateReport);
     }
 }

@@ -13,14 +13,17 @@ public sealed record CustomTransitionAnalysisSettings
     /// <param name="fromStatusName">Source status name.</param>
     /// <param name="toStatusName">Destination status name.</param>
     /// <param name="codeOnly">Whether only issues with code artifacts should be shown.</param>
+    /// <param name="generateSeparateReport">Whether a separate PDF report should be generated for this analysis.</param>
     public CustomTransitionAnalysisSettings(
         StatusName fromStatusName,
         StatusName toStatusName,
-        bool codeOnly = false)
+        bool codeOnly = false,
+        bool generateSeparateReport = false)
     {
         FromStatusName = fromStatusName;
         ToStatusName = toStatusName;
         CodeOnly = codeOnly;
+        GenerateSeparateReport = generateSeparateReport;
     }
 
     /// <summary>
@@ -37,6 +40,11 @@ public sealed record CustomTransitionAnalysisSettings
     /// Gets a value indicating whether only issues with code artifacts should be shown.
     /// </summary>
     public bool CodeOnly { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether a separate PDF report should be generated for this analysis.
+    /// </summary>
+    public bool GenerateSeparateReport { get; }
 
     /// <summary>
     /// Gets human-readable transition label.

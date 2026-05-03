@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 using QLicenseType = QuestPDF.Infrastructure.LicenseType;
 
@@ -56,6 +57,30 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
 
         QuestPDF.Settings.License = QLicenseType.Community;
 
+        var document = CreateReportDocument(
+            reportData,
+            "Jira Analytics",
+            column => _pdfContentComposer.ComposeContent(column, reportData));
+
+        SaveAndOpenReport(outputPath, document, shouldOpen: _settings.PdfReport.OpenAfterGeneration);
+
+        if (ShouldRenderCustomTransitionReport(reportData))
+        {
+            var customTransitionOutputPath = _settings.PdfReport.ResolveOutputPath(CUSTOM_TRANSITION_REPORT_PREFIX);
+            var customTransitionSection = new PdfCustomTransitionAnalysisSection();
+            var customTransitionDocument = CreateReportDocument(
+                reportData,
+                "Custom Transition Analysis",
+                column => customTransitionSection.Compose(column, reportData));
+            SaveAndOpenReport(customTransitionOutputPath, customTransitionDocument, shouldOpen: true);
+        }
+    }
+
+    private static Document CreateReportDocument(
+        JiraPdfReportData reportData,
+        string title,
+        Action<ColumnDescriptor> composeContent)
+    {
         var document = Document.Create(container =>
         {
             _ = container.Page(page =>
@@ -67,7 +92,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                 page.Header().Column(column =>
                 {
                     column.Spacing(2);
-                    _ = column.Item().Text("Jira Analytics").Bold().FontSize(16);
+                    _ = column.Item().Text(title).Bold().FontSize(16);
                     _ = column.Item().Text(
                         string.Format(
                             CultureInfo.InvariantCulture,
@@ -95,8 +120,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                     }
                 });
 
-                page.Content().PaddingTop(8).Column(column =>
-                    _pdfContentComposer.ComposeContent(column, reportData));
+                page.Content().PaddingTop(8).Column(composeContent);
 
                 page.Footer().AlignRight().Text(text =>
                 {
@@ -108,11 +132,16 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
             });
         });
 
+        return document;
+    }
+
+    private void SaveAndOpenReport(string outputPath, IDocument document, bool shouldOpen)
+    {
         _pdfReportFileStore.Save(outputPath, document);
 
         System.Console.WriteLine($"PDF report saved to: {outputPath}");
 
-        if (_settings.PdfReport.OpenAfterGeneration)
+        if (shouldOpen)
         {
             try
             {
@@ -125,6 +154,9 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
         }
     }
 
+    private static bool ShouldRenderCustomTransitionReport(JiraPdfReportData reportData) =>
+        reportData.Settings.CustomTransitionAnalysis is { GenerateSeparateReport: true };
+
     [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "CLI warning message for local desktop usage.")]
     private static void WritePdfOpenFailedMessage(string outputPath, string reason)
     {
@@ -135,5 +167,6 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
     private readonly IPdfReportFileStore _pdfReportFileStore;
     private readonly IPdfReportLauncher _pdfReportLauncher;
     private readonly IPdfContentComposer _pdfContentComposer;
+    private const string CUSTOM_TRANSITION_REPORT_PREFIX = "CustomTransition";
 }
 

@@ -25,4 +25,9 @@ public sealed class CustomTransitionAnalysisOptions
     /// Gets or sets whether only issues with code artifacts should be shown.
     /// </summary>
     public bool CodeOnly { get; init; }
+
+    /// <summary>
+    /// Gets or sets whether a separate PDF report should be generated for this analysis.
+    /// </summary>
+    public bool GenerateSeparateReport { get; init; }
 }

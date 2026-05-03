@@ -42,6 +42,16 @@ public sealed record PdfReportSettings
     /// <returns>Absolute dated output path.</returns>
     public string ResolveOutputPath()
     {
+        return ResolveOutputPath(fileNamePrefix: null);
+    }
+
+    /// <summary>
+    /// Resolves output path to absolute path, prepends an optional filename prefix, and appends date suffix.
+    /// </summary>
+    /// <param name="fileNamePrefix">Optional filename prefix.</param>
+    /// <returns>Absolute dated output path.</returns>
+    public string ResolveOutputPath(string? fileNamePrefix)
+    {
         var candidatePath = string.IsNullOrWhiteSpace(OutputPath)
             ? DEFAULT_OUTPUT_PATH
             : OutputPath.Trim();
@@ -50,16 +60,21 @@ public sealed record PdfReportSettings
             ? Path.GetFullPath(candidatePath)
             : Path.GetFullPath(candidatePath, Directory.GetCurrentDirectory());
 
-        return AppendDateSuffix(absolutePath, DateTime.Now);
+        return AppendDateSuffix(absolutePath, DateTime.Now, fileNamePrefix);
     }
 
-    private static string AppendDateSuffix(string absolutePath, DateTime currentDate)
+    private static string AppendDateSuffix(string absolutePath, DateTime currentDate, string? fileNamePrefix)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(absolutePath);
 
         var directoryPath = Path.GetDirectoryName(absolutePath);
         var extension = Path.GetExtension(absolutePath);
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(absolutePath);
+        if (!string.IsNullOrWhiteSpace(fileNamePrefix))
+        {
+            fileNameWithoutExtension = fileNamePrefix.Trim() + "_" + fileNameWithoutExtension;
+        }
+
         var dateSuffix = currentDate.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
         var datedFileName = fileNameWithoutExtension + "_" + dateSuffix + extension;
 
