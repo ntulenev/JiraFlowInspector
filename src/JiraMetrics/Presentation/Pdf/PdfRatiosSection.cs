@@ -182,6 +182,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
         if (issues.Count == 0)
         {
             _ = column.Item().Text("No issues.").FontColor(Colors.Grey.Darken1);
+            ComposeIssueListTotals(column, issues, includeReporducedOnProd);
             return;
         }
 
@@ -259,5 +260,24 @@ internal sealed class PdfRatiosSection : IPdfReportSection
                     });
             }
         });
+
+        ComposeIssueListTotals(column, orderedIssues, includeReporducedOnProd);
+    }
+
+    private static void ComposeIssueListTotals(
+        ColumnDescriptor column,
+        IReadOnlyList<IssueListItem> issues,
+        bool includeReporducedOnProd)
+    {
+        if (!includeReporducedOnProd)
+        {
+            return;
+        }
+
+        var prodCount = issues.Count(static issue => issue.ReporducedOnProd);
+        _ = column.Item()
+            .Text($"Total: {issues.Count.ToString(CultureInfo.InvariantCulture)}; Prod: {prodCount.ToString(CultureInfo.InvariantCulture)}")
+            .Bold()
+            .FontColor(Colors.Grey.Darken2);
     }
 }
