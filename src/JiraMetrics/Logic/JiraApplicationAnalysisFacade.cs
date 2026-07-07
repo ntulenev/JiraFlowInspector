@@ -107,16 +107,17 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
         var analyzedIssues = doneIssues
             .Concat(rejectedIssues)
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .Where(static issue => issue.HasPullRequest)
             .ToArray();
 
         var pickupIssues = _logicService.BuildTransitionMeasurementIssues(
             analyzedIssues,
             settings.PickupTransitions,
-            codeOnly: false);
+            codeOnly: true);
         var testingIssues = _logicService.BuildTransitionMeasurementIssues(
             analyzedIssues,
             settings.TestingTransitions,
-            codeOnly: false);
+            codeOnly: true);
 
         return new QaTransitionAnalysis(
             new ItemCount(analyzedIssues.Length),

@@ -29,6 +29,14 @@ public sealed class JiraApplicationAnalysisFacadeTests
                 new TransitionEvent(new StatusName("Manual QA"), new StatusName("Ready for release"), now.AddHours(-4), TimeSpan.FromHours(4)),
                 new TransitionEvent(new StatusName("Ready for release"), new StatusName("Done"), now, TimeSpan.FromHours(1))
             ]);
+        var noCodeQaIssue = CreateIssue(
+            "AAA-4",
+            [
+                new TransitionEvent(new StatusName("Ready for QA"), new StatusName("Testing"), now.AddHours(-20), TimeSpan.FromHours(20)),
+                new TransitionEvent(new StatusName("Testing"), new StatusName("Ready for release"), now.AddHours(-1), TimeSpan.FromHours(20)),
+                new TransitionEvent(new StatusName("Ready for release"), new StatusName("Done"), now, TimeSpan.FromHours(1))
+            ],
+            hasPullRequest: false);
         var rejectedWithPickup = CreateIssue(
             "AAA-3",
             [
@@ -40,7 +48,7 @@ public sealed class JiraApplicationAnalysisFacadeTests
 
         // Act
         var result = facade.Analyze(
-            [pickedUpAndTested, skippedQaInProgress],
+            [pickedUpAndTested, skippedQaInProgress, noCodeQaIssue],
             [rejectedWithPickup],
             [],
             settings);
@@ -86,7 +94,8 @@ public sealed class JiraApplicationAnalysisFacadeTests
 
     private static IssueTimeline CreateIssue(
         string key,
-        IReadOnlyList<TransitionEvent> transitions)
+        IReadOnlyList<TransitionEvent> transitions,
+        bool hasPullRequest = true)
     {
         return new IssueTimeline(
             new IssueKey(key),
@@ -97,6 +106,6 @@ public sealed class JiraApplicationAnalysisFacadeTests
             transitions,
             PathKey.FromTransitions(transitions),
             PathLabel.FromTransitions(transitions),
-            hasPullRequest: true);
+            hasPullRequest: hasPullRequest);
     }
 }
