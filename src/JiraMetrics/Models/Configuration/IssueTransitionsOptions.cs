@@ -30,6 +30,11 @@ public sealed class IssueTransitionsOptions
     public IReadOnlyList<string>? ExcludedDays { get; init; }
 
     /// <summary>
+    /// Gets or sets optional QA transition analysis settings.
+    /// </summary>
+    public QaTransitionAnalysisOptions? QaTransitionAnalysis { get; init; }
+
+    /// <summary>
     /// Gets or sets optional dedicated transition analysis settings.
     /// </summary>
     public CustomTransitionAnalysisOptions? CustomTransitionAnalysis { get; init; }

@@ -96,18 +96,68 @@ public sealed class JiraLogicService : IJiraLogicService
         ArgumentNullException.ThrowIfNull(doneIssues);
         ArgumentNullException.ThrowIfNull(rejectedIssues);
 
-        return [.. doneIssues
-            .Concat(rejectedIssues)
+        var rules = new[]
+        {
+            new TransitionMeasurementRule(fromStatusName, toStatusName)
+        };
+
+        return [.. BuildTransitionMeasurementIssues(
+                [.. doneIssues.Concat(rejectedIssues)],
+                rules,
+                codeOnly)
+            .Select(static item => new CustomTransitionIssue(
+                item.Issue,
+                item.TransitionAt,
+                item.Duration))];
+    }
+
+    /// <summary>
+    /// Builds issues that contain one of status transition measurement rules.
+    /// </summary>
+    /// <param name="issues">Issues.</param>
+    /// <param name="rules">Transition measurement rules in priority order.</param>
+    /// <param name="codeOnly">Whether only issues with code activity should be included.</param>
+    /// <returns>Matching issues ordered by transition duration descending.</returns>
+    public IReadOnlyList<TransitionMeasurementIssue> BuildTransitionMeasurementIssues(
+        IReadOnlyList<IssueTimeline> issues,
+        IReadOnlyList<TransitionMeasurementRule> rules,
+        bool codeOnly)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+        ArgumentNullException.ThrowIfNull(rules);
+
+        if (rules.Count == 0)
+        {
+            return [];
+        }
+
+        return [.. issues
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Where(issue => !codeOnly || issue.HasPullRequest)
-            .Select(issue => (issue, transition: issue.TryGetLastTransition(fromStatusName, toStatusName)))
-            .Where(static item => item.transition is not null)
-            .Select(static item => new CustomTransitionIssue(
-                item.issue,
-                item.transition!.At,
-                item.transition.SincePrevious))
+            .Select(issue => TryBuildTransitionMeasurementIssue(issue, rules))
+            .Where(static item => item is not null)
+            .Select(static item => item!)
             .OrderByDescending(static item => item.Duration)
             .ThenBy(static item => item.Issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    /// <summary>
+    /// Calculates P75 transition duration.
+    /// </summary>
+    /// <param name="issues">Transition measurement issues.</param>
+    /// <returns>P75 duration or <c>null</c> when there are no measurements.</returns>
+    public TimeSpan? BuildDuration75(IReadOnlyList<TransitionMeasurementIssue> issues)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+
+        if (issues.Count == 0)
+        {
+            return null;
+        }
+
+        return _analytics.CalculatePercentile(
+            [.. issues.Select(static issue => issue.Duration)],
+            new PercentileValue(0.75));
     }
 
     /// <summary>
@@ -117,6 +167,24 @@ public sealed class JiraLogicService : IJiraLogicService
     /// <returns>P75 summaries per issue type.</returns>
     public IReadOnlyList<IssueTypeDuration75Summary> BuildDuration75PerType(
         IReadOnlyList<CustomTransitionIssue> issues)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+
+        return BuildDuration75PerType(
+            [.. issues.Select(static issue => new TransitionMeasurementIssue(
+                issue.Issue,
+                new TransitionMeasurementRule(StatusName.Unknown, StatusName.Unknown),
+                issue.TransitionAt,
+                issue.Duration))]);
+    }
+
+    /// <summary>
+    /// Calculates P75 transition duration grouped by issue type.
+    /// </summary>
+    /// <param name="issues">Transition measurement issues.</param>
+    /// <returns>P75 summaries per issue type.</returns>
+    public IReadOnlyList<IssueTypeDuration75Summary> BuildDuration75PerType(
+        IReadOnlyList<TransitionMeasurementIssue> issues)
     {
         ArgumentNullException.ThrowIfNull(issues);
 
@@ -151,6 +219,27 @@ public sealed class JiraLogicService : IJiraLogicService
 
         return new IssueTimelineSet(issues).BuildPathGroups(_analytics.CalculatePercentile);
     }
+
+    private static TransitionMeasurementIssue? TryBuildTransitionMeasurementIssue(
+        IssueTimeline issue,
+        IReadOnlyList<TransitionMeasurementRule> rules)
+    {
+        foreach (var rule in rules)
+        {
+            var transition = issue.TryGetLastTransition(rule.FromStatusName, rule.ToStatusName);
+            if (transition is not null)
+            {
+                return new TransitionMeasurementIssue(
+                    issue,
+                    rule,
+                    transition.At,
+                    transition.SincePrevious);
+            }
+        }
+
+        return null;
+    }
+
     private readonly IJiraAnalyticsService _analytics;
 
 }

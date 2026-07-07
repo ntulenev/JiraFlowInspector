@@ -280,6 +280,63 @@ public sealed class JiraLogicServiceTests
         result.Select(static item => item.Duration).Should().Equal(TimeSpan.FromHours(5), TimeSpan.FromHours(2));
     }
 
+    [Fact(DisplayName = "BuildTransitionMeasurementIssues uses rule priority and orders by duration")]
+    [Trait("Category", "Unit")]
+    public void BuildTransitionMeasurementIssuesWhenMultipleRulesMatchUsesFirstRule()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issueWithPrimaryRule = CreateIssue(
+            new IssueKey("AAA-1"),
+            [
+                new TransitionEvent(new StatusName("QA"), new StatusName("Release Candidate"), now.AddHours(-2), TimeSpan.FromHours(10)),
+                new TransitionEvent(new StatusName("QA in progress"), new StatusName("Release Candidate"), now, TimeSpan.FromHours(4))
+            ]);
+        var issueWithFallbackRule = CreateIssue(
+            new IssueKey("AAA-2"),
+            [
+                new TransitionEvent(new StatusName("QA"), new StatusName("Release Candidate"), now, TimeSpan.FromHours(8))
+            ]);
+
+        // Act
+        var result = service.BuildTransitionMeasurementIssues(
+            [issueWithPrimaryRule, issueWithFallbackRule],
+            [
+                new TransitionMeasurementRule(new StatusName("QA in progress"), new StatusName("Release Candidate")),
+                new TransitionMeasurementRule(new StatusName("QA"), new StatusName("Release Candidate"))
+            ],
+            codeOnly: false);
+
+        // Assert
+        result.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-2", "AAA-1");
+        result[0].Rule.Label.Should().Be("QA -> Release Candidate");
+        result[0].Duration.Should().Be(TimeSpan.FromHours(8));
+        result[1].Rule.Label.Should().Be("QA in progress -> Release Candidate");
+        result[1].Duration.Should().Be(TimeSpan.FromHours(4));
+    }
+
+    [Fact(DisplayName = "BuildDuration75 calculates overall transition measurement P75")]
+    [Trait("Category", "Unit")]
+    public void BuildDuration75WhenMeasurementsExistCalculatesP75()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var now = DateTimeOffset.UtcNow;
+        var issue = CreateIssue(new IssueKey("AAA-1"), []);
+        var rule = new TransitionMeasurementRule(new StatusName("QA"), new StatusName("Release Candidate"));
+
+        // Act
+        var result = service.BuildDuration75(
+            [
+                new TransitionMeasurementIssue(issue, rule, now, TimeSpan.FromHours(2)),
+                new TransitionMeasurementIssue(issue, rule, now, TimeSpan.FromHours(10))
+            ]);
+
+        // Assert
+        result.Should().Be(TimeSpan.FromHours(8));
+    }
+
     [Fact(DisplayName = "BuildDuration75PerType calculates P75 grouped by issue type")]
     [Trait("Category", "Unit")]
     public void BuildDuration75PerTypeWhenMultipleSamplesExistCalculatesP75()

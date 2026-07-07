@@ -46,6 +46,7 @@ public sealed class JiraPdfReportData
             doneDaysAtWork75PerType: [],
             customTransitionIssues: [],
             customTransitionDuration75PerType: [],
+            qaTransitionAnalysis: QaTransitionAnalysis.Empty,
             rejectedIssues: [],
             pathSummary: new PathGroupsSummary(
                 successfulCount,
@@ -104,6 +105,7 @@ public sealed class JiraPdfReportData
             analysis.DoneDaysAtWork75PerType,
             analysis.CustomTransitionIssues,
             analysis.CustomTransitionDuration75PerType,
+            analysis.QaTransitionAnalysis,
             analysis.RejectedIssues,
             analysis.PathSummary,
             analysis.PathGroups,
@@ -120,6 +122,7 @@ public sealed class JiraPdfReportData
         IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
         IReadOnlyList<CustomTransitionIssue> customTransitionIssues,
         IReadOnlyList<IssueTypeDuration75Summary> customTransitionDuration75PerType,
+        QaTransitionAnalysis qaTransitionAnalysis,
         IReadOnlyList<IssueTimeline> rejectedIssues,
         PathGroupsSummary pathSummary,
         IReadOnlyList<PathGroup> pathGroups,
@@ -154,6 +157,7 @@ public sealed class JiraPdfReportData
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
             CustomTransitionIssues = customTransitionIssues,
             CustomTransitionDuration75PerType = customTransitionDuration75PerType,
+            QaTransitionAnalysis = qaTransitionAnalysis,
             RejectedIssues = rejectedIssues,
             PathSummary = pathSummary,
             PathGroups = pathGroups,
@@ -289,6 +293,11 @@ public sealed class JiraPdfReportData
     /// Gets or sets custom transition P75 duration summaries per issue type.
     /// </summary>
     public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets QA-specific transition measurements.
+    /// </summary>
+    public QaTransitionAnalysis QaTransitionAnalysis { get; init; } = QaTransitionAnalysis.Empty;
 
     /// <summary>
     /// Gets or sets issues moved to rejected in the selected period.

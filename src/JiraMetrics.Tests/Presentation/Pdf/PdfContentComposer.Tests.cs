@@ -180,6 +180,30 @@ public sealed class PdfContentComposerTests
                     ])
             ],
             DoneIssues = [issue],
+            QaTransitionAnalysis = new QaTransitionAnalysis(
+                new ItemCount(1),
+                [
+                    new TransitionMeasurementIssue(
+                        issue,
+                        new TransitionMeasurementRule(
+                            new StatusName("Quality Assurance"),
+                            new StatusName("QA IN PROGRESS")),
+                        DateTimeOffset.UtcNow.AddHours(-1),
+                        TimeSpan.FromHours(2))
+                ],
+                TimeSpan.FromHours(2),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(2))],
+                [
+                    new TransitionMeasurementIssue(
+                        issue,
+                        new TransitionMeasurementRule(
+                            new StatusName("QA in progress"),
+                            new StatusName("Release Candidate")),
+                        DateTimeOffset.UtcNow,
+                        TimeSpan.FromHours(4))
+                ],
+                TimeSpan.FromHours(4),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(4))]),
             RejectedIssues = [],
             PathSummary = summary,
             PathGroups = [group],

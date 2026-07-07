@@ -34,6 +34,7 @@ public sealed record AppSettings
     /// <param name="globalIncidentsReport">Optional global incidents report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
+    /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
@@ -60,6 +61,7 @@ public sealed record AppSettings
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         PdfReportSettings? pdfReport = null,
         string? pullRequestFieldName = null,
+        QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
         CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
         : this(
             baseUrl,
@@ -86,6 +88,7 @@ public sealed record AppSettings
             globalIncidentsReport,
             pdfReport,
             pullRequestFieldName,
+            qaTransitionAnalysis,
             customTransitionAnalysis)
     {
     }
@@ -117,6 +120,7 @@ public sealed record AppSettings
     /// <param name="globalIncidentsReport">Optional global incidents report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
+    /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
@@ -143,6 +147,7 @@ public sealed record AppSettings
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         PdfReportSettings? pdfReport = null,
         string? pullRequestFieldName = null,
+        QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
         CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
     {
         BaseUrl = baseUrl;
@@ -174,6 +179,7 @@ public sealed record AppSettings
         PullRequestFieldName = string.IsNullOrWhiteSpace(pullRequestFieldName)
             ? null
             : pullRequestFieldName.Trim();
+        QaTransitionAnalysis = qaTransitionAnalysis ?? QaTransitionAnalysisSettings.Default;
         CustomTransitionAnalysis = customTransitionAnalysis;
     }
 
@@ -301,6 +307,11 @@ public sealed record AppSettings
     /// Gets pull request field name or id used for code-activity detection.
     /// </summary>
     public string? PullRequestFieldName { get; }
+
+    /// <summary>
+    /// Gets QA transition analysis settings.
+    /// </summary>
+    public QaTransitionAnalysisSettings QaTransitionAnalysis { get; }
 
     /// <summary>
     /// Gets optional dedicated transition analysis settings.

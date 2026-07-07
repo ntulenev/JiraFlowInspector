@@ -36,6 +36,11 @@ public sealed record JiraIssueAnalysisResult
     public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; init; } = [];
 
     /// <summary>
+    /// Gets QA-specific transition measurements.
+    /// </summary>
+    public QaTransitionAnalysis QaTransitionAnalysis { get; init; } = QaTransitionAnalysis.Empty;
+
+    /// <summary>
     /// Gets grouped issue paths.
     /// </summary>
     public IReadOnlyList<PathGroup> PathGroups { get; init; } = [];
@@ -55,7 +60,8 @@ public sealed record JiraIssueAnalysisResult
         IReadOnlyList<CustomTransitionIssue> customTransitionIssues,
         IReadOnlyList<IssueTypeDuration75Summary> customTransitionDuration75PerType,
         IReadOnlyList<PathGroup> pathGroups,
-        PathGroupsSummary pathSummary)
+        PathGroupsSummary pathSummary,
+        QaTransitionAnalysis? qaTransitionAnalysis = null)
     {
         ArgumentNullException.ThrowIfNull(doneIssues);
         ArgumentNullException.ThrowIfNull(rejectedIssues);
@@ -73,6 +79,7 @@ public sealed record JiraIssueAnalysisResult
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
             CustomTransitionIssues = customTransitionIssues,
             CustomTransitionDuration75PerType = customTransitionDuration75PerType,
+            QaTransitionAnalysis = qaTransitionAnalysis ?? QaTransitionAnalysis.Empty,
             PathGroups = pathGroups,
             PathSummary = pathSummary
         };

@@ -34,6 +34,25 @@ public sealed class AppSettingsFactoryTests
                     IssueTypes = [" Story ", "Bug", "story"],
                     ExcludeWeekend = true,
                     ExcludedDays = ["01.03.2026", "2026-03-02", "01.03.2026"],
+                    QaTransitionAnalysis = new QaTransitionAnalysisOptions
+                    {
+                        PickupTransitions =
+                        [
+                            new TransitionMeasurementRuleOptions
+                            {
+                                FromStatusName = " Ready for QA ",
+                                ToStatusName = " Testing "
+                            }
+                        ],
+                        TestingTransitions =
+                        [
+                            new TransitionMeasurementRuleOptions
+                            {
+                                FromStatusName = " Testing ",
+                                ToStatusName = " Ready for release "
+                            }
+                        ]
+                    },
                     CustomTransitionAnalysis = new CustomTransitionAnalysisOptions
                     {
                         FromStatusName = " Release Candidate ",
@@ -98,6 +117,11 @@ public sealed class AppSettingsFactoryTests
         settings.CustomTransitionAnalysis!.Label.Should().Be("Release Candidate -> Done");
         settings.CustomTransitionAnalysis.CodeOnly.Should().BeTrue();
         settings.CustomTransitionAnalysis.GenerateSeparateReport.Should().BeTrue();
+        settings.QaTransitionAnalysis.Enabled.Should().BeTrue();
+        settings.QaTransitionAnalysis.PickupTransitions.Select(static rule => rule.Label)
+            .Should().ContainSingle("Ready for QA -> Testing");
+        settings.QaTransitionAnalysis.TestingTransitions.Select(static rule => rule.Label)
+            .Should().ContainSingle("Testing -> Ready for release");
     }
 
     [Fact(DisplayName = "Create requires at least one required path stage")]
@@ -194,5 +218,45 @@ public sealed class AppSettingsFactoryTests
         // Assert
         action.Should().Throw<InvalidOperationException>()
             .WithMessage("CustomTransitionAnalysis requires both FromStatusName and ToStatusName when configured.");
+    }
+
+    [Fact(DisplayName = "Create requires complete QA transition rules when configured")]
+    [Trait("Category", "Unit")]
+    public void CreateWhenQaTransitionRuleIsIncompleteThrows()
+    {
+        // Arrange
+        var options = new JiraOptions
+        {
+            BaseUrl = new Uri("https://example.atlassian.net"),
+            Email = "user@example.com",
+            ApiToken = "token",
+            TeamTasks = new TeamTasksOptions
+            {
+                ProjectKey = "AAA",
+                DoneStatusName = "Done",
+                IssueTransitions = new IssueTransitionsOptions
+                {
+                    RequiredPathStages = ["Code Review"],
+                    QaTransitionAnalysis = new QaTransitionAnalysisOptions
+                    {
+                        PickupTransitions =
+                        [
+                            new TransitionMeasurementRuleOptions
+                            {
+                                FromStatusName = "Ready for QA",
+                                ToStatusName = " "
+                            }
+                        ]
+                    }
+                }
+            }
+        };
+
+        // Act
+        var action = () => AppSettingsFactory.Create(options);
+
+        // Assert
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("QaTransitionAnalysis:PickupTransitions[0] requires both FromStatusName and ToStatusName when configured.");
     }
 }

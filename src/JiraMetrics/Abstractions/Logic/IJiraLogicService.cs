@@ -55,12 +55,39 @@ public interface IJiraLogicService
         bool codeOnly);
 
     /// <summary>
+    /// Builds issues that contain one of status transition measurement rules.
+    /// </summary>
+    /// <param name="issues">Issues.</param>
+    /// <param name="rules">Transition measurement rules in priority order.</param>
+    /// <param name="codeOnly">Whether only issues with code activity should be included.</param>
+    /// <returns>Matching issues ordered by transition duration descending.</returns>
+    IReadOnlyList<TransitionMeasurementIssue> BuildTransitionMeasurementIssues(
+        IReadOnlyList<IssueTimeline> issues,
+        IReadOnlyList<TransitionMeasurementRule> rules,
+        bool codeOnly);
+
+    /// <summary>
+    /// Calculates P75 transition duration.
+    /// </summary>
+    /// <param name="issues">Transition measurement issues.</param>
+    /// <returns>P75 duration or <c>null</c> when there are no measurements.</returns>
+    TimeSpan? BuildDuration75(IReadOnlyList<TransitionMeasurementIssue> issues);
+
+    /// <summary>
     /// Calculates P75 transition duration grouped by issue type.
     /// </summary>
     /// <param name="issues">Custom transition issues.</param>
     /// <returns>P75 summaries per issue type.</returns>
     IReadOnlyList<IssueTypeDuration75Summary> BuildDuration75PerType(
         IReadOnlyList<CustomTransitionIssue> issues);
+
+    /// <summary>
+    /// Calculates P75 transition duration grouped by issue type.
+    /// </summary>
+    /// <param name="issues">Transition measurement issues.</param>
+    /// <returns>P75 summaries per issue type.</returns>
+    IReadOnlyList<IssueTypeDuration75Summary> BuildDuration75PerType(
+        IReadOnlyList<TransitionMeasurementIssue> issues);
 
     /// <summary>
     /// Groups issues by transition path and calculates per-transition P75 durations.

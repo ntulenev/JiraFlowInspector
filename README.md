@@ -292,6 +292,18 @@ All options live under `Jira`.
   exclude weekend time from durations.
 - `TeamTasks.IssueTransitions.ExcludedDays` (`string[]`, optional):
   exact days excluded from durations.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis` (`object`, optional):
+  QA-specific PDF section shown after the main transition report.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis.Enabled` (`bool`, optional, default `true`):
+  enables or disables the QA-specific section.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis.PickupTransitions` (`object[]`, optional):
+  transition rules used to measure how quickly QA takes issues in work.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis.TestingTransitions` (`object[]`, optional):
+  transition rules used to measure time spent in QA before release candidate.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis.*Transitions[].FromStatusName` (`string`, required per configured rule):
+  source status name for a QA measurement rule.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis.*Transitions[].ToStatusName` (`string`, required per configured rule):
+  destination status name for a QA measurement rule.
 - `TeamTasks.IssueTransitions.CustomTransitionAnalysis` (`object`, optional):
   PDF-only custom transition table rendered at the end of the report.
 - `TeamTasks.IssueTransitions.CustomTransitionAnalysis.FromStatusName` (`string`, required when `CustomTransitionAnalysis` used):
@@ -407,6 +419,25 @@ Notes:
           "01.01.2026",
           "02.01.2026"
         ],
+        "QaTransitionAnalysis": {
+          "Enabled": true,
+          "PickupTransitions": [
+            {
+              "FromStatusName": "Quality Assurance",
+              "ToStatusName": "QA IN PROGRESS"
+            }
+          ],
+          "TestingTransitions": [
+            {
+              "FromStatusName": "QA in progress",
+              "ToStatusName": "Release Candidate"
+            },
+            {
+              "FromStatusName": "QA",
+              "ToStatusName": "Release Candidate"
+            }
+          ]
+        },
         "CustomTransitionAnalysis": {
           "FromStatusName": "Release Candidate",
           "ToStatusName": "Done",

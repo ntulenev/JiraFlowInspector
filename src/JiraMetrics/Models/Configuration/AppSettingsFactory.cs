@@ -43,6 +43,7 @@ internal static class AppSettingsFactory
             ResolveGlobalIncidentsReport(source.GlobalIncidents),
             ResolvePdfReport(source.Pdf),
             source.PullRequestFieldName,
+            ResolveQaTransitionAnalysis(teamTasks.IssueTransitions?.QaTransitionAnalysis),
             ResolveCustomTransitionAnalysis(teamTasks.IssueTransitions?.CustomTransitionAnalysis));
     }
 
@@ -235,5 +236,65 @@ internal static class AppSettingsFactory
             new StatusName(source.ToStatusName),
             source.CodeOnly,
             source.GenerateSeparateReport);
+    }
+
+    private static QaTransitionAnalysisSettings ResolveQaTransitionAnalysis(QaTransitionAnalysisOptions? source)
+    {
+        if (source is null)
+        {
+            return QaTransitionAnalysisSettings.Default;
+        }
+
+        return new QaTransitionAnalysisSettings(
+            source.Enabled,
+            ResolveTransitionMeasurementRules(
+                source.PickupTransitions,
+                QaTransitionAnalysisSettings.Default.PickupTransitions,
+                "QaTransitionAnalysis:PickupTransitions"),
+            ResolveTransitionMeasurementRules(
+                source.TestingTransitions,
+                QaTransitionAnalysisSettings.Default.TestingTransitions,
+                "QaTransitionAnalysis:TestingTransitions"));
+    }
+
+    private static IReadOnlyList<TransitionMeasurementRule> ResolveTransitionMeasurementRules(
+        IReadOnlyList<TransitionMeasurementRuleOptions>? source,
+        IReadOnlyList<TransitionMeasurementRule> defaults,
+        string sectionName)
+    {
+        if (source is null)
+        {
+            return defaults;
+        }
+
+        var rules = new List<TransitionMeasurementRule>();
+        for (var i = 0; i < source.Count; i++)
+        {
+            var rule = source[i];
+            var hasFrom = !string.IsNullOrWhiteSpace(rule.FromStatusName);
+            var hasTo = !string.IsNullOrWhiteSpace(rule.ToStatusName);
+
+            if (!hasFrom && !hasTo)
+            {
+                continue;
+            }
+
+            if (!hasFrom || !hasTo)
+            {
+                throw new InvalidOperationException(
+                    $"{sectionName}[{i}] requires both FromStatusName and ToStatusName when configured.");
+            }
+
+            rules.Add(new TransitionMeasurementRule(
+                new StatusName(rule.FromStatusName!),
+                new StatusName(rule.ToStatusName!)));
+        }
+
+        if (rules.Count == 0)
+        {
+            throw new InvalidOperationException($"{sectionName} must contain at least one complete transition rule.");
+        }
+
+        return [.. rules];
     }
 }

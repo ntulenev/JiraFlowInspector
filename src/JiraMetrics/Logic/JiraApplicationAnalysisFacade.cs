@@ -68,6 +68,11 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             customTransitionDuration75PerType = _logicService.BuildDuration75PerType(customTransitionIssues);
         }
 
+        var qaTransitionAnalysis = BuildQaTransitionAnalysis(
+            filteredIssues,
+            filteredRejectedIssues,
+            settings.QaTransitionAnalysis);
+
         var groupedIssues = filteredIssues
             .Where(static issue => issue.HasPullRequest)
             .ToList();
@@ -85,8 +90,44 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             customTransitionIssues,
             customTransitionDuration75PerType,
             groups,
-            pathSummary);
+            pathSummary,
+            qaTransitionAnalysis);
     }
+
+    private QaTransitionAnalysis BuildQaTransitionAnalysis(
+        IReadOnlyList<IssueTimeline> doneIssues,
+        IReadOnlyList<IssueTimeline> rejectedIssues,
+        QaTransitionAnalysisSettings settings)
+    {
+        if (!settings.Enabled)
+        {
+            return QaTransitionAnalysis.Empty;
+        }
+
+        var analyzedIssues = doneIssues
+            .Concat(rejectedIssues)
+            .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var pickupIssues = _logicService.BuildTransitionMeasurementIssues(
+            analyzedIssues,
+            settings.PickupTransitions,
+            codeOnly: false);
+        var testingIssues = _logicService.BuildTransitionMeasurementIssues(
+            analyzedIssues,
+            settings.TestingTransitions,
+            codeOnly: false);
+
+        return new QaTransitionAnalysis(
+            new ItemCount(analyzedIssues.Length),
+            pickupIssues,
+            _logicService.BuildDuration75(pickupIssues),
+            _logicService.BuildDuration75PerType(pickupIssues),
+            testingIssues,
+            _logicService.BuildDuration75(testingIssues),
+            _logicService.BuildDuration75PerType(testingIssues));
+    }
+
     private readonly IJiraLogicService _logicService;
 }
 
