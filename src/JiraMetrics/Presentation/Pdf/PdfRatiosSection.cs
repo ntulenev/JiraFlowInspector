@@ -42,7 +42,8 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             reportData.BugCreatedThisMonth.Value,
             reportData.BugMovedToDoneThisMonth.Value,
             reportData.BugRejectedThisMonth.Value,
-            reportData.BugFinishedThisMonth.Value);
+            reportData.BugFinishedThisMonth.Value,
+            reportData.BugReporducedOnProd);
 
         ComposeIssueListItemsSection(
             column,
@@ -50,21 +51,24 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             reportData.BugOpenIssues,
             PdfPresentationFormatting.OPEN_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
-            includeCreationDate: true);
+            includeCreationDate: true,
+            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
         ComposeIssueListItemsSection(
             column,
             "Done issues",
             reportData.BugDoneIssues,
             PdfPresentationFormatting.DONE_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
-            includeCreationDate: true);
+            includeCreationDate: true,
+            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
         ComposeIssueListItemsSection(
             column,
             "Rejected issues",
             reportData.BugRejectedIssues,
             PdfPresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
-            includeCreationDate: false);
+            includeCreationDate: false,
+            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
     }
 
     private static void ComposeAllTasksRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
@@ -99,7 +103,8 @@ internal sealed class PdfRatiosSection : IPdfReportSection
         ItemCount createdThisMonth,
         ItemCount movedToDoneThisMonth,
         ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+        ItemCount finishedThisMonth,
+        ItemCount? reporducedOnProd = null)
     {
         _ = column.Item().Text(title).Bold().FontSize(12);
 
@@ -127,6 +132,12 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished in selected period");
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
+            if (reporducedOnProd.HasValue)
+            {
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Reproduced on prod");
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(reporducedOnProd.Value.Value.ToString(CultureInfo.InvariantCulture));
+            }
+
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished / Created");
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(
                 PdfPresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
@@ -139,7 +150,8 @@ internal sealed class PdfRatiosSection : IPdfReportSection
         IReadOnlyList<IssueListItem> issues,
         string titleColorHex,
         JiraBaseUrl baseUrl,
-        bool includeCreationDate)
+        bool includeCreationDate,
+        bool includeReporducedOnProd = false)
     {
         _ = column.Item().Text(title).Bold().FontColor(titleColorHex);
 
@@ -164,6 +176,11 @@ internal sealed class PdfRatiosSection : IPdfReportSection
                     columns.ConstantColumn(82);
                 }
 
+                if (includeReporducedOnProd)
+                {
+                    columns.ConstantColumn(42);
+                }
+
                 columns.RelativeColumn(5);
             });
 
@@ -174,6 +191,11 @@ internal sealed class PdfRatiosSection : IPdfReportSection
                 if (includeCreationDate)
                 {
                     _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Creation Date");
+                }
+
+                if (includeReporducedOnProd)
+                {
+                    _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Prod");
                 }
 
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Title");
@@ -196,6 +218,13 @@ internal sealed class PdfRatiosSection : IPdfReportSection
                         .Text(issue.CreatedAt.HasValue
                             ? issue.CreatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
                             : "-");
+                }
+
+                if (includeReporducedOnProd)
+                {
+                    _ = table.Cell()
+                        .Element(PdfPresentationHelpers.StyleBodyCell)
+                        .Text(issue.ReporducedOnProd ? "Yes" : "No");
                 }
 
                 table.Cell()

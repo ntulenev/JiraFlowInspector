@@ -26,6 +26,7 @@ public sealed record AppSettings
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="bugReporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
     /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
     /// <param name="archTasksReport">Optional architecture tasks report settings.</param>
@@ -50,6 +51,7 @@ public sealed record AppSettings
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        string? bugReporducedOnProdFieldName = null,
         bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
         ArchTasksReportSettings? archTasksReport = null,
@@ -74,6 +76,7 @@ public sealed record AppSettings
             excludeWeekend,
             excludedDays,
             bugIssueNames,
+            bugReporducedOnProdFieldName,
             showGeneralStatistics,
             releaseReport,
             archTasksReport,
@@ -103,6 +106,7 @@ public sealed record AppSettings
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="bugReporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
     /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
     /// <param name="archTasksReport">Optional architecture tasks report settings.</param>
@@ -127,6 +131,7 @@ public sealed record AppSettings
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        string? bugReporducedOnProdFieldName = null,
         bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
         ArchTasksReportSettings? archTasksReport = null,
@@ -152,6 +157,9 @@ public sealed record AppSettings
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
+        BugReporducedOnProdFieldName = string.IsNullOrWhiteSpace(bugReporducedOnProdFieldName)
+            ? null
+            : bugReporducedOnProdFieldName.Trim();
         ShowGeneralStatistics = showGeneralStatistics;
         ReleaseReport = releaseReport;
         ArchTasksReport = archTasksReport;
@@ -222,6 +230,11 @@ public sealed record AppSettings
     /// Gets optional issue types that should be treated as bug-like issues.
     /// </summary>
     public IReadOnlyList<IssueTypeName> BugIssueNames { get; }
+
+    /// <summary>
+    /// Gets optional field name or id that marks bugs reproduced on production.
+    /// </summary>
+    public string? BugReporducedOnProdFieldName { get; }
 
     /// <summary>
     /// Gets whether to show general statistics section.

@@ -13,22 +13,27 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     public JiraMapperFacade(
         IIssueTimelineMapper issueTimelineMapper,
         IReleaseIssueMapper releaseIssueMapper,
-        IGlobalIncidentMapper globalIncidentMapper)
+        IGlobalIncidentMapper globalIncidentMapper,
+        JiraSearchIssueMapper searchIssueMapper)
     {
         ArgumentNullException.ThrowIfNull(issueTimelineMapper);
         ArgumentNullException.ThrowIfNull(releaseIssueMapper);
         ArgumentNullException.ThrowIfNull(globalIncidentMapper);
+        ArgumentNullException.ThrowIfNull(searchIssueMapper);
 
         _issueTimelineMapper = issueTimelineMapper;
         _releaseIssueMapper = releaseIssueMapper;
         _globalIncidentMapper = globalIncidentMapper;
+        _searchIssueMapper = searchIssueMapper;
     }
 
     public IReadOnlyList<IssueKey> MapIssueKeys(IReadOnlyList<JiraIssueKeyResponse> issues) =>
         JiraSearchIssueMapper.ToIssueKeys(issues ?? throw new ArgumentNullException(nameof(issues)));
 
-    public IReadOnlyList<IssueListItem> MapIssueListItems(IReadOnlyList<JiraIssueKeyResponse> issues) =>
-        JiraSearchIssueMapper.ToIssueListItems(issues ?? throw new ArgumentNullException(nameof(issues)));
+    public IReadOnlyList<IssueListItem> MapIssueListItems(
+        IReadOnlyList<JiraIssueKeyResponse> issues,
+        IssueListMappingContext? context = null) =>
+        _searchIssueMapper.ToIssueListItems(issues ?? throw new ArgumentNullException(nameof(issues)), context);
 
     public IReadOnlyList<StatusIssueTypeSummary> MapStatusIssueTypeSummaries(
         IReadOnlyList<JiraIssueKeyResponse> issues) =>
@@ -60,6 +65,7 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     private readonly IIssueTimelineMapper _issueTimelineMapper;
     private readonly IReleaseIssueMapper _releaseIssueMapper;
     private readonly IGlobalIncidentMapper _globalIncidentMapper;
+    private readonly JiraSearchIssueMapper _searchIssueMapper;
 }
 #pragma warning restore CS1591
 

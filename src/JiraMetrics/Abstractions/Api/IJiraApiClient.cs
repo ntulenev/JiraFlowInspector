@@ -36,11 +36,13 @@ public interface IJiraApiClient
     /// <param name="projectKey">Project key.</param>
     /// <param name="issueTypes">Issue types to include.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="reporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
     /// <returns>Matching issues with key and title.</returns>
     Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
         ProjectKey projectKey,
         IReadOnlyList<IssueTypeName> issueTypes,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        JiraFieldName? reporducedOnProdFieldName = null);
 
     /// <summary>
     /// Loads issues moved to done during configured month and matching issue types.
@@ -50,12 +52,14 @@ public interface IJiraApiClient
     /// <param name="doneStatusName">Done status.</param>
     /// <param name="issueTypes">Issue types to include.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="reporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
     /// <returns>Matching issues with key and title.</returns>
     Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        JiraFieldName? reporducedOnProdFieldName = null);
 
     /// <summary>
     /// Loads issue counts grouped by status and issue type, excluding done/rejected statuses.

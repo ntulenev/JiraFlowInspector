@@ -18,7 +18,9 @@ public interface IJiraMapperFacade
     /// <summary>
     /// Maps search issues into lightweight issue list rows.
     /// </summary>
-    IReadOnlyList<IssueListItem> MapIssueListItems(IReadOnlyList<JiraIssueKeyResponse> issues);
+    IReadOnlyList<IssueListItem> MapIssueListItems(
+        IReadOnlyList<JiraIssueKeyResponse> issues,
+        IssueListMappingContext? context = null);
 
     /// <summary>
     /// Maps search issues into grouped status and issue-type summaries.

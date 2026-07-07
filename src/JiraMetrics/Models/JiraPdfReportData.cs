@@ -133,6 +133,9 @@ public sealed class JiraPdfReportData
             BugMovedToDoneThisMonth = bugRatio?.MovedToDoneThisMonth,
             BugRejectedThisMonth = bugRatio?.RejectedThisMonth,
             BugFinishedThisMonth = bugRatio?.FinishedThisMonth,
+            BugReporducedOnProd = bugRatio is null
+                ? null
+                : new ItemCount(bugRatio.ReporducedOnProdIssues.Count),
             BugOpenIssues = bugRatio?.OpenIssues ?? [],
             BugDoneIssues = bugRatio?.DoneIssues ?? [],
             BugRejectedIssues = bugRatio?.RejectedIssues ?? [],
@@ -216,6 +219,11 @@ public sealed class JiraPdfReportData
     /// Gets or sets finished bug issue count in month.
     /// </summary>
     public ItemCount? BugFinishedThisMonth { get; init; }
+
+    /// <summary>
+    /// Gets or sets unique bug issue count reproduced on production.
+    /// </summary>
+    public ItemCount? BugReporducedOnProd { get; init; }
 
     /// <summary>
     /// Gets or sets open bug issues.

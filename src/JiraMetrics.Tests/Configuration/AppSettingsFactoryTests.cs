@@ -44,7 +44,8 @@ public sealed class AppSettingsFactoryTests
                 },
                 BugRatio = new BugRatioOptions
                 {
-                    BugIssueNames = [" Bug ", "Incident", "bug"]
+                    BugIssueNames = [" Bug ", "Incident", "bug"],
+                    ReporducedOnProd = " Reproduced on prod "
                 }
             },
             ReleaseReport = new ReleaseReportOptions
@@ -79,6 +80,7 @@ public sealed class AppSettingsFactoryTests
             .Should().Equal("Story", "Bug");
         settings.BugIssueNames.Select(static issueType => issueType.Value)
             .Should().Equal("Bug", "Incident");
+        settings.BugReporducedOnProdFieldName.Should().Be("Reproduced on prod");
         settings.RejectStatusName!.Value.Value.Should().Be("Rejected");
         settings.CustomFieldName.Should().Be("Team");
         settings.CustomFieldValue.Should().Be("Import");

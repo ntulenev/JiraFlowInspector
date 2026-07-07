@@ -14,13 +14,15 @@ internal interface IJiraIssueSearchClient
     Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
         ProjectKey projectKey,
         IReadOnlyList<IssueTypeName> issueTypes,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        JiraFieldName? reporducedOnProdFieldName = null);
 
     Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        JiraFieldName? reporducedOnProdFieldName = null);
 
     Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
         ProjectKey projectKey,

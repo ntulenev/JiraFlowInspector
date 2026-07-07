@@ -1943,7 +1943,8 @@ public sealed class JiraApiClientTests
             new JiraMapperFacade(
                 new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings, fieldValueReader),
                 new ReleaseIssueMapper(fieldValueReader),
-                new GlobalIncidentMapper(fieldValueReader)));
+                new GlobalIncidentMapper(fieldValueReader),
+                new JiraSearchIssueMapper(fieldValueReader)));
     }
 
     private static TransitionBuilder CreateTransitionBuilder(IOptions<AppSettings> settings) => new(settings);

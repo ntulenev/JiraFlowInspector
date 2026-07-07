@@ -1146,7 +1146,8 @@ public sealed class JiraApplicationTests
         public Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
             ProjectKey projectKey,
             IReadOnlyList<IssueTypeName> issueTypes,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            JiraFieldName? reporducedOnProdFieldName = null)
         {
             CreatedThisMonthIssuesRequested = true;
             return Task.FromResult(CreatedThisMonthIssues);
@@ -1156,7 +1157,8 @@ public sealed class JiraApplicationTests
             ProjectKey projectKey,
             StatusName doneStatusName,
             IReadOnlyList<IssueTypeName> issueTypes,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            JiraFieldName? reporducedOnProdFieldName = null)
         {
             if (string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase))
             {

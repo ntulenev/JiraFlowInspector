@@ -41,6 +41,7 @@ public sealed class AppSettingsTests
         const string customFieldName = "Team";
         const string customFieldValue = "Import";
         const string pullRequestFieldName = "customfield_22222";
+        const string bugReporducedOnProdFieldName = "Reproduced on prod";
 
         // Act
         var settings = new AppSettings(
@@ -60,6 +61,7 @@ public sealed class AppSettingsTests
             excludeWeekend: true,
             excludedDays: excludedDays,
             bugIssueNames: bugIssueNames,
+            bugReporducedOnProdFieldName: bugReporducedOnProdFieldName,
             showGeneralStatistics: false,
             releaseReport: releaseReport,
             archTasksReport: archTasksReport,
@@ -86,6 +88,7 @@ public sealed class AppSettingsTests
         settings.ExcludeWeekend.Should().BeTrue();
         settings.ExcludedDays.Should().ContainInOrder(excludedDays);
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
+        settings.BugReporducedOnProdFieldName.Should().Be(bugReporducedOnProdFieldName);
         settings.ShowGeneralStatistics.Should().BeFalse();
         settings.ReleaseReport.Should().Be(releaseReport);
         settings.ArchTasksReport.Should().Be(archTasksReport);

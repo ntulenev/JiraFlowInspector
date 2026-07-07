@@ -13,11 +13,17 @@ public sealed record IssueListItem
     /// <param name="key">Issue key.</param>
     /// <param name="title">Issue title.</param>
     /// <param name="createdAt">Optional issue creation timestamp.</param>
-    public IssueListItem(IssueKey key, IssueSummary title, DateTimeOffset? createdAt = null)
+    /// <param name="reporducedOnProd">Whether the issue was reproduced on production.</param>
+    public IssueListItem(
+        IssueKey key,
+        IssueSummary title,
+        DateTimeOffset? createdAt = null,
+        bool reporducedOnProd = false)
     {
         Key = key;
         Title = title;
         CreatedAt = createdAt;
+        ReporducedOnProd = reporducedOnProd;
     }
 
     /// <summary>
@@ -34,4 +40,9 @@ public sealed record IssueListItem
     /// Gets optional issue creation timestamp.
     /// </summary>
     public DateTimeOffset? CreatedAt { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the issue was reproduced on production.
+    /// </summary>
+    public bool ReporducedOnProd { get; }
 }

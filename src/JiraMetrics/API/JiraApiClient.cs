@@ -23,7 +23,7 @@ public sealed class JiraApiClient : IJiraApiClient
         IJiraMapperFacade mapperFacade)
         : this(
             new JiraUserClient(searchExecutor),
-            new JiraIssueSearchClient(searchExecutor, jqlFacade, mapperFacade),
+            new JiraIssueSearchClient(searchExecutor, jqlFacade, fieldResolver, mapperFacade),
             new JiraReportDataClient(searchExecutor, jqlFacade, fieldResolver, mapperFacade),
             new JiraIssueTimelineClient(searchExecutor, settings, fieldResolver, mapperFacade))
     {
@@ -66,20 +66,27 @@ public sealed class JiraApiClient : IJiraApiClient
     public Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
         ProjectKey projectKey,
         IReadOnlyList<IssueTypeName> issueTypes,
-        CancellationToken cancellationToken) =>
-        _issueSearchClient.GetIssuesCreatedThisMonthAsync(projectKey, issueTypes, cancellationToken);
+        CancellationToken cancellationToken,
+        JiraFieldName? reporducedOnProdFieldName = null) =>
+        _issueSearchClient.GetIssuesCreatedThisMonthAsync(
+            projectKey,
+            issueTypes,
+            cancellationToken,
+            reporducedOnProdFieldName);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken,
+        JiraFieldName? reporducedOnProdFieldName = null) =>
         _issueSearchClient.GetIssuesMovedToDoneThisMonthAsync(
             projectKey,
             doneStatusName,
             issueTypes,
-            cancellationToken);
+            cancellationToken,
+            reporducedOnProdFieldName);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(

@@ -27,12 +27,14 @@ internal sealed class IssueSearchSnapshotLoader
         var createdIssues = await _issueSearchClient.GetIssuesCreatedThisMonthAsync(
             settings.ProjectKey,
             issueTypes,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            CreateReporducedOnProdFieldName(settings, issueTypes)).ConfigureAwait(false);
         var doneIssues = await _issueSearchClient.GetIssuesMovedToDoneThisMonthAsync(
             settings.ProjectKey,
             settings.DoneStatusName,
             issueTypes,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            CreateReporducedOnProdFieldName(settings, issueTypes)).ConfigureAwait(false);
 
         IReadOnlyList<IssueListItem> rejectedIssues = [];
         if (settings.RejectStatusName is { } rejectStatusName)
@@ -41,10 +43,25 @@ internal sealed class IssueSearchSnapshotLoader
                 settings.ProjectKey,
                 rejectStatusName,
                 issueTypes,
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                CreateReporducedOnProdFieldName(settings, issueTypes)).ConfigureAwait(false);
         }
 
         return new IssueSearchSnapshot(createdIssues, doneIssues, rejectedIssues);
+    }
+
+    private static JiraFieldName? CreateReporducedOnProdFieldName(
+        AppSettings settings,
+        IReadOnlyList<IssueTypeName> issueTypes)
+    {
+        if (string.IsNullOrWhiteSpace(settings.BugReporducedOnProdFieldName)
+            || issueTypes.Count == 0
+            || !issueTypes.SequenceEqual(settings.BugIssueNames))
+        {
+            return null;
+        }
+
+        return new JiraFieldName(settings.BugReporducedOnProdFieldName);
     }
     private readonly IJiraIssueSearchClient _issueSearchClient;
 }

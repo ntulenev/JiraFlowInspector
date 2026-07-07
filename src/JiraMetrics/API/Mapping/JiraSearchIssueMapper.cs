@@ -8,8 +8,18 @@ namespace JiraMetrics.API.Mapping;
 /// <summary>
 /// Maps Jira search issue DTOs into lightweight domain projections.
 /// </summary>
-internal static class JiraSearchIssueMapper
+public sealed class JiraSearchIssueMapper
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JiraSearchIssueMapper"/> class.
+    /// </summary>
+    /// <param name="fieldValueReader">Field value reader.</param>
+    public JiraSearchIssueMapper(JiraFieldValueReader fieldValueReader)
+    {
+        ArgumentNullException.ThrowIfNull(fieldValueReader);
+        _fieldValueReader = fieldValueReader;
+    }
+
     /// <summary>
     /// Maps search issues into distinct ordered issue keys.
     /// </summary>
@@ -26,8 +36,11 @@ internal static class JiraSearchIssueMapper
     /// Maps search issues into lightweight issue list rows.
     /// </summary>
     /// <param name="issues">Transport issues.</param>
+    /// <param name="context">Optional issue list mapping context.</param>
     /// <returns>Distinct ordered issue list items.</returns>
-    internal static IReadOnlyList<IssueListItem> ToIssueListItems(IReadOnlyList<JiraIssueKeyResponse> issues) =>
+    internal IReadOnlyList<IssueListItem> ToIssueListItems(
+        IReadOnlyList<JiraIssueKeyResponse> issues,
+        IssueListMappingContext? context) =>
         [.. issues
             .Where(static issue => !string.IsNullOrWhiteSpace(issue.Key))
             .Select(issue => new IssueListItem(
@@ -36,7 +49,8 @@ internal static class JiraSearchIssueMapper
                     string.IsNullOrWhiteSpace(issue.Fields?.Summary)
                         ? "No summary"
                         : issue.Fields.Summary),
-                issue.Fields?.Created.ParseNullableDateTimeOffset()))
+                issue.Fields?.Created.ParseNullableDateTimeOffset(),
+                IsReporducedOnProd(issue, context)))
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 
@@ -114,4 +128,42 @@ internal static class JiraSearchIssueMapper
             .OrderByDescending(static summary => summary.Count.Value)
             .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase)];
     }
+
+    private bool IsReporducedOnProd(JiraIssueKeyResponse issue, IssueListMappingContext? context)
+    {
+        if (context?.ReporducedOnProdFieldName is null || issue.Fields?.AdditionalFields is null)
+        {
+            return false;
+        }
+
+        if (!_fieldValueReader.TryGetAdditionalFieldValue(
+            issue.Fields.AdditionalFields,
+            context.ReporducedOnProdFieldId?.Value,
+            context.ReporducedOnProdFieldName.Value.Value,
+            out var rawValue))
+        {
+            return false;
+        }
+
+        if (rawValue.ValueKind is System.Text.Json.JsonValueKind.True)
+        {
+            return true;
+        }
+
+        if (rawValue.ValueKind is System.Text.Json.JsonValueKind.False
+            or System.Text.Json.JsonValueKind.Null
+            or System.Text.Json.JsonValueKind.Undefined)
+        {
+            return false;
+        }
+
+        var values = _fieldValueReader.ParseRawFieldValues(rawValue);
+        return values.Any(static value =>
+            string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "prod", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "production", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private readonly JiraFieldValueReader _fieldValueReader;
 }
