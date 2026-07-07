@@ -146,7 +146,9 @@ public sealed class JiraPdfReportData
             BugOpenIssues = bugRatio?.OpenIssues ?? [],
             BugDoneIssues = bugRatio?.DoneIssues ?? [],
             BugRejectedIssues = bugRatio?.RejectedIssues ?? [],
-            InternalIncidentIssues = internalIncidents?.AllIssues ?? [],
+            InternalIncidentOpenIssues = internalIncidents?.OpenIssues ?? [],
+            InternalIncidentDoneIssues = internalIncidents?.DoneIssues ?? [],
+            InternalIncidentRejectedIssues = internalIncidents?.RejectedIssues ?? [],
             OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
             DoneIssues = doneIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
@@ -249,9 +251,19 @@ public sealed class JiraPdfReportData
     public IReadOnlyList<IssueListItem> BugRejectedIssues { get; init; } = [];
 
     /// <summary>
-    /// Gets or sets internal incident issues.
+    /// Gets or sets open internal incident issues.
     /// </summary>
-    public IReadOnlyList<IssueListItem> InternalIncidentIssues { get; init; } = [];
+    public IReadOnlyList<IssueListItem> InternalIncidentOpenIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets done internal incident issues.
+    /// </summary>
+    public IReadOnlyList<IssueListItem> InternalIncidentDoneIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets rejected internal incident issues.
+    /// </summary>
+    public IReadOnlyList<IssueListItem> InternalIncidentRejectedIssues { get; init; } = [];
 
     /// <summary>
     /// Gets or sets issue counts grouped by status and issue type outside done/rejected statuses.

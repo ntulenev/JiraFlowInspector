@@ -166,7 +166,9 @@ public sealed class PdfContentComposerTests
             BugOpenIssues = [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Open bug"))],
             BugDoneIssues = [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Done bug"))],
             BugRejectedIssues = [],
-            InternalIncidentIssues = [new IssueListItem(new IssueKey("AAA-4"), new IssueSummary("Internal incident"))],
+            InternalIncidentOpenIssues = [new IssueListItem(new IssueKey("AAA-4"), new IssueSummary("Open incident"))],
+            InternalIncidentDoneIssues = [new IssueListItem(new IssueKey("AAA-5"), new IssueSummary("Done incident"))],
+            InternalIncidentRejectedIssues = [new IssueListItem(new IssueKey("AAA-6"), new IssueSummary("Rejected incident"))],
             OpenIssuesByStatus =
             [
                 new StatusIssueTypeSummary(

@@ -111,11 +111,25 @@ internal sealed class PdfRatiosSection : IPdfReportSection
 
         ComposeIssueListItemsSection(
             column,
-            "Incidents",
-            reportData.InternalIncidentIssues,
-            Colors.Black,
+            "Open issues",
+            reportData.InternalIncidentOpenIssues,
+            PdfPresentationFormatting.OPEN_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true);
+        ComposeIssueListItemsSection(
+            column,
+            "Done issues",
+            reportData.InternalIncidentDoneIssues,
+            PdfPresentationFormatting.DONE_ISSUE_COLOR_HEX,
+            reportData.Settings.BaseUrl,
+            includeCreationDate: true);
+        ComposeIssueListItemsSection(
+            column,
+            "Rejected issues",
+            reportData.InternalIncidentRejectedIssues,
+            PdfPresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
+            reportData.Settings.BaseUrl,
+            includeCreationDate: false);
     }
 
     private static void ComposeRatioSection(
