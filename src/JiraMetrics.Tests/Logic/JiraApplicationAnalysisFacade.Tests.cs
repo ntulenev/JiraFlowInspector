@@ -29,6 +29,14 @@ public sealed class JiraApplicationAnalysisFacadeTests
                 new TransitionEvent(new StatusName("Manual QA"), new StatusName("Ready for release"), now.AddHours(-4), TimeSpan.FromHours(4)),
                 new TransitionEvent(new StatusName("Ready for release"), new StatusName("Done"), now, TimeSpan.FromHours(1))
             ]);
+        var skippedQaInProgressWithoutExactEdge = CreateIssue(
+            "AAA-5",
+            [
+                new TransitionEvent(new StatusName("Code Review"), new StatusName("Manual QA"), now.AddHours(-10), TimeSpan.FromHours(1)),
+                new TransitionEvent(new StatusName("Manual QA"), new StatusName("Waiting for release"), now.AddHours(-6), TimeSpan.FromHours(4)),
+                new TransitionEvent(new StatusName("Waiting for release"), new StatusName("Ready for release"), now.AddHours(-1), TimeSpan.FromHours(5)),
+                new TransitionEvent(new StatusName("Ready for release"), new StatusName("Done"), now, TimeSpan.FromHours(1))
+            ]);
         var noCodeQaIssue = CreateIssue(
             "AAA-4",
             [
@@ -48,20 +56,22 @@ public sealed class JiraApplicationAnalysisFacadeTests
 
         // Act
         var result = facade.Analyze(
-            [pickedUpAndTested, skippedQaInProgress, noCodeQaIssue],
+            [pickedUpAndTested, skippedQaInProgress, skippedQaInProgressWithoutExactEdge, noCodeQaIssue],
             [rejectedWithPickup],
             [],
             settings);
 
         // Assert
         result.Outcome.Should().Be(JiraIssueAnalysisOutcome.Success);
-        result.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(3));
+        result.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(4));
         result.QaTransitionAnalysis.PickupIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-3", "AAA-1");
-        result.QaTransitionAnalysis.PickupIssuePercentage.Should().BeApproximately(66.6667m, 0.0001m);
+        result.QaTransitionAnalysis.PickupIssuePercentage.Should().Be(50m);
         result.QaTransitionAnalysis.PickupDuration75.Should().Be(TimeSpan.FromHours(8));
-        result.QaTransitionAnalysis.TestingIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-3", "AAA-1", "AAA-2");
-        result.QaTransitionAnalysis.TestingIssues[2].Rule.Label.Should().Be("Manual QA -> Ready for release");
-        result.QaTransitionAnalysis.TestingDuration75.Should().Be(TimeSpan.FromHours(7));
+        result.QaTransitionAnalysis.TestingIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-5", "AAA-3", "AAA-1", "AAA-2");
+        result.QaTransitionAnalysis.TestingIssues[0].Rule.Label.Should().Be("Manual QA -> Ready for release");
+        result.QaTransitionAnalysis.TestingIssues[0].Duration.Should().Be(TimeSpan.FromHours(9));
+        result.QaTransitionAnalysis.TestingIssues[3].Rule.Label.Should().Be("Manual QA -> Ready for release");
+        result.QaTransitionAnalysis.TestingDuration75.Should().Be(TimeSpan.FromHours(8.25));
     }
 
     private static AppSettings CreateSettings() =>

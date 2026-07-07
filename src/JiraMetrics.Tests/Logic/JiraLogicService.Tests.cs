@@ -316,6 +316,37 @@ public sealed class JiraLogicServiceTests
         result[1].Duration.Should().Be(TimeSpan.FromHours(4));
     }
 
+    [Fact(DisplayName = "BuildTransitionMeasurementIssues can measure status interval when exact transition is absent")]
+    [Trait("Category", "Unit")]
+    public void BuildTransitionMeasurementIssuesWhenIntervalFallbackIsEnabledMeasuresFromSourceStatusToTargetStatus()
+    {
+        // Arrange
+        var service = new JiraLogicService(new JiraAnalyticsService());
+        var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var issue = CreateIssue(
+            new IssueKey("AAA-1"),
+            [
+                new TransitionEvent(new StatusName("Code Review"), new StatusName("QA"), now.AddHours(-10), TimeSpan.FromHours(1)),
+                new TransitionEvent(new StatusName("QA"), new StatusName("Waiting for release"), now.AddHours(-6), TimeSpan.FromHours(4)),
+                new TransitionEvent(new StatusName("Waiting for release"), new StatusName("Release Candidate"), now, TimeSpan.FromHours(6))
+            ],
+            hasPullRequest: true);
+
+        // Act
+        var result = service.BuildTransitionMeasurementIssues(
+            [issue],
+            [new TransitionMeasurementRule(new StatusName("QA"), new StatusName("Release Candidate"))],
+            codeOnly: true,
+            useStatusIntervalFallback: true);
+
+        // Assert
+        result.Should().ContainSingle();
+        result[0].Issue.Key.Value.Should().Be("AAA-1");
+        result[0].Rule.Label.Should().Be("QA -> Release Candidate");
+        result[0].TransitionAt.Should().Be(now);
+        result[0].Duration.Should().Be(TimeSpan.FromHours(10));
+    }
+
     [Fact(DisplayName = "BuildDuration75 calculates overall transition measurement P75")]
     [Trait("Category", "Unit")]
     public void BuildDuration75WhenMeasurementsExistCalculatesP75()

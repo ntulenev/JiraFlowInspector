@@ -117,11 +117,13 @@ public sealed class JiraLogicService : IJiraLogicService
     /// <param name="issues">Issues.</param>
     /// <param name="rules">Transition measurement rules in priority order.</param>
     /// <param name="codeOnly">Whether only issues with code activity should be included.</param>
+    /// <param name="useStatusIntervalFallback">Whether to measure source-to-target status interval when exact transition is absent.</param>
     /// <returns>Matching issues ordered by transition duration descending.</returns>
     public IReadOnlyList<TransitionMeasurementIssue> BuildTransitionMeasurementIssues(
         IReadOnlyList<IssueTimeline> issues,
         IReadOnlyList<TransitionMeasurementRule> rules,
-        bool codeOnly)
+        bool codeOnly,
+        bool useStatusIntervalFallback = false)
     {
         ArgumentNullException.ThrowIfNull(issues);
         ArgumentNullException.ThrowIfNull(rules);
@@ -134,7 +136,7 @@ public sealed class JiraLogicService : IJiraLogicService
         return [.. issues
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Where(issue => !codeOnly || issue.HasPullRequest)
-            .Select(issue => TryBuildTransitionMeasurementIssue(issue, rules))
+            .Select(issue => TryBuildTransitionMeasurementIssue(issue, rules, useStatusIntervalFallback))
             .Where(static item => item is not null)
             .Select(static item => item!)
             .OrderByDescending(static item => item.Duration)
@@ -222,7 +224,8 @@ public sealed class JiraLogicService : IJiraLogicService
 
     private static TransitionMeasurementIssue? TryBuildTransitionMeasurementIssue(
         IssueTimeline issue,
-        IReadOnlyList<TransitionMeasurementRule> rules)
+        IReadOnlyList<TransitionMeasurementRule> rules,
+        bool useStatusIntervalFallback)
     {
         foreach (var rule in rules)
         {
@@ -235,10 +238,68 @@ public sealed class JiraLogicService : IJiraLogicService
                     transition.At,
                     transition.SincePrevious);
             }
+
+            if (useStatusIntervalFallback
+                && TryBuildStatusIntervalMeasurementIssue(issue, rule) is { } intervalIssue)
+            {
+                return intervalIssue;
+            }
         }
 
         return null;
     }
+
+    private static TransitionMeasurementIssue? TryBuildStatusIntervalMeasurementIssue(
+        IssueTimeline issue,
+        TransitionMeasurementRule rule)
+    {
+        var transitions = issue.Transitions;
+        for (var targetIndex = transitions.Count - 1; targetIndex >= 0; targetIndex--)
+        {
+            if (!StatusEquals(transitions[targetIndex].To, rule.ToStatusName))
+            {
+                continue;
+            }
+
+            var sourceIndex = FindLastReachedStatusIndex(transitions, rule.FromStatusName, targetIndex);
+            if (sourceIndex < 0)
+            {
+                continue;
+            }
+
+            var duration = transitions
+                .Skip(sourceIndex + 1)
+                .Take(targetIndex - sourceIndex)
+                .Aggregate(TimeSpan.Zero, static (sum, transition) => sum + transition.SincePrevious);
+
+            return new TransitionMeasurementIssue(
+                issue,
+                rule,
+                transitions[targetIndex].At,
+                duration);
+        }
+
+        return null;
+    }
+
+    private static int FindLastReachedStatusIndex(
+        IReadOnlyList<TransitionEvent> transitions,
+        StatusName statusName,
+        int beforeIndex)
+    {
+        for (var i = beforeIndex - 1; i >= 0; i--)
+        {
+            if (StatusEquals(transitions[i].To, statusName))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static bool StatusEquals(StatusName left, StatusName right) =>
+        string.Equals(left.Value, right.Value, StringComparison.OrdinalIgnoreCase);
 
     private readonly IJiraAnalyticsService _analytics;
 

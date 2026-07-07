@@ -60,11 +60,13 @@ public interface IJiraLogicService
     /// <param name="issues">Issues.</param>
     /// <param name="rules">Transition measurement rules in priority order.</param>
     /// <param name="codeOnly">Whether only issues with code activity should be included.</param>
+    /// <param name="useStatusIntervalFallback">Whether to measure source-to-target status interval when exact transition is absent.</param>
     /// <returns>Matching issues ordered by transition duration descending.</returns>
     IReadOnlyList<TransitionMeasurementIssue> BuildTransitionMeasurementIssues(
         IReadOnlyList<IssueTimeline> issues,
         IReadOnlyList<TransitionMeasurementRule> rules,
-        bool codeOnly);
+        bool codeOnly,
+        bool useStatusIntervalFallback = false);
 
     /// <summary>
     /// Calculates P75 transition duration.

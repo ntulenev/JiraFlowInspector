@@ -117,7 +117,8 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
         var testingIssues = _logicService.BuildTransitionMeasurementIssues(
             analyzedIssues,
             settings.TestingTransitions,
-            codeOnly: true);
+            codeOnly: true,
+            useStatusIntervalFallback: true);
 
         return new QaTransitionAnalysis(
             new ItemCount(analyzedIssues.Length),
