@@ -18,6 +18,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
     {
         ComposeAllTasksRatioSection(column, reportData);
         ComposeBugRatioSection(column, reportData);
+        ComposeInternalIncidentsSection(column, reportData);
     }
 
     private static void ComposeBugRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
@@ -92,6 +93,29 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             reportData.AllTasksMovedToDoneThisMonth.Value,
             reportData.AllTasksRejectedThisMonth.Value,
             reportData.AllTasksFinishedThisMonth.Value);
+    }
+
+    private static void ComposeInternalIncidentsSection(ColumnDescriptor column, JiraPdfReportData reportData)
+    {
+        if (reportData.Settings.InternalIncidentIssueNames.Count == 0)
+        {
+            return;
+        }
+
+        var incidentTypesLabel = string.Join(
+            ", ",
+            reportData.Settings.InternalIncidentIssueNames.Select(static issueType => issueType.Value));
+
+        _ = column.Item().Text("Internal incidents").Bold().FontSize(12);
+        _ = column.Item().Text($"Issue types: {incidentTypesLabel}").FontColor(Colors.Grey.Darken1);
+
+        ComposeIssueListItemsSection(
+            column,
+            "Incidents",
+            reportData.InternalIncidentIssues,
+            Colors.Black,
+            reportData.Settings.BaseUrl,
+            includeCreationDate: true);
     }
 
     private static void ComposeRatioSection(

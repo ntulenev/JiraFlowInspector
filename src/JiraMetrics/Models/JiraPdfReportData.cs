@@ -16,6 +16,7 @@ public sealed class JiraPdfReportData
     /// <param name="reportContext">Preloaded report context.</param>
     /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
     /// <param name="bugRatio">Bug ratio snapshot.</param>
+    /// <param name="internalIncidents">Internal incidents snapshot.</param>
     /// <param name="failures">Issue load failures.</param>
     /// <param name="successfulCount">Count of successfully loaded issues for the main analysis set.</param>
     /// <param name="matchedStageCount">Count of issues that matched transition-analysis prerequisites.</param>
@@ -25,6 +26,7 @@ public sealed class JiraPdfReportData
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
         IssueRatioSnapshot? bugRatio,
+        IssueRatioSnapshot? internalIncidents,
         IReadOnlyList<LoadFailure> failures,
         ItemCount successfulCount,
         ItemCount matchedStageCount)
@@ -39,6 +41,7 @@ public sealed class JiraPdfReportData
             reportContext,
             allTasksRatio,
             bugRatio,
+            internalIncidents,
             doneIssues: [],
             doneDaysAtWork75PerType: [],
             customTransitionIssues: [],
@@ -60,6 +63,7 @@ public sealed class JiraPdfReportData
     /// <param name="reportContext">Preloaded report context.</param>
     /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
     /// <param name="bugRatio">Bug ratio snapshot.</param>
+    /// <param name="internalIncidents">Internal incidents snapshot.</param>
     /// <param name="analysis">Issue analysis result.</param>
     /// <param name="failures">Issue load failures.</param>
     /// <returns>Aggregated PDF report data.</returns>
@@ -68,6 +72,7 @@ public sealed class JiraPdfReportData
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
         IssueRatioSnapshot? bugRatio,
+        IssueRatioSnapshot? internalIncidents,
         JiraIssueAnalysisResult analysis,
         IReadOnlyList<LoadFailure> failures)
     {
@@ -94,6 +99,7 @@ public sealed class JiraPdfReportData
             reportContext,
             allTasksRatio,
             bugRatio,
+            internalIncidents,
             analysis.DoneIssues,
             analysis.DoneDaysAtWork75PerType,
             analysis.CustomTransitionIssues,
@@ -109,6 +115,7 @@ public sealed class JiraPdfReportData
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
         IssueRatioSnapshot? bugRatio,
+        IssueRatioSnapshot? internalIncidents,
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
         IReadOnlyList<CustomTransitionIssue> customTransitionIssues,
@@ -139,6 +146,7 @@ public sealed class JiraPdfReportData
             BugOpenIssues = bugRatio?.OpenIssues ?? [],
             BugDoneIssues = bugRatio?.DoneIssues ?? [],
             BugRejectedIssues = bugRatio?.RejectedIssues ?? [],
+            InternalIncidentIssues = internalIncidents?.AllIssues ?? [],
             OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
             DoneIssues = doneIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
@@ -239,6 +247,11 @@ public sealed class JiraPdfReportData
     /// Gets or sets rejected bug issues.
     /// </summary>
     public IReadOnlyList<IssueListItem> BugRejectedIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets internal incident issues.
+    /// </summary>
+    public IReadOnlyList<IssueListItem> InternalIncidentIssues { get; init; } = [];
 
     /// <summary>
     /// Gets or sets issue counts grouped by status and issue type outside done/rejected statuses.

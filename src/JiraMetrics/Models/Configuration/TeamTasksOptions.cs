@@ -38,6 +38,11 @@ public sealed class TeamTasksOptions
     public BugRatioOptions? BugRatio { get; init; }
 
     /// <summary>
+    /// Gets or sets optional issue types that should be rendered as internal incidents.
+    /// </summary>
+    public IReadOnlyList<string>? InternalIncidentIssueNames { get; init; }
+
+    /// <summary>
     /// Gets or sets optional custom field name for filtering.
     /// </summary>
     public string? CustomFieldName { get; init; }

@@ -41,6 +41,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         var allTasksRatioTask = TryLoadSearchDataAsync(
             () => _dataFacade.LoadIssueRatioAsync(_settings, [], cancellationToken));
         var bugRatioTask = StartBugRatioLoading(cancellationToken);
+        var internalIncidentsTask = StartInternalIncidentsLoading(cancellationToken);
 
         var reportContext = await reportContextTask.ConfigureAwait(false);
         if (reportContext is null)
@@ -62,7 +63,13 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        return new JiraApplicationReportData(reportContext, allTasksRatio, bugRatio);
+        var internalIncidents = await LoadInternalIncidentsAsync(internalIncidentsTask).ConfigureAwait(false);
+        if (internalIncidentsTask is not null && internalIncidents is null)
+        {
+            return null;
+        }
+
+        return new JiraApplicationReportData(reportContext, allTasksRatio, bugRatio, internalIncidents);
     }
 
     private void ShowOptionalReportLoadingStarted()
@@ -128,6 +135,20 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
                 cancellationToken));
     }
 
+    private Task<IssueRatioSnapshot?>? StartInternalIncidentsLoading(CancellationToken cancellationToken)
+    {
+        if (_settings.InternalIncidentIssueNames.Count == 0)
+        {
+            return null;
+        }
+
+        return TryLoadSearchDataAsync(
+            () => _dataFacade.LoadIssueRatioAsync(
+                _settings,
+                _settings.InternalIncidentIssueNames,
+                cancellationToken));
+    }
+
     private async Task<IssueRatioSnapshot?> LoadAndShowAllTasksRatioAsync(Task<IssueRatioSnapshot?> allTasksRatioTask)
     {
         var allTasksRatio = await allTasksRatioTask.ConfigureAwait(false);
@@ -168,6 +189,17 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         _reportingFacade.ShowSpacer();
 
         return bugRatio;
+    }
+
+    private static async Task<IssueRatioSnapshot?> LoadInternalIncidentsAsync(
+        Task<IssueRatioSnapshot?>? internalIncidentsTask)
+    {
+        if (internalIncidentsTask is null)
+        {
+            return null;
+        }
+
+        return await internalIncidentsTask.ConfigureAwait(false);
     }
 
     private async Task<T?> TryLoadSearchDataAsync<T>(Func<Task<T>> loadAsync)

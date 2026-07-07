@@ -16,13 +16,20 @@ public sealed record IssueRatioSnapshot(
     IReadOnlyList<IssueListItem> RejectedIssues)
 {
     /// <summary>
-    /// Gets unique issues marked as reproduced on production.
+    /// Gets unique issues across open, done, and rejected lists.
     /// </summary>
-    public IReadOnlyList<IssueListItem> ReporducedOnProdIssues =>
+    public IReadOnlyList<IssueListItem> AllIssues =>
         [.. OpenIssues
             .Concat(DoneIssues)
             .Concat(RejectedIssues)
-            .Where(static issue => issue.ReporducedOnProd)
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
+
+    /// <summary>
+    /// Gets unique issues marked as reproduced on production.
+    /// </summary>
+    public IReadOnlyList<IssueListItem> ReporducedOnProdIssues =>
+        [.. AllIssues
+            .Where(static issue => issue.ReporducedOnProd)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 }

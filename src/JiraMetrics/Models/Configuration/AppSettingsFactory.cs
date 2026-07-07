@@ -35,6 +35,7 @@ internal static class AppSettingsFactory
             teamTasks.IssueTransitions?.ExcludeWeekend ?? false,
             ParseExcludedDays(teamTasks.IssueTransitions?.ExcludedDays),
             CreateIssueTypeNames(teamTasks.BugRatio?.BugIssueNames),
+            CreateIssueTypeNames(teamTasks.InternalIncidentIssueNames),
             NormalizeOptionalString(teamTasks.BugRatio?.ReporducedOnProd),
             teamTasks.ShowGeneralStatistics,
             ResolveReleaseReport(source.ReleaseReport),

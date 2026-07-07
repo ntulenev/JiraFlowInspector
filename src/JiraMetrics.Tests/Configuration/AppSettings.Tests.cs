@@ -23,6 +23,7 @@ public sealed class AppSettingsTests
         var createdAfter = new CreatedAfterDate("2026-01-15");
         var issueTypes = new List<IssueTypeName> { new("Bug"), new("Story") };
         var bugIssueNames = new List<IssueTypeName> { new("Bug") };
+        var internalIncidentIssueNames = new List<IssueTypeName> { new("Incident") };
         var releaseReport = new ReleaseReportSettings(new ProjectKey("RLS"), "Processing", "Change completion date");
         var archTasksReport = new ArchTasksReportSettings(
             "project = AAA AND type = \"Arch Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC");
@@ -61,6 +62,7 @@ public sealed class AppSettingsTests
             excludeWeekend: true,
             excludedDays: excludedDays,
             bugIssueNames: bugIssueNames,
+            internalIncidentIssueNames: internalIncidentIssueNames,
             bugReporducedOnProdFieldName: bugReporducedOnProdFieldName,
             showGeneralStatistics: false,
             releaseReport: releaseReport,
@@ -88,6 +90,7 @@ public sealed class AppSettingsTests
         settings.ExcludeWeekend.Should().BeTrue();
         settings.ExcludedDays.Should().ContainInOrder(excludedDays);
         settings.BugIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Bug");
+        settings.InternalIncidentIssueNames.Select(static issueType => issueType.Value).Should().ContainSingle("Incident");
         settings.BugReporducedOnProdFieldName.Should().Be(bugReporducedOnProdFieldName);
         settings.ShowGeneralStatistics.Should().BeFalse();
         settings.ReleaseReport.Should().Be(releaseReport);

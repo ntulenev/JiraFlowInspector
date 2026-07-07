@@ -26,6 +26,7 @@ public sealed record AppSettings
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="internalIncidentIssueNames">Optional issue types that should be rendered as internal incidents.</param>
     /// <param name="bugReporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
     /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
@@ -51,6 +52,7 @@ public sealed record AppSettings
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        IReadOnlyList<IssueTypeName>? internalIncidentIssueNames = null,
         string? bugReporducedOnProdFieldName = null,
         bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
@@ -76,6 +78,7 @@ public sealed record AppSettings
             excludeWeekend,
             excludedDays,
             bugIssueNames,
+            internalIncidentIssueNames,
             bugReporducedOnProdFieldName,
             showGeneralStatistics,
             releaseReport,
@@ -106,6 +109,7 @@ public sealed record AppSettings
     /// <param name="excludeWeekend">Whether to exclude weekends from transition durations.</param>
     /// <param name="excludedDays">Optional list of excluded days.</param>
     /// <param name="bugIssueNames">Optional issue types that should be treated as bug-like issues.</param>
+    /// <param name="internalIncidentIssueNames">Optional issue types that should be rendered as internal incidents.</param>
     /// <param name="bugReporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
     /// <param name="showGeneralStatistics">Whether to show general statistics section.</param>
     /// <param name="releaseReport">Optional release report settings.</param>
@@ -131,6 +135,7 @@ public sealed record AppSettings
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,
         IReadOnlyList<IssueTypeName>? bugIssueNames = null,
+        IReadOnlyList<IssueTypeName>? internalIncidentIssueNames = null,
         string? bugReporducedOnProdFieldName = null,
         bool showGeneralStatistics = true,
         ReleaseReportSettings? releaseReport = null,
@@ -157,6 +162,7 @@ public sealed record AppSettings
         ExcludeWeekend = excludeWeekend;
         ExcludedDays = excludedDays is null ? [] : [.. excludedDays];
         BugIssueNames = bugIssueNames is null ? [] : [.. bugIssueNames];
+        InternalIncidentIssueNames = internalIncidentIssueNames is null ? [] : [.. internalIncidentIssueNames];
         BugReporducedOnProdFieldName = string.IsNullOrWhiteSpace(bugReporducedOnProdFieldName)
             ? null
             : bugReporducedOnProdFieldName.Trim();
@@ -230,6 +236,11 @@ public sealed record AppSettings
     /// Gets optional issue types that should be treated as bug-like issues.
     /// </summary>
     public IReadOnlyList<IssueTypeName> BugIssueNames { get; }
+
+    /// <summary>
+    /// Gets optional issue types that should be rendered as internal incidents.
+    /// </summary>
+    public IReadOnlyList<IssueTypeName> InternalIncidentIssueNames { get; }
 
     /// <summary>
     /// Gets optional field name or id that marks bugs reproduced on production.

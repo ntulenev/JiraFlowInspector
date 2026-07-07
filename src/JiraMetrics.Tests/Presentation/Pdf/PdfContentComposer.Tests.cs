@@ -77,6 +77,7 @@ public sealed class PdfContentComposerTests
             customFieldName: "ADF Team",
             customFieldValue: "Processing",
             bugIssueNames: [new IssueTypeName("Bug")],
+            internalIncidentIssueNames: [new IssueTypeName("Incident")],
             releaseReport: new ReleaseReportSettings(
                 new ProjectKey("RLS"),
                 "ADF",
@@ -165,6 +166,7 @@ public sealed class PdfContentComposerTests
             BugOpenIssues = [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Open bug"))],
             BugDoneIssues = [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Done bug"))],
             BugRejectedIssues = [],
+            InternalIncidentIssues = [new IssueListItem(new IssueKey("AAA-4"), new IssueSummary("Internal incident"))],
             OpenIssuesByStatus =
             [
                 new StatusIssueTypeSummary(

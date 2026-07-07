@@ -46,7 +46,8 @@ public sealed class AppSettingsFactoryTests
                 {
                     BugIssueNames = [" Bug ", "Incident", "bug"],
                     ReporducedOnProd = " Reproduced on prod "
-                }
+                },
+                InternalIncidentIssueNames = [" Incident ", "incident"]
             },
             ReleaseReport = new ReleaseReportOptions
             {
@@ -80,6 +81,8 @@ public sealed class AppSettingsFactoryTests
             .Should().Equal("Story", "Bug");
         settings.BugIssueNames.Select(static issueType => issueType.Value)
             .Should().Equal("Bug", "Incident");
+        settings.InternalIncidentIssueNames.Select(static issueType => issueType.Value)
+            .Should().ContainSingle("Incident");
         settings.BugReporducedOnProdFieldName.Should().Be("Reproduced on prod");
         settings.RejectStatusName!.Value.Value.Should().Be("Rejected");
         settings.CustomFieldName.Should().Be("Team");
