@@ -107,7 +107,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
 
     private static JiraSearchFields BuildIssueListRequestedFields(IssueListMappingContext? context)
     {
-        var fields = new List<string> { "key", "summary", "created" };
+        var fields = new List<string> { "key", "summary", "created", "priority" };
         if (context?.ReporducedOnProdFieldId is { } fieldId)
         {
             fields.Add(fieldId.Value);

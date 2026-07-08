@@ -26,6 +26,10 @@ public sealed class JiraIssueFieldsResponseTests
             {
                 Name = "QA"
             },
+            Priority = new JiraPriorityResponse
+            {
+                Name = "P1"
+            },
             IssueLinks =
             [
                 new JiraIssueLinkResponse
@@ -52,6 +56,7 @@ public sealed class JiraIssueFieldsResponseTests
         json.Should().Contain("\"resolutiondate\":\"2026-02-02T10:00:00Z\"");
         json.Should().Contain("\"issuetype\":{\"name\":\"Bug\"}");
         json.Should().Contain("\"status\":{\"name\":\"QA\"}");
+        json.Should().Contain("\"priority\":{\"name\":\"P1\"}");
         json.Should().Contain("\"issuelinks\":[");
         json.Should().Contain("\"inward\":\"is caused by\"");
         json.Should().Contain("\"outward\":\"causes\"");

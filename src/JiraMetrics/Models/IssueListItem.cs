@@ -14,16 +14,19 @@ public sealed record IssueListItem
     /// <param name="title">Issue title.</param>
     /// <param name="createdAt">Optional issue creation timestamp.</param>
     /// <param name="reporducedOnProd">Whether the issue was reproduced on production.</param>
+    /// <param name="priority">Optional issue priority.</param>
     public IssueListItem(
         IssueKey key,
         IssueSummary title,
         DateTimeOffset? createdAt = null,
-        bool reporducedOnProd = false)
+        bool reporducedOnProd = false,
+        string? priority = null)
     {
         Key = key;
         Title = title;
         CreatedAt = createdAt;
         ReporducedOnProd = reporducedOnProd;
+        Priority = string.IsNullOrWhiteSpace(priority) ? null : priority.Trim();
     }
 
     /// <summary>
@@ -45,4 +48,9 @@ public sealed record IssueListItem
     /// Gets a value indicating whether the issue was reproduced on production.
     /// </summary>
     public bool ReporducedOnProd { get; }
+
+    /// <summary>
+    /// Gets optional issue priority.
+    /// </summary>
+    public string? Priority { get; }
 }

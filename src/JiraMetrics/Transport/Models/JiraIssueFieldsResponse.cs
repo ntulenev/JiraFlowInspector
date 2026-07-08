@@ -39,6 +39,12 @@ public sealed class JiraIssueFieldsResponse
     public JiraIssueStatusResponse? Status { get; init; }
 
     /// <summary>
+    /// Gets issue priority.
+    /// </summary>
+    [JsonPropertyName("priority")]
+    public JiraPriorityResponse? Priority { get; init; }
+
+    /// <summary>
     /// Gets issue links.
     /// </summary>
     [JsonPropertyName("issuelinks")]

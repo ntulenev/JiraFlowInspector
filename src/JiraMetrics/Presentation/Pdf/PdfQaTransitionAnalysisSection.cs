@@ -29,6 +29,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
 
         _ = column.Item().Text("QA transition analysis").Bold().FontSize(12);
+        ComposeQaSummary(column, reportData, analysis, showHoursOnly);
         ComposePickupSummary(
             column,
             reportData.Settings.QaTransitionAnalysis,
@@ -55,6 +56,47 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             "Testing time 75P per type",
             analysis.TestingDuration75PerType,
             showHoursOnly);
+    }
+
+    private static void ComposeQaSummary(
+        ColumnDescriptor column,
+        JiraPdfReportData reportData,
+        QaTransitionAnalysis analysis,
+        bool showTimeCalculationsInHoursOnly)
+    {
+        _ = column.Item().Text("Summary").Bold();
+        column.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.RelativeColumn(2.4f);
+                columns.RelativeColumn(1.2f);
+            });
+
+            table.Header(header =>
+            {
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Metric");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
+            });
+
+            AddSummaryRow(table, "Total Done Code Tasks", CountCodeIssues(reportData.DoneIssues));
+            AddSummaryRow(table, "Total Rejected Code Tasks", CountCodeIssues(reportData.RejectedIssues));
+            AddSummaryRow(table, "Open Bugs", reportData.BugOpenIssues.Count);
+            AddSummaryRow(table, "Open On Prod", BuildProdBugPrioritySummary(reportData.BugOpenIssues));
+            AddSummaryRow(table, "Done Bugs", reportData.BugDoneIssues.Count);
+            AddSummaryRow(table, "Done On Prod", BuildProdBugPrioritySummary(reportData.BugDoneIssues));
+            AddSummaryRow(table, "Rejected Bugs", reportData.BugRejectedIssues.Count);
+            AddSummaryRow(table, "Rejected On Prod", BuildProdBugPrioritySummary(reportData.BugRejectedIssues));
+            AddSummaryRow(table, "QA In Progress Coverage", BuildCoverageText(analysis));
+            AddSummaryRow(
+                table,
+                GetQaInProgressDuration75Label(showTimeCalculationsInHoursOnly),
+                FormatDuration(analysis.PickupDuration75, showTimeCalculationsInHoursOnly));
+            AddSummaryRow(
+                table,
+                GetQaTransitionDuration75Label(showTimeCalculationsInHoursOnly),
+                FormatDuration(analysis.TestingDuration75, showTimeCalculationsInHoursOnly));
+        });
     }
 
     private static void ComposePickupSummary(
@@ -259,6 +301,66 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             ? "-"
             : PdfPresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
 
+    private static void AddSummaryRow(TableDescriptor table, string metric, int value) =>
+        AddSummaryRow(table, metric, value.ToString(CultureInfo.InvariantCulture));
+
+    private static void AddSummaryRow(TableDescriptor table, string metric, string value)
+    {
+        _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(metric);
+        _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(value);
+    }
+
+    private static int CountCodeIssues(IEnumerable<IssueTimeline> issues) =>
+        issues.Count(static issue => issue.HasPullRequest);
+
+    private static string BuildProdBugPrioritySummary(IEnumerable<IssueListItem> issues)
+    {
+        var prodIssues = issues
+            .Where(static issue => issue.ReporducedOnProd)
+            .ToArray();
+        var total = prodIssues.Length.ToString(CultureInfo.InvariantCulture);
+        var priorityCounts = prodIssues
+            .Where(static issue => !string.IsNullOrWhiteSpace(issue.Priority))
+            .GroupBy(static issue => issue.Priority!, StringComparer.OrdinalIgnoreCase)
+            .Select(static group => new
+            {
+                Priority = group.Key,
+                Count = group.Count()
+            })
+            .OrderBy(static item => GetPrioritySortKey(item.Priority))
+            .ThenBy(static item => item.Priority, StringComparer.OrdinalIgnoreCase)
+            .Select(static item => string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}: {1}",
+                item.Priority,
+                item.Count))
+            .ToArray();
+
+        return priorityCounts.Length == 0
+            ? total
+            : string.Format(CultureInfo.InvariantCulture, "{0} ({1})", total, string.Join(", ", priorityCounts));
+    }
+
+    private static int GetPrioritySortKey(string priority)
+    {
+        if (priority.Length >= 2
+            && (priority[0] is 'P' or 'p')
+            && int.TryParse(priority[1..], CultureInfo.InvariantCulture, out var priorityNumber))
+        {
+            return priorityNumber;
+        }
+
+        return int.MaxValue;
+    }
+
+    private static string BuildCoverageText(QaTransitionAnalysis analysis) =>
+        string.Format(
+            CultureInfo.InvariantCulture,
+            "{0}/{1} ({2:0.##}%)",
+            analysis.PickupIssues.Count,
+            analysis.AnalyzedIssueCount.Value,
+            analysis.PickupIssuePercentage);
+
     private static string BuildRulesLabel(IReadOnlyList<TransitionMeasurementRule> rules) =>
         string.Join("; ", rules.Select(static rule => rule.Label));
 
@@ -267,4 +369,10 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
     private static string GetDuration75Title(bool showTimeCalculationsInHoursOnly) =>
         showTimeCalculationsInHoursOnly ? "Hours in QA 75P" : "Days in QA 75P";
+
+    private static string GetQaInProgressDuration75Label(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "QA In Progress Hours 75p" : "QA In Progress Days 75p";
+
+    private static string GetQaTransitionDuration75Label(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "QA Transition Hours 75p" : "QA Transition Days 75p";
 }

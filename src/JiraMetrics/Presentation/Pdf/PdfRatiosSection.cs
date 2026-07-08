@@ -44,7 +44,14 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             reportData.BugMovedToDoneThisMonth.Value,
             reportData.BugRejectedThisMonth.Value,
             reportData.BugFinishedThisMonth.Value,
-            reportData.BugReporducedOnProd);
+            reportData.BugReporducedOnProd,
+            new ItemCount(CountReporducedOnProd(reportData.BugOpenIssues)),
+            new ItemCount(CountReporducedOnProd(reportData.BugDoneIssues)),
+            new ItemCount(CountReporducedOnProd(reportData.BugRejectedIssues)),
+            new ItemCount(CountReporducedOnProd(
+                reportData.BugDoneIssues
+                    .Concat(reportData.BugRejectedIssues)
+                    .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase))));
 
         ComposeIssueListItemsSection(
             column,
@@ -142,12 +149,30 @@ internal sealed class PdfRatiosSection : IPdfReportSection
         ItemCount movedToDoneThisMonth,
         ItemCount rejectedThisMonth,
         ItemCount finishedThisMonth,
-        ItemCount? reporducedOnProd = null)
+        ItemCount? reporducedOnProd = null,
+        ItemCount? openReporducedOnProd = null,
+        ItemCount? doneReporducedOnProd = null,
+        ItemCount? rejectedReporducedOnProd = null,
+        ItemCount? finishedReporducedOnProd = null)
     {
         _ = column.Item().Text(title).Bold().FontSize(12);
 
         column.Item().Table(table =>
         {
+            void AddCountRow(string label, ItemCount count, ItemCount? prodCount = null)
+            {
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(label);
+                table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(text =>
+                {
+                    _ = text.Span(count.Value.ToString(CultureInfo.InvariantCulture));
+                    if (prodCount.HasValue)
+                    {
+                        _ = text.Span($" ({prodCount.Value.Value.ToString(CultureInfo.InvariantCulture)} on prod)")
+                            .FontColor(Colors.Red.Medium);
+                    }
+                });
+            }
+
             table.ColumnsDefinition(columns =>
             {
                 columns.RelativeColumn(2.4f);
@@ -162,14 +187,10 @@ internal sealed class PdfRatiosSection : IPdfReportSection
 
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeLabel);
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeValue);
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Open in selected period");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(openThisMonth.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Done in selected period");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Rejected in selected period");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished in selected period");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture));
+            AddCountRow("Open in selected period", openThisMonth, openReporducedOnProd);
+            AddCountRow("Done in selected period", movedToDoneThisMonth, doneReporducedOnProd);
+            AddCountRow("Rejected in selected period", rejectedThisMonth, rejectedReporducedOnProd);
+            AddCountRow("Finished in selected period", finishedThisMonth, finishedReporducedOnProd);
             if (reporducedOnProd.HasValue)
             {
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Reproduced on prod");
@@ -294,4 +315,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             .Bold()
             .FontColor(Colors.Grey.Darken2);
     }
+
+    private static int CountReporducedOnProd(IEnumerable<IssueListItem> issues) =>
+        issues.Count(static issue => issue.ReporducedOnProd);
 }

@@ -50,7 +50,8 @@ public sealed class JiraSearchIssueMapper
                         ? "No summary"
                         : issue.Fields.Summary),
                 issue.Fields?.Created.ParseNullableDateTimeOffset(),
-                IsReporducedOnProd(issue, context)))
+                IsReporducedOnProd(issue, context),
+                issue.Fields?.Priority?.Name))
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 

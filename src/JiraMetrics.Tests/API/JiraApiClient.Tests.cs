@@ -314,7 +314,8 @@ public sealed class JiraApiClientTests
                     Fields = new JiraIssueFieldsResponse
                     {
                         Summary = "Open bug",
-                        Created = "2026-01-10T09:00:00Z"
+                        Created = "2026-01-10T09:00:00Z",
+                        Priority = new JiraPriorityResponse { Name = "P1" }
                     }
                 }
             ],
@@ -343,8 +344,9 @@ public sealed class JiraApiClientTests
         issues[0].Key.Value.Should().Be("AAA-1");
         issues[0].Title.Value.Should().Be("Open bug");
         issues[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 10, 9, 0, 0, TimeSpan.Zero));
+        issues[0].Priority.Should().Be("P1");
         capturedUrl.Should().Contain("created");
-        capturedUrl.Should().Contain("fields=key,summary,created");
+        capturedUrl.Should().Contain("fields=key,summary,created,priority");
     }
 
     [Fact(DisplayName = "GetIssuesMovedToDoneThisMonthAsync returns issue details")]
@@ -365,7 +367,8 @@ public sealed class JiraApiClientTests
                     Fields = new JiraIssueFieldsResponse
                     {
                         Summary = "Done bug",
-                        Created = "2026-01-11T10:00:00Z"
+                        Created = "2026-01-11T10:00:00Z",
+                        Priority = new JiraPriorityResponse { Name = "P2" }
                     }
                 }
             ],
@@ -394,9 +397,10 @@ public sealed class JiraApiClientTests
         issues[0].Key.Value.Should().Be("AAA-2");
         issues[0].Title.Value.Should().Be("Done bug");
         issues[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 11, 10, 0, 0, TimeSpan.Zero));
+        issues[0].Priority.Should().Be("P2");
         capturedUrl.Should().Contain("status");
         capturedUrl.Should().Contain("status%20%3D%20%22Done%22");
-        capturedUrl.Should().Contain("fields=key,summary,created");
+        capturedUrl.Should().Contain("fields=key,summary,created,priority");
     }
 
     [Fact(DisplayName = "GetIssueCountsByStatusExcludingDoneAndRejectAsync groups counts by status and type")]
