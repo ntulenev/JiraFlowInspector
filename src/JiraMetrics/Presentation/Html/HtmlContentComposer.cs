@@ -873,92 +873,16 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         IReadOnlyList<TableRow> rows,
         int? defaultSortColumn,
         string defaultSortDirection = "asc",
-        bool compact = false)
-    {
-        var containerClass = compact ? "table-section compact-section" : "table-section";
-        var html = new StringBuilder();
-        _ = html.AppendLine(string.Concat("<section class=\"", containerClass, "\" id=\"", HtmlPresentationHelpers.EncodeAttribute(sectionId), "\">"));
-        _ = html.AppendLine(string.Concat("  <div class=\"section-header\"><h2>", HtmlPresentationHelpers.Encode(title), "</h2></div>"));
-        _ = html.AppendLine("  <div class=\"table-panel\" data-table-panel>");
-        _ = html.AppendLine("    <div class=\"table-controls\">");
-        _ = html.AppendLine("      <input class=\"search\" data-table-search type=\"search\" placeholder=\"Search this table\">");
-        _ = html.AppendLine("      <button class=\"button\" data-table-reset type=\"button\">Reset Filters</button>");
-        _ = html.AppendLine("    </div>");
-        _ = html.AppendLine("    <div class=\"table-wrap\"><div class=\"scroll\">");
-        _ = html.AppendLine(string.Concat(
-            "      <table class=\"report-table\" data-default-sort-column=\"",
-            defaultSortColumn.HasValue ? defaultSortColumn.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
-            "\" data-default-sort-direction=\"",
-            HtmlPresentationHelpers.EncodeAttribute(defaultSortDirection),
-            "\">"));
-        _ = html.AppendLine("        <thead><tr>");
-
-        for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
-        {
-            var column = columns[columnIndex];
-            var thClass = string.IsNullOrWhiteSpace(column.CssClass) ? string.Empty : $" class=\"{HtmlPresentationHelpers.EncodeAttribute(column.CssClass)}\"";
-            _ = html.AppendLine(string.Concat(
-                "          <th",
-                thClass,
-                "><button class=\"th-button\" data-sort-column=\"",
-                columnIndex.ToString(CultureInfo.InvariantCulture),
-                "\" data-sort-type=\"",
-                HtmlPresentationHelpers.EncodeAttribute(column.SortType),
-                "\" type=\"button\"><span>",
-                HtmlPresentationHelpers.Encode(column.Header),
-                "</span><span class=\"sort-indicator\"></span></button></th>"));
-        }
-
-        _ = html.AppendLine("        </tr><tr class=\"filters\">");
-        foreach (var column in columns)
-        {
-            var thClass = string.IsNullOrWhiteSpace(column.CssClass) ? string.Empty : $" class=\"{HtmlPresentationHelpers.EncodeAttribute(column.CssClass)}\"";
-            _ = html.AppendLine(string.Concat(
-                "          <th",
-                thClass,
-                "><input class=\"filter-input\" data-filter-column placeholder=\"",
-                HtmlPresentationHelpers.EncodeAttribute(column.FilterPlaceholder),
-                "\" type=\"search\"></th>"));
-        }
-
-        _ = html.AppendLine("        </tr></thead><tbody>");
-        if (rows.Count == 0)
-        {
-            _ = html.AppendLine(string.Concat(
-                "          <tr class=\"empty\"><td class=\"empty-cell\" colspan=\"",
-                columns.Count.ToString(CultureInfo.InvariantCulture),
-                "\">",
-                HtmlPresentationHelpers.Encode(emptyMessage),
-                "</td></tr>"));
-        }
-        else
-        {
-            foreach (var row in rows)
-            {
-                var rowClass = string.IsNullOrWhiteSpace(row.CssClass) ? string.Empty : $" class=\"{HtmlPresentationHelpers.EncodeAttribute(row.CssClass)}\"";
-                _ = html.AppendLine(string.Concat("          <tr", rowClass, ">"));
-                foreach (var cell in row.Cells)
-                {
-                    _ = html.AppendLine(string.Concat(
-                        "            <td data-sort='",
-                        HtmlPresentationHelpers.EncodeAttribute(cell.SortValue),
-                        "' data-filter='",
-                        HtmlPresentationHelpers.EncodeAttribute(cell.FilterValue),
-                        "'>",
-                        cell.Html,
-                        "</td>"));
-                }
-
-                _ = html.AppendLine("          </tr>");
-            }
-        }
-
-        _ = html.AppendLine("        </tbody></table>");
-        _ = html.AppendLine("    </div></div>");
-        _ = html.AppendLine("  </div>");
-        _ = html.AppendLine("</section>");
-        return html.ToString();
-    }
+        bool compact = false) =>
+        HtmlTableRenderer.BuildTableSection(
+            sectionId,
+            title,
+            emptyMessage,
+            columns,
+            rows,
+            defaultSortColumn,
+            defaultSortDirection,
+            compact);
 
     private static string ApplyTemplate(string template, IReadOnlyDictionary<string, string> tokens)
     {
@@ -1062,12 +986,6 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         new TableColumn("Metric", "text", "Metric"),
         new TableColumn("Value", "number", "Value")
     ];
-
-    private sealed record TableColumn(string Header, string SortType, string FilterPlaceholder, string? CssClass = null);
-
-    private sealed record TableCell(string Html, string SortValue, string FilterValue);
-
-    private sealed record TableRow(IReadOnlyList<TableCell> Cells, string? CssClass = null);
 
     [GeneratedRegex("<section\\s+class=\"[^\"]*table-section[^\"]*\"\\s+id=\"(?<id>[^\"]+)\">\\s*<div\\s+class=\"section-header\"><h2>(?<title>.*?)</h2></div>", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
     private static partial Regex SectionHeadingRegex();
