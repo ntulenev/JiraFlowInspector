@@ -19,41 +19,10 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         ArgumentNullException.ThrowIfNull(reportData);
 
         var content = new StringBuilder(32 * 1024);
-        _ = content.Append(BuildGlobalIncidentsTable(reportData));
-        _ = content.Append(BuildRatiosSection(reportData));
-        _ = content.Append(BuildBugRatioDetailsSection(reportData));
-        _ = content.Append(BuildQaTransitionAnalysisSection(reportData));
-        _ = content.Append(BuildIssueTimelineTable(
-            "done-issues",
-            "Issues moved to Done in selected period",
-            reportData.DoneIssues,
-            reportData.Settings.DoneStatusName,
-            "Done At",
-            reportData));
-        _ = content.Append(BuildDuration75PerTypeTable(
-            "done-duration-75",
-            $"{PdfPresentationFormatting.GetWorkDuration75Title(reportData.Settings.ShowTimeCalculationsInHoursOnly)} per type",
-            reportData.DoneDaysAtWork75PerType,
-            reportData.Settings.ShowTimeCalculationsInHoursOnly));
-
-        if (reportData.Settings.RejectStatusName is { } rejectStatusName)
+        foreach (var section in DefaultSections)
         {
-            _ = content.Append(BuildIssueTimelineTable(
-                "rejected-issues",
-                "Issues moved to Rejected in selected period",
-                reportData.RejectedIssues,
-                rejectStatusName,
-                "Rejected At",
-                reportData));
+            _ = content.Append(section.Compose(reportData));
         }
-
-        _ = content.Append(BuildPathSummaryTable(reportData.PathSummary));
-        _ = content.Append(BuildPathGroupsTable(reportData));
-        _ = content.Append(BuildReleaseTable(reportData));
-        _ = content.Append(BuildComponentsReleaseTable(reportData));
-        _ = content.Append(BuildArchTasksTable(reportData));
-        _ = content.Append(BuildGeneralStatisticsSection(reportData));
-        _ = content.Append(BuildFailuresTable(reportData));
         var contentHtml = content.ToString();
 
         return ApplyTemplate(
@@ -77,7 +46,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             });
     }
 
-    private static string BuildRatiosSection(JiraReportData reportData)
+    internal static string BuildRatiosSection(JiraReportData reportData)
     {
         var rows = new List<TableRow>();
         AddRatioRows(rows, "All tasks", reportData.AllTasksCreatedThisMonth, reportData.AllTasksOpenThisMonth, reportData.AllTasksMovedToDoneThisMonth, reportData.AllTasksRejectedThisMonth, reportData.AllTasksFinishedThisMonth);
@@ -123,7 +92,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         ]));
     }
 
-    private static string BuildBugRatioDetailsSection(JiraReportData reportData)
+    internal static string BuildBugRatioDetailsSection(JiraReportData reportData)
     {
         if (!reportData.BugCreatedThisMonth.HasValue)
         {
@@ -155,7 +124,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildQaTransitionAnalysisSection(JiraReportData reportData)
+    internal static string BuildQaTransitionAnalysisSection(JiraReportData reportData)
     {
         var analysis = reportData.QaTransitionAnalysis;
         if (analysis.AnalyzedIssueCount.Value == 0)
@@ -243,7 +212,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildGeneralStatisticsSection(JiraReportData reportData)
+    internal static string BuildGeneralStatisticsSection(JiraReportData reportData)
     {
         if (!reportData.Settings.ShowGeneralStatistics)
         {
@@ -288,7 +257,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortDirection: "desc");
     }
 
-    private static string BuildIssueTimelineTable(
+    internal static string BuildIssueTimelineTable(
         string sectionId,
         string title,
         IReadOnlyList<IssueTimeline> issues,
@@ -339,7 +308,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return BuildTableSection(sectionId, title, "No issues.", columns, rows, defaultSortColumn: 1);
     }
 
-    private static string BuildDuration75PerTypeTable(
+    internal static string BuildDuration75PerTypeTable(
         string sectionId,
         string title,
         IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
@@ -374,7 +343,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             compact: true);
     }
 
-    private static string BuildPathSummaryTable(PathGroupsSummary summary) =>
+    internal static string BuildPathSummaryTable(PathGroupsSummary summary) =>
         BuildTableSection(
             "path-summary",
             "Path Groups Summary",
@@ -389,7 +358,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 0,
             compact: true);
 
-    private static string BuildPathGroupsTable(JiraReportData reportData)
+    internal static string BuildPathGroupsTable(JiraReportData reportData)
     {
         var columns = new[]
         {
@@ -478,7 +447,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildReleaseTable(JiraReportData reportData)
+    internal static string BuildReleaseTable(JiraReportData reportData)
     {
         if (reportData.Settings.ReleaseReport is null)
         {
@@ -519,7 +488,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 1);
     }
 
-    private static string BuildComponentsReleaseTable(JiraReportData reportData)
+    internal static string BuildComponentsReleaseTable(JiraReportData reportData)
     {
         if (reportData.Settings.ReleaseReport is null
             || string.IsNullOrWhiteSpace(reportData.Settings.ReleaseReport.ComponentsFieldName))
@@ -625,7 +594,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildArchTasksTable(JiraReportData reportData)
+    internal static string BuildArchTasksTable(JiraReportData reportData)
     {
         if (reportData.Settings.ArchTasksReport is null)
         {
@@ -660,7 +629,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 2);
     }
 
-    private static string BuildGlobalIncidentsTable(JiraReportData reportData)
+    internal static string BuildGlobalIncidentsTable(JiraReportData reportData)
     {
         if (reportData.Settings.GlobalIncidentsReport is null)
         {
@@ -701,7 +670,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 2);
     }
 
-    private static string BuildFailuresTable(JiraReportData reportData)
+    internal static string BuildFailuresTable(JiraReportData reportData)
     {
         if (reportData.Failures.Count == 0)
         {
@@ -987,6 +956,19 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
     [
         new TableColumn("Metric", "text", "Metric"),
         new TableColumn("Value", "number", "Value")
+    ];
+
+    private static IReadOnlyList<IHtmlReportSection> DefaultSections { get; } =
+    [
+        new HtmlGlobalIncidentsSection(),
+        new HtmlRatiosSection(),
+        new HtmlQaTransitionAnalysisSection(),
+        new HtmlIssueTimelineSection(),
+        new HtmlPathGroupsSection(),
+        new HtmlReleaseSection(),
+        new HtmlArchTasksSection(),
+        new HtmlGeneralStatisticsSection(),
+        new HtmlFailuresSection()
     ];
 
     [GeneratedRegex("<section\\s+class=\"[^\"]*table-section[^\"]*\"\\s+id=\"(?<id>[^\"]+)\">\\s*<div\\s+class=\"section-header\"><h2>(?<title>.*?)</h2></div>", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
