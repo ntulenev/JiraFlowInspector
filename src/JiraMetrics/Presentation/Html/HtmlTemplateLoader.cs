@@ -11,6 +11,18 @@ internal static class HtmlTemplateLoader
     /// <returns>Report template content.</returns>
     public static string LoadReportTemplate() => _reportTemplate.Value;
 
+    /// <summary>
+    /// Loads report document styles.
+    /// </summary>
+    /// <returns>Report stylesheet content.</returns>
+    public static string LoadReportStyles() => _reportStyles.Value;
+
+    /// <summary>
+    /// Loads report document script.
+    /// </summary>
+    /// <returns>Report script content.</returns>
+    public static string LoadReportScript() => _reportScript.Value;
+
     private static string LoadTemplate(string resourceName)
     {
         var assembly = typeof(HtmlTemplateLoader).Assembly;
@@ -19,7 +31,7 @@ internal static class HtmlTemplateLoader
         if (stream is null)
         {
             throw new InvalidOperationException(
-                $"Embedded HTML template '{resourceName}' was not found in assembly '{assembly.GetName().Name}'.");
+                $"Embedded HTML resource '{resourceName}' was not found in assembly '{assembly.GetName().Name}'.");
         }
 
         using var reader = new StreamReader(stream);
@@ -27,4 +39,8 @@ internal static class HtmlTemplateLoader
     }
 
     private static readonly Lazy<string> _reportTemplate = new(() => LoadTemplate("JiraMetrics.HtmlTemplates.ReportDocument.html"));
+
+    private static readonly Lazy<string> _reportStyles = new(() => LoadTemplate("JiraMetrics.HtmlTemplates.ReportDocument.css"));
+
+    private static readonly Lazy<string> _reportScript = new(() => LoadTemplate("JiraMetrics.HtmlTemplates.ReportDocument.js"));
 }

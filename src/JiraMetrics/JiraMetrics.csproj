@@ -47,6 +47,10 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Presentation\Html\Templates\*.html"
 						  LogicalName="JiraMetrics.HtmlTemplates.%(Filename)%(Extension)" />
+		<EmbeddedResource Include="Presentation\Html\Templates\*.css"
+						  LogicalName="JiraMetrics.HtmlTemplates.%(Filename)%(Extension)" />
+		<EmbeddedResource Include="Presentation\Html\Templates\*.js"
+						  LogicalName="JiraMetrics.HtmlTemplates.%(Filename)%(Extension)" />
 	</ItemGroup>
 
 	<ItemGroup>

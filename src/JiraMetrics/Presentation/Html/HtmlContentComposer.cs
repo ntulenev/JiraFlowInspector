@@ -71,7 +71,9 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
                 ["__PATH_GROUPS__"] = reportData.PathSummary.PathGroupCount.Value.ToString(CultureInfo.InvariantCulture),
                 ["__FAILED_ISSUES__"] = reportData.Failures.Count.ToString(CultureInfo.InvariantCulture),
                 ["__NAV__"] = BuildNavigation(contentHtml),
-                ["__CONTENT__"] = contentHtml
+                ["__CONTENT__"] = contentHtml,
+                ["__STYLES__"] = HtmlTemplateLoader.LoadReportStyles(),
+                ["__SCRIPT__"] = HtmlTemplateLoader.LoadReportScript()
             });
     }
 
