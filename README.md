@@ -3,7 +3,7 @@
 <img src="FlowLogo.png" alt="logo" width="250">
 
 JiraFlowInspector is a console analytics utility for Jira workflows.
-It analyzes how issues move across statuses, highlights bug/release metrics, and can export the same report to PDF.
+It analyzes how issues move across statuses, highlights bug/release metrics, and can export reports to PDF and HTML.
 
 ## Features
 
@@ -16,12 +16,13 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Optional architecture tasks report driven by custom JQL or JQL template.
 - Optional global incidents report by namespace/project and JQL filter.
 - P75 transition timing per path group.
-- Timeline diagrams in console and PDF.
+- Timeline diagrams in console and PDF, plus transition duration bars in HTML path-group details.
 - Optional exclusion of weekends and specific calendar days from duration calculation.
 - Optional hours-only display for duration and work-time metrics.
 - Optional custom field filter (for team-level filtering).
 - Optional retry policy for transient Jira API failures.
 - Optional PDF export (QuestPDF), including clickable Jira links.
+- Optional standalone HTML export with interactive filtering, sorting, quick section navigation, and clickable Jira links.
 
 ## What The App Does
 
@@ -40,8 +41,9 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 10. Loads changelogs for selected issues and builds transition timelines.
 11. Applies issue-type and required-stage filters.
 12. Shows console sections.
-13. Optionally writes PDF report.
-14. Optionally appends custom transition analysis to the end of the PDF report.
+13. Optionally writes HTML report.
+14. Optionally writes PDF report.
+15. Optionally appends custom transition analysis to the end of the PDF report.
 
 ## Important Behavior Rules
 
@@ -53,6 +55,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Required stages use case-insensitive substring matching against both transition `From` and `To` statuses.
 - Path grouping for transition analytics is built only from issues with detected code activity (`HasPullRequest = true`).
 - `CustomTransitionAnalysis.CodeOnly = true` limits the custom transition PDF section to issues with detected code activity.
+- General statistics are a current snapshot of unfinished issues at generation time, not a historical period slice.
 
 ## Report Sections
 
@@ -122,6 +125,29 @@ When `Jira:Pdf:Enabled` is `true`, PDF includes:
 
 Jira issue identifiers are clickable links in PDF sections:
 release table, bug detail tables, done/rejected tables, path-group issue list, and failures table.
+
+### HTML Output
+
+When `Jira:Html:Enabled` is `true`, a standalone HTML report is generated next to the PDF workflow.
+
+HTML output includes:
+
+- Sticky quick navigation for jumping to rendered report sections.
+- Interactive per-table search, column filters, and sorting.
+- Global incidents as the first report section when configured.
+- Task ratios and bug ratio detail tables, including `ReporducedOnProd` and priority columns when configured.
+- QA transition analysis with summary, pickup metrics, testing issues, and P75-by-type tables.
+- Done/rejected transition analysis tables.
+- Path groups summary.
+- Path groups with compact rows (`#`, `Issues`, `TTM 75P`, `Transition Len`) and expandable details.
+  Expanded details show tasks and transition duration bars with duration labels plus hours in parentheses.
+- Release report and optional components release table.
+- Architecture tasks report.
+- General statistics near the end of the report, preceded by a note that it is a current snapshot.
+- Failed issues only when failed issue loads exist.
+
+The HTML page is designed for large monitors and can expand wider on 4K/ultrawide screens.
+Jira issue identifiers are clickable links in HTML tables.
 
 ## Metrics Logic
 
@@ -353,6 +379,8 @@ Notes:
 - If release report returns `No releases found for selected month`, verify `ReleaseProjectKey`, `MonthLabel`, and the actual Jira field used for environments in that project.
 - `Pdf` (`object`, optional):
   PDF settings.
+- `Html` (`object`, optional):
+  HTML report settings.
 - `GlobalIncidents` (`object`, optional):
   global incidents report settings.
 - `GlobalIncidents.Namespace` (`string`, optional, default `Incidents`):
@@ -382,6 +410,13 @@ Notes:
 - `Pdf.OpenAfterGeneration` (`bool`, optional, default `true`):
   opens generated PDF in the system default viewer after save.
 - `Pdf.OutputPath` (`string`, optional, default `jiraflowinspector-report.pdf`):
+  output file path.
+  Actual file name gets date suffix `_<dd_MM_yyyy>` before extension.
+- `Html.Enabled` (`bool`, optional, default `true`):
+  enables standalone HTML report generation.
+- `Html.OpenAfterGeneration` (`bool`, optional, default `false`):
+  opens generated HTML in the system default browser after save.
+- `Html.OutputPath` (`string`, optional, default `jiraflowinspector-report.html`):
   output file path.
   Actual file name gets date suffix `_<dd_MM_yyyy>` before extension.
 - `ShowTimeCalculationsInHoursOnly` (`bool`, optional, default `false`):
@@ -482,6 +517,11 @@ Notes:
       "Enabled": true,
       "OpenAfterGeneration": true,
       "OutputPath": "jiraflowinspector-report.pdf"
+    },
+    "Html": {
+      "Enabled": true,
+      "OpenAfterGeneration": false,
+      "OutputPath": "jiraflowinspector-report.html"
     },
     "MonthLabel": "2026-02",
     //"From": "16.03.2026",

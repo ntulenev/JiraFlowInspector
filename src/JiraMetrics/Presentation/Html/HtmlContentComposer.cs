@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Text;
 
 using JiraMetrics.Models;
@@ -10,7 +11,7 @@ namespace JiraMetrics.Presentation.Html;
 /// <summary>
 /// Composes standalone HTML for the Jira report.
 /// </summary>
-public sealed class HtmlContentComposer : IHtmlContentComposer
+public sealed partial class HtmlContentComposer : IHtmlContentComposer
 {
     /// <inheritdoc />
     public string Compose(JiraPdfReportData reportData)
@@ -18,7 +19,10 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         ArgumentNullException.ThrowIfNull(reportData);
 
         var content = new StringBuilder(32 * 1024);
+        _ = content.Append(BuildGlobalIncidentsTable(reportData));
         _ = content.Append(BuildRatiosSection(reportData));
+        _ = content.Append(BuildBugRatioDetailsSection(reportData));
+        _ = content.Append(BuildQaTransitionAnalysisSection(reportData));
         _ = content.Append(BuildIssueTimelineTable(
             "done-issues",
             "Issues moved to Done in selected period",
@@ -46,9 +50,11 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         _ = content.Append(BuildPathSummaryTable(reportData.PathSummary));
         _ = content.Append(BuildPathGroupsTable(reportData));
         _ = content.Append(BuildReleaseTable(reportData));
+        _ = content.Append(BuildComponentsReleaseTable(reportData));
         _ = content.Append(BuildArchTasksTable(reportData));
-        _ = content.Append(BuildGlobalIncidentsTable(reportData));
+        _ = content.Append(BuildGeneralStatisticsSection(reportData));
         _ = content.Append(BuildFailuresTable(reportData));
+        var contentHtml = content.ToString();
 
         return ApplyTemplate(
             HtmlTemplateLoader.LoadReportTemplate(),
@@ -64,7 +70,8 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 ["__REJECTED_ISSUES__"] = reportData.RejectedIssues.Count.ToString(CultureInfo.InvariantCulture),
                 ["__PATH_GROUPS__"] = reportData.PathSummary.PathGroupCount.Value.ToString(CultureInfo.InvariantCulture),
                 ["__FAILED_ISSUES__"] = reportData.Failures.Count.ToString(CultureInfo.InvariantCulture),
-                ["__CONTENT__"] = content.ToString()
+                ["__NAV__"] = BuildNavigation(contentHtml),
+                ["__CONTENT__"] = contentHtml
             });
     }
 
@@ -73,6 +80,10 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         var rows = new List<TableRow>();
         AddRatioRows(rows, "All tasks", reportData.AllTasksCreatedThisMonth, reportData.AllTasksOpenThisMonth, reportData.AllTasksMovedToDoneThisMonth, reportData.AllTasksRejectedThisMonth, reportData.AllTasksFinishedThisMonth);
         AddRatioRows(rows, "Bugs", reportData.BugCreatedThisMonth, new ItemCount(reportData.BugOpenIssues.Count), reportData.BugMovedToDoneThisMonth, reportData.BugRejectedThisMonth, reportData.BugFinishedThisMonth);
+        if (reportData.BugReporducedOnProd.HasValue)
+        {
+            rows.Add(BuildMetricRow("Bugs: Reproduced on prod", reportData.BugReporducedOnProd.Value.Value));
+        }
 
         return BuildTableSection(
             "ratios",
@@ -108,6 +119,143 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             BuildTextCell($"{scope}: Finished / Created"),
             BuildTextCell(PdfPresentationFormatting.BuildFinishedToCreatedRatioText(created.Value, finished.Value))
         ]));
+    }
+
+    private static string BuildBugRatioDetailsSection(JiraPdfReportData reportData)
+    {
+        if (!reportData.BugCreatedThisMonth.HasValue)
+        {
+            return string.Empty;
+        }
+
+        var html = new StringBuilder();
+        _ = html.Append(BuildIssueListItemsTable(
+            "bug-open-issues",
+            "Bug Ratio: Open Issues",
+            reportData.BugOpenIssues,
+            reportData,
+            includeCreatedAt: true,
+            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue));
+        _ = html.Append(BuildIssueListItemsTable(
+            "bug-done-issues",
+            "Bug Ratio: Done Issues",
+            reportData.BugDoneIssues,
+            reportData,
+            includeCreatedAt: true,
+            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue));
+        _ = html.Append(BuildIssueListItemsTable(
+            "bug-rejected-issues",
+            "Bug Ratio: Rejected Issues",
+            reportData.BugRejectedIssues,
+            reportData,
+            includeCreatedAt: false,
+            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue));
+        return html.ToString();
+    }
+
+    private static string BuildQaTransitionAnalysisSection(JiraPdfReportData reportData)
+    {
+        var analysis = reportData.QaTransitionAnalysis;
+        if (analysis.AnalyzedIssueCount.Value == 0)
+        {
+            return string.Empty;
+        }
+
+        var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
+        var html = new StringBuilder();
+        _ = html.Append(BuildTableSection(
+            "qa-summary",
+            "QA Transition Analysis",
+            "No QA transition data.",
+            MetricColumns,
+            [
+                BuildTextMetricRow("Total Done Code Tasks", CountCodeIssues(reportData.DoneIssues).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Rejected Code Tasks", CountCodeIssues(reportData.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Open Bugs", reportData.BugOpenIssues.Count.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Open On Prod", BuildProdBugPrioritySummary(reportData.BugOpenIssues)),
+                BuildTextMetricRow("Done Bugs", reportData.BugDoneIssues.Count.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Done On Prod", BuildProdBugPrioritySummary(reportData.BugDoneIssues)),
+                BuildTextMetricRow("Rejected Bugs", reportData.BugRejectedIssues.Count.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Rejected On Prod", BuildProdBugPrioritySummary(reportData.BugRejectedIssues)),
+                BuildTextMetricRow("QA In Progress Coverage", BuildCoverageText(analysis)),
+                BuildTextMetricRow("QA In Progress 75P", FormatDuration(analysis.PickupDuration75, showHoursOnly)),
+                BuildTextMetricRow("QA Transition 75P", FormatDuration(analysis.TestingDuration75, showHoursOnly))
+            ],
+            defaultSortColumn: 0,
+            compact: true));
+
+        _ = html.Append(BuildTableSection(
+            "qa-pickup-summary",
+            "QA Pickup",
+            "No QA pickup data.",
+            [
+                new TableColumn("Transition", "text", "Transition"),
+                new TableColumn("Issues", "text", "Issues"),
+                new TableColumn("Share", "number", "Share"),
+                new TableColumn("75P", "number", "75P")
+            ],
+            [
+                new TableRow(
+                [
+                    BuildTextCell(BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.PickupTransitions)),
+                    BuildTextCell($"{analysis.PickupIssues.Count.ToString(CultureInfo.InvariantCulture)}/{analysis.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture)}"),
+                    BuildTextCell(analysis.PickupIssuePercentage.ToString("0.##", CultureInfo.InvariantCulture) + "%", analysis.PickupIssuePercentage),
+                    BuildTextCell(FormatDuration(analysis.PickupDuration75, showHoursOnly), analysis.PickupDuration75?.TotalMinutes)
+                ])
+            ],
+            defaultSortColumn: 2,
+            defaultSortDirection: "desc",
+            compact: true));
+
+        _ = html.Append(BuildIssueTypeDuration75Table("qa-pickup-75", "QA Pickup 75P per type", analysis.PickupDuration75PerType, showHoursOnly));
+        _ = html.Append(BuildTransitionMeasurementTable("qa-testing-issues", "Testing time by issue", analysis.TestingIssues, reportData));
+        _ = html.Append(BuildIssueTypeDuration75Table("qa-testing-75", "Testing time 75P per type", analysis.TestingDuration75PerType, showHoursOnly));
+        return html.ToString();
+    }
+
+    private static string BuildGeneralStatisticsSection(JiraPdfReportData reportData)
+    {
+        if (!reportData.Settings.ShowGeneralStatistics)
+        {
+            return string.Empty;
+        }
+
+        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        var excludedStatuses = reportData.Settings.RejectStatusName is { } rejectStatus
+            ? $"{reportData.Settings.DoneStatusName.Value}, {rejectStatus.Value}"
+            : reportData.Settings.DoneStatusName.Value;
+        var rows = reportData.OpenIssuesByStatus
+            .OrderByDescending(static summary => summary.Count.Value)
+            .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase)
+            .Select(summary => new TableRow(
+            [
+                BuildTextCell(summary.Status.Value),
+                BuildTextCell(summary.Count.Value.ToString(CultureInfo.InvariantCulture), summary.Count.Value),
+                BuildTextCell(BuildIssueTypeBreakdown(summary.IssueTypes))
+            ]))
+            .ToList();
+
+        var note = string.Concat(
+            "<section class=\"info-section\" id=\"general-statistics-note\">",
+            "<div class=\"info-panel\"><strong>General Statistics is a current snapshot.</strong> ",
+            "It is calculated from issues that are not currently in excluded statuses as of ",
+            HtmlPresentationHelpers.Encode(generatedAt),
+            ". It is not a historical period slice. Excluded statuses: ",
+            HtmlPresentationHelpers.Encode(excludedStatuses),
+            ".</div></section>");
+
+        return note + BuildTableSection(
+            "general-statistics",
+            "General Statistics",
+            "No issues outside excluded statuses.",
+            [
+                new TableColumn("Status", "text", "Status"),
+                new TableColumn("Issues", "number", "Issues"),
+                new TableColumn("Breakdown by type", "text", "Breakdown", "summary-column")
+            ],
+            rows,
+            defaultSortColumn: 1,
+            defaultSortDirection: "desc");
     }
 
     private static string BuildIssueTimelineTable(
@@ -213,31 +361,91 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
 
     private static string BuildPathGroupsTable(JiraPdfReportData reportData)
     {
-        var rows = reportData.PathGroups
-            .Select((group, index) => new TableRow(
-            [
-                BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
-                BuildTextCell(group.Issues.Count.ToString(CultureInfo.InvariantCulture), group.Issues.Count),
-                BuildTextCell(group.PathLabel.Value),
-                BuildTextCell(PdfPresentationHelpers.ToDurationLabel(group.TotalP75, reportData.Settings.ShowTimeCalculationsInHoursOnly), group.TotalP75.TotalMinutes),
-                BuildTextCell(string.Join(", ", group.Issues.Select(static issue => issue.Key.Value)))
-            ]))
-            .ToList();
+        var columns = new[]
+        {
+            new TableColumn("#", "number", "#", "narrow"),
+            new TableColumn("Issues", "number", "Issues"),
+            new TableColumn("TTM 75P", "number", "TTM 75P"),
+            new TableColumn("Transition Len", "number", "Transition Len")
+        };
+        var html = new StringBuilder();
+        _ = html.AppendLine("<section class=\"table-section\" id=\"path-groups\">");
+        _ = html.AppendLine("  <div class=\"section-header\"><h2>Path Groups</h2></div>");
+        _ = html.AppendLine("  <div class=\"table-panel\" data-table-panel>");
+        _ = html.AppendLine("    <div class=\"table-controls\">");
+        _ = html.AppendLine("      <input class=\"search\" data-table-search type=\"search\" placeholder=\"Search this table\">");
+        _ = html.AppendLine("      <button class=\"button\" data-table-reset type=\"button\">Reset Filters</button>");
+        _ = html.AppendLine("    </div>");
+        _ = html.AppendLine("    <div class=\"table-wrap\"><div class=\"scroll\">");
+        _ = html.AppendLine("      <table class=\"report-table path-table\" data-default-sort-column=\"1\" data-default-sort-direction=\"desc\">");
+        _ = html.AppendLine("        <thead><tr>");
 
-        return BuildTableSection(
-            "path-groups",
-            "Path Groups",
-            "No path groups.",
-            [
-                new TableColumn("#", "number", "#", "narrow"),
-                new TableColumn("Issues", "number", "Issues"),
-                new TableColumn("Path", "text", "Path", "summary-column"),
-                new TableColumn("TTM 75P", "number", "TTM 75P"),
-                new TableColumn("Issue Keys", "text", "Issue Keys")
-            ],
-            rows,
-            defaultSortColumn: 1,
-            defaultSortDirection: "desc");
+        for (var columnIndex = 0; columnIndex < columns.Length; columnIndex++)
+        {
+            var column = columns[columnIndex];
+            var thClass = string.IsNullOrWhiteSpace(column.CssClass) ? string.Empty : $" class=\"{HtmlPresentationHelpers.EncodeAttribute(column.CssClass)}\"";
+            _ = html.AppendLine(string.Concat(
+                "          <th",
+                thClass,
+                "><button class=\"th-button\" data-sort-column=\"",
+                columnIndex.ToString(CultureInfo.InvariantCulture),
+                "\" data-sort-type=\"",
+                HtmlPresentationHelpers.EncodeAttribute(column.SortType),
+                "\" type=\"button\"><span>",
+                HtmlPresentationHelpers.Encode(column.Header),
+                "</span><span class=\"sort-indicator\"></span></button></th>"));
+        }
+
+        _ = html.AppendLine("        </tr><tr class=\"filters\">");
+        foreach (var column in columns)
+        {
+            var thClass = string.IsNullOrWhiteSpace(column.CssClass) ? string.Empty : $" class=\"{HtmlPresentationHelpers.EncodeAttribute(column.CssClass)}\"";
+            _ = html.AppendLine(string.Concat(
+                "          <th",
+                thClass,
+                "><input class=\"filter-input\" data-filter-column placeholder=\"",
+                HtmlPresentationHelpers.EncodeAttribute(column.FilterPlaceholder),
+                "\" type=\"search\"></th>"));
+        }
+
+        _ = html.AppendLine("        </tr></thead><tbody>");
+        if (reportData.PathGroups.Count == 0)
+        {
+            _ = html.AppendLine("          <tr class=\"empty\"><td class=\"empty-cell\" colspan=\"4\">No path groups.</td></tr>");
+        }
+        else
+        {
+            for (var index = 0; index < reportData.PathGroups.Count; index++)
+            {
+                var group = reportData.PathGroups[index];
+                var groupNumber = index + 1;
+                var filterValue = string.Join(
+                    " ",
+                    new[] { group.PathLabel.Value }.Concat(group.Issues.Select(static issue => issue.Key.Value)));
+                _ = html.AppendLine("          <tr class=\"path-group-row\" data-toggle-detail>");
+                _ = html.AppendLine(string.Concat(
+                    "            <td data-sort='",
+                    groupNumber.ToString(CultureInfo.InvariantCulture),
+                    "' data-filter='",
+                    HtmlPresentationHelpers.EncodeAttribute(filterValue),
+                    "'><button class=\"row-toggle\" type=\"button\" aria-label=\"Toggle path group details\">+</button> ",
+                    groupNumber.ToString(CultureInfo.InvariantCulture),
+                    "</td>"));
+                _ = html.AppendLine(string.Concat("            <td data-sort='", group.Issues.Count.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", group.Issues.Count.ToString(CultureInfo.InvariantCulture), "</td>"));
+                _ = html.AppendLine(string.Concat("            <td data-sort='", group.TotalP75.TotalMinutes.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", HtmlPresentationHelpers.Encode(PdfPresentationHelpers.ToDurationLabel(group.TotalP75, reportData.Settings.ShowTimeCalculationsInHoursOnly)), "</td>"));
+                _ = html.AppendLine(string.Concat("            <td data-sort='", group.P75Transitions.Count.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", group.P75Transitions.Count.ToString(CultureInfo.InvariantCulture), "</td>"));
+                _ = html.AppendLine("          </tr>");
+                _ = html.AppendLine("          <tr class=\"detail-row\" hidden><td colspan=\"4\">");
+                _ = html.Append(BuildPathGroupDetails(group, reportData));
+                _ = html.AppendLine("          </td></tr>");
+            }
+        }
+
+        _ = html.AppendLine("        </tbody></table>");
+        _ = html.AppendLine("    </div></div>");
+        _ = html.AppendLine("  </div>");
+        _ = html.AppendLine("</section>");
+        return html.ToString();
     }
 
     private static string BuildReleaseTable(JiraPdfReportData reportData)
@@ -279,6 +487,112 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             ],
             rows,
             defaultSortColumn: 1);
+    }
+
+    private static string BuildComponentsReleaseTable(JiraPdfReportData reportData)
+    {
+        if (reportData.Settings.ReleaseReport is null
+            || string.IsNullOrWhiteSpace(reportData.Settings.ReleaseReport.ComponentsFieldName))
+        {
+            return string.Empty;
+        }
+
+        var rows = PdfPresentationFormatting.BuildComponentReleaseSummaries(reportData.ReleaseIssues)
+            .Select((item, index) => new TableRow(
+            [
+                BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
+                BuildTextCell(item.componentName),
+                BuildTextCell(item.releaseCount.ToString(CultureInfo.InvariantCulture), item.releaseCount)
+            ]))
+            .ToList();
+
+        return BuildTableSection(
+            "components-release-table",
+            "Components Release Table",
+            "No components data.",
+            [
+                new TableColumn("#", "number", "#", "narrow"),
+                new TableColumn("Component name", "text", "Component"),
+                new TableColumn("Release counts", "number", "Release counts")
+            ],
+            rows,
+            defaultSortColumn: 2,
+            defaultSortDirection: "desc",
+            compact: true);
+    }
+
+    private static string BuildPathGroupDetails(PathGroup group, JiraPdfReportData reportData)
+    {
+        var html = new StringBuilder();
+        var maxDuration = group.P75Transitions.Count == 0
+            ? 0
+            : group.P75Transitions.Max(static transition => Math.Max(0.001, transition.P75Duration.TotalMinutes));
+
+        _ = html.AppendLine("            <div class=\"path-detail\">");
+        _ = html.AppendLine(string.Concat("              <div class=\"path-label\">", HtmlPresentationHelpers.Encode(group.PathLabel.Value), "</div>"));
+        _ = html.AppendLine("              <div class=\"path-detail-grid\">");
+        _ = html.AppendLine("                <div>");
+        _ = html.AppendLine("                  <h3>Tasks</h3>");
+        _ = html.AppendLine("                  <div class=\"detail-list\">");
+        foreach (var issue in group.Issues.OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            var issueUrl = HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, issue.Key);
+            _ = html.AppendLine(string.Concat(
+                "                    <div><a href=\"",
+                HtmlPresentationHelpers.EncodeAttribute(issueUrl),
+                "\" target=\"_blank\" rel=\"noreferrer\">",
+                HtmlPresentationHelpers.Encode(issue.Key.Value),
+                "</a><span>",
+                HtmlPresentationHelpers.Encode(issue.IssueType.Value),
+                "</span><span>",
+                HtmlPresentationHelpers.Encode(issue.Summary.Value),
+                "</span></div>"));
+        }
+
+        _ = html.AppendLine("                  </div>");
+        _ = html.AppendLine("                </div>");
+        _ = html.AppendLine("                <div>");
+        _ = html.AppendLine("                  <h3>Transitions</h3>");
+        if (group.P75Transitions.Count == 0)
+        {
+            _ = html.AppendLine("                  <p class=\"empty-section\">No transitions in this path.</p>");
+        }
+        else
+        {
+            _ = html.AppendLine("                  <div class=\"transition-bars\">");
+            foreach (var transition in group.P75Transitions)
+            {
+                var duration = transition.P75Duration < TimeSpan.Zero ? TimeSpan.Zero : transition.P75Duration;
+                var width = maxDuration <= 0
+                    ? 0
+                    : Math.Clamp(duration.TotalMinutes / maxDuration * 100, 4, 100);
+                _ = html.AppendLine("                    <div class=\"transition-bar-row\">");
+                _ = html.AppendLine(string.Concat(
+                    "                      <div class=\"transition-label\">",
+                    HtmlPresentationHelpers.Encode(transition.From.Value),
+                    " -> ",
+                    HtmlPresentationHelpers.Encode(transition.To.Value),
+                    "</div>"));
+                _ = html.AppendLine("                      <div class=\"bar-track\">");
+                _ = html.AppendLine(string.Concat(
+                    "                        <div class=\"bar-fill\" style=\"width:",
+                    width.ToString("0.##", CultureInfo.InvariantCulture),
+                    "%\"></div>"));
+                _ = html.AppendLine("                      </div>");
+                _ = html.AppendLine(string.Concat(
+                    "                      <div class=\"duration-value\">",
+                    HtmlPresentationHelpers.Encode(FormatDurationWithHours(duration, reportData.Settings.ShowTimeCalculationsInHoursOnly)),
+                    "</div>"));
+                _ = html.AppendLine("                    </div>");
+            }
+
+            _ = html.AppendLine("                  </div>");
+        }
+
+        _ = html.AppendLine("                </div>");
+        _ = html.AppendLine("              </div>");
+        _ = html.AppendLine("            </div>");
+        return html.ToString();
     }
 
     private static string BuildArchTasksTable(JiraPdfReportData reportData)
@@ -359,6 +673,11 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
 
     private static string BuildFailuresTable(JiraPdfReportData reportData)
     {
+        if (reportData.Failures.Count == 0)
+        {
+            return string.Empty;
+        }
+
         var rows = reportData.Failures
             .Select((failure, index) => new TableRow(
             [
@@ -379,6 +698,142 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             ],
             rows,
             defaultSortColumn: 0);
+    }
+
+    private static string BuildIssueListItemsTable(
+        string sectionId,
+        string title,
+        IReadOnlyList<IssueListItem> issues,
+        JiraPdfReportData reportData,
+        bool includeCreatedAt,
+        bool includeReporducedOnProd)
+    {
+        var columns = new List<TableColumn>
+        {
+            new("#", "number", "#", "narrow"),
+            new("Issue", "text", "Issue", "issue-column")
+        };
+        if (includeCreatedAt)
+        {
+            columns.Add(new TableColumn("Created", "number", "Created"));
+        }
+
+        if (includeReporducedOnProd)
+        {
+            columns.Add(new TableColumn("Prod", "text", "Prod"));
+            columns.Add(new TableColumn("Priority", "text", "Priority"));
+        }
+
+        columns.Add(new TableColumn("Title", "text", "Title", "summary-column"));
+
+        var orderedIssues = issues
+            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var rows = new List<TableRow>(orderedIssues.Length);
+
+        for (var index = 0; index < orderedIssues.Length; index++)
+        {
+            var issue = orderedIssues[index];
+            var cells = new List<TableCell>
+            {
+                BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
+                BuildLinkCell(issue.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, issue.Key))
+            };
+            if (includeCreatedAt)
+            {
+                cells.Add(BuildTextCell(HtmlPresentationHelpers.FormatDateTime(issue.CreatedAt), issue.CreatedAt?.ToUnixTimeSeconds()));
+            }
+
+            if (includeReporducedOnProd)
+            {
+                cells.Add(BuildTextCell(issue.ReporducedOnProd ? "Yes" : "No"));
+                cells.Add(BuildTextCell(issue.Priority ?? "-"));
+            }
+
+            cells.Add(BuildTextCell(issue.Title.Value));
+            rows.Add(new TableRow(cells, issue.ReporducedOnProd ? "warning-row" : null));
+        }
+
+        return BuildTableSection(sectionId, title, "No issues.", columns, rows, defaultSortColumn: 1);
+    }
+
+    private static string BuildTransitionMeasurementTable(
+        string sectionId,
+        string title,
+        IReadOnlyList<TransitionMeasurementIssue> issues,
+        JiraPdfReportData reportData)
+    {
+        var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
+        var rows = issues
+            .OrderByDescending(static item => item.Duration)
+            .ThenBy(static item => item.Issue.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .Select((item, index) => new TableRow(
+            [
+                BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
+                BuildLinkCell(item.Issue.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, item.Issue.Key)),
+                BuildTextCell(item.Issue.IssueType.Value),
+                BuildTextCell(item.Issue.SubItemsCount.ToString(CultureInfo.InvariantCulture), item.Issue.SubItemsCount),
+                BuildTextCell(item.Issue.HasPullRequest ? "+" : string.Empty),
+                BuildTextCell(item.Issue.Summary.Value),
+                BuildTextCell(item.Rule.Label),
+                BuildTextCell(HtmlPresentationHelpers.FormatDateTime(item.TransitionAt), item.TransitionAt.ToUnixTimeSeconds()),
+                BuildTextCell(PdfPresentationFormatting.FormatWorkDurationValue(item.Duration, showHoursOnly), item.Duration.TotalMinutes)
+            ]))
+            .ToList();
+
+        return BuildTableSection(
+            sectionId,
+            title,
+            "No issues.",
+            [
+                new TableColumn("#", "number", "#", "narrow"),
+                new TableColumn("Issue", "text", "Issue", "issue-column"),
+                new TableColumn("Type", "text", "Type"),
+                new TableColumn("Sub-items", "number", "Sub-items"),
+                new TableColumn("Code", "text", "Code"),
+                new TableColumn("Summary", "text", "Summary", "summary-column"),
+                new TableColumn("Measured transition", "text", "Measured transition"),
+                new TableColumn("Transition At", "number", "Transition At"),
+                new TableColumn(showHoursOnly ? "Hours in QA" : "Days in QA", "number", "Duration")
+            ],
+            rows,
+            defaultSortColumn: 8,
+            defaultSortDirection: "desc");
+    }
+
+    private static string BuildIssueTypeDuration75Table(
+        string sectionId,
+        string title,
+        IReadOnlyList<IssueTypeDuration75Summary> summaries,
+        bool showTimeCalculationsInHoursOnly)
+    {
+        var rows = summaries
+            .OrderByDescending(static summary => summary.DurationP75)
+            .ThenByDescending(static summary => summary.IssueCount.Value)
+            .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)
+            .Select(summary => new TableRow(
+            [
+                BuildTextCell(summary.IssueType.Value),
+                BuildTextCell(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture), summary.IssueCount.Value),
+                BuildTextCell(
+                    PdfPresentationFormatting.FormatWorkDurationValue(summary.DurationP75, showTimeCalculationsInHoursOnly),
+                    summary.DurationP75.TotalMinutes)
+            ]))
+            .ToList();
+
+        return BuildTableSection(
+            sectionId,
+            title,
+            "No data.",
+            [
+                new TableColumn("Type", "text", "Type"),
+                new TableColumn("Issues", "number", "Issues"),
+                new TableColumn(showTimeCalculationsInHoursOnly ? "Hours 75P" : "Days 75P", "number", "75P")
+            ],
+            rows,
+            defaultSortColumn: 2,
+            defaultSortDirection: "desc",
+            compact: true);
     }
 
     private static string BuildTableSection(
@@ -487,11 +942,50 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         return result;
     }
 
+    private static string BuildNavigation(string contentHtml)
+    {
+        var sectionMatches = SectionHeadingRegex().Matches(contentHtml);
+        if (sectionMatches.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var html = new StringBuilder();
+        _ = html.AppendLine("<aside class=\"report-nav\" aria-label=\"Report sections\">");
+        _ = html.AppendLine("  <div class=\"report-nav-title\">Sections</div>");
+        _ = html.AppendLine("  <nav>");
+        foreach (Match match in sectionMatches)
+        {
+            var sectionId = match.Groups["id"].Value;
+            var title = StripTags(match.Groups["title"].Value);
+            _ = html.AppendLine(string.Concat(
+                "    <a href=\"#",
+                HtmlPresentationHelpers.EncodeAttribute(sectionId),
+                "\">",
+                HtmlPresentationHelpers.Encode(title),
+                "</a>"));
+        }
+
+        _ = html.AppendLine("  </nav>");
+        _ = html.AppendLine("</aside>");
+        return html.ToString();
+    }
+
+    private static string StripTags(string html) =>
+        TagRegex().Replace(html, string.Empty).Trim();
+
     private static TableRow BuildMetricRow(string metricName, int value) =>
         new(
         [
             BuildTextCell(metricName),
             BuildTextCell(value.ToString(CultureInfo.InvariantCulture), value)
+        ]);
+
+    private static TableRow BuildTextMetricRow(string metricName, string value) =>
+        new(
+        [
+            BuildTextCell(metricName),
+            BuildTextCell(value)
         ]);
 
     private static TableCell BuildTextCell(string text, IFormattable? sortValue = null) =>
@@ -510,6 +1004,84 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             text);
     }
 
+    private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
+        duration is null
+            ? "-"
+            : PdfPresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
+
+    private static string FormatDurationWithHours(TimeSpan duration, bool showTimeCalculationsInHoursOnly)
+    {
+        var durationLabel = PdfPresentationHelpers.ToDurationLabel(duration, showTimeCalculationsInHoursOnly);
+        var hoursLabel = duration.TotalHours.ToString("0.##", CultureInfo.InvariantCulture) + "h";
+        return showTimeCalculationsInHoursOnly
+            ? durationLabel
+            : $"{durationLabel} ({hoursLabel})";
+    }
+
+    private static int CountCodeIssues(IEnumerable<IssueTimeline> issues) =>
+        issues.Count(static issue => issue.HasPullRequest);
+
+    private static string BuildProdBugPrioritySummary(IEnumerable<IssueListItem> issues)
+    {
+        var prodIssues = issues
+            .Where(static issue => issue.ReporducedOnProd)
+            .ToArray();
+        var total = prodIssues.Length.ToString(CultureInfo.InvariantCulture);
+        var priorityCounts = prodIssues
+            .Where(static issue => !string.IsNullOrWhiteSpace(issue.Priority))
+            .GroupBy(static issue => issue.Priority!, StringComparer.OrdinalIgnoreCase)
+            .Select(static group => new
+            {
+                Priority = group.Key,
+                Count = group.Count()
+            })
+            .OrderBy(static item => GetPrioritySortKey(item.Priority))
+            .ThenBy(static item => item.Priority, StringComparer.OrdinalIgnoreCase)
+            .Select(static item => string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}: {1}",
+                item.Priority,
+                item.Count))
+            .ToArray();
+
+        return priorityCounts.Length == 0
+            ? total
+            : string.Format(CultureInfo.InvariantCulture, "{0} ({1})", total, string.Join(", ", priorityCounts));
+    }
+
+    private static int GetPrioritySortKey(string priority)
+    {
+        if (priority.Length >= 2
+            && (priority[0] is 'P' or 'p')
+            && int.TryParse(priority[1..], CultureInfo.InvariantCulture, out var priorityNumber))
+        {
+            return priorityNumber;
+        }
+
+        return int.MaxValue;
+    }
+
+    private static string BuildCoverageText(QaTransitionAnalysis analysis) =>
+        string.Format(
+            CultureInfo.InvariantCulture,
+            "{0}/{1} ({2:0.##}%)",
+            analysis.PickupIssues.Count,
+            analysis.AnalyzedIssueCount.Value,
+            analysis.PickupIssuePercentage);
+
+    private static string BuildRulesLabel(IReadOnlyList<TransitionMeasurementRule> rules) =>
+        string.Join("; ", rules.Select(static rule => rule.Label));
+
+    private static string BuildIssueTypeBreakdown(IReadOnlyList<IssueTypeCountSummary> issueTypes) =>
+        issueTypes.Count == 0
+            ? "-"
+            : string.Join(
+                "; ",
+                issueTypes
+                    .OrderByDescending(static summary => summary.Count.Value)
+                    .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)
+                    .Select(static summary => $"{summary.IssueType.Value} - {summary.Count.Value.ToString(CultureInfo.InvariantCulture)}"));
+
     private static IReadOnlyList<TableColumn> MetricColumns { get; } =
     [
         new TableColumn("Metric", "text", "Metric"),
@@ -521,4 +1093,10 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
     private sealed record TableCell(string Html, string SortValue, string FilterValue);
 
     private sealed record TableRow(IReadOnlyList<TableCell> Cells, string? CssClass = null);
+
+    [GeneratedRegex("<section\\s+class=\"[^\"]*table-section[^\"]*\"\\s+id=\"(?<id>[^\"]+)\">\\s*<div\\s+class=\"section-header\"><h2>(?<title>.*?)</h2></div>", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
+    private static partial Regex SectionHeadingRegex();
+
+    [GeneratedRegex("<.*?>", RegexOptions.CultureInvariant)]
+    private static partial Regex TagRegex();
 }

@@ -22,9 +22,21 @@ public sealed class HtmlContentComposerTests
 
         // Assert
         html.Should().Contain("JiraFlowInspector HTML Report");
+        html.Should().Contain("report-nav");
+        html.Should().Contain("href=\"#path-groups\"");
         html.Should().Contain("Issues moved to Done in selected period");
         html.Should().Contain("Path Groups Summary");
+        html.Should().Contain("Transition Len");
+        html.Should().Contain("data-toggle-detail");
+        html.Should().Contain("3h (3h)");
         html.Should().Contain("Release Report");
+        html.Should().Contain("Components Release Table");
+        html.Should().Contain("Bug Ratio: Open Issues");
+        html.Should().Contain("QA Transition Analysis");
+        html.Should().Contain("Testing time by issue");
+        html.Should().Contain("General Statistics");
+        html.Should().Contain("General Statistics is a current snapshot.");
+        html.Should().Contain("It is not a historical period slice.");
         html.Should().Contain("Architecture Tasks");
         html.Should().Contain("Global Incidents");
         html.Should().Contain("Failed Issues");
@@ -32,6 +44,10 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("data-sort-column=\"0\"");
         html.Should().Contain("Reset Filters");
         html.Should().Contain("browse/AAA-1");
+        html.IndexOf("id=\"global-incidents\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"ratios\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"general-statistics\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"failures\"", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Compose renders empty-state text when report has no data")]
@@ -58,7 +74,7 @@ public sealed class HtmlContentComposerTests
         // Assert
         html.Should().Contain("No issues.");
         html.Should().Contain("No path groups.");
-        html.Should().Contain("No failed issue loads.");
+        html.Should().NotContain("id=\"failures\"");
     }
 
     private static JiraPdfReportData CreateReportData()
@@ -92,6 +108,8 @@ public sealed class HtmlContentComposerTests
                     new IssueSummary("Release title"),
                     new DateOnly(2026, 2, 10),
                     tasks: 3,
+                    components: 1,
+                    componentNames: ["Trading"],
                     environmentNames: ["P005"])
             ],
             ArchTasks =
@@ -116,10 +134,59 @@ public sealed class HtmlContentComposerTests
             AllTasksMovedToDoneThisMonth = new ItemCount(2),
             AllTasksRejectedThisMonth = new ItemCount(1),
             AllTasksFinishedThisMonth = new ItemCount(3),
+            BugCreatedThisMonth = new ItemCount(2),
+            BugMovedToDoneThisMonth = new ItemCount(1),
+            BugRejectedThisMonth = new ItemCount(0),
+            BugFinishedThisMonth = new ItemCount(1),
+            BugReporducedOnProd = new ItemCount(1),
+            BugOpenIssues =
+            [
+                new IssueListItem(
+                    new IssueKey("AAA-2"),
+                    new IssueSummary("Open prod bug"),
+                    new DateTimeOffset(2026, 2, 8, 10, 0, 0, TimeSpan.Zero),
+                    reporducedOnProd: true,
+                    priority: "P1")
+            ],
+            BugDoneIssues =
+            [
+                new IssueListItem(
+                    new IssueKey("AAA-3"),
+                    new IssueSummary("Done bug"),
+                    new DateTimeOffset(2026, 2, 7, 10, 0, 0, TimeSpan.Zero))
+            ],
+            BugRejectedIssues = [],
             DoneIssues = [issue],
             DoneDaysAtWork75PerType =
             [
                 new IssueTypeWorkDays75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))
+            ],
+            QaTransitionAnalysis = new QaTransitionAnalysis(
+                new ItemCount(1),
+                [
+                    new TransitionMeasurementIssue(
+                        issue,
+                        new TransitionMeasurementRule(new StatusName("Open"), new StatusName("Done")),
+                        transition.At,
+                        transition.SincePrevious)
+                ],
+                TimeSpan.FromHours(3),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))],
+                [
+                    new TransitionMeasurementIssue(
+                        issue,
+                        new TransitionMeasurementRule(new StatusName("Open"), new StatusName("Done")),
+                        transition.At,
+                        transition.SincePrevious)
+                ],
+                TimeSpan.FromHours(3),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))]),
+            OpenIssuesByStatus =
+            [
+                new StatusIssueTypeSummary(
+                    new StatusName("In Progress"),
+                    new ItemCount(1),
+                    [new IssueTypeCountSummary(new IssueTypeName("Task"), new ItemCount(1))])
             ],
             PathSummary = new PathGroupsSummary(
                 new ItemCount(1),
@@ -148,7 +215,11 @@ public sealed class HtmlContentComposerTests
             new StatusName("Reject"),
             [new StageName("Code Review")],
             new MonthLabel("2026-02"),
-            releaseReport: new ReleaseReportSettings(new ProjectKey("RLS"), "ADF", "Release date"),
+            releaseReport: new ReleaseReportSettings(
+                new ProjectKey("RLS"),
+                "ADF",
+                "Release date",
+                componentsFieldName: "Components"),
             archTasksReport: new ArchTasksReportSettings("project = AAA"),
             globalIncidentsReport: new GlobalIncidentsReportSettings(jqlFilter: "labels = INCIDENT"));
 }

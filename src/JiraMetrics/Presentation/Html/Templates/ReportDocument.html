@@ -33,8 +33,13 @@
     a:hover { text-decoration: underline; }
 
     .page {
-      width: min(1880px, calc(100vw - 28px));
+      width: min(2440px, calc(100vw - 28px));
       margin: 10px auto 28px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 14px;
     }
 
     .hero {
@@ -87,6 +92,77 @@
     }
 
     .table-section { margin-top: 18px; }
+
+    .info-section { margin-top: 18px; }
+
+    .info-panel {
+      padding: 12px 14px;
+      border: 1px solid rgba(66, 184, 131, 0.34);
+      border-radius: 8px;
+      background: rgba(66, 184, 131, 0.12);
+      color: var(--text);
+      font-size: 0.86rem;
+    }
+
+    .info-panel strong {
+      color: #c9ffe4;
+    }
+
+    .report-layout {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .report-nav {
+      position: sticky;
+      top: 12px;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(12, 18, 24, 0.82);
+    }
+
+    .report-nav-title {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .report-nav nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    .report-nav a {
+      display: block;
+      padding: 7px 8px;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.82rem;
+      line-height: 1.25;
+    }
+
+    .report-nav a:hover,
+    .report-nav a.is-active {
+      background: var(--accent-soft);
+      color: #c9ffe4;
+      text-decoration: none;
+    }
+
+    .report-content {
+      min-width: 0;
+    }
+
+    .report-content .table-section:first-child {
+      margin-top: 0;
+    }
 
     .section-header {
       display: flex;
@@ -204,6 +280,10 @@
     tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.018); }
     tbody tr:hover { background: rgba(66, 184, 131, 0.08); }
     tbody tr.warning-row { background: var(--warning-soft); }
+    tbody tr.path-group-row { cursor: pointer; }
+    tbody tr.path-group-row.is-open { background: rgba(66, 184, 131, 0.12); }
+    tbody tr.detail-row { background: rgba(7, 11, 15, 0.36); }
+    tbody tr.detail-row:hover { background: rgba(7, 11, 15, 0.36); }
 
     .th-button {
       width: 100%;
@@ -230,11 +310,149 @@
       text-align: center;
     }
 
+    .empty-section {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .row-toggle {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(32, 45, 56, 0.9);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .path-detail {
+      padding: 14px;
+      white-space: normal;
+    }
+
+    .path-label {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .path-detail-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(460px, 1.2fr);
+      gap: 18px;
+    }
+
+    .path-detail h3 {
+      margin: 0 0 8px;
+      font-size: 0.88rem;
+      letter-spacing: 0;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .detail-list div {
+      display: grid;
+      grid-template-columns: 90px 100px minmax(220px, 1fr);
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.82rem;
+    }
+
+    .detail-list span {
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .transition-bars {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .transition-bar-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.8fr) minmax(160px, 1fr) 90px;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .transition-label {
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .bar-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(170, 184, 198, 0.18);
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .duration-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
     @media (max-width: 980px) {
       .page { width: calc(100vw - 14px); }
+      .report-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .report-nav {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin-top: 0;
+      }
+
+      .report-nav nav {
+        display: flex;
+        gap: 6px;
+      }
+
+      .report-nav a {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
       .table-controls { flex-direction: column; }
       thead tr:first-child th,
       thead tr.filters th { position: static; }
+      .path-detail-grid,
+      .detail-list div,
+      .transition-bar-row {
+        grid-template-columns: 1fr;
+      }
+
+      .duration-value { text-align: left; }
+    }
+
+    @media (min-width: 2200px) {
+      .page {
+        width: min(3200px, calc(100vw - 80px));
+      }
+
+      .report-layout {
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: 22px;
+      }
     }
   </style>
 </head>
@@ -256,12 +474,18 @@
       </div>
     </section>
 
+    <div class="report-layout">
+__NAV__
+      <main class="report-content">
 __CONTENT__
+      </main>
+    </div>
   </div>
 
   <script>
     (() => {
       const panels = Array.from(document.querySelectorAll('[data-table-panel]'));
+      const navLinks = Array.from(document.querySelectorAll('.report-nav a'));
 
       function parseComparable(value, type) {
         const raw = String(value ?? '').trim();
@@ -305,7 +529,7 @@ __CONTENT__
       for (const panel of panels) {
         const table = panel.querySelector('table');
         const tbody = table.querySelector('tbody');
-        const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.classList.contains('empty'));
+        const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.classList.contains('empty') && !row.classList.contains('detail-row'));
         const search = panel.querySelector('[data-table-search]');
         const reset = panel.querySelector('[data-table-reset]');
         const sortButtons = Array.from(panel.querySelectorAll('[data-sort-column]'));
@@ -332,6 +556,15 @@ __CONTENT__
             });
 
             row.hidden = !(globalMatch && columnsMatch);
+            const detail = row.nextElementSibling;
+            if (detail?.classList.contains('detail-row') && row.hidden) {
+              detail.hidden = true;
+              row.classList.remove('is-open');
+              const toggle = row.querySelector('.row-toggle');
+              if (toggle) {
+                toggle.textContent = '+';
+              }
+            }
           }
         }
 
@@ -349,7 +582,11 @@ __CONTENT__
           });
 
           for (const row of sortedRows) {
+            const detail = row.nextElementSibling;
             tbody.appendChild(row);
+            if (detail?.classList.contains('detail-row')) {
+              tbody.appendChild(detail);
+            }
           }
         }
 
@@ -387,9 +624,55 @@ __CONTENT__
           });
         }
 
+        for (const row of rows) {
+          if (!row.hasAttribute('data-toggle-detail')) {
+            continue;
+          }
+
+          row.addEventListener('click', event => {
+            if (event.target.closest('a')) {
+              return;
+            }
+
+            const detail = row.nextElementSibling;
+            if (!detail?.classList.contains('detail-row')) {
+              return;
+            }
+
+            const isOpening = detail.hidden;
+            detail.hidden = !isOpening;
+            row.classList.toggle('is-open', isOpening);
+            const toggle = row.querySelector('.row-toggle');
+            if (toggle) {
+              toggle.textContent = isOpening ? '-' : '+';
+            }
+          });
+        }
+
         applySort();
         updateSortIndicators();
         applyFilters();
+      }
+
+      if (navLinks.length > 0) {
+        const linkById = new Map(navLinks.map(link => [decodeURIComponent(link.hash.slice(1)), link]));
+        const observer = new IntersectionObserver(entries => {
+          const visible = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)[0];
+
+          if (!visible) {
+            return;
+          }
+
+          for (const link of navLinks) {
+            link.classList.toggle('is-active', link === linkById.get(visible.target.id));
+          }
+        }, { rootMargin: '-18% 0px -72% 0px', threshold: 0.01 });
+
+        for (const section of document.querySelectorAll('.table-section[id]')) {
+          observer.observe(section);
+        }
       }
     })();
   </script>
