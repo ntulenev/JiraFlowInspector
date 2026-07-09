@@ -19,4 +19,9 @@ public sealed class QaTransitionAnalysisOptions
     /// Gets or sets transition rules used to measure testing time.
     /// </summary>
     public IReadOnlyList<TransitionMeasurementRuleOptions>? TestingTransitions { get; init; }
+
+    /// <summary>
+    /// Gets or sets transition rules used to measure how long issues stay on QA hold.
+    /// </summary>
+    public IReadOnlyList<TransitionMeasurementRuleOptions>? HoldTransitions { get; init; }
 }

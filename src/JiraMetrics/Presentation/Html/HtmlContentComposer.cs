@@ -179,7 +179,8 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
                 BuildTextMetricRow("Rejected On Prod", BuildProdBugPrioritySummary(reportData.BugRejectedIssues)),
                 BuildTextMetricRow("QA In Progress Coverage", BuildCoverageText(analysis)),
                 BuildTextMetricRow("QA In Progress 75P", FormatDuration(analysis.PickupDuration75, showHoursOnly)),
-                BuildTextMetricRow("QA Transition 75P", FormatDuration(analysis.TestingDuration75, showHoursOnly))
+                BuildTextMetricRow("QA Transition 75P", FormatDuration(analysis.TestingDuration75, showHoursOnly)),
+                BuildTextMetricRow("QA Hold 75P", FormatDuration(analysis.HoldDuration75, showHoursOnly))
             ],
             defaultSortColumn: 0,
             compact: true));
@@ -210,6 +211,33 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         _ = html.Append(BuildIssueTypeDuration75Table("qa-pickup-75", "QA Pickup 75P per type", analysis.PickupDuration75PerType, showHoursOnly));
         _ = html.Append(BuildTransitionMeasurementTable("qa-testing-issues", "Testing time by issue", analysis.TestingIssues, reportData));
         _ = html.Append(BuildIssueTypeDuration75Table("qa-testing-75", "Testing time 75P per type", analysis.TestingDuration75PerType, showHoursOnly));
+        _ = html.Append(BuildTableSection(
+            "qa-hold-summary",
+            "QA Hold",
+            "No QA hold data.",
+            [
+                new TableColumn("Transition", "text", "Transition"),
+                new TableColumn("Issues", "number", "Issues"),
+                new TableColumn("75P", "number", "75P")
+            ],
+            [
+                new TableRow(
+                [
+                    BuildTextCell(BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.HoldTransitions)),
+                    BuildTextCell(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture), analysis.HoldIssues.Count),
+                    BuildTextCell(FormatDuration(analysis.HoldDuration75, showHoursOnly), analysis.HoldDuration75?.TotalMinutes)
+                ])
+            ],
+            defaultSortColumn: 1,
+            defaultSortDirection: "desc",
+            compact: true));
+        _ = html.Append(BuildTransitionMeasurementTable(
+            "qa-hold-issues",
+            "QA hold time by issue",
+            analysis.HoldIssues,
+            reportData,
+            showHoursOnly ? "Hours on hold" : "Days on hold"));
+        _ = html.Append(BuildIssueTypeDuration75Table("qa-hold-75", "QA hold 75P per type", analysis.HoldDuration75PerType, showHoursOnly));
         return html.ToString();
     }
 
@@ -761,7 +789,8 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         string sectionId,
         string title,
         IReadOnlyList<TransitionMeasurementIssue> issues,
-        JiraPdfReportData reportData)
+        JiraPdfReportData reportData,
+        string? durationColumnTitle = null)
     {
         var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
         var rows = issues
@@ -794,7 +823,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
                 new TableColumn("Summary", "text", "Summary", "summary-column"),
                 new TableColumn("Measured transition", "text", "Measured transition"),
                 new TableColumn("Transition At", "number", "Transition At"),
-                new TableColumn(showHoursOnly ? "Hours in QA" : "Days in QA", "number", "Duration")
+                new TableColumn(durationColumnTitle ?? (showHoursOnly ? "Hours in QA" : "Days in QA"), "number", "Duration")
             ],
             rows,
             defaultSortColumn: 8,

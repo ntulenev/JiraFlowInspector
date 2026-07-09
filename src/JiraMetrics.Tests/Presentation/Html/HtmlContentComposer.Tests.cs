@@ -180,6 +180,15 @@ public sealed class HtmlContentComposerTests
                         transition.SincePrevious)
                 ],
                 TimeSpan.FromHours(3),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))],
+                [
+                    new TransitionMeasurementIssue(
+                        issue,
+                        new TransitionMeasurementRule(new StatusName("QA on hold"), new StatusName("QA IN PROGRESS")),
+                        transition.At,
+                        transition.SincePrevious)
+                ],
+                TimeSpan.FromHours(3),
                 [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))]),
             OpenIssuesByStatus =
             [

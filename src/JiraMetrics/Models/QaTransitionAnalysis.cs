@@ -17,12 +17,17 @@ public sealed record QaTransitionAnalysis
         IReadOnlyList<IssueTypeDuration75Summary> pickupDuration75PerType,
         IReadOnlyList<TransitionMeasurementIssue> testingIssues,
         TimeSpan? testingDuration75,
-        IReadOnlyList<IssueTypeDuration75Summary> testingDuration75PerType)
+        IReadOnlyList<IssueTypeDuration75Summary> testingDuration75PerType,
+        IReadOnlyList<TransitionMeasurementIssue> holdIssues,
+        TimeSpan? holdDuration75,
+        IReadOnlyList<IssueTypeDuration75Summary> holdDuration75PerType)
     {
         ArgumentNullException.ThrowIfNull(pickupIssues);
         ArgumentNullException.ThrowIfNull(pickupDuration75PerType);
         ArgumentNullException.ThrowIfNull(testingIssues);
         ArgumentNullException.ThrowIfNull(testingDuration75PerType);
+        ArgumentNullException.ThrowIfNull(holdIssues);
+        ArgumentNullException.ThrowIfNull(holdDuration75PerType);
 
         AnalyzedIssueCount = analyzedIssueCount;
         PickupIssues = pickupIssues;
@@ -31,6 +36,9 @@ public sealed record QaTransitionAnalysis
         TestingIssues = testingIssues;
         TestingDuration75 = testingDuration75;
         TestingDuration75PerType = testingDuration75PerType;
+        HoldIssues = holdIssues;
+        HoldDuration75 = holdDuration75;
+        HoldDuration75PerType = holdDuration75PerType;
     }
 
     /// <summary>
@@ -38,6 +46,9 @@ public sealed record QaTransitionAnalysis
     /// </summary>
     public static QaTransitionAnalysis Empty { get; } = new(
         new ItemCount(0),
+        [],
+        null,
+        [],
         [],
         null,
         [],
@@ -79,6 +90,21 @@ public sealed record QaTransitionAnalysis
     /// Gets testing time P75 grouped by issue type.
     /// </summary>
     public IReadOnlyList<IssueTypeDuration75Summary> TestingDuration75PerType { get; }
+
+    /// <summary>
+    /// Gets QA hold time measurements.
+    /// </summary>
+    public IReadOnlyList<TransitionMeasurementIssue> HoldIssues { get; }
+
+    /// <summary>
+    /// Gets overall P75 duration for QA hold time.
+    /// </summary>
+    public TimeSpan? HoldDuration75 { get; }
+
+    /// <summary>
+    /// Gets QA hold time P75 grouped by issue type.
+    /// </summary>
+    public IReadOnlyList<IssueTypeDuration75Summary> HoldDuration75PerType { get; }
 
     /// <summary>
     /// Gets percentage of analyzed issues with QA pickup transition.

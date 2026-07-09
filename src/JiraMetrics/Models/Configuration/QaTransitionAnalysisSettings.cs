@@ -11,14 +11,17 @@ public sealed record QaTransitionAnalysisSettings
     public QaTransitionAnalysisSettings(
         bool enabled,
         IReadOnlyList<TransitionMeasurementRule> pickupTransitions,
-        IReadOnlyList<TransitionMeasurementRule> testingTransitions)
+        IReadOnlyList<TransitionMeasurementRule> testingTransitions,
+        IReadOnlyList<TransitionMeasurementRule> holdTransitions)
     {
         ArgumentNullException.ThrowIfNull(pickupTransitions);
         ArgumentNullException.ThrowIfNull(testingTransitions);
+        ArgumentNullException.ThrowIfNull(holdTransitions);
 
         Enabled = enabled;
         PickupTransitions = pickupTransitions;
         TestingTransitions = testingTransitions;
+        HoldTransitions = holdTransitions;
     }
 
     /// <summary>
@@ -40,6 +43,12 @@ public sealed record QaTransitionAnalysisSettings
             new TransitionMeasurementRule(
                 new("QA"),
                 new("Release Candidate"))
+        ],
+        holdTransitions:
+        [
+            new TransitionMeasurementRule(
+                new("QA on hold"),
+                new("QA IN PROGRESS"))
         ]);
 
     /// <summary>
@@ -56,4 +65,9 @@ public sealed record QaTransitionAnalysisSettings
     /// Gets transition rules used to measure testing time.
     /// </summary>
     public IReadOnlyList<TransitionMeasurementRule> TestingTransitions { get; }
+
+    /// <summary>
+    /// Gets transition rules used to measure how long issues stay on QA hold.
+    /// </summary>
+    public IReadOnlyList<TransitionMeasurementRule> HoldTransitions { get; }
 }

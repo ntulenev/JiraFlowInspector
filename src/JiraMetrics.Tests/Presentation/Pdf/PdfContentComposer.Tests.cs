@@ -203,7 +203,18 @@ public sealed class PdfContentComposerTests
                         TimeSpan.FromHours(4))
                 ],
                 TimeSpan.FromHours(4),
-                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(4))]),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(4))],
+                [
+                    new TransitionMeasurementIssue(
+                        issue,
+                        new TransitionMeasurementRule(
+                            new StatusName("QA on hold"),
+                            new StatusName("QA IN PROGRESS")),
+                        DateTimeOffset.UtcNow,
+                        TimeSpan.FromHours(1))
+                ],
+                TimeSpan.FromHours(1),
+                [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(1))]),
             RejectedIssues = [],
             PathSummary = summary,
             PathGroups = [group],

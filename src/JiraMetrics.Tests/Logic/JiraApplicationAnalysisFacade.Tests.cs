@@ -72,6 +72,8 @@ public sealed class JiraApplicationAnalysisFacadeTests
         result.QaTransitionAnalysis.TestingIssues[0].Duration.Should().Be(TimeSpan.FromHours(9));
         result.QaTransitionAnalysis.TestingIssues[3].Rule.Label.Should().Be("Manual QA -> Ready for release");
         result.QaTransitionAnalysis.TestingDuration75.Should().Be(TimeSpan.FromHours(8.25));
+        result.QaTransitionAnalysis.HoldIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-5");
+        result.QaTransitionAnalysis.HoldDuration75.Should().Be(TimeSpan.FromHours(5));
     }
 
     private static AppSettings CreateSettings() =>
@@ -99,6 +101,12 @@ public sealed class JiraApplicationAnalysisFacadeTests
                         new StatusName("Ready for release")),
                     new TransitionMeasurementRule(
                         new StatusName("Manual QA"),
+                        new StatusName("Ready for release"))
+                ],
+                holdTransitions:
+                [
+                    new TransitionMeasurementRule(
+                        new StatusName("Waiting for release"),
                         new StatusName("Ready for release"))
                 ]));
 

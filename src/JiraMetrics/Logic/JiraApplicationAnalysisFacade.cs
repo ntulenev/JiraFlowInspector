@@ -119,6 +119,10 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             settings.TestingTransitions,
             codeOnly: true,
             useStatusIntervalFallback: true);
+        var holdIssues = _logicService.BuildTransitionMeasurementIssues(
+            analyzedIssues,
+            settings.HoldTransitions,
+            codeOnly: true);
 
         return new QaTransitionAnalysis(
             new ItemCount(analyzedIssues.Length),
@@ -127,7 +131,10 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             _logicService.BuildDuration75PerType(pickupIssues),
             testingIssues,
             _logicService.BuildDuration75(testingIssues),
-            _logicService.BuildDuration75PerType(testingIssues));
+            _logicService.BuildDuration75PerType(testingIssues),
+            holdIssues,
+            _logicService.BuildDuration75(holdIssues),
+            _logicService.BuildDuration75PerType(holdIssues));
     }
 
     private readonly IJiraLogicService _logicService;

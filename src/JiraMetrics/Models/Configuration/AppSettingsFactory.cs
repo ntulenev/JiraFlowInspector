@@ -265,7 +265,11 @@ internal static class AppSettingsFactory
             ResolveTransitionMeasurementRules(
                 source.TestingTransitions,
                 QaTransitionAnalysisSettings.Default.TestingTransitions,
-                "QaTransitionAnalysis:TestingTransitions"));
+                "QaTransitionAnalysis:TestingTransitions"),
+            ResolveTransitionMeasurementRules(
+                source.HoldTransitions,
+                QaTransitionAnalysisSettings.Default.HoldTransitions,
+                "QaTransitionAnalysis:HoldTransitions"));
     }
 
     private static IReadOnlyList<TransitionMeasurementRule> ResolveTransitionMeasurementRules(

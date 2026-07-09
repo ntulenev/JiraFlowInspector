@@ -56,6 +56,23 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             "Testing time 75P per type",
             analysis.TestingDuration75PerType,
             showHoursOnly);
+        ComposeHoldSummary(
+            column,
+            reportData.Settings.QaTransitionAnalysis,
+            analysis,
+            showHoursOnly);
+        ComposeIssueTable(
+            column,
+            "QA hold time by issue",
+            analysis.HoldIssues,
+            reportData,
+            showHoursOnly,
+            showHoursOnly ? "Hours on hold" : "Days on hold");
+        ComposeDuration75PerTypeSection(
+            column,
+            "QA hold 75P per type",
+            analysis.HoldDuration75PerType,
+            showHoursOnly);
     }
 
     private static void ComposeQaSummary(
@@ -96,6 +113,10 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 table,
                 GetQaTransitionDuration75Label(showTimeCalculationsInHoursOnly),
                 FormatDuration(analysis.TestingDuration75, showTimeCalculationsInHoursOnly));
+            AddSummaryRow(
+                table,
+                GetQaHoldDuration75Label(showTimeCalculationsInHoursOnly),
+                FormatDuration(analysis.HoldDuration75, showTimeCalculationsInHoursOnly));
         });
     }
 
@@ -178,12 +199,50 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         });
     }
 
+    private static void ComposeHoldSummary(
+        ColumnDescriptor column,
+        QaTransitionAnalysisSettings settings,
+        QaTransitionAnalysis analysis,
+        bool showTimeCalculationsInHoursOnly)
+    {
+        _ = column.Item().Text("QA hold").Bold();
+        column.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.RelativeColumn(3f);
+                columns.RelativeColumn(1f);
+                columns.RelativeColumn(1.4f);
+            });
+
+            table.Header(header =>
+            {
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Transitions");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
+                _ = header.Cell()
+                    .Element(PdfPresentationHelpers.StyleHeaderCell)
+                    .Text(GetDuration75Title(showTimeCalculationsInHoursOnly));
+            });
+
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(BuildRulesLabel(settings.HoldTransitions));
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture));
+            _ = table.Cell()
+                .Element(PdfPresentationHelpers.StyleBodyCell)
+                .Text(FormatDuration(analysis.HoldDuration75, showTimeCalculationsInHoursOnly));
+        });
+    }
+
     private static void ComposeIssueTable(
         ColumnDescriptor column,
         string title,
         IReadOnlyList<TransitionMeasurementIssue> issues,
         JiraPdfReportData reportData,
-        bool showTimeCalculationsInHoursOnly)
+        bool showTimeCalculationsInHoursOnly,
+        string? durationColumnLabel = null)
     {
         _ = column.Item().Text(title).Bold();
 
@@ -220,7 +279,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Transition At");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(GetDurationColumnLabel(showTimeCalculationsInHoursOnly));
+                    .Text(durationColumnLabel ?? GetDurationColumnLabel(showTimeCalculationsInHoursOnly));
             });
 
             for (var i = 0; i < issues.Count; i++)
@@ -375,4 +434,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
     private static string GetQaTransitionDuration75Label(bool showTimeCalculationsInHoursOnly) =>
         showTimeCalculationsInHoursOnly ? "QA Transition Hours 75p" : "QA Transition Days 75p";
+
+    private static string GetQaHoldDuration75Label(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "QA Hold Hours 75p" : "QA Hold Days 75p";
 }

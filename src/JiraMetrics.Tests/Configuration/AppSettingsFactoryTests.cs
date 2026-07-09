@@ -51,6 +51,14 @@ public sealed class AppSettingsFactoryTests
                                 FromStatusName = " Testing ",
                                 ToStatusName = " Ready for release "
                             }
+                        ],
+                        HoldTransitions =
+                        [
+                            new TransitionMeasurementRuleOptions
+                            {
+                                FromStatusName = " QA on hold ",
+                                ToStatusName = " Testing "
+                            }
                         ]
                     },
                     CustomTransitionAnalysis = new CustomTransitionAnalysisOptions
@@ -131,6 +139,8 @@ public sealed class AppSettingsFactoryTests
             .Should().ContainSingle("Ready for QA -> Testing");
         settings.QaTransitionAnalysis.TestingTransitions.Select(static rule => rule.Label)
             .Should().ContainSingle("Testing -> Ready for release");
+        settings.QaTransitionAnalysis.HoldTransitions.Select(static rule => rule.Label)
+            .Should().ContainSingle("QA on hold -> Testing");
     }
 
     [Fact(DisplayName = "Create requires at least one required path stage")]

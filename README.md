@@ -136,7 +136,7 @@ HTML output includes:
 - Interactive per-table search, column filters, and sorting.
 - Global incidents as the first report section when configured.
 - Task ratios and bug ratio detail tables, including `ReporducedOnProd` and priority columns when configured.
-- QA transition analysis with summary, pickup metrics, testing issues, and P75-by-type tables.
+- QA transition analysis with summary, pickup metrics, testing issues, QA hold time, and P75-by-type tables.
 - Done/rejected transition analysis tables.
 - Path groups summary.
 - Path groups with compact rows (`#`, `Issues`, `TTM 75P`, `Transition Len`) and expandable details.
@@ -326,6 +326,8 @@ All options live under `Jira`.
   transition rules used to measure how quickly QA takes issues in work.
 - `TeamTasks.IssueTransitions.QaTransitionAnalysis.TestingTransitions` (`object[]`, optional):
   transition rules used to measure time spent in QA before release candidate.
+- `TeamTasks.IssueTransitions.QaTransitionAnalysis.HoldTransitions` (`object[]`, optional):
+  transition rules used to measure how long issues stayed on QA hold.
 - `TeamTasks.IssueTransitions.QaTransitionAnalysis.*Transitions[].FromStatusName` (`string`, required per configured rule):
   source status name for a QA measurement rule.
 - `TeamTasks.IssueTransitions.QaTransitionAnalysis.*Transitions[].ToStatusName` (`string`, required per configured rule):
@@ -470,6 +472,12 @@ Notes:
             {
               "FromStatusName": "QA",
               "ToStatusName": "Release Candidate"
+            }
+          ],
+          "HoldTransitions": [
+            {
+              "FromStatusName": "QA on hold",
+              "ToStatusName": "QA IN PROGRESS"
             }
           ]
         },
