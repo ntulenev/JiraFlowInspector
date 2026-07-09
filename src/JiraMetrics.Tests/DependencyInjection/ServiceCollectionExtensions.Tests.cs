@@ -9,6 +9,7 @@ using JiraMetrics.DependencyInjection;
 using JiraMetrics.Logic;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
+using JiraMetrics.Presentation.Html;
 using JiraMetrics.Presentation;
 using JiraMetrics.Presentation.Pdf;
 using JiraMetrics.Transport;
@@ -34,6 +35,7 @@ public sealed class ServiceCollectionExtensionsTests
         Action addApplication = () => _ = services.AddJiraApplication();
         Action addConfiguration = () => _ = services.AddJiraConfiguration(configuration);
         Action addLogic = () => _ = services.AddJiraLogic();
+        Action addHtml = () => _ = services.AddJiraHtml();
         Action addPdf = () => _ = services.AddJiraPdf();
         Action addPresentation = () => _ = services.AddJiraPresentation();
         Action addTransport = () => _ = services.AddJiraTransport();
@@ -42,6 +44,7 @@ public sealed class ServiceCollectionExtensionsTests
         addApplication.Should().Throw<ArgumentNullException>();
         addConfiguration.Should().Throw<ArgumentNullException>();
         addLogic.Should().Throw<ArgumentNullException>();
+        addHtml.Should().Throw<ArgumentNullException>();
         addPdf.Should().Throw<ArgumentNullException>();
         addPresentation.Should().Throw<ArgumentNullException>();
         addTransport.Should().Throw<ArgumentNullException>();
@@ -142,6 +145,33 @@ public sealed class ServiceCollectionExtensionsTests
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "AddJiraHtml registers HTML services")]
+    [Trait("Category", "Unit")]
+    public void AddJiraHtmlWhenCalledRegistersExpectedServices()
+    {
+        var services = new ServiceCollection();
+
+        var returned = services.AddJiraHtml();
+
+        returned.Should().BeSameAs(services);
+        services.Any(static descriptor =>
+            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Html.IHtmlContentComposer)
+            && descriptor.ImplementationType == typeof(HtmlContentComposer)
+            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+        services.Any(static descriptor =>
+            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Html.IHtmlReportFileStore)
+            && descriptor.ImplementationType == typeof(HtmlReportFileStore)
+            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+        services.Any(static descriptor =>
+            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Html.IHtmlReportLauncher)
+            && descriptor.ImplementationType == typeof(HtmlReportLauncher)
+            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+        services.Any(static descriptor =>
+            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Html.IHtmlReportRenderer)
+            && descriptor.ImplementationType == typeof(HtmlReportRenderer)
+            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+    }
+
     [Fact(DisplayName = "AddJiraPresentation resolves one shared Spectre presentation instance")]
     [Trait("Category", "Unit")]
     public void AddJiraPresentationWhenCalledResolvesExpectedSingletonPresenters()
@@ -211,6 +241,7 @@ public sealed class ServiceCollectionExtensionsTests
         services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(Mock.Of<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>());
         services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(Mock.Of<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>());
         services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>());
+        services.AddSingleton<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>(Mock.Of<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>());
         services.AddSingleton<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(Mock.Of<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>());
         services.AddSingleton<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(Mock.Of<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>());
         services.AddJiraApplication();

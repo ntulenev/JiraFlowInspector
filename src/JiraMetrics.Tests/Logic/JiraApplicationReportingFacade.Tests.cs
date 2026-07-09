@@ -2,6 +2,7 @@ using System.Globalization;
 
 using FluentAssertions;
 
+using JiraMetrics.Abstractions.Html;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -18,10 +19,11 @@ public sealed class JiraApplicationReportingFacadeTests
     public void ConstructorWhenPresentationServiceIsNullThrowsArgumentNullException()
     {
         // Arrange
+        IHtmlReportRenderer htmlReportRenderer = Mock.Of<IHtmlReportRenderer>();
         IPdfReportRenderer pdfReportRenderer = Mock.Of<IPdfReportRenderer>();
 
         // Act
-        Action act = () => _ = new JiraApplicationReportingFacade(null!, pdfReportRenderer);
+        Action act = () => _ = new JiraApplicationReportingFacade(null!, htmlReportRenderer, pdfReportRenderer);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
@@ -33,9 +35,10 @@ public sealed class JiraApplicationReportingFacadeTests
     {
         // Arrange
         IJiraPresentationService presentationService = Mock.Of<IJiraPresentationService>();
+        IHtmlReportRenderer htmlReportRenderer = Mock.Of<IHtmlReportRenderer>();
 
         // Act
-        Action act = () => _ = new JiraApplicationReportingFacade(presentationService, null!);
+        Action act = () => _ = new JiraApplicationReportingFacade(presentationService, htmlReportRenderer, null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
@@ -47,9 +50,11 @@ public sealed class JiraApplicationReportingFacadeTests
     {
         // Arrange
         var presentationService = new Mock<IJiraPresentationService>();
+        var htmlReportRenderer = new Mock<IHtmlReportRenderer>();
         var pdfReportRenderer = new Mock<IPdfReportRenderer>();
         var facade = new JiraApplicationReportingFacade(
             presentationService.Object,
+            htmlReportRenderer.Object,
             pdfReportRenderer.Object);
 
         var user = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123");
@@ -238,6 +243,7 @@ public sealed class JiraApplicationReportingFacadeTests
                 new StatusName("Rejected")),
             Times.Once);
         presentationService.Verify(service => service.ShowFailures(failures), Times.Once);
+        htmlReportRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
         pdfReportRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
     }
 

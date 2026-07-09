@@ -87,6 +87,12 @@ public sealed class AppSettingsFactoryTests
                 Enabled = true,
                 OutputPath = "report.pdf",
                 OpenAfterGeneration = true
+            },
+            Html = new HtmlOptions
+            {
+                Enabled = true,
+                OutputPath = "report.html",
+                OpenAfterGeneration = true
             }
         };
 
@@ -114,6 +120,9 @@ public sealed class AppSettingsFactoryTests
         settings.GlobalIncidentsReport.Should().NotBeNull();
         settings.PdfReport.Enabled.Should().BeTrue();
         settings.PdfReport.OpenAfterGeneration.Should().BeTrue();
+        settings.HtmlReport.Enabled.Should().BeTrue();
+        settings.HtmlReport.OutputPath.Should().Be("report.html");
+        settings.HtmlReport.OpenAfterGeneration.Should().BeTrue();
         settings.CustomTransitionAnalysis!.Label.Should().Be("Release Candidate -> Done");
         settings.CustomTransitionAnalysis.CodeOnly.Should().BeTrue();
         settings.CustomTransitionAnalysis.GenerateSeparateReport.Should().BeTrue();
