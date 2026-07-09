@@ -169,15 +169,15 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             "No QA transition data.",
             MetricColumns,
             [
-                BuildTextMetricRow("Total Done Code Tasks", CountCodeIssues(reportData.DoneIssues).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Rejected Code Tasks", CountCodeIssues(reportData.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.DoneIssues).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Open Bugs", reportData.BugOpenIssues.Count.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open On Prod", BuildProdBugPrioritySummary(reportData.BugOpenIssues)),
+                BuildTextMetricRow("Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugOpenIssues)),
                 BuildTextMetricRow("Done Bugs", reportData.BugDoneIssues.Count.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Done On Prod", BuildProdBugPrioritySummary(reportData.BugDoneIssues)),
+                BuildTextMetricRow("Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugDoneIssues)),
                 BuildTextMetricRow("Rejected Bugs", reportData.BugRejectedIssues.Count.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Rejected On Prod", BuildProdBugPrioritySummary(reportData.BugRejectedIssues)),
-                BuildTextMetricRow("QA In Progress Coverage", BuildCoverageText(analysis)),
+                BuildTextMetricRow("Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugRejectedIssues)),
+                BuildTextMetricRow("QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis)),
                 BuildTextMetricRow("QA In Progress 75P", FormatDuration(analysis.PickupDuration75, showHoursOnly)),
                 BuildTextMetricRow("QA Transition 75P", FormatDuration(analysis.TestingDuration75, showHoursOnly)),
                 BuildTextMetricRow("QA Hold 75P", FormatDuration(analysis.HoldDuration75, showHoursOnly))
@@ -198,7 +198,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             [
                 new TableRow(
                 [
-                    BuildTextCell(BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.PickupTransitions)),
+                    BuildTextCell(QaTransitionPresentationSummary.BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.PickupTransitions)),
                     BuildTextCell($"{analysis.PickupIssues.Count.ToString(CultureInfo.InvariantCulture)}/{analysis.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture)}"),
                     BuildTextCell(analysis.PickupIssuePercentage.ToString("0.##", CultureInfo.InvariantCulture) + "%", analysis.PickupIssuePercentage),
                     BuildTextCell(FormatDuration(analysis.PickupDuration75, showHoursOnly), analysis.PickupDuration75?.TotalMinutes)
@@ -223,7 +223,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             [
                 new TableRow(
                 [
-                    BuildTextCell(BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.HoldTransitions)),
+                    BuildTextCell(QaTransitionPresentationSummary.BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.HoldTransitions)),
                     BuildTextCell(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture), analysis.HoldIssues.Count),
                     BuildTextCell(FormatDuration(analysis.HoldDuration75, showHoursOnly), analysis.HoldDuration75?.TotalMinutes)
                 ])
@@ -1046,60 +1046,6 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             ? durationLabel
             : $"{durationLabel} ({hoursLabel})";
     }
-
-    private static int CountCodeIssues(IEnumerable<IssueTimeline> issues) =>
-        issues.Count(static issue => issue.HasPullRequest);
-
-    private static string BuildProdBugPrioritySummary(IEnumerable<IssueListItem> issues)
-    {
-        var prodIssues = issues
-            .Where(static issue => issue.ReporducedOnProd)
-            .ToArray();
-        var total = prodIssues.Length.ToString(CultureInfo.InvariantCulture);
-        var priorityCounts = prodIssues
-            .Where(static issue => !string.IsNullOrWhiteSpace(issue.Priority))
-            .GroupBy(static issue => issue.Priority!, StringComparer.OrdinalIgnoreCase)
-            .Select(static group => new
-            {
-                Priority = group.Key,
-                Count = group.Count()
-            })
-            .OrderBy(static item => GetPrioritySortKey(item.Priority))
-            .ThenBy(static item => item.Priority, StringComparer.OrdinalIgnoreCase)
-            .Select(static item => string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}: {1}",
-                item.Priority,
-                item.Count))
-            .ToArray();
-
-        return priorityCounts.Length == 0
-            ? total
-            : string.Format(CultureInfo.InvariantCulture, "{0} ({1})", total, string.Join(", ", priorityCounts));
-    }
-
-    private static int GetPrioritySortKey(string priority)
-    {
-        if (priority.Length >= 2
-            && (priority[0] is 'P' or 'p')
-            && int.TryParse(priority[1..], CultureInfo.InvariantCulture, out var priorityNumber))
-        {
-            return priorityNumber;
-        }
-
-        return int.MaxValue;
-    }
-
-    private static string BuildCoverageText(QaTransitionAnalysis analysis) =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "{0}/{1} ({2:0.##}%)",
-            analysis.PickupIssues.Count,
-            analysis.AnalyzedIssueCount.Value,
-            analysis.PickupIssuePercentage);
-
-    private static string BuildRulesLabel(IReadOnlyList<TransitionMeasurementRule> rules) =>
-        string.Join("; ", rules.Select(static rule => rule.Label));
 
     private static string BuildIssueTypeBreakdown(IReadOnlyList<IssueTypeCountSummary> issueTypes) =>
         issueTypes.Count == 0

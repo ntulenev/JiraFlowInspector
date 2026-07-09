@@ -96,15 +96,15 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
             });
 
-            AddSummaryRow(table, "Total Done Code Tasks", CountCodeIssues(reportData.DoneIssues));
-            AddSummaryRow(table, "Total Rejected Code Tasks", CountCodeIssues(reportData.RejectedIssues));
+            AddSummaryRow(table, "Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.DoneIssues));
+            AddSummaryRow(table, "Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.RejectedIssues));
             AddSummaryRow(table, "Open Bugs", reportData.BugOpenIssues.Count);
-            AddSummaryRow(table, "Open On Prod", BuildProdBugPrioritySummary(reportData.BugOpenIssues));
+            AddSummaryRow(table, "Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugOpenIssues));
             AddSummaryRow(table, "Done Bugs", reportData.BugDoneIssues.Count);
-            AddSummaryRow(table, "Done On Prod", BuildProdBugPrioritySummary(reportData.BugDoneIssues));
+            AddSummaryRow(table, "Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugDoneIssues));
             AddSummaryRow(table, "Rejected Bugs", reportData.BugRejectedIssues.Count);
-            AddSummaryRow(table, "Rejected On Prod", BuildProdBugPrioritySummary(reportData.BugRejectedIssues));
-            AddSummaryRow(table, "QA In Progress Coverage", BuildCoverageText(analysis));
+            AddSummaryRow(table, "Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugRejectedIssues));
+            AddSummaryRow(table, "QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis));
             AddSummaryRow(
                 table,
                 GetQaInProgressDuration75Label(showTimeCalculationsInHoursOnly),
@@ -149,7 +149,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(BuildRulesLabel(settings.PickupTransitions));
+                .Text(QaTransitionPresentationSummary.BuildRulesLabel(settings.PickupTransitions));
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
                 .Text($"{analysis.PickupIssues.Count}/{analysis.AnalyzedIssueCount.Value}");
@@ -189,7 +189,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(BuildRulesLabel(settings.TestingTransitions));
+                .Text(QaTransitionPresentationSummary.BuildRulesLabel(settings.TestingTransitions));
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
                 .Text(analysis.TestingIssues.Count.ToString(CultureInfo.InvariantCulture));
@@ -226,7 +226,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(BuildRulesLabel(settings.HoldTransitions));
+                .Text(QaTransitionPresentationSummary.BuildRulesLabel(settings.HoldTransitions));
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
                 .Text(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture));
@@ -368,60 +368,6 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(metric);
         _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(value);
     }
-
-    private static int CountCodeIssues(IEnumerable<IssueTimeline> issues) =>
-        issues.Count(static issue => issue.HasPullRequest);
-
-    private static string BuildProdBugPrioritySummary(IEnumerable<IssueListItem> issues)
-    {
-        var prodIssues = issues
-            .Where(static issue => issue.ReporducedOnProd)
-            .ToArray();
-        var total = prodIssues.Length.ToString(CultureInfo.InvariantCulture);
-        var priorityCounts = prodIssues
-            .Where(static issue => !string.IsNullOrWhiteSpace(issue.Priority))
-            .GroupBy(static issue => issue.Priority!, StringComparer.OrdinalIgnoreCase)
-            .Select(static group => new
-            {
-                Priority = group.Key,
-                Count = group.Count()
-            })
-            .OrderBy(static item => GetPrioritySortKey(item.Priority))
-            .ThenBy(static item => item.Priority, StringComparer.OrdinalIgnoreCase)
-            .Select(static item => string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}: {1}",
-                item.Priority,
-                item.Count))
-            .ToArray();
-
-        return priorityCounts.Length == 0
-            ? total
-            : string.Format(CultureInfo.InvariantCulture, "{0} ({1})", total, string.Join(", ", priorityCounts));
-    }
-
-    private static int GetPrioritySortKey(string priority)
-    {
-        if (priority.Length >= 2
-            && (priority[0] is 'P' or 'p')
-            && int.TryParse(priority[1..], CultureInfo.InvariantCulture, out var priorityNumber))
-        {
-            return priorityNumber;
-        }
-
-        return int.MaxValue;
-    }
-
-    private static string BuildCoverageText(QaTransitionAnalysis analysis) =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "{0}/{1} ({2:0.##}%)",
-            analysis.PickupIssues.Count,
-            analysis.AnalyzedIssueCount.Value,
-            analysis.PickupIssuePercentage);
-
-    private static string BuildRulesLabel(IReadOnlyList<TransitionMeasurementRule> rules) =>
-        string.Join("; ", rules.Select(static rule => rule.Label));
 
     private static string GetDurationColumnLabel(bool showTimeCalculationsInHoursOnly) =>
         showTimeCalculationsInHoursOnly ? "Hours in QA" : "Days in QA";
