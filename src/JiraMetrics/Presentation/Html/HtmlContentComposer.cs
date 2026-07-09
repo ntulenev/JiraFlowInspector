@@ -14,7 +14,7 @@ namespace JiraMetrics.Presentation.Html;
 public sealed partial class HtmlContentComposer : IHtmlContentComposer
 {
     /// <inheritdoc />
-    public string Compose(JiraPdfReportData reportData)
+    public string Compose(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
@@ -75,7 +75,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             });
     }
 
-    private static string BuildRatiosSection(JiraPdfReportData reportData)
+    private static string BuildRatiosSection(JiraReportData reportData)
     {
         var rows = new List<TableRow>();
         AddRatioRows(rows, "All tasks", reportData.AllTasksCreatedThisMonth, reportData.AllTasksOpenThisMonth, reportData.AllTasksMovedToDoneThisMonth, reportData.AllTasksRejectedThisMonth, reportData.AllTasksFinishedThisMonth);
@@ -121,7 +121,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         ]));
     }
 
-    private static string BuildBugRatioDetailsSection(JiraPdfReportData reportData)
+    private static string BuildBugRatioDetailsSection(JiraReportData reportData)
     {
         if (!reportData.BugCreatedThisMonth.HasValue)
         {
@@ -153,7 +153,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildQaTransitionAnalysisSection(JiraPdfReportData reportData)
+    private static string BuildQaTransitionAnalysisSection(JiraReportData reportData)
     {
         var analysis = reportData.QaTransitionAnalysis;
         if (analysis.AnalyzedIssueCount.Value == 0)
@@ -241,7 +241,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildGeneralStatisticsSection(JiraPdfReportData reportData)
+    private static string BuildGeneralStatisticsSection(JiraReportData reportData)
     {
         if (!reportData.Settings.ShowGeneralStatistics)
         {
@@ -292,7 +292,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         IReadOnlyList<IssueTimeline> issues,
         StatusName targetStatusName,
         string atColumnTitle,
-        JiraPdfReportData reportData)
+        JiraReportData reportData)
     {
         var columns = new[]
         {
@@ -387,7 +387,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 0,
             compact: true);
 
-    private static string BuildPathGroupsTable(JiraPdfReportData reportData)
+    private static string BuildPathGroupsTable(JiraReportData reportData)
     {
         var columns = new[]
         {
@@ -476,7 +476,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildReleaseTable(JiraPdfReportData reportData)
+    private static string BuildReleaseTable(JiraReportData reportData)
     {
         if (reportData.Settings.ReleaseReport is null)
         {
@@ -517,7 +517,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 1);
     }
 
-    private static string BuildComponentsReleaseTable(JiraPdfReportData reportData)
+    private static string BuildComponentsReleaseTable(JiraReportData reportData)
     {
         if (reportData.Settings.ReleaseReport is null
             || string.IsNullOrWhiteSpace(reportData.Settings.ReleaseReport.ComponentsFieldName))
@@ -549,7 +549,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             compact: true);
     }
 
-    private static string BuildPathGroupDetails(PathGroup group, JiraPdfReportData reportData)
+    private static string BuildPathGroupDetails(PathGroup group, JiraReportData reportData)
     {
         var html = new StringBuilder();
         var maxDuration = group.P75Transitions.Count == 0
@@ -623,7 +623,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    private static string BuildArchTasksTable(JiraPdfReportData reportData)
+    private static string BuildArchTasksTable(JiraReportData reportData)
     {
         if (reportData.Settings.ArchTasksReport is null)
         {
@@ -658,7 +658,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 2);
     }
 
-    private static string BuildGlobalIncidentsTable(JiraPdfReportData reportData)
+    private static string BuildGlobalIncidentsTable(JiraReportData reportData)
     {
         if (reportData.Settings.GlobalIncidentsReport is null)
         {
@@ -699,7 +699,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 2);
     }
 
-    private static string BuildFailuresTable(JiraPdfReportData reportData)
+    private static string BuildFailuresTable(JiraReportData reportData)
     {
         if (reportData.Failures.Count == 0)
         {
@@ -732,7 +732,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         string sectionId,
         string title,
         IReadOnlyList<IssueListItem> issues,
-        JiraPdfReportData reportData,
+        JiraReportData reportData,
         bool includeCreatedAt,
         bool includeReporducedOnProd)
     {
@@ -789,7 +789,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         string sectionId,
         string title,
         IReadOnlyList<TransitionMeasurementIssue> issues,
-        JiraPdfReportData reportData,
+        JiraReportData reportData,
         string? durationColumnTitle = null)
     {
         var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;

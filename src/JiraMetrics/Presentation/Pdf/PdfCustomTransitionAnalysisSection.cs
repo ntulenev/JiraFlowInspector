@@ -15,7 +15,7 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(column);
         ArgumentNullException.ThrowIfNull(reportData);
@@ -47,7 +47,7 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
 
     private static void ComposeIssueTable(
         ColumnDescriptor column,
-        JiraPdfReportData reportData,
+        JiraReportData reportData,
         CustomTransitionAnalysisSettings settings,
         IReadOnlyList<CustomTransitionIssue> issues)
     {

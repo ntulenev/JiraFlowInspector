@@ -44,7 +44,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
     }
 
     /// <inheritdoc />
-    public void RenderReport(JiraPdfReportData reportData)
+    public void RenderReport(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
@@ -77,7 +77,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
     }
 
     private static Document CreateReportDocument(
-        JiraPdfReportData reportData,
+        JiraReportData reportData,
         string title,
         Action<ColumnDescriptor> composeContent)
     {
@@ -154,7 +154,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
         }
     }
 
-    private static bool ShouldRenderCustomTransitionReport(JiraPdfReportData reportData) =>
+    private static bool ShouldRenderCustomTransitionReport(JiraReportData reportData) =>
         reportData.Settings.CustomTransitionAnalysis is { GenerateSeparateReport: true };
 
     [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "CLI warning message for local desktop usage.")]

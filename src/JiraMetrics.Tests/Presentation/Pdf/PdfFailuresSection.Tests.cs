@@ -63,9 +63,9 @@ public sealed class PdfFailuresSectionTests
             .GeneratePdf();
     }
 
-    private static JiraPdfReportData CreateReportData(IReadOnlyList<LoadFailure> failures)
+    private static JiraReportData CreateReportData(IReadOnlyList<LoadFailure> failures)
     {
-        return new JiraPdfReportData
+        return new JiraReportData
         {
             Settings = new AppSettings(
                 new JiraBaseUrl("https://example.atlassian.net"),

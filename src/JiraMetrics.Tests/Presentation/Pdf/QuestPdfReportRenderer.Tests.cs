@@ -72,7 +72,7 @@ public sealed class QuestPdfReportRendererTests
         fileStore.Verify(x => x.Save(It.IsAny<string>(), It.IsAny<IDocument>()), Times.Never);
         launcher.Verify(x => x.Open(It.IsAny<string>()), Times.Never);
         composer.Verify(
-            x => x.ComposeContent(It.IsAny<QuestPDF.Fluent.ColumnDescriptor>(), It.IsAny<JiraPdfReportData>()),
+            x => x.ComposeContent(It.IsAny<QuestPDF.Fluent.ColumnDescriptor>(), It.IsAny<JiraReportData>()),
             Times.Never);
     }
 
@@ -99,7 +99,7 @@ public sealed class QuestPdfReportRendererTests
         composer
             .Setup(x => x.ComposeContent(
                 It.Is<QuestPDF.Fluent.ColumnDescriptor>(column => column != null),
-                It.Is<JiraPdfReportData>(data => ReferenceEquals(data, reportData))))
+                It.Is<JiraReportData>(data => ReferenceEquals(data, reportData))))
             .Callback(() => composeCalls++);
 
         var fileStore = new Mock<IPdfReportFileStore>(MockBehavior.Strict);
@@ -156,7 +156,7 @@ public sealed class QuestPdfReportRendererTests
         composer
             .Setup(x => x.ComposeContent(
                 It.IsAny<QuestPDF.Fluent.ColumnDescriptor>(),
-                It.Is<JiraPdfReportData>(data => ReferenceEquals(data, reportData))));
+                It.Is<JiraReportData>(data => ReferenceEquals(data, reportData))));
 
         var savedPaths = new List<string>();
         var fileStore = new Mock<IPdfReportFileStore>(MockBehavior.Strict);
@@ -200,7 +200,7 @@ public sealed class QuestPdfReportRendererTests
         composer
             .Setup(x => x.ComposeContent(
                 It.IsAny<QuestPDF.Fluent.ColumnDescriptor>(),
-                It.Is<JiraPdfReportData>(data => ReferenceEquals(data, reportData))));
+                It.Is<JiraReportData>(data => ReferenceEquals(data, reportData))));
 
         var fileStore = new Mock<IPdfReportFileStore>(MockBehavior.Strict);
         fileStore
@@ -243,7 +243,7 @@ public sealed class QuestPdfReportRendererTests
             customTransitionAnalysis: customTransitionAnalysis);
     }
 
-    private static JiraPdfReportData CreateReportData(AppSettings settings)
+    private static JiraReportData CreateReportData(AppSettings settings)
     {
         var transitions = new List<TransitionEvent>
         {
@@ -271,7 +271,7 @@ public sealed class QuestPdfReportRendererTests
             [new PercentileTransition(new StatusName("Open"), new StatusName("Done"), TimeSpan.FromHours(1))],
             TimeSpan.FromHours(1));
 
-        return new JiraPdfReportData
+        return new JiraReportData
         {
             Settings = settings,
             SearchIssueCount = new ItemCount(1),

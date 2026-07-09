@@ -141,7 +141,7 @@ internal sealed class JiraApplicationReportingFacade : IJiraApplicationReporting
     public void ShowFailures(IReadOnlyList<LoadFailure> failures) =>
         _presentationService.ShowFailures(failures);
 
-    public void RenderReport(JiraPdfReportData reportData)
+    public void RenderReport(JiraReportData reportData)
     {
         _htmlReportRenderer.RenderReport(reportData);
         _pdfReportRenderer.RenderReport(reportData);

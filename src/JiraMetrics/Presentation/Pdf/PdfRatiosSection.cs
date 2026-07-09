@@ -14,14 +14,14 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfRatiosSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         ComposeAllTasksRatioSection(column, reportData);
         ComposeBugRatioSection(column, reportData);
         ComposeInternalIncidentsSection(column, reportData);
     }
 
-    private static void ComposeBugRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
+    private static void ComposeBugRatioSection(ColumnDescriptor column, JiraReportData reportData)
     {
         if (!reportData.BugCreatedThisMonth.HasValue
             || !reportData.BugMovedToDoneThisMonth.HasValue
@@ -79,7 +79,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
     }
 
-    private static void ComposeAllTasksRatioSection(ColumnDescriptor column, JiraPdfReportData reportData)
+    private static void ComposeAllTasksRatioSection(ColumnDescriptor column, JiraReportData reportData)
     {
         if (!reportData.AllTasksCreatedThisMonth.HasValue
             || !reportData.AllTasksOpenThisMonth.HasValue
@@ -102,7 +102,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             reportData.AllTasksFinishedThisMonth.Value);
     }
 
-    private static void ComposeInternalIncidentsSection(ColumnDescriptor column, JiraPdfReportData reportData)
+    private static void ComposeInternalIncidentsSection(ColumnDescriptor column, JiraReportData reportData)
     {
         if (reportData.Settings.InternalIncidentIssueNames.Count == 0)
         {

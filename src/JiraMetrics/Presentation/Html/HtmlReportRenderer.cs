@@ -37,7 +37,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
     }
 
     /// <inheritdoc />
-    public void RenderReport(JiraPdfReportData reportData)
+    public void RenderReport(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
 

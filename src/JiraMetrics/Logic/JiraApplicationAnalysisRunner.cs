@@ -188,7 +188,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         IReadOnlyList<LoadFailure> failures)
     {
         _reportingFacade.ShowProcessingStep("Rendering PDF report...");
-        _reportingFacade.RenderReport(JiraPdfReportData.Create(
+        _reportingFacade.RenderReport(JiraReportData.Create(
             _settings,
             reportData.ReportContext,
             reportData.AllTasksRatio,
@@ -205,7 +205,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         ItemCount matchedStageCount)
     {
         _reportingFacade.ShowProcessingStep("Rendering PDF report...");
-        _reportingFacade.RenderReport(JiraPdfReportData.CreateWithoutTransitionAnalysis(
+        _reportingFacade.RenderReport(JiraReportData.CreateWithoutTransitionAnalysis(
             _settings,
             reportData.ReportContext,
             reportData.AllTasksRatio,

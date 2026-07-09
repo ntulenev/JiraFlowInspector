@@ -11,5 +11,5 @@ public interface IHtmlReportRenderer
     /// Renders and saves HTML report.
     /// </summary>
     /// <param name="reportData">Aggregated report data.</param>
-    void RenderReport(JiraPdfReportData reportData);
+    void RenderReport(JiraReportData reportData);
 }

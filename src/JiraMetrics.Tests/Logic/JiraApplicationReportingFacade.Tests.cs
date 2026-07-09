@@ -260,9 +260,9 @@ public sealed class JiraApplicationReportingFacadeTests
             ReportPeriod.FromMonthLabel(new MonthLabel("2026-03")));
     }
 
-    private static JiraPdfReportData CreateReportData()
+    private static JiraReportData CreateReportData()
     {
-        return new JiraPdfReportData
+        return new JiraReportData
         {
             Settings = CreateSettings(),
             SearchIssueCount = new ItemCount(1),

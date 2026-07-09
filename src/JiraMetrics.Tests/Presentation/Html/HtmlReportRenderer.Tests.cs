@@ -31,7 +31,7 @@ public sealed class HtmlReportRendererTests
         // Assert
         fileStore.Verify(x => x.Save(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         launcher.Verify(x => x.Open(It.IsAny<string>()), Times.Never);
-        composer.Verify(x => x.Compose(It.IsAny<JiraPdfReportData>()), Times.Never);
+        composer.Verify(x => x.Compose(It.IsAny<JiraReportData>()), Times.Never);
     }
 
     [Fact(DisplayName = "RenderReport saves HTML and opens browser when configured")]
@@ -55,7 +55,7 @@ public sealed class HtmlReportRendererTests
         launcher.Setup(x => x.Open(It.Is<string>(path => path == savedPath)));
 
         var composer = new Mock<IHtmlContentComposer>(MockBehavior.Strict);
-        composer.Setup(x => x.Compose(It.Is<JiraPdfReportData>(data => ReferenceEquals(data, reportData))))
+        composer.Setup(x => x.Compose(It.Is<JiraReportData>(data => ReferenceEquals(data, reportData))))
             .Returns("<html>report</html>");
 
         var renderer = new HtmlReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
@@ -79,7 +79,7 @@ public sealed class HtmlReportRendererTests
             new MonthLabel("2026-02"),
             htmlReport: new HtmlReportSettings(htmlEnabled, "report.html", openAfterGeneration));
 
-    private static JiraPdfReportData CreateReportData(AppSettings settings) =>
+    private static JiraReportData CreateReportData(AppSettings settings) =>
         new()
         {
             Settings = settings,

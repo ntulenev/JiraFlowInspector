@@ -4,12 +4,12 @@ using JiraMetrics.Models.ValueObjects;
 namespace JiraMetrics.Models;
 
 /// <summary>
-/// Aggregated data used by PDF report generation.
+/// Aggregated data used by report generation.
 /// </summary>
-public sealed class JiraPdfReportData
+public sealed class JiraReportData
 {
     /// <summary>
-    /// Creates aggregated PDF report data when transition analysis is unavailable,
+    /// Creates aggregated report data when transition analysis is unavailable,
     /// while keeping optional sections such as release and ratio reports.
     /// </summary>
     /// <param name="settings">Application settings.</param>
@@ -20,8 +20,8 @@ public sealed class JiraPdfReportData
     /// <param name="failures">Issue load failures.</param>
     /// <param name="successfulCount">Count of successfully loaded issues for the main analysis set.</param>
     /// <param name="matchedStageCount">Count of issues that matched transition-analysis prerequisites.</param>
-    /// <returns>Aggregated PDF report data.</returns>
-    public static JiraPdfReportData CreateWithoutTransitionAnalysis(
+    /// <returns>Aggregated report data.</returns>
+    public static JiraReportData CreateWithoutTransitionAnalysis(
         AppSettings settings,
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
@@ -58,7 +58,7 @@ public sealed class JiraPdfReportData
     }
 
     /// <summary>
-    /// Creates aggregated PDF report data for a successful analysis run.
+    /// Creates aggregated report data for a successful analysis run.
     /// </summary>
     /// <param name="settings">Application settings.</param>
     /// <param name="reportContext">Preloaded report context.</param>
@@ -67,8 +67,8 @@ public sealed class JiraPdfReportData
     /// <param name="internalIncidents">Internal incidents snapshot.</param>
     /// <param name="analysis">Issue analysis result.</param>
     /// <param name="failures">Issue load failures.</param>
-    /// <returns>Aggregated PDF report data.</returns>
-    public static JiraPdfReportData Create(
+    /// <returns>Aggregated report data.</returns>
+    public static JiraReportData Create(
         AppSettings settings,
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
@@ -86,7 +86,7 @@ public sealed class JiraPdfReportData
         if (analysis.Outcome != JiraIssueAnalysisOutcome.Success)
         {
             throw new InvalidOperationException(
-                "PDF report data can only be created for a successful analysis.");
+                "Report data can only be created for a successful analysis.");
         }
 
         if (analysis.PathSummary is null)
@@ -112,7 +112,7 @@ public sealed class JiraPdfReportData
             failures);
     }
 
-    private static JiraPdfReportData CreateCore(
+    private static JiraReportData CreateCore(
         AppSettings settings,
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,

@@ -14,6 +14,6 @@ public interface IPdfContentComposer
     /// </summary>
     /// <param name="column">QuestPDF column descriptor.</param>
     /// <param name="reportData">Aggregated report data.</param>
-    void ComposeContent(ColumnDescriptor column, JiraPdfReportData reportData);
+    void ComposeContent(ColumnDescriptor column, JiraReportData reportData);
 }
 

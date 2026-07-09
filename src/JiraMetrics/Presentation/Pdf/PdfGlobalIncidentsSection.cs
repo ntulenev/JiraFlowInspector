@@ -14,7 +14,7 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         if (reportData.Settings.GlobalIncidentsReport is not { } globalIncidentsReport)
         {

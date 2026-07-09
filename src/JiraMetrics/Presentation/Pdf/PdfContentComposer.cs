@@ -42,7 +42,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
     }
 
     /// <inheritdoc />
-    public void ComposeContent(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void ComposeContent(ColumnDescriptor column, JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(column);
         ArgumentNullException.ThrowIfNull(reportData);

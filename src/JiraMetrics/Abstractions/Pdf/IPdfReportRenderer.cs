@@ -11,6 +11,6 @@ public interface IPdfReportRenderer
     /// Renders and saves PDF report.
     /// </summary>
     /// <param name="reportData">Aggregated report data.</param>
-    void RenderReport(JiraPdfReportData reportData);
+    void RenderReport(JiraReportData reportData);
 }
 

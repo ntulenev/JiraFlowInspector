@@ -61,7 +61,7 @@ public sealed class PdfContentComposerTests
             .GeneratePdf();
     }
 
-    private static JiraPdfReportData CreateReportData()
+    private static JiraReportData CreateReportData()
     {
         var settings = new AppSettings(
             new JiraBaseUrl("https://example.atlassian.net"),
@@ -118,7 +118,7 @@ public sealed class PdfContentComposerTests
             [new PercentileTransition(new StatusName("Open"), new StatusName("Code Review"), TimeSpan.FromHours(1))],
             TimeSpan.FromHours(1));
 
-        return new JiraPdfReportData
+        return new JiraReportData
         {
             Settings = settings,
             SearchIssueCount = new ItemCount(1),

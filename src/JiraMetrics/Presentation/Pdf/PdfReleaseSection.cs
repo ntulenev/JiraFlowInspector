@@ -14,7 +14,7 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfReleaseSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         if (reportData.Settings.ReleaseReport is not { } releaseReport)
         {

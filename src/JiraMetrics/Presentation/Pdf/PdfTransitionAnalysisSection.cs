@@ -14,7 +14,7 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         _ = column.Item().Text("Transition analysis").Bold().FontSize(12);
 

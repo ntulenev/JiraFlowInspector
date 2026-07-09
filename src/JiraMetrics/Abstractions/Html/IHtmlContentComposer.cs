@@ -12,5 +12,5 @@ public interface IHtmlContentComposer
     /// </summary>
     /// <param name="reportData">Aggregated report data.</param>
     /// <returns>Standalone HTML document.</returns>
-    string Compose(JiraPdfReportData reportData);
+    string Compose(JiraReportData reportData);
 }

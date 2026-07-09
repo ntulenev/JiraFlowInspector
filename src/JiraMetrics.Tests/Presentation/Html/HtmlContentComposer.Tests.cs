@@ -57,7 +57,7 @@ public sealed class HtmlContentComposerTests
         // Arrange
         var composer = new HtmlContentComposer();
         var settings = CreateSettings();
-        var reportData = new JiraPdfReportData
+        var reportData = new JiraReportData
         {
             Settings = settings,
             SearchIssueCount = new ItemCount(0),
@@ -77,7 +77,7 @@ public sealed class HtmlContentComposerTests
         html.Should().NotContain("id=\"failures\"");
     }
 
-    private static JiraPdfReportData CreateReportData()
+    private static JiraReportData CreateReportData()
     {
         var settings = CreateSettings();
         var transition = new TransitionEvent(
@@ -97,7 +97,7 @@ public sealed class HtmlContentComposerTests
             subItemsCount: 2,
             hasPullRequest: true);
 
-        return new JiraPdfReportData
+        return new JiraReportData
         {
             Settings = settings,
             SearchIssueCount = new ItemCount(1),

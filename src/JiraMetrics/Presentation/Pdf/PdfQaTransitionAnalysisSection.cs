@@ -15,7 +15,7 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(column);
         ArgumentNullException.ThrowIfNull(reportData);
@@ -77,7 +77,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
     private static void ComposeQaSummary(
         ColumnDescriptor column,
-        JiraPdfReportData reportData,
+        JiraReportData reportData,
         QaTransitionAnalysis analysis,
         bool showTimeCalculationsInHoursOnly)
     {
@@ -240,7 +240,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         ColumnDescriptor column,
         string title,
         IReadOnlyList<TransitionMeasurementIssue> issues,
-        JiraPdfReportData reportData,
+        JiraReportData reportData,
         bool showTimeCalculationsInHoursOnly,
         string? durationColumnLabel = null)
     {

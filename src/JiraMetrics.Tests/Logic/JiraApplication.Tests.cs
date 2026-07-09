@@ -1401,7 +1401,7 @@ public sealed class JiraApplicationTests
 
         public bool ReportRendered { get; private set; }
 
-        public JiraPdfReportData? LastReportData { get; private set; }
+        public JiraReportData? LastReportData { get; private set; }
 
         public void ShowAuthenticationStarted()
         {
@@ -1602,7 +1602,7 @@ public sealed class JiraApplicationTests
             Calls.Add("ExecutionSummary");
         }
 
-        public void RenderReport(JiraPdfReportData reportData)
+        public void RenderReport(JiraReportData reportData)
         {
             ReportRendered = true;
             LastReportData = reportData;

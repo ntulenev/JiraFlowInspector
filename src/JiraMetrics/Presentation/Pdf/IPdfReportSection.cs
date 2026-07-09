@@ -14,5 +14,5 @@ internal interface IPdfReportSection
     /// </summary>
     /// <param name="column">Target QuestPDF column descriptor.</param>
     /// <param name="reportData">Aggregated report data.</param>
-    void Compose(ColumnDescriptor column, JiraPdfReportData reportData);
+    void Compose(ColumnDescriptor column, JiraReportData reportData);
 }

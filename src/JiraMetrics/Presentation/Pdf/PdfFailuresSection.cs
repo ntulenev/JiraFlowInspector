@@ -13,7 +13,7 @@ namespace JiraMetrics.Presentation.Pdf;
 internal sealed class PdfFailuresSection : IPdfReportSection
 {
     /// <inheritdoc />
-    public void Compose(ColumnDescriptor column, JiraPdfReportData reportData)
+    public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
         if (reportData.Failures.Count == 0)
         {
