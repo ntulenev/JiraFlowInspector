@@ -33,6 +33,7 @@ public sealed record AppSettings
     /// <param name="archTasksReport">Optional architecture tasks report settings.</param>
     /// <param name="globalIncidentsReport">Optional global incidents report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
+    /// <param name="htmlReport">HTML report settings.</param>
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
     /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
@@ -61,6 +62,7 @@ public sealed record AppSettings
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         PdfReportSettings? pdfReport = null,
         string? pullRequestFieldName = null,
+        HtmlReportSettings? htmlReport = null,
         QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
         CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
         : this(
@@ -88,6 +90,7 @@ public sealed record AppSettings
             globalIncidentsReport,
             pdfReport,
             pullRequestFieldName,
+            htmlReport,
             qaTransitionAnalysis,
             customTransitionAnalysis)
     {
@@ -119,6 +122,7 @@ public sealed record AppSettings
     /// <param name="archTasksReport">Optional architecture tasks report settings.</param>
     /// <param name="globalIncidentsReport">Optional global incidents report settings.</param>
     /// <param name="pdfReport">PDF report settings.</param>
+    /// <param name="htmlReport">HTML report settings.</param>
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
     /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
@@ -147,6 +151,7 @@ public sealed record AppSettings
         GlobalIncidentsReportSettings? globalIncidentsReport = null,
         PdfReportSettings? pdfReport = null,
         string? pullRequestFieldName = null,
+        HtmlReportSettings? htmlReport = null,
         QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
         CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
     {
@@ -176,6 +181,7 @@ public sealed record AppSettings
         ArchTasksReport = archTasksReport;
         GlobalIncidentsReport = globalIncidentsReport;
         PdfReport = pdfReport ?? new PdfReportSettings();
+        HtmlReport = htmlReport ?? new HtmlReportSettings();
         PullRequestFieldName = string.IsNullOrWhiteSpace(pullRequestFieldName)
             ? null
             : pullRequestFieldName.Trim();
@@ -277,6 +283,11 @@ public sealed record AppSettings
     /// Gets PDF report settings.
     /// </summary>
     public PdfReportSettings PdfReport { get; }
+
+    /// <summary>
+    /// Gets HTML report settings.
+    /// </summary>
+    public HtmlReportSettings HtmlReport { get; }
 
     /// <summary>
     /// Gets optional custom field name for filtering.

@@ -19,6 +19,7 @@ builder.Services
     .AddJiraApi()
     .AddJiraLogic()
     .AddJiraPresentation()
+    .AddJiraHtml()
     .AddJiraPdf()
     .AddJiraApplication();
 

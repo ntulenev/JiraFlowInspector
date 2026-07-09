@@ -45,6 +45,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Include="Presentation\Html\Templates\*.html"
+						  LogicalName="JiraMetrics.HtmlTemplates.%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<InternalsVisibleTo Include="JiraMetrics.Tests" />
 	</ItemGroup>
 

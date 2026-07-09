@@ -93,6 +93,11 @@ public sealed class JiraOptions : IValidatableObject
     /// </summary>
     public PdfOptions Pdf { get; init; } = new();
 
+    /// <summary>
+    /// Gets or sets HTML report settings.
+    /// </summary>
+    public HtmlOptions Html { get; init; } = new();
+
     /// <inheritdoc />
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

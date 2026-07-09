@@ -43,6 +43,7 @@ internal static class AppSettingsFactory
             ResolveGlobalIncidentsReport(source.GlobalIncidents),
             ResolvePdfReport(source.Pdf),
             source.PullRequestFieldName,
+            ResolveHtmlReport(source.Html),
             ResolveQaTransitionAnalysis(teamTasks.IssueTransitions?.QaTransitionAnalysis),
             ResolveCustomTransitionAnalysis(teamTasks.IssueTransitions?.CustomTransitionAnalysis));
     }
@@ -208,6 +209,16 @@ internal static class AppSettingsFactory
         }
 
         return new PdfReportSettings(source.Enabled, source.OutputPath, source.OpenAfterGeneration);
+    }
+
+    private static HtmlReportSettings ResolveHtmlReport(HtmlOptions? source)
+    {
+        if (source is null)
+        {
+            return new HtmlReportSettings();
+        }
+
+        return new HtmlReportSettings(source.Enabled, source.OutputPath, source.OpenAfterGeneration);
     }
 
     private static CustomTransitionAnalysisSettings? ResolveCustomTransitionAnalysis(
