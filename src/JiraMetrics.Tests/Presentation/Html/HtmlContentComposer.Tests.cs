@@ -32,7 +32,8 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("Release Report");
         html.Should().Contain("Components Release Table");
         html.Should().Contain("Bug Ratio: Open Issues");
-        html.Should().Contain("Automated Tests: Coverage");
+        html.Should().Contain("href=\"#test-coverage\"");
+        html.Should().Contain("Automated Test Coverage");
         html.Should().Contain("50%");
         html.Should().Contain("QA Transition Analysis");
         html.Should().Contain("Testing time by issue");
