@@ -49,6 +49,10 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("browse/AAA-1");
         html.IndexOf("id=\"global-incidents\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"ratios\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"bug-rejected-issues\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal));
         html.IndexOf("id=\"general-statistics\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"failures\"", StringComparison.Ordinal));
     }

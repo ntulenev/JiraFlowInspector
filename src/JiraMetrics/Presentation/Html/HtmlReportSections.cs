@@ -17,8 +17,8 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
     {
         var html = new StringBuilder();
         _ = html.Append(HtmlContentComposer.BuildRatiosSection(reportData));
-        _ = html.Append(HtmlContentComposer.BuildTestCoverageSection(reportData));
         _ = html.Append(HtmlContentComposer.BuildBugRatioDetailsSection(reportData));
+        _ = html.Append(HtmlContentComposer.BuildTestCoverageSection(reportData));
         return html.ToString();
     }
 }
