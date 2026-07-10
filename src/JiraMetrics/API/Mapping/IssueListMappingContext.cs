@@ -7,6 +7,8 @@ namespace JiraMetrics.API.Mapping;
 /// </summary>
 /// <param name="ReporducedOnProdFieldId">Optional Jira field id for production reproduction marker.</param>
 /// <param name="ReporducedOnProdFieldName">Optional Jira field name for production reproduction marker.</param>
+/// <param name="IncludeIssueLinks">Whether issue links should be mapped.</param>
 public sealed record IssueListMappingContext(
     JiraFieldId? ReporducedOnProdFieldId,
-    JiraFieldName? ReporducedOnProdFieldName);
+    JiraFieldName? ReporducedOnProdFieldName,
+    bool IncludeIssueLinks = false);

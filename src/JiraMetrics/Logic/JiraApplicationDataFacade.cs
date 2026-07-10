@@ -16,16 +16,19 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
         IJiraUserClient userClient,
         IssueSearchSnapshotLoader issueSearchSnapshotLoader,
         JiraReportContextLoader reportContextLoader,
-        JiraIssueTimelineLoader issueTimelineLoader)
+        JiraIssueTimelineLoader issueTimelineLoader,
+        TestCoverageLoader testCoverageLoader)
     {
         ArgumentNullException.ThrowIfNull(userClient);
         ArgumentNullException.ThrowIfNull(issueSearchSnapshotLoader);
         ArgumentNullException.ThrowIfNull(reportContextLoader);
         ArgumentNullException.ThrowIfNull(issueTimelineLoader);
+        ArgumentNullException.ThrowIfNull(testCoverageLoader);
         _userClient = userClient;
         _issueSearchSnapshotLoader = issueSearchSnapshotLoader;
         _reportContextLoader = reportContextLoader;
         _issueTimelineLoader = issueTimelineLoader;
+        _testCoverageLoader = testCoverageLoader;
     }
 
     public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken) =>
@@ -58,6 +61,12 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
         IReadOnlyList<IssueKey> rejectIssueKeys,
         CancellationToken cancellationToken) =>
         _issueTimelineLoader.LoadAsync(issueKeys, rejectIssueKeys, cancellationToken);
+
+    public Task<TestCoverageSnapshot> LoadTestCoverageAsync(
+        AppSettings settings,
+        TestCoverageSettings coverageSettings,
+        CancellationToken cancellationToken) =>
+        _testCoverageLoader.LoadAsync(settings, coverageSettings, cancellationToken);
 
     private async Task<JiraReportContext> LoadReportContextWithAllTasksSnapshotAsync(
         AppSettings settings,
@@ -120,6 +129,7 @@ internal sealed class JiraApplicationDataFacade : IJiraApplicationDataFacade
     private readonly IssueSearchSnapshotLoader _issueSearchSnapshotLoader;
     private readonly JiraReportContextLoader _reportContextLoader;
     private readonly JiraIssueTimelineLoader _issueTimelineLoader;
+    private readonly TestCoverageLoader _testCoverageLoader;
     private readonly ConcurrentDictionary<string, Lazy<Task<IssueSearchSnapshot>>> _issueSearchSnapshots =
         new(StringComparer.Ordinal);
 }

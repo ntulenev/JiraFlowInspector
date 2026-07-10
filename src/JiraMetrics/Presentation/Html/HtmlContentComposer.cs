@@ -56,6 +56,22 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             rows.Add(BuildMetricRow("Bugs: Reproduced on prod", reportData.BugReporducedOnProd.Value.Value));
         }
 
+        if (reportData.Settings.TestCoverage is { Enabled: true } testCoverageSettings)
+        {
+            rows.Add(BuildTextMetricRow(
+                "Automated Tests: Issue Types",
+                string.Join(", ", testCoverageSettings.IssueTypes.Select(static issueType => issueType.Value))));
+            rows.Add(BuildTextMetricRow("Automated Tests: QA Project", testCoverageSettings.TestProjectKey.Value));
+            rows.Add(BuildTextMetricRow("Automated Tests: Link", testCoverageSettings.LinkName));
+            rows.Add(BuildMetricRow("Automated Tests: Done", reportData.TestCoverage.TotalIssues.Value));
+            rows.Add(BuildMetricRow("Automated Tests: Covered", reportData.TestCoverage.CoveredIssueCount.Value));
+            rows.Add(new TableRow(
+            [
+                BuildTextCell("Automated Tests: Coverage"),
+                BuildTextCell(FormatPercentage(reportData.TestCoverage.CoveragePercentage), reportData.TestCoverage.CoveragePercentage)
+            ]));
+        }
+
         return BuildTableSection(
             "ratios",
             "Task Ratios",
@@ -91,6 +107,9 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             BuildTextCell(PdfPresentationFormatting.BuildFinishedToCreatedRatioText(created.Value, finished.Value))
         ]));
     }
+
+    private static string FormatPercentage(double? value) =>
+        value.HasValue ? value.Value.ToString("0.##", CultureInfo.InvariantCulture) + "%" : "N/A";
 
     internal static string BuildBugRatioDetailsSection(JiraReportData reportData)
     {

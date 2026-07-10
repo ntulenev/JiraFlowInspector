@@ -15,6 +15,7 @@ internal static class LogicServiceCollectionExtensions
             .AddTransient<IJiraAnalyticsService, JiraAnalyticsService>()
             .AddTransient<IJiraLogicService, JiraLogicService>()
             .AddTransient<IssueSearchSnapshotLoader>()
+            .AddTransient<TestCoverageLoader>()
             .AddTransient<JiraReportContextLoader>()
             .AddTransient<JiraIssueTimelineLoader>()
             .AddTransient<IJiraApplicationDataFacade, JiraApplicationDataFacade>()

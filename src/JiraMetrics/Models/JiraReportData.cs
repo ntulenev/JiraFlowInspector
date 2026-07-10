@@ -17,6 +17,7 @@ public sealed class JiraReportData
     /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
     /// <param name="bugRatio">Bug ratio snapshot.</param>
     /// <param name="internalIncidents">Internal incidents snapshot.</param>
+    /// <param name="testCoverage">Automated test coverage snapshot.</param>
     /// <param name="failures">Issue load failures.</param>
     /// <param name="successfulCount">Count of successfully loaded issues for the main analysis set.</param>
     /// <param name="matchedStageCount">Count of issues that matched transition-analysis prerequisites.</param>
@@ -27,6 +28,7 @@ public sealed class JiraReportData
         IssueRatioSnapshot allTasksRatio,
         IssueRatioSnapshot? bugRatio,
         IssueRatioSnapshot? internalIncidents,
+        TestCoverageSnapshot testCoverage,
         IReadOnlyList<LoadFailure> failures,
         ItemCount successfulCount,
         ItemCount matchedStageCount)
@@ -42,6 +44,7 @@ public sealed class JiraReportData
             allTasksRatio,
             bugRatio,
             internalIncidents,
+            testCoverage,
             doneIssues: [],
             doneDaysAtWork75PerType: [],
             customTransitionIssues: [],
@@ -65,6 +68,7 @@ public sealed class JiraReportData
     /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
     /// <param name="bugRatio">Bug ratio snapshot.</param>
     /// <param name="internalIncidents">Internal incidents snapshot.</param>
+    /// <param name="testCoverage">Automated test coverage snapshot.</param>
     /// <param name="analysis">Issue analysis result.</param>
     /// <param name="failures">Issue load failures.</param>
     /// <returns>Aggregated report data.</returns>
@@ -74,6 +78,7 @@ public sealed class JiraReportData
         IssueRatioSnapshot allTasksRatio,
         IssueRatioSnapshot? bugRatio,
         IssueRatioSnapshot? internalIncidents,
+        TestCoverageSnapshot testCoverage,
         JiraIssueAnalysisResult analysis,
         IReadOnlyList<LoadFailure> failures)
     {
@@ -101,6 +106,7 @@ public sealed class JiraReportData
             allTasksRatio,
             bugRatio,
             internalIncidents,
+            testCoverage,
             analysis.DoneIssues,
             analysis.DoneDaysAtWork75PerType,
             analysis.CustomTransitionIssues,
@@ -118,6 +124,7 @@ public sealed class JiraReportData
         IssueRatioSnapshot allTasksRatio,
         IssueRatioSnapshot? bugRatio,
         IssueRatioSnapshot? internalIncidents,
+        TestCoverageSnapshot testCoverage,
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
         IReadOnlyList<CustomTransitionIssue> customTransitionIssues,
@@ -152,6 +159,7 @@ public sealed class JiraReportData
             InternalIncidentOpenIssues = internalIncidents?.OpenIssues ?? [],
             InternalIncidentDoneIssues = internalIncidents?.DoneIssues ?? [],
             InternalIncidentRejectedIssues = internalIncidents?.RejectedIssues ?? [],
+            TestCoverage = testCoverage,
             OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
             DoneIssues = doneIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
@@ -268,6 +276,11 @@ public sealed class JiraReportData
     /// Gets or sets rejected internal incident issues.
     /// </summary>
     public IReadOnlyList<IssueListItem> InternalIncidentRejectedIssues { get; init; } = [];
+
+    /// <summary>
+    /// Gets or sets automated test coverage snapshot.
+    /// </summary>
+    public TestCoverageSnapshot TestCoverage { get; init; } = TestCoverageSnapshot.Empty;
 
     /// <summary>
     /// Gets or sets issue counts grouped by status and issue type outside done/rejected statuses.

@@ -60,10 +60,14 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
         CancellationToken cancellationToken,
-        JiraFieldName? reporducedOnProdFieldName = null)
+        JiraFieldName? reporducedOnProdFieldName = null,
+        bool includeIssueLinks = false)
     {
         var jql = _jqlFacade.BuildMovedToDoneIssuesQuery(projectKey, doneStatusName, issueTypes);
-        var context = await CreateIssueListMappingContextAsync(reporducedOnProdFieldName, cancellationToken)
+        var context = await CreateIssueListMappingContextAsync(
+                reporducedOnProdFieldName,
+                cancellationToken,
+                includeIssueLinks)
             .ConfigureAwait(false);
         var issues = await _searchExecutor
             .SearchIssuesAsync(
@@ -92,17 +96,23 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
 
     private async Task<IssueListMappingContext?> CreateIssueListMappingContextAsync(
         JiraFieldName? reporducedOnProdFieldName,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool includeIssueLinks = false)
     {
-        if (reporducedOnProdFieldName is null)
+        if (reporducedOnProdFieldName is null && !includeIssueLinks)
         {
             return null;
+        }
+
+        if (reporducedOnProdFieldName is null)
+        {
+            return new IssueListMappingContext(null, null, includeIssueLinks);
         }
 
         var fieldId = await _fieldResolver
             .TryResolveFieldIdAsync(reporducedOnProdFieldName, cancellationToken)
             .ConfigureAwait(false);
-        return new IssueListMappingContext(fieldId, reporducedOnProdFieldName);
+        return new IssueListMappingContext(fieldId, reporducedOnProdFieldName, includeIssueLinks);
     }
 
     private static JiraSearchFields BuildIssueListRequestedFields(IssueListMappingContext? context)
@@ -115,6 +125,11 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
         else if (context?.ReporducedOnProdFieldName is { } fieldName)
         {
             fields.Add(fieldName.Value);
+        }
+
+        if (context?.IncludeIssueLinks == true)
+        {
+            fields.Add("issuelinks");
         }
 
         return JiraSearchFields.From([.. fields]);

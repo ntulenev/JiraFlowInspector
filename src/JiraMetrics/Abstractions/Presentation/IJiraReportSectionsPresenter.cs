@@ -103,6 +103,19 @@ public interface IJiraReportSectionsPresenter
         IssueRatioSnapshot snapshot);
 
     /// <summary>
+    /// Shows automated test coverage loading start message.
+    /// </summary>
+    /// <param name="settings">Coverage settings.</param>
+    void ShowTestCoverageLoadingStarted(TestCoverageSettings settings);
+
+    /// <summary>
+    /// Shows automated test coverage section.
+    /// </summary>
+    /// <param name="settings">Coverage settings.</param>
+    /// <param name="snapshot">Coverage snapshot.</param>
+    void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot);
+
+    /// <summary>
     /// Shows a spacer line between sections.
     /// </summary>
     void ShowSpacer();

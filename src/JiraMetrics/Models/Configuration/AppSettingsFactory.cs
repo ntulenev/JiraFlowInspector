@@ -35,6 +35,7 @@ internal static class AppSettingsFactory
             teamTasks.IssueTransitions?.ExcludeWeekend ?? false,
             ParseExcludedDays(teamTasks.IssueTransitions?.ExcludedDays),
             CreateIssueTypeNames(teamTasks.BugRatio?.BugIssueNames),
+            ResolveTestCoverage(teamTasks.TestCoverage),
             CreateIssueTypeNames(teamTasks.InternalIncidentIssueNames),
             NormalizeOptionalString(teamTasks.BugRatio?.ReporducedOnProd),
             teamTasks.ShowGeneralStatistics,
@@ -199,6 +200,20 @@ internal static class AppSettingsFactory
             source.ImpactFieldName,
             source.UrgencyFieldName,
             source.AdditionalFieldNames);
+    }
+
+    private static TestCoverageSettings? ResolveTestCoverage(TestCoverageOptions? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        return new TestCoverageSettings(
+            source.Enabled,
+            CreateIssueTypeNames(source.IssueTypes),
+            string.IsNullOrWhiteSpace(source.TestProjectKey) ? null : new ProjectKey(source.TestProjectKey),
+            source.LinkName);
     }
 
     private static PdfReportSettings ResolvePdfReport(PdfOptions? source)

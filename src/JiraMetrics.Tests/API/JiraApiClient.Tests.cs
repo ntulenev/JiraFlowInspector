@@ -1900,6 +1900,64 @@ public sealed class JiraApiClientTests
             .ThrowAsync<InvalidOperationException>();
     }
 
+    [Fact(DisplayName = "GetIssuesMovedToDoneThisMonthAsync includes issue links when requested")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssuesMovedToDoneThisMonthAsyncWhenIssueLinksRequestedMapsLinks()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+        var pageResponse = new JiraSearchResponse
+        {
+            Issues =
+            [
+                new JiraIssueKeyResponse
+                {
+                    Key = "ADF-19423",
+                    Fields = new JiraIssueFieldsResponse
+                    {
+                        Summary = "Covered supertask",
+                        IssueLinks =
+                        [
+                            new JiraIssueLinkResponse
+                            {
+                                Type = new JiraIssueLinkTypeResponse { Inward = "is tested by" },
+                                InwardIssue = new JiraIssueLinkIssueResponse { Key = "QA-7618" }
+                            }
+                        ]
+                    }
+                }
+            ],
+            IsLast = true,
+            NextPageToken = null
+        };
+
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(
+                It.IsAny<Uri>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(pageResponse);
+
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var issues = await client.GetIssuesMovedToDoneThisMonthAsync(
+            new ProjectKey("ADF"),
+            new StatusName("Done"),
+            [new IssueTypeName("SuperTask")],
+            cts.Token,
+            includeIssueLinks: true);
+
+        // Assert
+        capturedUrl.Should().Contain("issuelinks");
+        issues.Should().ContainSingle();
+        issues[0].IssueLinks.Should().ContainSingle();
+        issues[0].IssueLinks[0].Key.Value.Should().Be("QA-7618");
+        issues[0].IssueLinks[0].RelationName.Should().Be("is tested by");
+    }
+
     private static IOptions<AppSettings> CreateSettings(
         bool excludeWeekend = false,
         IReadOnlyList<DateOnly>? excludedDays = null,

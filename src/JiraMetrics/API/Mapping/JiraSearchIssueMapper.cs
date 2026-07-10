@@ -51,7 +51,8 @@ public sealed class JiraSearchIssueMapper
                         : issue.Fields.Summary),
                 issue.Fields?.Created.ParseNullableDateTimeOffset(),
                 IsReporducedOnProd(issue, context),
-                issue.Fields?.Priority?.Name))
+                issue.Fields?.Priority?.Name,
+                MapIssueLinks(issue, context)))
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 
@@ -165,6 +166,32 @@ public sealed class JiraSearchIssueMapper
             || string.Equals(value, "prod", StringComparison.OrdinalIgnoreCase)
             || string.Equals(value, "production", StringComparison.OrdinalIgnoreCase));
     }
+
+    private static IReadOnlyList<IssueLinkItem> MapIssueLinks(
+        JiraIssueKeyResponse issue,
+        IssueListMappingContext? context)
+    {
+        if (context?.IncludeIssueLinks != true || issue.Fields?.IssueLinks is not { Count: > 0 } issueLinks)
+        {
+            return [];
+        }
+
+        return [.. issueLinks
+            .SelectMany(static link => new[]
+            {
+                CreateIssueLinkItem(link.InwardIssue?.Key, link.Type?.Inward),
+                CreateIssueLinkItem(link.OutwardIssue?.Key, link.Type?.Outward)
+            })
+            .Where(static item => item is not null)
+            .Select(static item => item!)
+            .DistinctBy(static item => item.Key.Value + "|" + item.RelationName, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(static item => item.Key.Value, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static IssueLinkItem? CreateIssueLinkItem(string? key, string? relationName) =>
+        string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(relationName)
+            ? null
+            : new IssueLinkItem(new IssueKey(key), relationName.Trim());
 
     private readonly JiraFieldValueReader _fieldValueReader;
 }

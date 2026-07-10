@@ -32,6 +32,8 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("Release Report");
         html.Should().Contain("Components Release Table");
         html.Should().Contain("Bug Ratio: Open Issues");
+        html.Should().Contain("Automated Tests: Coverage");
+        html.Should().Contain("50%");
         html.Should().Contain("QA Transition Analysis");
         html.Should().Contain("Testing time by issue");
         html.Should().Contain("General Statistics");
@@ -156,6 +158,14 @@ public sealed class HtmlContentComposerTests
                     new DateTimeOffset(2026, 2, 7, 10, 0, 0, TimeSpan.Zero))
             ],
             BugRejectedIssues = [],
+            TestCoverage = new TestCoverageSnapshot(
+            [
+                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask")),
+                new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Uncovered supertask"))
+            ],
+            [
+                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask"))
+            ]),
             DoneIssues = [issue],
             DoneDaysAtWork75PerType =
             [
@@ -224,6 +234,10 @@ public sealed class HtmlContentComposerTests
             new StatusName("Reject"),
             [new StageName("Code Review")],
             new MonthLabel("2026-02"),
+            testCoverage: new TestCoverageSettings(
+                issueTypes: [new IssueTypeName("SuperTask")],
+                testProjectKey: new ProjectKey("QA"),
+                linkName: "is tested by"),
             releaseReport: new ReleaseReportSettings(
                 new ProjectKey("RLS"),
                 "ADF",

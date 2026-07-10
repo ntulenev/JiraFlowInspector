@@ -4,4 +4,5 @@ internal sealed record JiraApplicationReportData(
     JiraReportContext ReportContext,
     IssueRatioSnapshot AllTasksRatio,
     IssueRatioSnapshot? BugRatio,
-    IssueRatioSnapshot? InternalIncidents);
+    IssueRatioSnapshot? InternalIncidents,
+    TestCoverageSnapshot TestCoverage);

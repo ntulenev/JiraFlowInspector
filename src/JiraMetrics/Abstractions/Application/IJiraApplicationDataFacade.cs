@@ -28,6 +28,14 @@ public interface IJiraApplicationDataFacade
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads automated test coverage data.
+    /// </summary>
+    Task<TestCoverageSnapshot> LoadTestCoverageAsync(
+        AppSettings settings,
+        TestCoverageSettings coverageSettings,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads issue timelines for the provided done and rejected issue keys.
     /// </summary>
     Task<IssueTimelineLoadResult> LoadIssueTimelinesAsync(

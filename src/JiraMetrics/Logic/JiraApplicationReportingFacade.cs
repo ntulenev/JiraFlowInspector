@@ -110,6 +110,12 @@ internal sealed class JiraApplicationReportingFacade : IJiraApplicationReporting
             customFieldValue,
             snapshot);
 
+    public void ShowTestCoverageLoadingStarted(TestCoverageSettings settings) =>
+        _presentationService.ShowTestCoverageLoadingStarted(settings);
+
+    public void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot) =>
+        _presentationService.ShowTestCoverage(settings, snapshot);
+
     public void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName) =>
         _presentationService.ShowDoneIssuesTable(issues, doneStatusName);
 

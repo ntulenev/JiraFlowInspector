@@ -38,6 +38,11 @@ public sealed class TeamTasksOptions
     public BugRatioOptions? BugRatio { get; init; }
 
     /// <summary>
+    /// Gets or sets optional automated test coverage settings.
+    /// </summary>
+    public TestCoverageOptions? TestCoverage { get; init; }
+
+    /// <summary>
     /// Gets or sets optional issue types that should be rendered as internal incidents.
     /// </summary>
     public IReadOnlyList<string>? InternalIncidentIssueNames { get; init; }

@@ -976,7 +976,8 @@ public sealed class JiraApplicationTests
             apiClient,
             new IssueSearchSnapshotLoader(apiClient),
             new JiraReportContextLoader(apiClient, apiClient),
-            new JiraIssueTimelineLoader(apiClient, presentationService));
+            new JiraIssueTimelineLoader(apiClient, presentationService),
+            new TestCoverageLoader(apiClient));
     }
 
     private static JiraApplicationAnalysisFacade CreateAnalysisFacade(IJiraLogicService logicService)
@@ -1158,7 +1159,8 @@ public sealed class JiraApplicationTests
             StatusName doneStatusName,
             IReadOnlyList<IssueTypeName> issueTypes,
             CancellationToken cancellationToken,
-            JiraFieldName? reporducedOnProdFieldName = null)
+            JiraFieldName? reporducedOnProdFieldName = null,
+            bool includeIssueLinks = false)
         {
             if (string.Equals(doneStatusName.Value, "Reject", StringComparison.OrdinalIgnoreCase))
             {
@@ -1358,6 +1360,10 @@ public sealed class JiraApplicationTests
         public bool FailuresShown { get; private set; }
 
         public bool BugRatioShown { get; private set; }
+
+        public bool TestCoverageShown { get; private set; }
+
+        public bool TestCoverageLoadingStartedShown { get; private set; }
 
         public bool BugRatioLoadingStartedShown { get; private set; }
 
@@ -1572,6 +1578,18 @@ public sealed class JiraApplicationTests
         {
             BugRatioShown = true;
             Calls.Add("BugRatio");
+        }
+
+        public void ShowTestCoverageLoadingStarted(TestCoverageSettings settings)
+        {
+            TestCoverageLoadingStartedShown = true;
+            Calls.Add("TestCoverageLoadingStarted");
+        }
+
+        public void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot)
+        {
+            TestCoverageShown = true;
+            Calls.Add("TestCoverage");
         }
 
         public void ShowPathGroups(IReadOnlyList<PathGroup> groups)

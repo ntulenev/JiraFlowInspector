@@ -42,6 +42,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             () => _dataFacade.LoadIssueRatioAsync(_settings, [], cancellationToken));
         var bugRatioTask = StartBugRatioLoading(cancellationToken);
         var internalIncidentsTask = StartInternalIncidentsLoading(cancellationToken);
+        var testCoverageTask = StartTestCoverageLoading(cancellationToken);
 
         var reportContext = await reportContextTask.ConfigureAwait(false);
         if (reportContext is null)
@@ -69,7 +70,18 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        return new JiraApplicationReportData(reportContext, allTasksRatio, bugRatio, internalIncidents);
+        var testCoverage = await LoadAndShowTestCoverageAsync(testCoverageTask).ConfigureAwait(false);
+        if (testCoverageTask is not null && testCoverage is null)
+        {
+            return null;
+        }
+
+        return new JiraApplicationReportData(
+            reportContext,
+            allTasksRatio,
+            bugRatio,
+            internalIncidents,
+            testCoverage ?? TestCoverageSnapshot.Empty);
     }
 
     private void ShowOptionalReportLoadingStarted()
@@ -149,6 +161,18 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
                 cancellationToken));
     }
 
+    private Task<TestCoverageSnapshot?>? StartTestCoverageLoading(CancellationToken cancellationToken)
+    {
+        if (_settings.TestCoverage is not { Enabled: true } testCoverageSettings)
+        {
+            return null;
+        }
+
+        _reportingFacade.ShowTestCoverageLoadingStarted(testCoverageSettings);
+        return TryLoadSearchDataAsync(
+            () => _dataFacade.LoadTestCoverageAsync(_settings, testCoverageSettings, cancellationToken));
+    }
+
     private async Task<IssueRatioSnapshot?> LoadAndShowAllTasksRatioAsync(Task<IssueRatioSnapshot?> allTasksRatioTask)
     {
         var allTasksRatio = await allTasksRatioTask.ConfigureAwait(false);
@@ -200,6 +224,26 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         }
 
         return await internalIncidentsTask.ConfigureAwait(false);
+    }
+
+    private async Task<TestCoverageSnapshot?> LoadAndShowTestCoverageAsync(
+        Task<TestCoverageSnapshot?>? testCoverageTask)
+    {
+        if (testCoverageTask is null || _settings.TestCoverage is not { } testCoverageSettings)
+        {
+            return null;
+        }
+
+        var testCoverage = await testCoverageTask.ConfigureAwait(false);
+        if (testCoverage is null)
+        {
+            return null;
+        }
+
+        _reportingFacade.ShowTestCoverage(testCoverageSettings, testCoverage);
+        _reportingFacade.ShowSpacer();
+
+        return testCoverage;
     }
 
     private async Task<T?> TryLoadSearchDataAsync<T>(Func<Task<T>> loadAsync)

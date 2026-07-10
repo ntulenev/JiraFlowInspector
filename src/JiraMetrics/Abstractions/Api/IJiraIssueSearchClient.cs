@@ -22,7 +22,8 @@ internal interface IJiraIssueSearchClient
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
         CancellationToken cancellationToken,
-        JiraFieldName? reporducedOnProdFieldName = null);
+        JiraFieldName? reporducedOnProdFieldName = null,
+        bool includeIssueLinks = false);
 
     Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
         ProjectKey projectKey,

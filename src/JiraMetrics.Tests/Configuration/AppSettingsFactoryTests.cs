@@ -74,6 +74,12 @@ public sealed class AppSettingsFactoryTests
                     BugIssueNames = [" Bug ", "Incident", "bug"],
                     ReporducedOnProd = " Reproduced on prod "
                 },
+                TestCoverage = new TestCoverageOptions
+                {
+                    IssueTypes = [" SuperTask ", "Story", "supertask"],
+                    TestProjectKey = " QA ",
+                    LinkName = " is tested by "
+                },
                 InternalIncidentIssueNames = [" Incident ", "incident"]
             },
             ReleaseReport = new ReleaseReportOptions
@@ -114,6 +120,11 @@ public sealed class AppSettingsFactoryTests
             .Should().Equal("Story", "Bug");
         settings.BugIssueNames.Select(static issueType => issueType.Value)
             .Should().Equal("Bug", "Incident");
+        settings.TestCoverage.Should().NotBeNull();
+        settings.TestCoverage!.IssueTypes.Select(static issueType => issueType.Value)
+            .Should().Equal("SuperTask", "Story");
+        settings.TestCoverage.TestProjectKey.Value.Should().Be("QA");
+        settings.TestCoverage.LinkName.Should().Be("is tested by");
         settings.InternalIncidentIssueNames.Select(static issueType => issueType.Value)
             .Should().ContainSingle("Incident");
         settings.BugReporducedOnProdFieldName.Should().Be("Reproduced on prod");

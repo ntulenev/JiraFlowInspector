@@ -286,6 +286,23 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     }
 
     /// <inheritdoc />
+    public void ShowTestCoverageLoadingStarted(TestCoverageSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
+        StartPendingLoader($"Loading automated test coverage for: {issueTypes}");
+    }
+
+    /// <inheritdoc />
+    public void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(snapshot);
+        StopAllLoaders();
+        _ratioSection.ShowTestCoverage(settings, snapshot);
+    }
+
+    /// <inheritdoc />
     public void ShowOpenIssuesByStatusSummary(
         IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
         StatusName doneStatusName,

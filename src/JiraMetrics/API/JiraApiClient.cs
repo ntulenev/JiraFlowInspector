@@ -80,13 +80,15 @@ public sealed class JiraApiClient : IJiraApiClient
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
         CancellationToken cancellationToken,
-        JiraFieldName? reporducedOnProdFieldName = null) =>
+        JiraFieldName? reporducedOnProdFieldName = null,
+        bool includeIssueLinks = false) =>
         _issueSearchClient.GetIssuesMovedToDoneThisMonthAsync(
             projectKey,
             doneStatusName,
             issueTypes,
             cancellationToken,
-            reporducedOnProdFieldName);
+            reporducedOnProdFieldName,
+            includeIssueLinks);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(

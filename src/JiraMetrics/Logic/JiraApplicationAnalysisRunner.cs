@@ -194,6 +194,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
             reportData.AllTasksRatio,
             reportData.BugRatio,
             reportData.InternalIncidents,
+            reportData.TestCoverage,
             analysis,
             failures));
     }
@@ -211,6 +212,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
             reportData.AllTasksRatio,
             reportData.BugRatio,
             reportData.InternalIncidents,
+            reportData.TestCoverage,
             failures,
             successfulCount,
             matchedStageCount));

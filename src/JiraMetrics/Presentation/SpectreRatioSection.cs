@@ -3,6 +3,7 @@ using System.Globalization;
 #pragma warning disable CA1822
 
 using JiraMetrics.Models;
+using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 
 using Spectre.Console;
@@ -91,6 +92,33 @@ internal sealed class SpectreRatioSection
     {
         AnsiConsole.MarkupLine(
             $"[green]Bug ratio data loaded:[/] created = {snapshot.CreatedThisMonth.Value}, done = {snapshot.MovedToDoneThisMonth.Value}, rejected = {snapshot.RejectedThisMonth.Value}, finished = {snapshot.FinishedThisMonth.Value}");
+    }
+
+    public void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
+        var percentage = snapshot.CoveragePercentage.HasValue
+            ? $"{snapshot.CoveragePercentage.Value:0.##}%"
+            : "n/a";
+
+        AnsiConsole.MarkupLine("[bold]Automated test coverage[/]");
+        AnsiConsole.MarkupLine($"[grey]Issue types:[/] {Markup.Escape(issueTypes)}");
+        AnsiConsole.MarkupLine($"[grey]Test project:[/] {Markup.Escape(settings.TestProjectKey.Value)}");
+        AnsiConsole.MarkupLine($"[grey]Link:[/] {Markup.Escape(settings.LinkName)}");
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Metric[/]")
+            .AddColumn("[bold]Value[/]");
+
+        _ = table.AddRow("Done in selected period", snapshot.TotalIssues.Value.ToString(CultureInfo.InvariantCulture));
+        _ = table.AddRow("Covered by automated tests", snapshot.CoveredIssueCount.Value.ToString(CultureInfo.InvariantCulture));
+        _ = table.AddRow("Coverage", percentage);
+        AnsiConsole.Write(table);
     }
 
     private static Table CreateRatioSummaryTable(

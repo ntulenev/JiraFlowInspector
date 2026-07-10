@@ -53,13 +53,15 @@ public interface IJiraApiClient
     /// <param name="issueTypes">Issue types to include.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <param name="reporducedOnProdFieldName">Optional field name or id that marks bugs reproduced on production.</param>
+    /// <param name="includeIssueLinks">Whether issue links should be loaded.</param>
     /// <returns>Matching issues with key and title.</returns>
     Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
         IReadOnlyList<IssueTypeName> issueTypes,
         CancellationToken cancellationToken,
-        JiraFieldName? reporducedOnProdFieldName = null);
+        JiraFieldName? reporducedOnProdFieldName = null,
+        bool includeIssueLinks = false);
 
     /// <summary>
     /// Loads issue counts grouped by status and issue type, excluding done/rejected statuses.
