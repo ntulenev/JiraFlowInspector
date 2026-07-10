@@ -12,7 +12,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Optional custom transition analysis for a configured `FromStatusName -> ToStatusName` transition.
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
-- Optional automated test coverage percentage for completed tasks linked to QA project tasks.
+- Optional automated test coverage percentage for completed tasks linked to test-project tasks.
 - Optional release report by label, custom release date field, and optional environment filter.
 - Optional architecture tasks report driven by custom JQL or JQL template.
 - Optional global incidents report by namespace/project and JQL filter.
@@ -78,7 +78,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Bug ratio details (optional):
   separate tables for Open, Done, Rejected issues.
 - Automated test coverage (optional):
-  percentage of completed configured task types that have the configured Jira link to a task in the configured QA project.
+  percentage of completed configured task types that have the configured Jira link to a task in the configured test project.
 - Transition analysis:
   done table, optional rejected table.
 - Path group summary:
@@ -199,11 +199,11 @@ Jira issue identifiers are clickable links in HTML tables.
 
 `TeamTasks.TestCoverage` enables coverage calculation for completed tasks linked to automated-test tasks.
 
-Default values when the section is present:
+Example generic values:
 
-- `IssueTypes`: `["SuperTask"]`
-- `TestProjectKey`: `QA`
-- `LinkName`: `is tested by`
+- `IssueTypes`: `["Testable Task"]`
+- `TestProjectKey`: `TEST`
+- `LinkName`: `is covered by`
 
 Example:
 
@@ -213,9 +213,9 @@ Example:
     "TeamTasks": {
       "TestCoverage": {
         "Enabled": true,
-        "IssueTypes": [ "SuperTask" ],
-        "TestProjectKey": "QA",
-        "LinkName": "is tested by"
+        "IssueTypes": [ "Testable Task" ],
+        "TestProjectKey": "TEST",
+        "LinkName": "is covered by"
       }
     }
   }
