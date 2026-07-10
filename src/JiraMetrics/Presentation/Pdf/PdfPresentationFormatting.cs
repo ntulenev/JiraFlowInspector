@@ -102,9 +102,15 @@ internal static class PdfPresentationFormatting
     }
 
     public static string BuildFinishedToCreatedRatioText(ItemCount createdThisMonth, ItemCount finishedThisMonth) =>
-        createdThisMonth.Value == 0
+        BuildRatioText(finishedThisMonth.Value, createdThisMonth.Value);
+
+    public static string BuildRatioText(int numerator, int denominator) =>
+        denominator == 0
             ? "N/A"
-            : $"{finishedThisMonth.Value * 100.0 / createdThisMonth.Value:0.##}%";
+            : FormatPercentage(numerator * 100.0 / denominator);
+
+    public static string FormatPercentage(double? value) =>
+        value.HasValue ? value.Value.ToString("0.##", CultureInfo.InvariantCulture) + "%" : "N/A";
 
     public static string BuildHotFixRulesText(IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules)
     {

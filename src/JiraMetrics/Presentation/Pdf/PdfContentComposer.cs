@@ -20,6 +20,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 new PdfArchTasksSection(),
                 new PdfGlobalIncidentsSection(),
                 new PdfRatiosSection(),
+                new PdfTestCoverageSection(),
                 new PdfTransitionAnalysisSection(),
                 new PdfQaTransitionAnalysisSection(),
                 new PdfPathGroupsSection(),

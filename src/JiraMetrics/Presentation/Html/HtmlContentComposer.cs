@@ -89,7 +89,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
                 new TableRow(
                 [
                     BuildTextCell("Coverage"),
-                    BuildTextCell(FormatPercentage(reportData.TestCoverage.CoveragePercentage), reportData.TestCoverage.CoveragePercentage)
+                    BuildTextCell(PdfPresentationFormatting.FormatPercentage(reportData.TestCoverage.CoveragePercentage), reportData.TestCoverage.CoveragePercentage)
                 ])
             ],
             defaultSortColumn: 0,
@@ -121,9 +121,6 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             BuildTextCell(PdfPresentationFormatting.BuildFinishedToCreatedRatioText(created.Value, finished.Value))
         ]));
     }
-
-    private static string FormatPercentage(double? value) =>
-        value.HasValue ? value.Value.ToString("0.##", CultureInfo.InvariantCulture) + "%" : "N/A";
 
     internal static string BuildBugRatioDetailsSection(JiraReportData reportData)
     {
