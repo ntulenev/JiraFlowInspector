@@ -12,6 +12,7 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Optional custom transition analysis for a configured `FromStatusName -> ToStatusName` transition.
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
+- Optional automated test coverage percentage for completed tasks linked to QA project tasks.
 - Optional release report by label, custom release date field, and optional environment filter.
 - Optional architecture tasks report driven by custom JQL or JQL template.
 - Optional global incidents report by namespace/project and JQL filter.
@@ -38,12 +39,13 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 7. Optionally loads architecture tasks for the report.
 8. Optionally loads global incidents for the month.
 9. Optionally loads bug-ratio datasets.
-10. Loads changelogs for selected issues and builds transition timelines.
-11. Applies issue-type and required-stage filters.
-12. Shows console sections.
-13. Optionally writes HTML report.
-14. Optionally writes PDF report.
-15. Optionally appends custom transition analysis to the end of the PDF report.
+10. Optionally loads automated test coverage for completed tasks.
+11. Loads changelogs for selected issues and builds transition timelines.
+12. Applies issue-type and required-stage filters.
+13. Shows console sections.
+14. Optionally writes HTML report.
+15. Optionally writes PDF report.
+16. Optionally appends custom transition analysis to the end of the PDF report.
 
 ## Important Behavior Rules
 
@@ -75,6 +77,8 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   open/done/rejected/finished counts and finished/created rate.
 - Bug ratio details (optional):
   separate tables for Open, Done, Rejected issues.
+- Automated test coverage (optional):
+  percentage of completed configured task types that have the configured Jira link to a task in the configured QA project.
 - Transition analysis:
   done table, optional rejected table.
 - Path group summary:
@@ -190,6 +194,42 @@ Jira issue identifiers are clickable links in HTML tables.
   union of Done and Rejected issue keys.
 - Finished / Created:
   `finished / created * 100`.
+
+### Automated Test Coverage
+
+`TeamTasks.TestCoverage` enables coverage calculation for completed tasks linked to automated-test tasks.
+
+Default values when the section is present:
+
+- `IssueTypes`: `["SuperTask"]`
+- `TestProjectKey`: `QA`
+- `LinkName`: `is tested by`
+
+Example:
+
+```json
+{
+  "Jira": {
+    "TeamTasks": {
+      "TestCoverage": {
+        "Enabled": true,
+        "IssueTypes": [ "SuperTask" ],
+        "TestProjectKey": "QA",
+        "LinkName": "is tested by"
+      }
+    }
+  }
+}
+```
+
+Calculation:
+
+- Denominator:
+  issues from `TeamTasks.ProjectKey` whose type is in `IssueTypes`, moved to `DoneStatusName` during the selected report period, and currently still in `DoneStatusName`.
+- Numerator:
+  denominator issues that have an issue link with relation text equal to `LinkName` and linked issue key from `TestProjectKey`.
+- Coverage:
+  `covered / denominator * 100`.
 
 ### Release Report
 
