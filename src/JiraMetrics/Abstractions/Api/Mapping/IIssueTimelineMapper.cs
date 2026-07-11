@@ -12,6 +12,8 @@ public interface IIssueTimelineMapper
     /// <summary>
     /// Maps one Jira issue response into a timeline.
     /// </summary>
+    /// <param name="response">The <paramref name="response"/> value.</param>
+    /// <param name="fallbackKey">The <paramref name="fallbackKey"/> value.</param>
     IssueTimeline Map(JiraIssueResponse response, IssueKey fallbackKey);
 }
 
