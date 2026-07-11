@@ -10,6 +10,13 @@ public sealed record ReleaseIssueReadRequest
     /// <summary>
     /// Initializes a new instance of the <see cref="ReleaseIssueReadRequest"/> class.
     /// </summary>
+    /// <param name="releaseProjectKey">The <paramref name="releaseProjectKey"/> value.</param>
+    /// <param name="projectLabel">The <paramref name="projectLabel"/> value.</param>
+    /// <param name="releaseDateFieldName">The <paramref name="releaseDateFieldName"/> value.</param>
+    /// <param name="componentsFieldName">The <paramref name="componentsFieldName"/> value.</param>
+    /// <param name="hotFixRules">The <paramref name="hotFixRules"/> value.</param>
+    /// <param name="rollbackFieldName">The <paramref name="rollbackFieldName"/> value.</param>
+    /// <param name="environmentFilter">The <paramref name="environmentFilter"/> value.</param>
     public ReleaseIssueReadRequest(
         ProjectKey releaseProjectKey,
         JiraLabel projectLabel,
