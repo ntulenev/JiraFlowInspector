@@ -53,6 +53,14 @@ public sealed record JiraIssueAnalysisResult
     /// <summary>
     /// Creates a result for a successful analysis.
     /// </summary>
+    /// <param name="doneIssues">The <paramref name="doneIssues"/> value.</param>
+    /// <param name="rejectedIssues">The <paramref name="rejectedIssues"/> value.</param>
+    /// <param name="doneDaysAtWork75PerType">The <paramref name="doneDaysAtWork75PerType"/> value.</param>
+    /// <param name="customTransitionIssues">The <paramref name="customTransitionIssues"/> value.</param>
+    /// <param name="customTransitionDuration75PerType">The <paramref name="customTransitionDuration75PerType"/> value.</param>
+    /// <param name="pathGroups">The <paramref name="pathGroups"/> value.</param>
+    /// <param name="pathSummary">The <paramref name="pathSummary"/> value.</param>
+    /// <param name="qaTransitionAnalysis">The <paramref name="qaTransitionAnalysis"/> value.</param>
     public static JiraIssueAnalysisResult Success(
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTimeline> rejectedIssues,
