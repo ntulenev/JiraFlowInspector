@@ -5,6 +5,9 @@ namespace JiraMetrics.Models;
 /// <summary>
 /// Shared Jira search results reused across report-context and ratio calculations.
 /// </summary>
+/// <param name="CreatedIssues">The <paramref name="CreatedIssues"/> value.</param>
+/// <param name="DoneIssues">The <paramref name="DoneIssues"/> value.</param>
+/// <param name="RejectedIssues">The <paramref name="RejectedIssues"/> value.</param>
 public sealed record IssueSearchSnapshot(
     IReadOnlyList<IssueListItem> CreatedIssues,
     IReadOnlyList<IssueListItem> DoneIssues,
