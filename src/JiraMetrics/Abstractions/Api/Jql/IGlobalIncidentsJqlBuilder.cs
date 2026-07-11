@@ -14,6 +14,7 @@ public interface IGlobalIncidentsJqlBuilder
     /// </summary>
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="incidentStartFields">The <paramref name="incidentStartFields"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields);
