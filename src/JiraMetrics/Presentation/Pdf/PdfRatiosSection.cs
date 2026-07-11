@@ -57,7 +57,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             column,
             "Open issues",
             reportData.BugOpenIssues,
-            PdfPresentationFormatting.OPEN_ISSUE_COLOR_HEX,
+            PresentationFormatting.OPEN_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true,
             includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
@@ -65,7 +65,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             column,
             "Done issues",
             reportData.BugDoneIssues,
-            PdfPresentationFormatting.DONE_ISSUE_COLOR_HEX,
+            PresentationFormatting.DONE_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true,
             includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
@@ -73,7 +73,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             column,
             "Rejected issues",
             reportData.BugRejectedIssues,
-            PdfPresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
+            PresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: false,
             includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
@@ -120,21 +120,21 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             column,
             "Open issues",
             reportData.InternalIncidentOpenIssues,
-            PdfPresentationFormatting.OPEN_ISSUE_COLOR_HEX,
+            PresentationFormatting.OPEN_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true);
         ComposeIssueListItemsSection(
             column,
             "Done issues",
             reportData.InternalIncidentDoneIssues,
-            PdfPresentationFormatting.DONE_ISSUE_COLOR_HEX,
+            PresentationFormatting.DONE_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true);
         ComposeIssueListItemsSection(
             column,
             "Rejected issues",
             reportData.InternalIncidentRejectedIssues,
-            PdfPresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
+            PresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: false);
     }
@@ -199,7 +199,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
 
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished / Created");
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(
-                PdfPresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
+                PresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
         });
     }
 

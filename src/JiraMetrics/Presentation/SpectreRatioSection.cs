@@ -5,7 +5,6 @@ using System.Globalization;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
-using JiraMetrics.Presentation.Pdf;
 
 using Spectre.Console;
 
@@ -101,7 +100,7 @@ internal sealed class SpectreRatioSection
         ArgumentNullException.ThrowIfNull(snapshot);
 
         var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
-        var percentage = PdfPresentationFormatting.FormatPercentage(snapshot.CoveragePercentage);
+        var percentage = PresentationFormatting.FormatPercentage(snapshot.CoveragePercentage);
 
         AnsiConsole.MarkupLine("[bold]Automated test coverage[/]");
         AnsiConsole.MarkupLine($"[grey]Issue types:[/] {Markup.Escape(issueTypes)}");
@@ -140,7 +139,7 @@ internal sealed class SpectreRatioSection
         _ = table.AddRow("[green]Done in selected period[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
         _ = table.AddRow("[orange1]Rejected in selected period[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
         _ = table.AddRow("[deepskyblue1]Finished in selected period[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("Finished / Created", PdfPresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
+        _ = table.AddRow("Finished / Created", PresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
 
         return table;
     }

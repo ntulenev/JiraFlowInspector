@@ -104,7 +104,7 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
                     .Text(item.TransitionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(PdfPresentationFormatting.FormatWorkDurationValue(
+                    .Text(PresentationFormatting.FormatWorkDurationValue(
                         item.Duration,
                         reportData.Settings.ShowTimeCalculationsInHoursOnly));
             }
@@ -149,7 +149,7 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(PdfPresentationFormatting.FormatWorkDurationValue(
+                    .Text(PresentationFormatting.FormatWorkDurationValue(
                         summary.DurationP75,
                         showTimeCalculationsInHoursOnly));
             }

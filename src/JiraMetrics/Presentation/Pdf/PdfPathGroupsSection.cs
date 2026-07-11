@@ -150,12 +150,12 @@ internal sealed class PdfPathGroupsSection : IPdfReportSection
                 stage: transition.From.Value,
                 duration: transition.P75Duration < TimeSpan.Zero ? TimeSpan.Zero : transition.P75Duration))
             .ToList();
-        var stageColorItems = PdfPresentationFormatting.BuildStageColors(stageDurations);
+        var stageColorItems = PresentationFormatting.BuildStageColors(stageDurations);
         var stageColorByName = stageColorItems.ToDictionary(
             static item => item.stage,
             static item => item.colorHex,
             StringComparer.OrdinalIgnoreCase);
-        var stageWeights = PdfPresentationFormatting.BuildStageWeights(stageDurations);
+        var stageWeights = PresentationFormatting.BuildStageWeights(stageDurations);
 
         column.Item().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Column(diagram =>
         {

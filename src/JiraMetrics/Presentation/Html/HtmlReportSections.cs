@@ -1,7 +1,6 @@
 using System.Text;
 
 using JiraMetrics.Models;
-using JiraMetrics.Presentation.Pdf;
 
 namespace JiraMetrics.Presentation.Html;
 
@@ -43,7 +42,7 @@ internal sealed class HtmlIssueTimelineSection : IHtmlReportSection
             reportData));
         _ = html.Append(HtmlContentComposer.BuildDuration75PerTypeTable(
             "done-duration-75",
-            $"{PdfPresentationFormatting.GetWorkDuration75Title(reportData.Settings.ShowTimeCalculationsInHoursOnly)} per type",
+            $"{PresentationFormatting.GetWorkDuration75Title(reportData.Settings.ShowTimeCalculationsInHoursOnly)} per type",
             reportData.DoneDaysAtWork75PerType,
             reportData.Settings.ShowTimeCalculationsInHoursOnly));
 

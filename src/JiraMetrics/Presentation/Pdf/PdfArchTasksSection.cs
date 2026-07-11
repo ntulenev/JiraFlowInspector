@@ -80,7 +80,7 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
                     .Element(PdfPresentationHelpers.StyleBodyCell)
                     .Text(text =>
                     {
-                        var span = text.Span(PdfPresentationFormatting.FormatCalendarDayDurationValue(task.GetElapsed(now)));
+                        var span = text.Span(PresentationFormatting.FormatCalendarDayDurationValue(task.GetElapsed(now)));
                         _ = span.FontColor(task.IsResolved ? Colors.Black : Colors.Red.Darken2);
                     });
                 _ = table.Cell()

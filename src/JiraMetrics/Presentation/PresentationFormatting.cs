@@ -3,12 +3,12 @@ using System.Globalization;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
-namespace JiraMetrics.Presentation.Pdf;
+namespace JiraMetrics.Presentation;
 
 /// <summary>
 /// Provides formatting helpers used by PDF report sections.
 /// </summary>
-internal static class PdfPresentationFormatting
+internal static class PresentationFormatting
 {
     public const string OPEN_ISSUE_COLOR_HEX = "#dc2626";
     public const string DONE_ISSUE_COLOR_HEX = "#16a34a";

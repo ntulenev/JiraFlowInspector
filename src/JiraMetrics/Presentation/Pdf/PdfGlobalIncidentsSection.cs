@@ -100,10 +100,10 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
                     .DefaultTextStyle(static style => style.FontColor(Colors.Blue.Darken2).Underline())
                     .Text(incident.Key.Value);
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(incident.Title.Truncate(new TextLength(140)).Value);
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PdfPresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentStartUtc));
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PdfPresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentStartUtc));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(
-                    PdfPresentationFormatting.FormatIncidentDuration(incident.Duration, reportData.Settings.ShowTimeCalculationsInHoursOnly));
+                    PresentationFormatting.FormatIncidentDuration(incident.Duration, reportData.Settings.ShowTimeCalculationsInHoursOnly));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(incident.Impact ?? "-");
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(incident.Urgency ?? "-");
                 if (includeAdditionalFields)
@@ -118,10 +118,10 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
             }
         });
 
-        var totalDuration = PdfPresentationFormatting.SumIncidentDurations(orderedIncidents);
+        var totalDuration = PresentationFormatting.SumIncidentDurations(orderedIncidents);
         _ = column
             .Item()
-            .Text("Total duration: " + PdfPresentationFormatting.FormatIncidentDuration(totalDuration, reportData.Settings.ShowTimeCalculationsInHoursOnly))
+            .Text("Total duration: " + PresentationFormatting.FormatIncidentDuration(totalDuration, reportData.Settings.ShowTimeCalculationsInHoursOnly))
             .FontColor(Colors.Grey.Darken1);
     }
 }

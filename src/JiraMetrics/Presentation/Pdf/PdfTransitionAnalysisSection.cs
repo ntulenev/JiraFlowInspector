@@ -112,7 +112,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
                 {
                     _ = header.Cell()
                         .Element(PdfPresentationHelpers.StyleHeaderCell)
-                        .Text(PdfPresentationFormatting.GetWorkDurationColumnLabel(showTimeCalculationsInHoursOnly));
+                        .Text(PresentationFormatting.GetWorkDurationColumnLabel(showTimeCalculationsInHoursOnly));
                 }
             });
 
@@ -137,12 +137,12 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
                         .Text(issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
                 }
 
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PdfPresentationFormatting.BuildLastStatusAtText(issue, targetStatusName));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PresentationFormatting.BuildLastStatusAtText(issue, targetStatusName));
                 if (includeDaysAtWork)
                 {
                     _ = table.Cell()
                         .Element(PdfPresentationHelpers.StyleBodyCell)
-                        .Text(PdfPresentationFormatting.BuildWorkDurationText(issue, targetStatusName, showTimeCalculationsInHoursOnly));
+                        .Text(PresentationFormatting.BuildWorkDurationText(issue, targetStatusName, showTimeCalculationsInHoursOnly));
                 }
             }
         });
@@ -156,7 +156,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
     {
         _ = column
             .Item()
-            .Text($"{PdfPresentationFormatting.GetWorkDuration75Title(showTimeCalculationsInHoursOnly)} per type (moved to {doneStatusName.Value})")
+            .Text($"{PresentationFormatting.GetWorkDuration75Title(showTimeCalculationsInHoursOnly)} per type (moved to {doneStatusName.Value})")
             .Bold();
         if (summaries.Count == 0)
         {
@@ -185,7 +185,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(PdfPresentationFormatting.GetWorkDuration75Title(showTimeCalculationsInHoursOnly));
+                    .Text(PresentationFormatting.GetWorkDuration75Title(showTimeCalculationsInHoursOnly));
             });
 
             foreach (var summary in orderedSummaries)
@@ -194,7 +194,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(PdfPresentationFormatting.FormatWorkDurationValue(summary.DaysAtWorkP75, showTimeCalculationsInHoursOnly));
+                    .Text(PresentationFormatting.FormatWorkDurationValue(summary.DaysAtWorkP75, showTimeCalculationsInHoursOnly));
             }
         });
     }

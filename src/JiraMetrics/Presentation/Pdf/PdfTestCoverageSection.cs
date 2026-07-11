@@ -41,7 +41,7 @@ internal sealed class PdfTestCoverageSection : IPdfReportSection
 
             AddTextRow(table, "Done in selected period", reportData.TestCoverage.TotalIssues.Value.ToString(CultureInfo.InvariantCulture));
             AddTextRow(table, "Covered by automated tests", reportData.TestCoverage.CoveredIssueCount.Value.ToString(CultureInfo.InvariantCulture));
-            AddTextRow(table, "Coverage", PdfPresentationFormatting.FormatPercentage(reportData.TestCoverage.CoveragePercentage));
+            AddTextRow(table, "Coverage", PresentationFormatting.FormatPercentage(reportData.TestCoverage.CoveragePercentage));
         });
     }
 

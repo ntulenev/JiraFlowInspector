@@ -303,7 +303,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                     .Text(item.TransitionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(PdfPresentationFormatting.FormatWorkDurationValue(
+                    .Text(PresentationFormatting.FormatWorkDurationValue(
                         item.Duration,
                         showTimeCalculationsInHoursOnly));
             }
@@ -348,7 +348,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(PdfPresentationFormatting.FormatWorkDurationValue(
+                    .Text(PresentationFormatting.FormatWorkDurationValue(
                         summary.DurationP75,
                         showTimeCalculationsInHoursOnly));
             }
@@ -358,7 +358,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
     private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
         duration is null
             ? "-"
-            : PdfPresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
+            : PresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
 
     private static void AddSummaryRow(TableDescriptor table, string metric, int value) =>
         AddSummaryRow(table, metric, value.ToString(CultureInfo.InvariantCulture));

@@ -34,7 +34,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
             .FontColor(Colors.Grey.Darken1);
         _ = column
             .Item()
-            .Text($"Hot-fix markers: {PdfPresentationFormatting.BuildHotFixRulesText(releaseReport.HotFixRules)}")
+            .Text($"Hot-fix markers: {PresentationFormatting.BuildHotFixRulesText(releaseReport.HotFixRules)}")
             .FontColor(Colors.Grey.Darken1);
 
         if (reportData.ReleaseIssues.Count == 0)
@@ -233,7 +233,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
             return;
         }
 
-        var componentSummaries = PdfPresentationFormatting.BuildComponentReleaseSummaries(orderedReleases);
+        var componentSummaries = PresentationFormatting.BuildComponentReleaseSummaries(orderedReleases);
         _ = column.Item().Text("Components release table").Bold();
         if (componentSummaries.Count == 0)
         {

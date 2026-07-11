@@ -68,7 +68,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 new TableRow(
                 [
                     BuildTextCell("Coverage"),
-                    BuildTextCell(PdfPresentationFormatting.FormatPercentage(reportData.TestCoverage.CoveragePercentage), reportData.TestCoverage.CoveragePercentage)
+                    BuildTextCell(PresentationFormatting.FormatPercentage(reportData.TestCoverage.CoveragePercentage), reportData.TestCoverage.CoveragePercentage)
                 ])
             ],
             defaultSortColumn: 0,
@@ -97,7 +97,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         rows.Add(new TableRow(
         [
             BuildTextCell($"{scope}: Finished / Created"),
-            BuildTextCell(PdfPresentationFormatting.BuildFinishedToCreatedRatioText(created.Value, finished.Value))
+            BuildTextCell(PresentationFormatting.BuildFinishedToCreatedRatioText(created.Value, finished.Value))
         ]));
     }
 
@@ -284,7 +284,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             new TableColumn("Summary", "text", "Summary", "summary-column"),
             new TableColumn("Created At", "number", "Created At"),
             new TableColumn(atColumnTitle, "number", atColumnTitle),
-            new TableColumn(PdfPresentationFormatting.GetWorkDurationColumnLabel(reportData.Settings.ShowTimeCalculationsInHoursOnly), "number", "Duration")
+            new TableColumn(PresentationFormatting.GetWorkDurationColumnLabel(reportData.Settings.ShowTimeCalculationsInHoursOnly), "number", "Duration")
         };
 
         var orderedIssues = issues
@@ -307,9 +307,9 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 BuildTextCell(issue.HasPullRequest ? "+" : string.Empty),
                 BuildTextCell(issue.Summary.Value),
                 BuildTextCell(HtmlPresentationHelpers.FormatDateTime(issue.Created), issue.Created.ToUnixTimeSeconds()),
-                BuildTextCell(PdfPresentationFormatting.BuildLastStatusAtText(issue, targetStatusName), lastStatusAt?.ToUnixTimeSeconds()),
+                BuildTextCell(PresentationFormatting.BuildLastStatusAtText(issue, targetStatusName), lastStatusAt?.ToUnixTimeSeconds()),
                 BuildTextCell(
-                    PdfPresentationFormatting.BuildWorkDurationText(issue, targetStatusName, reportData.Settings.ShowTimeCalculationsInHoursOnly),
+                    PresentationFormatting.BuildWorkDurationText(issue, targetStatusName, reportData.Settings.ShowTimeCalculationsInHoursOnly),
                     workDuration?.TotalMinutes)
             ]));
         }
@@ -332,7 +332,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 BuildTextCell(summary.IssueType.Value),
                 BuildTextCell(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture), summary.IssueCount.Value),
                 BuildTextCell(
-                    PdfPresentationFormatting.FormatWorkDurationValue(summary.DaysAtWorkP75, showTimeCalculationsInHoursOnly),
+                    PresentationFormatting.FormatWorkDurationValue(summary.DaysAtWorkP75, showTimeCalculationsInHoursOnly),
                     summary.DaysAtWorkP75.TotalMinutes)
             ]))
             .ToList();
@@ -344,7 +344,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             [
                 new TableColumn("Type", "text", "Type"),
                 new TableColumn("Issues", "number", "Issues"),
-                new TableColumn(PdfPresentationFormatting.GetWorkDuration75Title(showTimeCalculationsInHoursOnly), "number", "75P")
+                new TableColumn(PresentationFormatting.GetWorkDuration75Title(showTimeCalculationsInHoursOnly), "number", "75P")
             ],
             rows,
             defaultSortColumn: 2,
@@ -505,7 +505,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             return string.Empty;
         }
 
-        var rows = PdfPresentationFormatting.BuildComponentReleaseSummaries(reportData.ReleaseIssues)
+        var rows = PresentationFormatting.BuildComponentReleaseSummaries(reportData.ReleaseIssues)
             .Select((item, index) => new TableRow(
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
@@ -652,9 +652,9 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
                 BuildLinkCell(incident.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, incident.Key)),
-                BuildTextCell(PdfPresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentStartUtc), incident.IncidentStartUtc?.ToUnixTimeSeconds()),
-                BuildTextCell(PdfPresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc), incident.IncidentRecoveryUtc?.ToUnixTimeSeconds()),
-                BuildTextCell(PdfPresentationFormatting.FormatIncidentDuration(incident.Duration, reportData.Settings.ShowTimeCalculationsInHoursOnly), incident.Duration?.TotalMinutes),
+                BuildTextCell(PresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentStartUtc), incident.IncidentStartUtc?.ToUnixTimeSeconds()),
+                BuildTextCell(PresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc), incident.IncidentRecoveryUtc?.ToUnixTimeSeconds()),
+                BuildTextCell(PresentationFormatting.FormatIncidentDuration(incident.Duration, reportData.Settings.ShowTimeCalculationsInHoursOnly), incident.Duration?.TotalMinutes),
                 BuildTextCell(incident.Impact ?? "-"),
                 BuildTextCell(incident.Urgency ?? "-"),
                 BuildTextCell(incident.Title.Value)
@@ -786,7 +786,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 BuildTextCell(item.Issue.Summary.Value),
                 BuildTextCell(item.Rule.Label),
                 BuildTextCell(HtmlPresentationHelpers.FormatDateTime(item.TransitionAt), item.TransitionAt.ToUnixTimeSeconds()),
-                BuildTextCell(PdfPresentationFormatting.FormatWorkDurationValue(item.Duration, showHoursOnly), item.Duration.TotalMinutes)
+                BuildTextCell(PresentationFormatting.FormatWorkDurationValue(item.Duration, showHoursOnly), item.Duration.TotalMinutes)
             ]))
             .ToList();
 
@@ -825,7 +825,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 BuildTextCell(summary.IssueType.Value),
                 BuildTextCell(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture), summary.IssueCount.Value),
                 BuildTextCell(
-                    PdfPresentationFormatting.FormatWorkDurationValue(summary.DurationP75, showTimeCalculationsInHoursOnly),
+                    PresentationFormatting.FormatWorkDurationValue(summary.DurationP75, showTimeCalculationsInHoursOnly),
                     summary.DurationP75.TotalMinutes)
             ]))
             .ToList();
@@ -897,7 +897,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
     private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
         duration is null
             ? "-"
-            : PdfPresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
+            : PresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
 
     private static string FormatDurationWithHours(TimeSpan duration, bool showTimeCalculationsInHoursOnly)
     {
