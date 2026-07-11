@@ -10,6 +10,16 @@ public sealed record QaTransitionAnalysis
     /// <summary>
     /// Initializes a new instance of the <see cref="QaTransitionAnalysis"/> class.
     /// </summary>
+    /// <param name="analyzedIssueCount">The <paramref name="analyzedIssueCount"/> value.</param>
+    /// <param name="pickupIssues">The <paramref name="pickupIssues"/> value.</param>
+    /// <param name="pickupDuration75">The <paramref name="pickupDuration75"/> value.</param>
+    /// <param name="pickupDuration75PerType">The <paramref name="pickupDuration75PerType"/> value.</param>
+    /// <param name="testingIssues">The <paramref name="testingIssues"/> value.</param>
+    /// <param name="testingDuration75">The <paramref name="testingDuration75"/> value.</param>
+    /// <param name="testingDuration75PerType">The <paramref name="testingDuration75PerType"/> value.</param>
+    /// <param name="holdIssues">The <paramref name="holdIssues"/> value.</param>
+    /// <param name="holdDuration75">The <paramref name="holdDuration75"/> value.</param>
+    /// <param name="holdDuration75PerType">The <paramref name="holdDuration75PerType"/> value.</param>
     public QaTransitionAnalysis(
         ItemCount analyzedIssueCount,
         IReadOnlyList<TransitionMeasurementIssue> pickupIssues,
