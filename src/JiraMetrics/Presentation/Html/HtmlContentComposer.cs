@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Text;
 
 using JiraMetrics.Models;
@@ -11,7 +10,7 @@ namespace JiraMetrics.Presentation.Html;
 /// <summary>
 /// Composes standalone HTML for the Jira report.
 /// </summary>
-public sealed partial class HtmlContentComposer : IHtmlContentComposer
+public sealed class HtmlContentComposer : IHtmlContentComposer
 {
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
@@ -23,27 +22,7 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         {
             _ = content.Append(section.Compose(reportData));
         }
-        var contentHtml = content.ToString();
-
-        return ApplyTemplate(
-            HtmlTemplateLoader.LoadReportTemplate(),
-            new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                ["__PROJECT__"] = HtmlPresentationHelpers.Encode(reportData.Settings.ProjectKey.Value),
-                ["__GENERATED_AT__"] = HtmlPresentationHelpers.Encode(
-                    DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)),
-                ["__PERIOD__"] = HtmlPresentationHelpers.Encode(reportData.Settings.ReportPeriod.Label),
-                ["__DONE_STATUS__"] = HtmlPresentationHelpers.Encode(reportData.Settings.DoneStatusName.Value),
-                ["__SEARCH_ISSUES__"] = reportData.SearchIssueCount.Value.ToString(CultureInfo.InvariantCulture),
-                ["__DONE_ISSUES__"] = reportData.DoneIssues.Count.ToString(CultureInfo.InvariantCulture),
-                ["__REJECTED_ISSUES__"] = reportData.RejectedIssues.Count.ToString(CultureInfo.InvariantCulture),
-                ["__PATH_GROUPS__"] = reportData.PathSummary.PathGroupCount.Value.ToString(CultureInfo.InvariantCulture),
-                ["__FAILED_ISSUES__"] = reportData.Failures.Count.ToString(CultureInfo.InvariantCulture),
-                ["__NAV__"] = BuildNavigation(contentHtml),
-                ["__CONTENT__"] = contentHtml,
-                ["__STYLES__"] = HtmlTemplateLoader.LoadReportStyles(),
-                ["__SCRIPT__"] = HtmlTemplateLoader.LoadReportScript()
-            });
+        return HtmlDocumentComposer.Compose(reportData, content.ToString());
     }
 
     internal static string BuildRatiosSection(JiraReportData reportData)
@@ -885,49 +864,6 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
             defaultSortDirection,
             compact);
 
-    private static string ApplyTemplate(string template, IReadOnlyDictionary<string, string> tokens)
-    {
-        var result = template;
-        foreach (var token in tokens)
-        {
-            result = result.Replace(token.Key, token.Value, StringComparison.Ordinal);
-        }
-
-        return result;
-    }
-
-    private static string BuildNavigation(string contentHtml)
-    {
-        var sectionMatches = SectionHeadingRegex().Matches(contentHtml);
-        if (sectionMatches.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        var html = new StringBuilder();
-        _ = html.AppendLine("<aside class=\"report-nav\" aria-label=\"Report sections\">");
-        _ = html.AppendLine("  <div class=\"report-nav-title\">Sections</div>");
-        _ = html.AppendLine("  <nav>");
-        foreach (Match match in sectionMatches)
-        {
-            var sectionId = match.Groups["id"].Value;
-            var title = StripTags(match.Groups["title"].Value);
-            _ = html.AppendLine(string.Concat(
-                "    <a href=\"#",
-                HtmlPresentationHelpers.EncodeAttribute(sectionId),
-                "\">",
-                HtmlPresentationHelpers.Encode(title),
-                "</a>"));
-        }
-
-        _ = html.AppendLine("  </nav>");
-        _ = html.AppendLine("</aside>");
-        return html.ToString();
-    }
-
-    private static string StripTags(string html) =>
-        TagRegex().Replace(html, string.Empty).Trim();
-
     private static TableRow BuildMetricRow(string metricName, int value) =>
         new(
         [
@@ -1001,9 +937,4 @@ public sealed partial class HtmlContentComposer : IHtmlContentComposer
         new HtmlFailuresSection()
     ];
 
-    [GeneratedRegex("<section\\s+class=\"[^\"]*table-section[^\"]*\"\\s+id=\"(?<id>[^\"]+)\">\\s*<div\\s+class=\"section-header\"><h2>(?<title>.*?)</h2></div>", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
-    private static partial Regex SectionHeadingRegex();
-
-    [GeneratedRegex("<.*?>", RegexOptions.CultureInvariant)]
-    private static partial Regex TagRegex();
 }
