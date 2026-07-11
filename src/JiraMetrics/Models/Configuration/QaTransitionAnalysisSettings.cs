@@ -8,6 +8,10 @@ public sealed record QaTransitionAnalysisSettings
     /// <summary>
     /// Initializes a new instance of the <see cref="QaTransitionAnalysisSettings"/> class.
     /// </summary>
+    /// <param name="enabled">The <paramref name="enabled"/> value.</param>
+    /// <param name="pickupTransitions">The <paramref name="pickupTransitions"/> value.</param>
+    /// <param name="testingTransitions">The <paramref name="testingTransitions"/> value.</param>
+    /// <param name="holdTransitions">The <paramref name="holdTransitions"/> value.</param>
     public QaTransitionAnalysisSettings(
         bool enabled,
         IReadOnlyList<TransitionMeasurementRule> pickupTransitions,
