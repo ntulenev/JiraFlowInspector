@@ -12,6 +12,7 @@ public interface IJiraSearchExecutor
     /// Loads the current Jira user.
     /// </summary>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<JiraCurrentUserResponse?> GetCurrentUserAsync(CancellationToken cancellationToken);
 
     /// <summary>
@@ -20,6 +21,7 @@ public interface IJiraSearchExecutor
     /// <param name="issueKey">The <paramref name="issueKey"/> value.</param>
     /// <param name="fields">The <paramref name="fields"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<JiraIssueResponse?> GetIssueWithChangelogAsync(
         IssueKey issueKey,
         JiraSearchFields? fields,
@@ -31,6 +33,7 @@ public interface IJiraSearchExecutor
     /// <param name="issueKeys">The <paramref name="issueKeys"/> value.</param>
     /// <param name="fields">The <paramref name="fields"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<IReadOnlyList<JiraIssueResponse>> GetIssuesAsync(
         IReadOnlyList<IssueKey> issueKeys,
         JiraSearchFields? fields,
@@ -41,6 +44,7 @@ public interface IJiraSearchExecutor
     /// </summary>
     /// <param name="issueKeys">The <paramref name="issueKeys"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<IReadOnlyDictionary<string, IReadOnlyList<JiraHistoryResponse>>> GetIssueChangelogsAsync(
         IReadOnlyList<IssueKey> issueKeys,
         CancellationToken cancellationToken);
@@ -51,6 +55,7 @@ public interface IJiraSearchExecutor
     /// <param name="jql">The <paramref name="jql"/> value.</param>
     /// <param name="fields">The <paramref name="fields"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<IReadOnlyList<JiraIssueKeyResponse>> SearchIssuesAsync(
         JqlQuery jql,
         JiraSearchFields fields,
