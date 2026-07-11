@@ -16,6 +16,7 @@ public interface IJiraJqlFacade
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
     /// <param name="createdAfter">The <paramref name="createdAfter"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -26,6 +27,7 @@ public interface IJiraJqlFacade
     /// </summary>
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes);
 
     /// <summary>
@@ -34,6 +36,7 @@ public interface IJiraJqlFacade
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
     /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -45,6 +48,7 @@ public interface IJiraJqlFacade
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
     /// <param name="rejectStatusName">The <paramref name="rejectStatusName"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -54,12 +58,14 @@ public interface IJiraJqlFacade
     /// Builds the release issue search query.
     /// </summary>
     /// <param name="request">The <paramref name="request"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildReleaseIssuesQuery(ReleaseIssueReadRequest request);
 
     /// <summary>
     /// Builds the architecture tasks search query.
     /// </summary>
     /// <param name="settings">The <paramref name="settings"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildArchTasksQuery(ArchTasksReportSettings settings);
 
     /// <summary>
@@ -67,6 +73,7 @@ public interface IJiraJqlFacade
     /// </summary>
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="incidentStartFields">The <paramref name="incidentStartFields"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildGlobalIncidentsQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields);
