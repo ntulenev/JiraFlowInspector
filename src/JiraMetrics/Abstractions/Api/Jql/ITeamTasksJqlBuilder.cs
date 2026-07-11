@@ -13,6 +13,7 @@ public interface ITeamTasksJqlBuilder
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
     /// <param name="createdAfter">The <paramref name="createdAfter"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -23,6 +24,7 @@ public interface ITeamTasksJqlBuilder
     /// </summary>
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes);
 
     /// <summary>
@@ -31,6 +33,7 @@ public interface ITeamTasksJqlBuilder
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
     /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -42,6 +45,7 @@ public interface ITeamTasksJqlBuilder
     /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
     /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
     /// <param name="rejectStatusName">The <paramref name="rejectStatusName"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
