@@ -14,6 +14,7 @@ public interface IGlobalIncidentMapper
     /// Builds the field list required for global incident mapping.
     /// </summary>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context);
 
     /// <summary>
@@ -21,6 +22,7 @@ public interface IGlobalIncidentMapper
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<GlobalIncidentItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         GlobalIncidentMappingContext context);
