@@ -15,6 +15,7 @@ public interface IJiraApplicationAnalysisFacade
     /// <param name="rejectIssues">The <paramref name="rejectIssues"/> value.</param>
     /// <param name="failures">The <paramref name="failures"/> value.</param>
     /// <param name="settings">The <paramref name="settings"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JiraIssueAnalysisResult Analyze(
         IReadOnlyList<IssueTimeline> issues,
         IReadOnlyList<IssueTimeline> rejectIssues,
