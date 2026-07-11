@@ -14,6 +14,7 @@ public interface IJiraMapperFacade
     /// Maps search issues into distinct ordered issue keys.
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<IssueKey> MapIssueKeys(IReadOnlyList<JiraIssueKeyResponse> issues);
 
     /// <summary>
@@ -21,6 +22,7 @@ public interface IJiraMapperFacade
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<IssueListItem> MapIssueListItems(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         IssueListMappingContext? context = null);
@@ -29,18 +31,21 @@ public interface IJiraMapperFacade
     /// Maps search issues into grouped status and issue-type summaries.
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<StatusIssueTypeSummary> MapStatusIssueTypeSummaries(IReadOnlyList<JiraIssueKeyResponse> issues);
 
     /// <summary>
     /// Maps search issues into architecture task rows.
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<ArchTaskItem> MapArchTaskItems(IReadOnlyList<JiraIssueKeyResponse> issues);
 
     /// <summary>
     /// Builds the field list required for release mapping.
     /// </summary>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JiraSearchFields BuildReleaseRequestedFields(ReleaseIssueMappingContext context);
 
     /// <summary>
@@ -48,6 +53,7 @@ public interface IJiraMapperFacade
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<ReleaseIssueItem> MapReleaseIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         ReleaseIssueMappingContext context);
@@ -56,6 +62,7 @@ public interface IJiraMapperFacade
     /// Builds the field list required for global incident mapping.
     /// </summary>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JiraSearchFields BuildGlobalIncidentRequestedFields(GlobalIncidentMappingContext context);
 
     /// <summary>
@@ -63,6 +70,7 @@ public interface IJiraMapperFacade
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<GlobalIncidentItem> MapGlobalIncidents(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         GlobalIncidentMappingContext context);
@@ -72,6 +80,7 @@ public interface IJiraMapperFacade
     /// </summary>
     /// <param name="response">The <paramref name="response"/> value.</param>
     /// <param name="fallbackKey">The <paramref name="fallbackKey"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IssueTimeline MapIssueTimeline(JiraIssueResponse response, IssueKey fallbackKey);
 }
 
