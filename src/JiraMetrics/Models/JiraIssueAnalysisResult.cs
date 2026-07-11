@@ -61,6 +61,7 @@ public sealed record JiraIssueAnalysisResult
     /// <param name="pathGroups">The <paramref name="pathGroups"/> value.</param>
     /// <param name="pathSummary">The <paramref name="pathSummary"/> value.</param>
     /// <param name="qaTransitionAnalysis">The <paramref name="qaTransitionAnalysis"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     public static JiraIssueAnalysisResult Success(
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTimeline> rejectedIssues,
