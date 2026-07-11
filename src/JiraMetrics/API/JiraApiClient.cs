@@ -15,6 +15,11 @@ public sealed class JiraApiClient : IJiraApiClient
     /// <summary>
     /// Initializes a new instance of the <see cref="JiraApiClient"/> class.
     /// </summary>
+    /// <param name="searchExecutor">The <paramref name="searchExecutor"/> value.</param>
+    /// <param name="jqlFacade">The <paramref name="jqlFacade"/> value.</param>
+    /// <param name="settings">The <paramref name="settings"/> value.</param>
+    /// <param name="fieldResolver">The <paramref name="fieldResolver"/> value.</param>
+    /// <param name="mapperFacade">The <paramref name="mapperFacade"/> value.</param>
     public JiraApiClient(
         IJiraSearchExecutor searchExecutor,
         IJiraJqlFacade jqlFacade,
@@ -47,10 +52,15 @@ public sealed class JiraApiClient : IJiraApiClient
     }
 
     /// <inheritdoc />
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken) =>
         _userClient.GetCurrentUserAsync(cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
+    /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
+    /// <param name="createdAfter">The <paramref name="createdAfter"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IReadOnlyList<IssueKey>> GetIssueKeysMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -63,6 +73,10 @@ public sealed class JiraApiClient : IJiraApiClient
             cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
+    /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <param name="reporducedOnProdFieldName">The <paramref name="reporducedOnProdFieldName"/> value.</param>
     public Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
         ProjectKey projectKey,
         IReadOnlyList<IssueTypeName> issueTypes,
@@ -75,6 +89,12 @@ public sealed class JiraApiClient : IJiraApiClient
             reporducedOnProdFieldName);
 
     /// <inheritdoc />
+    /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
+    /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
+    /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <param name="reporducedOnProdFieldName">The <paramref name="reporducedOnProdFieldName"/> value.</param>
+    /// <param name="includeIssueLinks">The <paramref name="includeIssueLinks"/> value.</param>
     public Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -91,6 +111,10 @@ public sealed class JiraApiClient : IJiraApiClient
             includeIssueLinks);
 
     /// <inheritdoc />
+    /// <param name="projectKey">The <paramref name="projectKey"/> value.</param>
+    /// <param name="doneStatusName">The <paramref name="doneStatusName"/> value.</param>
+    /// <param name="rejectStatusName">The <paramref name="rejectStatusName"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -103,6 +127,8 @@ public sealed class JiraApiClient : IJiraApiClient
             cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="request">The <paramref name="request"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
         ReleaseIssueReadRequest request,
         CancellationToken cancellationToken) =>
@@ -111,22 +137,30 @@ public sealed class JiraApiClient : IJiraApiClient
             cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="settings">The <paramref name="settings"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IReadOnlyList<ArchTaskItem>> GetArchTasksAsync(
         ArchTasksReportSettings settings,
         CancellationToken cancellationToken) =>
         _reportDataClient.GetArchTasksAsync(settings, cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="settings">The <paramref name="settings"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken) =>
         _reportDataClient.GetGlobalIncidentsForMonthAsync(settings, cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="issueKey">The <paramref name="issueKey"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IssueTimeline> GetIssueTimelineAsync(IssueKey issueKey, CancellationToken cancellationToken) =>
         _issueTimelineClient.GetIssueTimelineAsync(issueKey, cancellationToken);
 
     /// <inheritdoc />
+    /// <param name="issueKeys">The <paramref name="issueKeys"/> value.</param>
+    /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     public Task<IssueTimelineBatchResult> GetIssueTimelinesAsync(
         IReadOnlyList<IssueKey> issueKeys,
         CancellationToken cancellationToken) =>
