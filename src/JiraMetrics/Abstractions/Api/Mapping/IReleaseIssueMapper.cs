@@ -14,6 +14,7 @@ public interface IReleaseIssueMapper
     /// Builds the field list required for release mapping.
     /// </summary>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     JiraSearchFields BuildRequestedFields(ReleaseIssueMappingContext context);
 
     /// <summary>
@@ -21,6 +22,7 @@ public interface IReleaseIssueMapper
     /// </summary>
     /// <param name="issues">The <paramref name="issues"/> value.</param>
     /// <param name="context">The <paramref name="context"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IReadOnlyList<ReleaseIssueItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         ReleaseIssueMappingContext context);
