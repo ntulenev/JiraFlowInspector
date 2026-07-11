@@ -13,6 +13,7 @@ public interface IJiraApplicationDataFacade
     /// Loads the authenticated Jira user.
     /// </summary>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<JiraAuthUser> GetCurrentUserAsync(CancellationToken cancellationToken);
 
     /// <summary>
@@ -20,6 +21,7 @@ public interface IJiraApplicationDataFacade
     /// </summary>
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<JiraReportContext> LoadReportContextAsync(AppSettings settings, CancellationToken cancellationToken);
 
     /// <summary>
@@ -28,6 +30,7 @@ public interface IJiraApplicationDataFacade
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="issueTypes">The <paramref name="issueTypes"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<IssueRatioSnapshot> LoadIssueRatioAsync(
         AppSettings settings,
         IReadOnlyList<IssueTypeName> issueTypes,
@@ -39,6 +42,7 @@ public interface IJiraApplicationDataFacade
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="coverageSettings">The <paramref name="coverageSettings"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<TestCoverageSnapshot> LoadTestCoverageAsync(
         AppSettings settings,
         TestCoverageSettings coverageSettings,
@@ -50,6 +54,7 @@ public interface IJiraApplicationDataFacade
     /// <param name="issueKeys">The <paramref name="issueKeys"/> value.</param>
     /// <param name="rejectIssueKeys">The <paramref name="rejectIssueKeys"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     Task<IssueTimelineLoadResult> LoadIssueTimelinesAsync(
         IReadOnlyList<IssueKey> issueKeys,
         IReadOnlyList<IssueKey> rejectIssueKeys,
