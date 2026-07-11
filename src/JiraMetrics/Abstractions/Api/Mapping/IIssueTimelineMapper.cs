@@ -14,6 +14,7 @@ public interface IIssueTimelineMapper
     /// </summary>
     /// <param name="response">The <paramref name="response"/> value.</param>
     /// <param name="fallbackKey">The <paramref name="fallbackKey"/> value.</param>
+    /// <returns>The result of the operation.</returns>
     IssueTimeline Map(JiraIssueResponse response, IssueKey fallbackKey);
 }
 
