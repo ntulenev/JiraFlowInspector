@@ -5,6 +5,8 @@ namespace JiraMetrics.Models;
 /// <summary>
 /// Automated test coverage snapshot for completed issues.
 /// </summary>
+/// <param name="DoneIssues">The <paramref name="DoneIssues"/> value.</param>
+/// <param name="CoveredIssues">The <paramref name="CoveredIssues"/> value.</param>
 public sealed record TestCoverageSnapshot(
     IReadOnlyList<IssueListItem> DoneIssues,
     IReadOnlyList<IssueListItem> CoveredIssues)
