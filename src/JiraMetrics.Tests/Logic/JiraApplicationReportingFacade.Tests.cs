@@ -19,8 +19,8 @@ public sealed class JiraApplicationReportingFacadeTests
     public void ConstructorWhenPresentationServiceIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IHtmlReportRenderer htmlReportRenderer = Mock.Of<IHtmlReportRenderer>();
-        IPdfReportRenderer pdfReportRenderer = Mock.Of<IPdfReportRenderer>();
+        IHtmlReportRenderer htmlReportRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict).Object;
+        IPdfReportRenderer pdfReportRenderer = new Mock<IPdfReportRenderer>(MockBehavior.Strict).Object;
 
         // Act
         Action act = () => _ = new JiraApplicationReportingFacade(null!, htmlReportRenderer, pdfReportRenderer);
@@ -34,8 +34,8 @@ public sealed class JiraApplicationReportingFacadeTests
     public void ConstructorWhenPdfReportRendererIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IJiraPresentationService presentationService = Mock.Of<IJiraPresentationService>();
-        IHtmlReportRenderer htmlReportRenderer = Mock.Of<IHtmlReportRenderer>();
+        IJiraPresentationService presentationService = new Mock<IJiraPresentationService>(MockBehavior.Strict).Object;
+        IHtmlReportRenderer htmlReportRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict).Object;
 
         // Act
         Action act = () => _ = new JiraApplicationReportingFacade(presentationService, htmlReportRenderer, null!);
@@ -49,9 +49,9 @@ public sealed class JiraApplicationReportingFacadeTests
     public void ReportingCallsWhenInvokedDelegateToUnderlyingServices()
     {
         // Arrange
-        var presentationService = new Mock<IJiraPresentationService>();
-        var htmlReportRenderer = new Mock<IHtmlReportRenderer>();
-        var pdfReportRenderer = new Mock<IPdfReportRenderer>();
+        var presentationService = new Mock<IJiraPresentationService>(MockBehavior.Strict);
+        var htmlReportRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict);
+        var pdfReportRenderer = new Mock<IPdfReportRenderer>(MockBehavior.Strict);
         var facade = new JiraApplicationReportingFacade(
             presentationService.Object,
             htmlReportRenderer.Object,
@@ -138,6 +138,46 @@ public sealed class JiraApplicationReportingFacadeTests
             new LoadFailure(new IssueKey("APP-3"), new ErrorMessage("Timeout"))
         };
         var reportData = CreateReportData();
+
+        presentationService.Setup(service => service.ShowAuthenticationStarted());
+        presentationService.Setup(service => service.ShowAuthenticationSucceeded(user));
+        presentationService.Setup(service => service.ShowAuthenticationFailed(errorMessage));
+        presentationService.Setup(service => service.ShowReportPeriodContext(reportPeriod, createdAfter));
+        presentationService.Setup(service => service.ShowIssueSearchFailed(errorMessage));
+        presentationService.Setup(service => service.ShowReportHeader(settings, issueCount));
+        presentationService.Setup(service => service.ShowNoIssuesMatchedFilter());
+        presentationService.Setup(service => service.ShowProcessingStep("Loading issues..."));
+        presentationService.As<IJiraStatusPresenter>().Setup(service => service.ShowSpacer());
+        presentationService.Setup(service => service.ShowNoIssuesLoaded());
+        presentationService.Setup(service => service.ShowNoIssuesMatchedRequiredStage());
+        presentationService.Setup(service => service.ShowExecutionSummary(TimeSpan.FromSeconds(5), telemetrySummary));
+        presentationService.Setup(service => service.ShowReleaseReportLoadingStarted());
+        presentationService.Setup(service => service.ShowGlobalIncidentsReportLoadingStarted());
+        presentationService.Setup(service => service.ShowArchTasksReportLoadingStarted());
+        presentationService.Setup(service => service.ShowReleaseReport(releaseSettings, reportPeriod, releaseIssues));
+        presentationService.Setup(service => service.ShowArchTasksReport(archTasksSettings, archTasks));
+        presentationService.Setup(service => service.ShowGlobalIncidentsReport(
+            globalIncidentsSettings,
+            reportPeriod,
+            globalIncidents));
+        presentationService.Setup(service => service.ShowAllTasksRatioLoadingStarted());
+        presentationService.Setup(service => service.ShowAllTasksRatioLoadingCompleted(issueRatioSnapshot));
+        presentationService.Setup(service => service.ShowAllTasksRatio("Team", "A", issueRatioSnapshot));
+        presentationService.Setup(service => service.ShowBugRatioLoadingStarted(bugIssueNames));
+        presentationService.Setup(service => service.ShowBugRatioLoadingCompleted(issueRatioSnapshot));
+        presentationService.Setup(service => service.ShowBugRatio(bugIssueNames, "Type", "Bug", issueRatioSnapshot));
+        presentationService.Setup(service => service.ShowDoneIssuesTable(doneIssues, new StatusName("Done")));
+        presentationService.Setup(service => service.ShowDoneDaysAtWork75PerType(doneSummaries, new StatusName("Done")));
+        presentationService.Setup(service => service.ShowRejectedIssuesTable(rejectedIssues, new StatusName("Rejected")));
+        presentationService.Setup(service => service.ShowPathGroupsSummary(pathSummary));
+        presentationService.Setup(service => service.ShowPathGroups(pathGroups));
+        presentationService.Setup(service => service.ShowOpenIssuesByStatusSummary(
+            openIssuesByStatus,
+            new StatusName("Done"),
+            new StatusName("Rejected")));
+        presentationService.Setup(service => service.ShowFailures(failures));
+        htmlReportRenderer.Setup(renderer => renderer.RenderReport(reportData));
+        pdfReportRenderer.Setup(renderer => renderer.RenderReport(reportData));
 
         // Act
         facade.ShowAuthenticationStarted();

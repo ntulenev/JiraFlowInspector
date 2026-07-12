@@ -128,7 +128,7 @@ public sealed class JiraIssueSearchClientTests
         // Assert
         result.Should().BeEmpty();
         fixture.FieldResolver.Verify(
-            resolver => resolver.TryResolveFieldIdAsync(It.IsAny<JiraFieldName>(), It.IsAny<CancellationToken>()),
+            resolver => resolver.TryResolveFieldIdAsync(It.IsAny<JiraFieldName>(), fixture.Token),
             Times.Never);
         fixture.MapperFacade.VerifyAll();
     }
@@ -138,10 +138,10 @@ public sealed class JiraIssueSearchClientTests
     public void ConstructorWhenCollaboratorIsNullThrowsArgumentNullException()
     {
         // Arrange
-        var searchExecutor = Mock.Of<IJiraSearchExecutor>();
-        var jqlFacade = Mock.Of<IJiraJqlFacade>();
-        var fieldResolver = Mock.Of<IJiraFieldResolver>();
-        var mapperFacade = Mock.Of<IJiraMapperFacade>();
+        var searchExecutor = new Mock<IJiraSearchExecutor>(MockBehavior.Strict).Object;
+        var jqlFacade = new Mock<IJiraJqlFacade>(MockBehavior.Strict).Object;
+        var fieldResolver = new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object;
+        var mapperFacade = new Mock<IJiraMapperFacade>(MockBehavior.Strict).Object;
 
         // Act
         Action nullSearchExecutor = () => _ = new JiraIssueSearchClient(null!, jqlFacade, fieldResolver, mapperFacade);

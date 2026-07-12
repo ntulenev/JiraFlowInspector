@@ -31,10 +31,10 @@ public sealed class JiraApiClientTests
         // Act
         Action act = () => _ = new JiraApiClient(
             searchExecutor,
-            Mock.Of<IJiraJqlFacade>(),
+            new Mock<IJiraJqlFacade>(MockBehavior.Strict).Object,
             CreateSettings(),
-            Mock.Of<IJiraFieldResolver>(),
-            Mock.Of<IJiraMapperFacade>());
+            new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object,
+            new Mock<IJiraMapperFacade>(MockBehavior.Strict).Object);
 
         // Assert
         act.Should()
@@ -52,7 +52,7 @@ public sealed class JiraApiClientTests
         var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
         transport.Setup(t => t.GetAsync<JiraCurrentUserResponse>(
                 It.Is<Uri>(u => u == requestUrl),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraCurrentUserResponse
             {
                 DisplayName = "Jane Doe",
@@ -82,7 +82,7 @@ public sealed class JiraApiClientTests
         var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
         transport.Setup(t => t.GetAsync<JiraCurrentUserResponse>(
                 It.Is<Uri>(u => u == requestUrl),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync((JiraCurrentUserResponse?)null);
 
         var client = CreateClient(transport.Object);
@@ -121,13 +121,13 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/search/jql?", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback(() => sendCalls++)
             .ReturnsAsync(firstResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.Is<Uri>(u => u.ToString().Contains("nextPageToken=next-1", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback(() => sendCalls++)
             .ReturnsAsync(secondResponse);
 
@@ -164,7 +164,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -201,7 +201,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -239,7 +239,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -277,7 +277,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -326,7 +326,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -379,7 +379,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -459,7 +459,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -510,7 +510,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -559,7 +559,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -670,12 +670,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -756,12 +756,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -824,12 +824,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(pageResponse);
 
         var settings = CreateSettings(monthLabel: "2026-02");
@@ -908,12 +908,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -992,12 +992,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -1065,12 +1065,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -1143,12 +1143,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -1244,12 +1244,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -1350,12 +1350,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -1427,12 +1427,12 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<List<JiraFieldResponse>>(
                 It.Is<Uri>(u => u.ToString().Contains("rest/api/3/field", StringComparison.Ordinal)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(fieldResponse);
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedSearchUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 
@@ -1461,7 +1461,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1526,7 +1526,7 @@ public sealed class JiraApiClientTests
                 It.Is<Uri>(u => u.ToString() == "rest/api/3/issue/bulkfetch"),
                 It.Is<JiraBulkIssueFetchRequest>(request =>
                     request.IssueIdsOrKeys.SequenceEqual(_bulkTimelineIssueKeys)),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraBulkIssueFetchResponse
             {
                 Issues =
@@ -1556,7 +1556,7 @@ public sealed class JiraApiClientTests
                     request.IssueIdsOrKeys.SequenceEqual(_bulkTimelineIssueKeys)
                     && request.MaxResults == 1000
                     && request.NextPageToken == null),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraBulkChangelogFetchResponse
             {
                 IssueChangeLogs =
@@ -1614,7 +1614,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1657,7 +1657,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(new JiraIssueResponse
             {
@@ -1704,7 +1704,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(new JiraIssueResponse
             {
@@ -1749,7 +1749,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1797,7 +1797,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1846,7 +1846,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1883,7 +1883,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraIssueResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .ReturnsAsync(new JiraIssueResponse
             {
                 Key = "AAA-1",
@@ -1936,7 +1936,7 @@ public sealed class JiraApiClientTests
         transport
             .Setup(t => t.GetAsync<JiraSearchResponse>(
                 It.IsAny<Uri>(),
-                It.IsAny<CancellationToken>()))
+                cts.Token))
             .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
             .ReturnsAsync(pageResponse);
 

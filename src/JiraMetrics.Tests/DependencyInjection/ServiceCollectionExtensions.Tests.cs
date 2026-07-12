@@ -238,12 +238,12 @@ public sealed class ServiceCollectionExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IOptions<AppSettings>>(Options.Create(CreateAppSettings()));
-        services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(Mock.Of<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>());
-        services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(Mock.Of<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>());
-        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>(Mock.Of<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>());
-        services.AddSingleton<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>(Mock.Of<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>());
-        services.AddSingleton<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(Mock.Of<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>());
-        services.AddSingleton<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(Mock.Of<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>());
+        services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(new Mock<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(MockBehavior.Strict).Object);
+        services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(new Mock<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(MockBehavior.Strict).Object);
+        services.AddSingleton<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>(new Mock<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>(MockBehavior.Strict).Object);
+        services.AddSingleton<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>(new Mock<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>(MockBehavior.Strict).Object);
+        services.AddSingleton<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(new Mock<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(MockBehavior.Strict).Object);
+        services.AddSingleton<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(new Mock<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(MockBehavior.Strict).Object);
         services.AddJiraApplication();
 
         using var provider = services.BuildServiceProvider();
