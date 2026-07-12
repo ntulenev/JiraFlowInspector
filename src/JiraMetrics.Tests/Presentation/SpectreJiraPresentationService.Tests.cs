@@ -14,6 +14,126 @@ namespace JiraMetrics.Tests.Presentation;
 
 public sealed class SpectreJiraPresentationServiceTests
 {
+    [Fact(DisplayName = "Status notifications write their expected messages")]
+    [Trait("Category", "Unit")]
+    public async Task StatusNotificationsWhenCalledWriteExpectedMessages()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowAuthenticationStarted();
+            service.ShowAuthenticationFailed(new ErrorMessage("Access denied."));
+            service.ShowIssueSearchFailed(new ErrorMessage("Search failed."));
+            service.ShowNoIssuesMatchedFilter();
+            service.ShowNoIssuesLoaded();
+            service.ShowNoIssuesMatchedRequiredStage();
+            service.ShowSpacer();
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Authenticating");
+        output.Should().Contain("Access denied.");
+        output.Should().Contain("Search failed.");
+        output.Should().Contain("No issues matched");
+        output.Should().Contain("No issues were loaded");
+        output.Should().Contain("required stage");
+    }
+
+    [Fact(DisplayName = "Options constructor throws when options are null")]
+    [Trait("Category", "Unit")]
+    public void ConstructorWhenOptionsAreNullThrowsArgumentNullException()
+    {
+        // Arrange
+        IOptions<AppSettings> settings = null!;
+
+        // Act
+        Action act = () => _ = new SpectreJiraPresentationService(settings);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact(DisplayName = "Issue loading with zero total ignores progress updates")]
+    [Trait("Category", "Unit")]
+    public async Task ShowIssueLoadingWhenTotalIsZeroWritesZeroProgressOnly()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowIssueLoadingStarted(new ItemCount(0));
+            service.ShowIssueLoaded(new IssueKey("APP-1"));
+            service.ShowIssueFailed(new IssueKey("APP-2"));
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("0/0");
+        output.Should().NotContain("APP-1");
+        output.Should().NotContain("APP-2");
+    }
+
+    [Fact(DisplayName = "Test coverage status and result write coverage details")]
+    [Trait("Category", "Unit")]
+    public async Task ShowTestCoverageWhenCalledWritesSettingsAndSnapshot()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var settings = new TestCoverageSettings(
+            issueTypes: [new IssueTypeName("Story")],
+            testProjectKey: new ProjectKey("TEST"),
+            linkName: "is verified by");
+        var coveredIssue = new IssueListItem(
+            new IssueKey("APP-1"),
+            new IssueSummary("Covered story"),
+            null,
+            false,
+            null,
+            []);
+        var snapshot = new TestCoverageSnapshot([coveredIssue], [coveredIssue]);
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowTestCoverageLoadingStarted(settings);
+            service.ShowTestCoverage(settings, snapshot);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Loading automated test coverage for: Story");
+        output.Should().Contain("Automated test coverage");
+        output.Should().Contain("100%");
+    }
+
+    [Fact(DisplayName = "Public collection methods throw when their arguments are null")]
+    [Trait("Category", "Unit")]
+    public void CollectionMethodsWhenArgumentsAreNullThrowArgumentNullException()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+
+        // Act
+        Action showBugLoading = () => service.ShowBugRatioLoadingStarted(null!);
+        Action showBugRatio = () => service.ShowBugRatio(null!, null, null, null!);
+        Action showPathGroups = () => service.ShowPathGroups(null!);
+        Action showStatusSummary = () => service.ShowOpenIssuesByStatusSummary(null!, new StatusName("Done"), null);
+        Action showExecutionSummary = () => service.ShowExecutionSummary(TimeSpan.Zero, null!);
+
+        // Assert
+        showBugLoading.Should().Throw<ArgumentNullException>();
+        showBugRatio.Should().Throw<ArgumentNullException>();
+        showPathGroups.Should().Throw<ArgumentNullException>();
+        showStatusSummary.Should().Throw<ArgumentNullException>();
+        showExecutionSummary.Should().Throw<ArgumentNullException>();
+    }
+
     [Fact(DisplayName = "ShowAuthenticationSucceeded throws when user is null")]
     [Trait("Category", "Unit")]
     public void ShowAuthenticationSucceededWhenUserIsNullThrowsArgumentNullException()
