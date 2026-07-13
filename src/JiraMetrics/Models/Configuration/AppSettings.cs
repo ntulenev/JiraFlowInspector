@@ -38,6 +38,7 @@ public sealed record AppSettings
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
     /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
+    /// <param name="unresolved30DaysTasksReport">Optional unresolved tasks older than 30 days report settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -66,7 +67,8 @@ public sealed record AppSettings
         string? pullRequestFieldName = null,
         HtmlReportSettings? htmlReport = null,
         QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
-        CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
+        CustomTransitionAnalysisSettings? customTransitionAnalysis = null,
+        Unresolved30DaysTasksReportSettings? unresolved30DaysTasksReport = null)
         : this(
             baseUrl,
             email,
@@ -95,7 +97,8 @@ public sealed record AppSettings
             pullRequestFieldName,
             htmlReport,
             qaTransitionAnalysis,
-            customTransitionAnalysis)
+            customTransitionAnalysis,
+            unresolved30DaysTasksReport)
     {
     }
 
@@ -130,6 +133,7 @@ public sealed record AppSettings
     /// <param name="pullRequestFieldName">Pull request field name or id used for code-activity detection.</param>
     /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
+    /// <param name="unresolved30DaysTasksReport">Optional unresolved tasks older than 30 days report settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -158,7 +162,8 @@ public sealed record AppSettings
         string? pullRequestFieldName = null,
         HtmlReportSettings? htmlReport = null,
         QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
-        CustomTransitionAnalysisSettings? customTransitionAnalysis = null)
+        CustomTransitionAnalysisSettings? customTransitionAnalysis = null,
+        Unresolved30DaysTasksReportSettings? unresolved30DaysTasksReport = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -193,6 +198,7 @@ public sealed record AppSettings
             : pullRequestFieldName.Trim();
         QaTransitionAnalysis = qaTransitionAnalysis ?? QaTransitionAnalysisSettings.Default;
         CustomTransitionAnalysis = customTransitionAnalysis;
+        Unresolved30DaysTasksReport = unresolved30DaysTasksReport;
     }
 
     /// <summary>
@@ -339,4 +345,9 @@ public sealed record AppSettings
     /// Gets optional dedicated transition analysis settings.
     /// </summary>
     public CustomTransitionAnalysisSettings? CustomTransitionAnalysis { get; }
+
+    /// <summary>
+    /// Gets optional unresolved tasks older than 30 days report settings.
+    /// </summary>
+    public Unresolved30DaysTasksReportSettings? Unresolved30DaysTasksReport { get; }
 }

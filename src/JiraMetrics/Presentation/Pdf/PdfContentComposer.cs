@@ -25,6 +25,7 @@ public sealed class PdfContentComposer : IPdfContentComposer
                 new PdfQaTransitionAnalysisSection(),
                 new PdfPathGroupsSection(),
                 new PdfGeneralStatisticsSection(),
+                new PdfUnresolved30DaysTasksSection(),
                 new PdfFailuresSection(),
                 new PdfCustomTransitionAnalysisSection()
             ])

@@ -144,7 +144,7 @@ public sealed class JiraApplicationReportLoaderTests
     {
         var dataFacade = new Mock<IJiraApplicationDataFacade>(MockBehavior.Strict);
         dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cancellationToken))
-            .ReturnsAsync(new JiraReportContext([], [], [], [], [], []));
+            .ReturnsAsync(new JiraReportContext([], [], [], [], [], [], []));
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 0),

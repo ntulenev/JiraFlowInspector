@@ -92,6 +92,10 @@ public sealed class AppSettingsFactoryTests
             {
                 Jql = "project = AAA"
             },
+            Unresolved30DaysTasks = new Unresolved30DaysTasksReportOptions
+            {
+                Jql = " project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC "
+            },
             GlobalIncidents = new GlobalIncidentsReportOptions
             {
                 SearchPhrase = "ORX"
@@ -136,6 +140,8 @@ public sealed class AppSettingsFactoryTests
         settings.PullRequestFieldName.Should().Be("customfield_22222");
         settings.ReleaseReport.Should().NotBeNull();
         settings.ArchTasksReport.Should().NotBeNull();
+        settings.Unresolved30DaysTasksReport!.Jql.Should()
+            .Be("project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC");
         settings.GlobalIncidentsReport.Should().NotBeNull();
         settings.PdfReport.Enabled.Should().BeTrue();
         settings.PdfReport.OpenAfterGeneration.Should().BeTrue();

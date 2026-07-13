@@ -40,6 +40,8 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("General Statistics");
         html.Should().Contain("General Statistics is a current snapshot.");
         html.Should().Contain("It is not a historical period slice.");
+        html.Should().Contain("Unresolved 30+ Days Tasks is a current snapshot.");
+        html.Should().Contain("Long-running task");
         html.Should().Contain("Architecture Tasks");
         html.Should().Contain("Global Incidents");
         html.Should().Contain("Failed Issues");
@@ -54,6 +56,8 @@ public sealed class HtmlContentComposerTests
         html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal));
         html.IndexOf("id=\"general-statistics\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"failures\"", StringComparison.Ordinal));
     }
 
@@ -125,6 +129,13 @@ public sealed class HtmlContentComposerTests
                     new IssueKey("AAA-7"),
                     new IssueSummary("Architecture review"),
                     new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero))
+            ],
+            Unresolved30DaysTasks =
+            [
+                new IssueListItem(
+                    new IssueKey("AAA-30"),
+                    new IssueSummary("Long-running task"),
+                    new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero))
             ],
             GlobalIncidents =
             [
@@ -249,5 +260,7 @@ public sealed class HtmlContentComposerTests
                 "Release date",
                 componentsFieldName: "Components"),
             archTasksReport: new ArchTasksReportSettings("project = AAA"),
+            unresolved30DaysTasksReport: new Unresolved30DaysTasksReportSettings(
+                "project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC"),
             globalIncidentsReport: new GlobalIncidentsReportSettings(jqlFilter: "labels = INCIDENT"));
 }

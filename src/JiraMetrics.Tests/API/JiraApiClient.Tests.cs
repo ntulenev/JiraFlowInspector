@@ -584,6 +584,50 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().Contain("fields=key,summary,created,resolutiondate");
     }
 
+    [Fact(DisplayName = "GetUnresolved30DaysTasksAsync uses configured JQL and returns task details")]
+    [Trait("Category", "Unit")]
+    public async Task GetUnresolved30DaysTasksAsyncWhenCalledReturnsTasks()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var capturedUrl = string.Empty;
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(It.IsAny<Uri>(), cts.Token))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(new JiraSearchResponse
+            {
+                Issues =
+                [
+                    new JiraIssueKeyResponse
+                    {
+                        Key = "AAA-30",
+                        Fields = new JiraIssueFieldsResponse
+                        {
+                            Summary = "Long-running task",
+                            Created = "2026-01-01T09:30:00Z"
+                        }
+                    }
+                ],
+                IsLast = true
+            });
+        var client = CreateClient(transport.Object);
+        const string jql = "project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC";
+
+        // Act
+        var tasks = await client.GetUnresolved30DaysTasksAsync(
+            new Unresolved30DaysTasksReportSettings(jql),
+            cts.Token);
+
+        // Assert
+        tasks.Should().ContainSingle();
+        tasks[0].Key.Value.Should().Be("AAA-30");
+        tasks[0].Title.Value.Should().Be("Long-running task");
+        tasks[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 1, 9, 30, 0, TimeSpan.Zero));
+        capturedUrl.Should().Contain("created%20%3C%3D%20-30d");
+        capturedUrl.Should().Contain("fields=key,summary,created");
+    }
+
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
     [Trait("Category", "Unit")]
     public async Task GetReleaseIssuesForMonthAsyncWhenCalledReturnsReleaseIssues()

@@ -37,6 +37,7 @@ internal sealed class JiraReportContextLoader
         var releaseIssuesTask = LoadReleaseIssuesAsync(settings, cancellationToken);
         var archTasksTask = LoadArchTasksAsync(settings, cancellationToken);
         var globalIncidentsTask = LoadGlobalIncidentsAsync(settings, cancellationToken);
+        var unresolved30DaysTasksTask = LoadUnresolved30DaysTasksAsync(settings, cancellationToken);
         var openIssuesByStatusTask = LoadOpenIssuesByStatusAsync(settings, cancellationToken);
 
         await Task.WhenAll(
@@ -45,6 +46,7 @@ internal sealed class JiraReportContextLoader
                 releaseIssuesTask,
                 archTasksTask,
                 globalIncidentsTask,
+                unresolved30DaysTasksTask,
                 openIssuesByStatusTask)
             .ConfigureAwait(false);
 
@@ -54,6 +56,7 @@ internal sealed class JiraReportContextLoader
             await releaseIssuesTask.ConfigureAwait(false),
             await archTasksTask.ConfigureAwait(false),
             await globalIncidentsTask.ConfigureAwait(false),
+            await unresolved30DaysTasksTask.ConfigureAwait(false),
             await openIssuesByStatusTask.ConfigureAwait(false));
     }
 
@@ -130,6 +133,18 @@ internal sealed class JiraReportContextLoader
         }
 
         return _reportDataClient.GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken);
+    }
+
+    private Task<IReadOnlyList<IssueListItem>> LoadUnresolved30DaysTasksAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (settings.Unresolved30DaysTasksReport is not { } unresolvedTasksReport)
+        {
+            return Task.FromResult<IReadOnlyList<IssueListItem>>([]);
+        }
+
+        return _reportDataClient.GetUnresolved30DaysTasksAsync(unresolvedTasksReport, cancellationToken);
     }
 
     private Task<IReadOnlyList<StatusIssueTypeSummary>> LoadOpenIssuesByStatusAsync(

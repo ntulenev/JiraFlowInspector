@@ -85,6 +85,22 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         return _mapperFacade.MapArchTaskItems(issues);
     }
 
+    public async Task<IReadOnlyList<IssueListItem>> GetUnresolved30DaysTasksAsync(
+        Unresolved30DaysTasksReportSettings settings,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var issues = await _searchExecutor
+            .SearchIssuesAsync(
+                new JqlQuery(settings.Jql),
+                JiraSearchFields.From("key", "summary", "created"),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return _mapperFacade.MapIssueListItems(issues);
+    }
+
     public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken)

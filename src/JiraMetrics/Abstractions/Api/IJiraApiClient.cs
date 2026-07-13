@@ -99,6 +99,16 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads unresolved tasks older than 30 days for the configured query.
+    /// </summary>
+    /// <param name="settings">Unresolved tasks report settings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Matching unresolved tasks.</returns>
+    Task<IReadOnlyList<IssueListItem>> GetUnresolved30DaysTasksAsync(
+        Unresolved30DaysTasksReportSettings settings,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads global incidents for the configured report period.
     /// </summary>
     /// <param name="settings">Global incidents report settings.</param>

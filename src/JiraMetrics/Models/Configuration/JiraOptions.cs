@@ -84,6 +84,11 @@ public sealed class JiraOptions : IValidatableObject
     public ArchTasksReportOptions? ArchTasks { get; init; }
 
     /// <summary>
+    /// Gets or sets optional unresolved tasks older than 30 days report settings.
+    /// </summary>
+    public Unresolved30DaysTasksReportOptions? Unresolved30DaysTasks { get; init; }
+
+    /// <summary>
     /// Gets or sets optional global incidents report settings.
     /// </summary>
     public GlobalIncidentsReportOptions? GlobalIncidents { get; init; }

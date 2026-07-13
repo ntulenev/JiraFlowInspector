@@ -152,6 +152,12 @@ public sealed class JiraApiClient : IJiraApiClient
         _reportDataClient.GetArchTasksAsync(settings, cancellationToken);
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<IssueListItem>> GetUnresolved30DaysTasksAsync(
+        Unresolved30DaysTasksReportSettings settings,
+        CancellationToken cancellationToken) =>
+        _reportDataClient.GetUnresolved30DaysTasksAsync(settings, cancellationToken);
+
+    /// <inheritdoc />
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     /// <returns>The result of the operation.</returns>

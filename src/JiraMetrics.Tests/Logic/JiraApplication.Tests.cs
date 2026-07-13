@@ -1199,6 +1199,11 @@ public sealed class JiraApplicationTests
             return Task.FromResult(ArchTasks);
         }
 
+        public Task<IReadOnlyList<IssueListItem>> GetUnresolved30DaysTasksAsync(
+            Unresolved30DaysTasksReportSettings settings,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<IssueListItem>>([]);
+
         public Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
             GlobalIncidentsReportSettings settings,
             CancellationToken cancellationToken)

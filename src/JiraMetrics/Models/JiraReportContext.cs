@@ -10,6 +10,7 @@ namespace JiraMetrics.Models;
 /// <param name="ReleaseIssues">The <paramref name="ReleaseIssues"/> value.</param>
 /// <param name="ArchTasks">The <paramref name="ArchTasks"/> value.</param>
 /// <param name="GlobalIncidents">The <paramref name="GlobalIncidents"/> value.</param>
+/// <param name="Unresolved30DaysTasks">The <paramref name="Unresolved30DaysTasks"/> value.</param>
 /// <param name="OpenIssuesByStatus">The <paramref name="OpenIssuesByStatus"/> value.</param>
 public sealed record JiraReportContext(
     IReadOnlyList<IssueKey> IssueKeys,
@@ -17,4 +18,5 @@ public sealed record JiraReportContext(
     IReadOnlyList<ReleaseIssueItem> ReleaseIssues,
     IReadOnlyList<ArchTaskItem> ArchTasks,
     IReadOnlyList<GlobalIncidentItem> GlobalIncidents,
+    IReadOnlyList<IssueListItem> Unresolved30DaysTasks,
     IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus);

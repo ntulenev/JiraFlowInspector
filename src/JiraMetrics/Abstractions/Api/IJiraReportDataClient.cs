@@ -13,6 +13,10 @@ internal interface IJiraReportDataClient
         ArchTasksReportSettings settings,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<IssueListItem>> GetUnresolved30DaysTasksAsync(
+        Unresolved30DaysTasksReportSettings settings,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken);

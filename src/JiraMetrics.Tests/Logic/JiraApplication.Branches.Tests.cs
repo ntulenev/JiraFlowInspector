@@ -413,6 +413,7 @@ public sealed class JiraApplicationBranchesTests
             [],
             [],
             [],
+            [],
             [new StatusIssueTypeSummary(new StatusName("In Progress"), new ItemCount(2), [])]);
     }
 

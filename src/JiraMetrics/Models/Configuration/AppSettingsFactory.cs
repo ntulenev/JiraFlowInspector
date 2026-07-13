@@ -46,7 +46,8 @@ internal static class AppSettingsFactory
             source.PullRequestFieldName,
             ResolveHtmlReport(source.Html),
             ResolveQaTransitionAnalysis(teamTasks.IssueTransitions?.QaTransitionAnalysis),
-            ResolveCustomTransitionAnalysis(teamTasks.IssueTransitions?.CustomTransitionAnalysis));
+            ResolveCustomTransitionAnalysis(teamTasks.IssueTransitions?.CustomTransitionAnalysis),
+            ResolveUnresolved30DaysTasksReport(source.Unresolved30DaysTasks));
     }
 
     private static StatusName? CreateOptionalStatusName(string? value) =>
@@ -180,6 +181,17 @@ internal static class AppSettingsFactory
         }
 
         return new ArchTasksReportSettings(source.Jql);
+    }
+
+    private static Unresolved30DaysTasksReportSettings? ResolveUnresolved30DaysTasksReport(
+        Unresolved30DaysTasksReportOptions? source)
+    {
+        if (source is null || string.IsNullOrWhiteSpace(source.Jql))
+        {
+            return null;
+        }
+
+        return new Unresolved30DaysTasksReportSettings(source.Jql);
     }
 
     private static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalIncidentsReportOptions? source)
