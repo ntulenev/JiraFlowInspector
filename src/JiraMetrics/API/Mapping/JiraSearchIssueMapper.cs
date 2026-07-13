@@ -52,7 +52,10 @@ public sealed class JiraSearchIssueMapper
                 issue.Fields?.Created.ParseNullableDateTimeOffset(),
                 IsReporducedOnProd(issue, context),
                 issue.Fields?.Priority?.Name,
-                MapIssueLinks(issue, context)))
+                MapIssueLinks(issue, context),
+                issue.Fields?.IssueType?.Name,
+                issue.Fields?.Assignee?.DisplayName,
+                issue.Fields?.Status?.Name))
             .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)];
 

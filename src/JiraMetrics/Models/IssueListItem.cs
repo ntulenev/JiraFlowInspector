@@ -16,13 +16,19 @@ public sealed record IssueListItem
     /// <param name="reporducedOnProd">Whether the issue was reproduced on production.</param>
     /// <param name="priority">Optional issue priority.</param>
     /// <param name="issueLinks">Optional linked issues.</param>
+    /// <param name="issueType">Optional issue type name.</param>
+    /// <param name="assignee">Optional assignee display name.</param>
+    /// <param name="status">Optional status name.</param>
     public IssueListItem(
         IssueKey key,
         IssueSummary title,
         DateTimeOffset? createdAt = null,
         bool reporducedOnProd = false,
         string? priority = null,
-        IReadOnlyList<IssueLinkItem>? issueLinks = null)
+        IReadOnlyList<IssueLinkItem>? issueLinks = null,
+        string? issueType = null,
+        string? assignee = null,
+        string? status = null)
     {
         Key = key;
         Title = title;
@@ -30,6 +36,9 @@ public sealed record IssueListItem
         ReporducedOnProd = reporducedOnProd;
         Priority = string.IsNullOrWhiteSpace(priority) ? null : priority.Trim();
         IssueLinks = issueLinks is null ? [] : [.. issueLinks];
+        IssueType = NormalizeOptionalValue(issueType);
+        Assignee = NormalizeOptionalValue(assignee);
+        Status = NormalizeOptionalValue(status);
     }
 
     /// <summary>
@@ -61,4 +70,22 @@ public sealed record IssueListItem
     /// Gets linked issues.
     /// </summary>
     public IReadOnlyList<IssueLinkItem> IssueLinks { get; }
+
+    /// <summary>
+    /// Gets optional issue type name.
+    /// </summary>
+    public string? IssueType { get; }
+
+    /// <summary>
+    /// Gets optional assignee display name.
+    /// </summary>
+    public string? Assignee { get; }
+
+    /// <summary>
+    /// Gets optional status name.
+    /// </summary>
+    public string? Status { get; }
+
+    private static string? NormalizeOptionalValue(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

@@ -93,7 +93,9 @@ public sealed class PdfContentComposerTests
             pdfReport: new PdfReportSettings(true, "report.pdf"),
             customTransitionAnalysis: new CustomTransitionAnalysisSettings(
                 new StatusName("Code Review"),
-                new StatusName("Done")));
+                new StatusName("Done")),
+            unresolved30DaysTasksReport: new Unresolved30DaysTasksReportSettings(
+                "project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC"));
 
         var transitions = new List<TransitionEvent>
         {
@@ -139,6 +141,16 @@ public sealed class PdfContentComposerTests
                     new IssueSummary("Architecture review"),
                     new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero),
                     new DateTimeOffset(2026, 2, 5, 12, 0, 0, TimeSpan.Zero))
+            ],
+            Unresolved30DaysTasks =
+            [
+                new IssueListItem(
+                    new IssueKey("AAA-30"),
+                    new IssueSummary("Long-running story"),
+                    new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero),
+                    issueType: "Story",
+                    assignee: "Ada Lovelace",
+                    status: "In Progress")
             ],
             GlobalIncidents =
             [

@@ -42,9 +42,12 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
             table.ColumnsDefinition(columns =>
             {
                 columns.ConstantColumn(28);
-                columns.RelativeColumn(1);
-                columns.RelativeColumn(1.4f);
-                columns.RelativeColumn(3);
+                columns.RelativeColumn(0.8f);
+                columns.RelativeColumn(1.1f);
+                columns.RelativeColumn(0.9f);
+                columns.RelativeColumn(1.2f);
+                columns.RelativeColumn(1.1f);
+                columns.RelativeColumn(2.8f);
             });
 
             table.Header(header =>
@@ -52,6 +55,9 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("#");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issue");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Created");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issue Type");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Assignee");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Status");
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Title");
             });
 
@@ -69,6 +75,9 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
                     .Text(issue.CreatedAt.HasValue
                         ? issue.CreatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                         : "-");
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.IssueType ?? "-");
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Assignee ?? "Unassigned");
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Status ?? "-");
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Title.Value);
             }
         });

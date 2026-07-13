@@ -340,6 +340,9 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
                 BuildLinkCell(issue.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, issue.Key)),
                 BuildTextCell(HtmlPresentationHelpers.FormatDateTime(issue.CreatedAt), issue.CreatedAt?.ToUnixTimeSeconds()),
+                BuildTextCell(issue.IssueType ?? "-"),
+                BuildTextCell(issue.Assignee ?? "Unassigned"),
+                BuildTextCell(issue.Status ?? "-"),
                 BuildTextCell(issue.Title.Value)
             ]))
             .ToList();
@@ -352,6 +355,9 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 new TableColumn("#", "number", "#", "narrow"),
                 new TableColumn("Issue", "text", "Issue", "issue-column"),
                 new TableColumn("Created", "number", "Created"),
+                new TableColumn("Issue Type", "text", "Issue Type"),
+                new TableColumn("Assignee", "text", "Assignee"),
+                new TableColumn("Status", "text", "Status"),
                 new TableColumn("Title", "text", "Title", "summary-column")
             ],
             rows,

@@ -26,6 +26,10 @@ public sealed class JiraIssueFieldsResponseTests
             {
                 Name = "QA"
             },
+            Assignee = new JiraUserResponse
+            {
+                DisplayName = "Ada Lovelace"
+            },
             Priority = new JiraPriorityResponse
             {
                 Name = "P1"
@@ -56,6 +60,7 @@ public sealed class JiraIssueFieldsResponseTests
         json.Should().Contain("\"resolutiondate\":\"2026-02-02T10:00:00Z\"");
         json.Should().Contain("\"issuetype\":{\"name\":\"Bug\"}");
         json.Should().Contain("\"status\":{\"name\":\"QA\"}");
+        json.Should().Contain("\"assignee\":{\"displayName\":\"Ada Lovelace\"}");
         json.Should().Contain("\"priority\":{\"name\":\"P1\"}");
         json.Should().Contain("\"issuelinks\":[");
         json.Should().Contain("\"inward\":\"is caused by\"");

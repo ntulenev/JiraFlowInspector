@@ -50,7 +50,13 @@ public sealed class AdditionalModelTypesTests
     [Trait("Category", "Unit")]
     public void ConstructorWhenArgumentsAreValidSetsPropertiesForAdditionalModelTypes()
     {
-        var issue = new IssueListItem(new IssueKey("AAA-1"), new IssueSummary("Summary"), DateTimeOffset.UtcNow);
+        var issue = new IssueListItem(
+            new IssueKey("AAA-1"),
+            new IssueSummary("Summary"),
+            DateTimeOffset.UtcNow,
+            issueType: " Story ",
+            assignee: " Ada Lovelace ",
+            status: " In Progress ");
         var doneIssue = CreateIssueTimeline("AAA-1");
         var rejectedIssue = CreateIssueTimeline("AAA-2");
         var failure = new LoadFailure(new IssueKey("AAA-3"), new ErrorMessage("failure"));
@@ -88,6 +94,9 @@ public sealed class AdditionalModelTypesTests
         searchSnapshot.CreatedIssues.Should().Equal(issue);
         searchSnapshot.DoneIssues.Should().Equal(issue);
         searchSnapshot.RejectedIssues.Should().BeEmpty();
+        issue.IssueType.Should().Be("Story");
+        issue.Assignee.Should().Be("Ada Lovelace");
+        issue.Status.Should().Be("In Progress");
 
         ratioSnapshot.CreatedThisMonth.Should().Be(new ItemCount(1));
         ratioSnapshot.OpenThisMonth.Should().Be(new ItemCount(2));

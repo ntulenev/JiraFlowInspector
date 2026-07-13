@@ -42,6 +42,9 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("It is not a historical period slice.");
         html.Should().Contain("Unresolved 30+ Days Tasks is a current snapshot.");
         html.Should().Contain("Long-running task");
+        html.Should().Contain("Issue Type");
+        html.Should().Contain("Ada Lovelace");
+        html.Should().Contain("In Progress");
         html.Should().Contain("Architecture Tasks");
         html.Should().Contain("Global Incidents");
         html.Should().Contain("Failed Issues");
@@ -59,6 +62,8 @@ public sealed class HtmlContentComposerTests
             .BeLessThan(html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal));
         html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"failures\"", StringComparison.Ordinal));
+        var unresolvedSection = html[html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal)..];
+        unresolvedSection.Should().Contain("data-default-sort-column=\"2\" data-default-sort-direction=\"asc\"");
     }
 
     [Fact(DisplayName = "Compose renders empty-state text when report has no data")]
@@ -135,7 +140,10 @@ public sealed class HtmlContentComposerTests
                 new IssueListItem(
                     new IssueKey("AAA-30"),
                     new IssueSummary("Long-running task"),
-                    new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero))
+                    new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero),
+                    issueType: "Story",
+                    assignee: "Ada Lovelace",
+                    status: "In Progress")
             ],
             GlobalIncidents =
             [

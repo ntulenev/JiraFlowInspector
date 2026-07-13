@@ -39,6 +39,12 @@ public sealed class JiraIssueFieldsResponse
     public JiraIssueStatusResponse? Status { get; init; }
 
     /// <summary>
+    /// Gets assigned user.
+    /// </summary>
+    [JsonPropertyName("assignee")]
+    public JiraUserResponse? Assignee { get; init; }
+
+    /// <summary>
     /// Gets issue priority.
     /// </summary>
     [JsonPropertyName("priority")]

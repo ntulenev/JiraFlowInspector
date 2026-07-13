@@ -94,7 +94,7 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 new JqlQuery(settings.Jql),
-                JiraSearchFields.From("key", "summary", "created"),
+                JiraSearchFields.From("key", "summary", "created", "issuetype", "assignee", "status"),
                 cancellationToken)
             .ConfigureAwait(false);
 

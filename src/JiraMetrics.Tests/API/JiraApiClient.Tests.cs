@@ -605,7 +605,10 @@ public sealed class JiraApiClientTests
                         Fields = new JiraIssueFieldsResponse
                         {
                             Summary = "Long-running task",
-                            Created = "2026-01-01T09:30:00Z"
+                            Created = "2026-01-01T09:30:00Z",
+                            IssueType = new JiraIssueTypeResponse { Name = "Story" },
+                            Assignee = new JiraUserResponse { DisplayName = "Ada Lovelace" },
+                            Status = new JiraIssueStatusResponse { Name = "In Progress" }
                         }
                     }
                 ],
@@ -624,8 +627,11 @@ public sealed class JiraApiClientTests
         tasks[0].Key.Value.Should().Be("AAA-30");
         tasks[0].Title.Value.Should().Be("Long-running task");
         tasks[0].CreatedAt.Should().Be(new DateTimeOffset(2026, 1, 1, 9, 30, 0, TimeSpan.Zero));
+        tasks[0].IssueType.Should().Be("Story");
+        tasks[0].Assignee.Should().Be("Ada Lovelace");
+        tasks[0].Status.Should().Be("In Progress");
         capturedUrl.Should().Contain("created%20%3C%3D%20-30d");
-        capturedUrl.Should().Contain("fields=key,summary,created");
+        capturedUrl.Should().Contain("fields=key,summary,created,issuetype,assignee,status");
     }
 
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
