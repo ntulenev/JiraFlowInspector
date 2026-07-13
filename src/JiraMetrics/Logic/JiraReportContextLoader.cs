@@ -39,6 +39,7 @@ internal sealed class JiraReportContextLoader
         var globalIncidentsTask = LoadGlobalIncidentsAsync(settings, cancellationToken);
         var unresolved30DaysTasksTask = LoadUnresolved30DaysTasksAsync(settings, cancellationToken);
         var openIssuesByStatusTask = LoadOpenIssuesByStatusAsync(settings, cancellationToken);
+        var roadmapItemsTask = LoadRoadmapItemsAsync(settings, cancellationToken);
 
         await Task.WhenAll(
                 issueKeysTask,
@@ -47,7 +48,8 @@ internal sealed class JiraReportContextLoader
                 archTasksTask,
                 globalIncidentsTask,
                 unresolved30DaysTasksTask,
-                openIssuesByStatusTask)
+                openIssuesByStatusTask,
+                roadmapItemsTask)
             .ConfigureAwait(false);
 
         return new JiraReportContext(
@@ -57,7 +59,8 @@ internal sealed class JiraReportContextLoader
             await archTasksTask.ConfigureAwait(false),
             await globalIncidentsTask.ConfigureAwait(false),
             await unresolved30DaysTasksTask.ConfigureAwait(false),
-            await openIssuesByStatusTask.ConfigureAwait(false));
+            await openIssuesByStatusTask.ConfigureAwait(false),
+            await roadmapItemsTask.ConfigureAwait(false));
     }
 
     private Task<IReadOnlyList<IssueKey>> LoadIssueKeysAsync(
@@ -161,6 +164,18 @@ internal sealed class JiraReportContextLoader
             settings.DoneStatusName,
             settings.RejectStatusName,
             cancellationToken);
+    }
+
+    private Task<IReadOnlyList<RoadmapItem>> LoadRoadmapItemsAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        if (settings.RoadmapReport is not { } roadmapReport)
+        {
+            return Task.FromResult<IReadOnlyList<RoadmapItem>>([]);
+        }
+
+        return _reportDataClient.GetRoadmapItemsAsync(roadmapReport, cancellationToken);
     }
     private readonly IJiraIssueSearchClient _issueSearchClient;
     private readonly IJiraReportDataClient _reportDataClient;

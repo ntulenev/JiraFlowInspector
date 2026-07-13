@@ -158,6 +158,12 @@ public sealed class JiraApiClient : IJiraApiClient
         _reportDataClient.GetUnresolved30DaysTasksAsync(settings, cancellationToken);
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<RoadmapItem>> GetRoadmapItemsAsync(
+        RoadmapReportSettings settings,
+        CancellationToken cancellationToken) =>
+        _reportDataClient.GetRoadmapItemsAsync(settings, cancellationToken);
+
+    /// <inheritdoc />
     /// <param name="settings">The <paramref name="settings"/> value.</param>
     /// <param name="cancellationToken">The <paramref name="cancellationToken"/> value.</param>
     /// <returns>The result of the operation.</returns>

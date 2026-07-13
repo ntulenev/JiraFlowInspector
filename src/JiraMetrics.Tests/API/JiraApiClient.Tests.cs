@@ -634,6 +634,72 @@ public sealed class JiraApiClientTests
         capturedUrl.Should().Contain("fields=key,summary,created,issuetype,assignee,status");
     }
 
+    [Fact(DisplayName = "GetRoadmapItemsAsync resolves configured fields and returns current roadmap data")]
+    [Trait("Category", "Unit")]
+    public async Task GetRoadmapItemsAsyncWhenCalledReturnsRoadmapItems()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        using var roadmapJson = JsonDocument.Parse("{\"value\":\"Committed\"}");
+        using var startJson = JsonDocument.Parse("\"2026-02-01\"");
+        using var endJson = JsonDocument.Parse("\"2026-04-30\"");
+        var capturedUrl = string.Empty;
+        var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
+        transport
+            .Setup(t => t.GetAsync<List<JiraFieldResponse>>(It.IsAny<Uri>(), cts.Token))
+            .ReturnsAsync(
+            [
+                new JiraFieldResponse { Id = "customfield_10001", Name = "Roadmap[Dropdown]" },
+                new JiraFieldResponse { Id = "customfield_10002", Name = "Start date" },
+                new JiraFieldResponse { Id = "customfield_10003", Name = "End date" }
+            ]);
+        transport
+            .Setup(t => t.GetAsync<JiraSearchResponse>(It.IsAny<Uri>(), cts.Token))
+            .Callback<Uri, CancellationToken>((url, _) => capturedUrl = url.ToString())
+            .ReturnsAsync(new JiraSearchResponse
+            {
+                Issues =
+                [
+                    new JiraIssueKeyResponse
+                    {
+                        Key = "PLAN-1",
+                        Fields = new JiraIssueFieldsResponse
+                        {
+                            Summary = "Platform Growth",
+                            Status = new JiraIssueStatusResponse { Name = "In Progress" },
+                            AdditionalFields = new Dictionary<string, JsonElement>
+                            {
+                                ["customfield_10001"] = roadmapJson.RootElement.Clone(),
+                                ["customfield_10002"] = startJson.RootElement.Clone(),
+                                ["customfield_10003"] = endJson.RootElement.Clone()
+                            }
+                        }
+                    }
+                ],
+                IsLast = true
+            });
+        var client = CreateClient(transport.Object);
+
+        // Act
+        var items = await client.GetRoadmapItemsAsync(
+            new RoadmapReportSettings(
+                "project = PROJECT_KEY AND issuetype = IDEA_TYPE",
+                "Roadmap[Dropdown]"),
+            cts.Token);
+
+        // Assert
+        items.Should().ContainSingle();
+        items[0].Should().Be(new RoadmapItem(
+            new IssueKey("PLAN-1"),
+            new IssueSummary("Platform Growth"),
+            "In Progress",
+            "Committed",
+            new DateOnly(2026, 2, 1),
+            new DateOnly(2026, 4, 30)));
+        capturedUrl.Should().Contain("project%20%3D%20PROJECT_KEY");
+        capturedUrl.Should().Contain("fields=key,summary,status,customfield_10001,customfield_10002,customfield_10003");
+    }
+
     [Fact(DisplayName = "GetReleaseIssuesForMonthAsync uses release project, label and release date field")]
     [Trait("Category", "Unit")]
     public async Task GetReleaseIssuesForMonthAsyncWhenCalledReturnsReleaseIssues()

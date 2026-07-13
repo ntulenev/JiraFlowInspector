@@ -142,6 +142,7 @@ public sealed class JiraReportData
             ArchTasks = reportContext.ArchTasks,
             GlobalIncidents = reportContext.GlobalIncidents,
             Unresolved30DaysTasks = reportContext.Unresolved30DaysTasks,
+            RoadmapItems = reportContext.RoadmapItems,
             AllTasksCreatedThisMonth = allTasksRatio.CreatedThisMonth,
             AllTasksOpenThisMonth = allTasksRatio.OpenThisMonth,
             AllTasksMovedToDoneThisMonth = allTasksRatio.MovedToDoneThisMonth,
@@ -202,6 +203,11 @@ public sealed class JiraReportData
     /// Gets unresolved tasks older than 30 days as of report generation.
     /// </summary>
     public IReadOnlyList<IssueListItem> Unresolved30DaysTasks { get; init; } = [];
+
+    /// <summary>
+    /// Gets roadmap issues as they existed when the report was generated.
+    /// </summary>
+    public IReadOnlyList<RoadmapItem> RoadmapItems { get; init; } = [];
 
     /// <summary>
     /// Gets or sets all-tasks count created in month.

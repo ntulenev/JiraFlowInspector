@@ -414,7 +414,8 @@ public sealed class JiraApplicationBranchesTests
             [],
             [],
             [],
-            [new StatusIssueTypeSummary(new StatusName("In Progress"), new ItemCount(2), [])]);
+            [new StatusIssueTypeSummary(new StatusName("In Progress"), new ItemCount(2), [])],
+            []);
     }
 
     private static IssueRatioSnapshot CreateRatioSnapshot()

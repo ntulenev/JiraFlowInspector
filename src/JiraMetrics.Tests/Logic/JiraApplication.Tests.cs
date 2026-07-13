@@ -1204,6 +1204,11 @@ public sealed class JiraApplicationTests
             CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<IssueListItem>>([]);
 
+        public Task<IReadOnlyList<RoadmapItem>> GetRoadmapItemsAsync(
+            RoadmapReportSettings settings,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<RoadmapItem>>([]);
+
         public Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
             GlobalIncidentsReportSettings settings,
             CancellationToken cancellationToken)

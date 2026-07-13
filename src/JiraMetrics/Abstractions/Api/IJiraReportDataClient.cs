@@ -17,6 +17,10 @@ internal interface IJiraReportDataClient
         Unresolved30DaysTasksReportSettings settings,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<RoadmapItem>> GetRoadmapItemsAsync(
+        RoadmapReportSettings settings,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken);

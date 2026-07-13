@@ -53,15 +53,35 @@ internal static class HtmlTableRenderer
         }
 
         _ = html.AppendLine("        </tr><tr class=\"filters\">");
-        foreach (var column in columns)
+        for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
         {
+            var column = columns[columnIndex];
             var thClass = string.IsNullOrWhiteSpace(column.CssClass) ? string.Empty : $" class=\"{HtmlPresentationHelpers.EncodeAttribute(column.CssClass)}\"";
-            _ = html.AppendLine(string.Concat(
-                "          <th",
-                thClass,
-                "><input class=\"filter-input\" data-filter-column placeholder=\"",
-                HtmlPresentationHelpers.EncodeAttribute(column.FilterPlaceholder),
-                "\" type=\"search\"></th>"));
+            _ = html.Append(string.Concat("          <th", thClass, ">"));
+            if (string.Equals(column.FilterKind, "date-range", StringComparison.Ordinal))
+            {
+                _ = html.Append(string.Concat(
+                    "<div class=\"range-filter\"><input class=\"filter-input\" data-filter-column=\"",
+                    columnIndex.ToString(CultureInfo.InvariantCulture),
+                    "\" data-filter-operator=\"min\" aria-label=\"",
+                    HtmlPresentationHelpers.EncodeAttribute(column.Header),
+                    " from\" type=\"date\"><input class=\"filter-input\" data-filter-column=\"",
+                    columnIndex.ToString(CultureInfo.InvariantCulture),
+                    "\" data-filter-operator=\"max\" aria-label=\"",
+                    HtmlPresentationHelpers.EncodeAttribute(column.Header),
+                    " to\" type=\"date\"></div>"));
+            }
+            else
+            {
+                _ = html.Append(string.Concat(
+                    "<input class=\"filter-input\" data-filter-column=\"",
+                    columnIndex.ToString(CultureInfo.InvariantCulture),
+                    "\" placeholder=\"",
+                    HtmlPresentationHelpers.EncodeAttribute(column.FilterPlaceholder),
+                    "\" type=\"search\">"));
+            }
+
+            _ = html.AppendLine("</th>");
         }
 
         _ = html.AppendLine("        </tr></thead><tbody>");
@@ -104,7 +124,12 @@ internal static class HtmlTableRenderer
     }
 }
 
-internal sealed record TableColumn(string Header, string SortType, string FilterPlaceholder, string? CssClass = null);
+internal sealed record TableColumn(
+    string Header,
+    string SortType,
+    string FilterPlaceholder,
+    string? CssClass = null,
+    string FilterKind = "text");
 
 internal sealed record TableCell(string Html, string SortValue, string FilterValue);
 

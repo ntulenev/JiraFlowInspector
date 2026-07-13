@@ -89,6 +89,11 @@ public sealed class JiraOptions : IValidatableObject
     public Unresolved30DaysTasksReportOptions? Unresolved30DaysTasks { get; init; }
 
     /// <summary>
+    /// Gets or sets optional current roadmap snapshot settings.
+    /// </summary>
+    public RoadmapReportOptions? Roadmap { get; init; }
+
+    /// <summary>
     /// Gets or sets optional global incidents report settings.
     /// </summary>
     public GlobalIncidentsReportOptions? GlobalIncidents { get; init; }

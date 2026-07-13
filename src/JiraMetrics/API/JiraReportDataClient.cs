@@ -1,7 +1,11 @@
+using System.Globalization;
+using System.Text.Json;
+
 using JiraMetrics.API.Mapping;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
+using JiraMetrics.Transport.Models;
 
 namespace JiraMetrics.API;
 
@@ -101,6 +105,41 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         return _mapperFacade.MapIssueListItems(issues);
     }
 
+    public async Task<IReadOnlyList<RoadmapItem>> GetRoadmapItemsAsync(
+        RoadmapReportSettings settings,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        var roadmapFieldId = await _fieldResolver
+            .ResolveFieldIdAsync(new JiraFieldName(settings.RoadmapFieldName), cancellationToken)
+            .ConfigureAwait(false);
+        var startDateFieldId = await _fieldResolver
+            .ResolveFieldIdAsync(new JiraFieldName(settings.StartDateFieldName), cancellationToken)
+            .ConfigureAwait(false);
+        var endDateFieldId = await _fieldResolver
+            .ResolveFieldIdAsync(new JiraFieldName(settings.EndDateFieldName), cancellationToken)
+            .ConfigureAwait(false);
+        var issues = await _searchExecutor
+            .SearchIssuesAsync(
+                new JqlQuery(settings.Jql),
+                JiraSearchFields.From(
+                    "key",
+                    "summary",
+                    "status",
+                    roadmapFieldId.Value,
+                    startDateFieldId.Value,
+                    endDateFieldId.Value),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. issues.Select(issue => MapRoadmapItem(
+            issue,
+            roadmapFieldId,
+            startDateFieldId,
+            endDateFieldId))];
+    }
+
     public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
         GlobalIncidentsReportSettings settings,
         CancellationToken cancellationToken)
@@ -149,9 +188,80 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
 
         return _mapperFacade.MapGlobalIncidents(issues, context);
     }
+
+    private static RoadmapItem MapRoadmapItem(
+        JiraIssueKeyResponse issue,
+        JiraFieldId roadmapFieldId,
+        JiraFieldId startDateFieldId,
+        JiraFieldId endDateFieldId)
+    {
+        var key = new IssueKey(issue.Key ?? throw new InvalidOperationException("Roadmap issue key is missing."));
+        var fields = issue.Fields ?? throw new InvalidOperationException($"Roadmap issue '{key.Value}' fields are missing.");
+        var summary = new IssueSummary(fields.Summary ?? key.Value);
+        var status = string.IsNullOrWhiteSpace(fields.Status?.Name) ? "-" : fields.Status.Name.Trim();
+        var additionalFields = fields.AdditionalFields;
+
+        return new RoadmapItem(
+            key,
+            summary,
+            status,
+            ReadDropdown(additionalFields, roadmapFieldId.Value),
+            ReadDate(additionalFields, startDateFieldId.Value),
+            ReadDate(additionalFields, endDateFieldId.Value));
+    }
+
+    private static string? ReadDropdown(Dictionary<string, JsonElement>? fields, string fieldId)
+    {
+        if (fields is null || !fields.TryGetValue(fieldId, out var value))
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            return Normalize(value.GetString());
+        }
+
+        if (value.ValueKind == JsonValueKind.Object)
+        {
+            if (value.TryGetProperty("value", out var optionValue))
+            {
+                return Normalize(optionValue.GetString());
+            }
+
+            if (value.TryGetProperty("name", out var optionName))
+            {
+                return Normalize(optionName.GetString());
+            }
+        }
+
+        return null;
+    }
+
+    private static DateOnly? ReadDate(Dictionary<string, JsonElement>? fields, string fieldId)
+    {
+        if (fields is null
+            || !fields.TryGetValue(fieldId, out var value)
+            || value.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var text = value.GetString();
+        if (DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        {
+            return date;
+        }
+
+        return DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var timestamp)
+            ? DateOnly.FromDateTime(timestamp.Date)
+            : null;
+    }
+
+    private static string? Normalize(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly IJiraJqlFacade _jqlFacade;
     private readonly IJiraFieldResolver _fieldResolver;
     private readonly IJiraMapperFacade _mapperFacade;
 }
-

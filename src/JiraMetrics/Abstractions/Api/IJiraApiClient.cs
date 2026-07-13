@@ -109,6 +109,13 @@ public interface IJiraApiClient
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Loads the current roadmap snapshot for the configured query.
+    /// </summary>
+    Task<IReadOnlyList<RoadmapItem>> GetRoadmapItemsAsync(
+        RoadmapReportSettings settings,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Loads global incidents for the configured report period.
     /// </summary>
     /// <param name="settings">Global incidents report settings.</param>

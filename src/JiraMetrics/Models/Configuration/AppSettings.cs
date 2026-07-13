@@ -39,6 +39,7 @@ public sealed record AppSettings
     /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
     /// <param name="unresolved30DaysTasksReport">Optional unresolved tasks older than 30 days report settings.</param>
+    /// <param name="roadmapReport">Optional current roadmap snapshot settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -68,7 +69,8 @@ public sealed record AppSettings
         HtmlReportSettings? htmlReport = null,
         QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
         CustomTransitionAnalysisSettings? customTransitionAnalysis = null,
-        Unresolved30DaysTasksReportSettings? unresolved30DaysTasksReport = null)
+        Unresolved30DaysTasksReportSettings? unresolved30DaysTasksReport = null,
+        RoadmapReportSettings? roadmapReport = null)
         : this(
             baseUrl,
             email,
@@ -98,7 +100,8 @@ public sealed record AppSettings
             htmlReport,
             qaTransitionAnalysis,
             customTransitionAnalysis,
-            unresolved30DaysTasksReport)
+            unresolved30DaysTasksReport,
+            roadmapReport)
     {
     }
 
@@ -134,6 +137,7 @@ public sealed record AppSettings
     /// <param name="qaTransitionAnalysis">QA transition analysis settings.</param>
     /// <param name="customTransitionAnalysis">Optional dedicated transition analysis settings.</param>
     /// <param name="unresolved30DaysTasksReport">Optional unresolved tasks older than 30 days report settings.</param>
+    /// <param name="roadmapReport">Optional current roadmap snapshot settings.</param>
     public AppSettings(
         JiraBaseUrl baseUrl,
         JiraEmail email,
@@ -163,7 +167,8 @@ public sealed record AppSettings
         HtmlReportSettings? htmlReport = null,
         QaTransitionAnalysisSettings? qaTransitionAnalysis = null,
         CustomTransitionAnalysisSettings? customTransitionAnalysis = null,
-        Unresolved30DaysTasksReportSettings? unresolved30DaysTasksReport = null)
+        Unresolved30DaysTasksReportSettings? unresolved30DaysTasksReport = null,
+        RoadmapReportSettings? roadmapReport = null)
     {
         BaseUrl = baseUrl;
         Email = email;
@@ -199,6 +204,7 @@ public sealed record AppSettings
         QaTransitionAnalysis = qaTransitionAnalysis ?? QaTransitionAnalysisSettings.Default;
         CustomTransitionAnalysis = customTransitionAnalysis;
         Unresolved30DaysTasksReport = unresolved30DaysTasksReport;
+        RoadmapReport = roadmapReport;
     }
 
     /// <summary>
@@ -350,4 +356,9 @@ public sealed record AppSettings
     /// Gets optional unresolved tasks older than 30 days report settings.
     /// </summary>
     public Unresolved30DaysTasksReportSettings? Unresolved30DaysTasksReport { get; }
+
+    /// <summary>
+    /// Gets optional current roadmap snapshot settings.
+    /// </summary>
+    public RoadmapReportSettings? RoadmapReport { get; }
 }

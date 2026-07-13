@@ -47,7 +47,8 @@ internal static class AppSettingsFactory
             ResolveHtmlReport(source.Html),
             ResolveQaTransitionAnalysis(teamTasks.IssueTransitions?.QaTransitionAnalysis),
             ResolveCustomTransitionAnalysis(teamTasks.IssueTransitions?.CustomTransitionAnalysis),
-            ResolveUnresolved30DaysTasksReport(source.Unresolved30DaysTasks));
+            ResolveUnresolved30DaysTasksReport(source.Unresolved30DaysTasks),
+            ResolveRoadmapReport(source.Roadmap));
     }
 
     private static StatusName? CreateOptionalStatusName(string? value) =>
@@ -192,6 +193,31 @@ internal static class AppSettingsFactory
         }
 
         return new Unresolved30DaysTasksReportSettings(source.Jql);
+    }
+
+    private static RoadmapReportSettings? ResolveRoadmapReport(RoadmapReportOptions? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(source.Jql) && string.IsNullOrWhiteSpace(source.RoadmapFieldName))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(source.Jql) || string.IsNullOrWhiteSpace(source.RoadmapFieldName))
+        {
+            throw new InvalidOperationException(
+                "Roadmap requires both Jql and RoadmapFieldName when configured.");
+        }
+
+        return new RoadmapReportSettings(
+            source.Jql,
+            source.RoadmapFieldName,
+            source.StartDateFieldName,
+            source.EndDateFieldName);
     }
 
     private static GlobalIncidentsReportSettings? ResolveGlobalIncidentsReport(GlobalIncidentsReportOptions? source)

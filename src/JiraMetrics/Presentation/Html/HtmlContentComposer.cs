@@ -755,6 +755,54 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             defaultSortColumn: 0);
     }
 
+    internal static string BuildRoadmapSection(JiraReportData reportData)
+    {
+        if (reportData.Settings.RoadmapReport is null)
+        {
+            return string.Empty;
+        }
+
+        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        var note = string.Concat(
+            "<section class=\"info-section\" id=\"roadmap-note\">",
+            "<div class=\"info-panel\"><strong>Roadmap is a current snapshot.</strong> ",
+            "It shows issues matching the configured query as of ",
+            HtmlPresentationHelpers.Encode(generatedAt),
+            ". It is not built from historical data and does not represent a historical period slice.",
+            "</div></section>");
+        var rows = reportData.RoadmapItems
+            .OrderBy(static item => item.StartDate)
+            .ThenBy(static item => item.EndDate)
+            .ThenBy(static item => item.Key.Value, StringComparer.OrdinalIgnoreCase)
+            .Select((item, index) => new TableRow(
+            [
+                BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
+                BuildLinkCell(item.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, item.Key)),
+                BuildTextCell(item.Status),
+                BuildTextCell(item.Roadmap ?? "-"),
+                BuildTextCell(FormatRoadmapDate(item.StartDate)),
+                BuildTextCell(FormatRoadmapDate(item.EndDate)),
+                BuildTextCell(item.Summary.Value)
+            ]))
+            .ToList();
+
+        return note + BuildTableSection(
+            "roadmap",
+            "Roadmap",
+            "No roadmap issues found.",
+            [
+                new TableColumn("#", "number", "#", "narrow"),
+                new TableColumn("Issue", "text", "Issue", "issue-column"),
+                new TableColumn("Status", "text", "Status"),
+                new TableColumn("Roadmap", "text", "Roadmap"),
+                new TableColumn("Start Date", "text", "Start Date", FilterKind: "date-range"),
+                new TableColumn("End Date", "text", "End Date", FilterKind: "date-range"),
+                new TableColumn("Title", "text", "Title", "summary-column")
+            ],
+            rows,
+            defaultSortColumn: 4);
+    }
+
     private static string BuildIssueListItemsTable(
         string sectionId,
         string title,
@@ -946,6 +994,9 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             ? "-"
             : PresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
 
+    private static string FormatRoadmapDate(DateOnly? value) =>
+        value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "";
+
     private static string FormatDurationWithHours(TimeSpan duration, bool showTimeCalculationsInHoursOnly)
     {
         var durationLabel = PdfPresentationHelpers.ToDurationLabel(duration, showTimeCalculationsInHoursOnly);
@@ -982,7 +1033,8 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         new HtmlArchTasksSection(),
         new HtmlGeneralStatisticsSection(),
         new HtmlUnresolved30DaysTasksSection(),
-        new HtmlFailuresSection()
+        new HtmlFailuresSection(),
+        new HtmlRoadmapSection()
     ];
 
 }

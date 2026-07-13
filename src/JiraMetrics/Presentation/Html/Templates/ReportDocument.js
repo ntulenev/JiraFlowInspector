@@ -54,20 +54,29 @@
           direction: table.dataset.defaultSortDirection || 'asc'
         };
 
-        filters.forEach((filter, index) => {
-          filter.dataset.filterColumn = String(index);
-        });
-
         function applyFilters() {
           const globalTerm = (search?.value || '').trim().toLowerCase();
-          const columnTerms = new Map(filters.map(filter => [Number(filter.dataset.filterColumn), filter.value.trim().toLowerCase()]));
 
           for (const row of rows) {
             const cells = Array.from(row.children);
             const globalMatch = !globalTerm || cells.some(cell => (cell.dataset.filter || cell.textContent || '').toLowerCase().includes(globalTerm));
-            const columnsMatch = cells.every((cell, index) => {
-              const term = columnTerms.get(index);
-              return !term || (cell.dataset.filter || cell.textContent || '').toLowerCase().includes(term);
+            const columnsMatch = filters.every(filter => {
+              const term = filter.value.trim().toLowerCase();
+              if (!term) {
+                return true;
+              }
+
+              const cell = cells[Number(filter.dataset.filterColumn)];
+              const value = (cell?.dataset.filter || cell?.textContent || '').trim().toLowerCase();
+              if (filter.dataset.filterOperator === 'min') {
+                return Boolean(value) && value >= term;
+              }
+
+              if (filter.dataset.filterOperator === 'max') {
+                return Boolean(value) && value <= term;
+              }
+
+              return value.includes(term);
             });
 
             row.hidden = !(globalMatch && columnsMatch);

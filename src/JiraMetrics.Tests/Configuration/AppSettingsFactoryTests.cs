@@ -96,6 +96,13 @@ public sealed class AppSettingsFactoryTests
             {
                 Jql = " project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC "
             },
+            Roadmap = new RoadmapReportOptions
+            {
+                Jql = " project = PROJECT_KEY AND issuetype = IDEA_TYPE ",
+                RoadmapFieldName = " Roadmap[Dropdown] ",
+                StartDateFieldName = " Planned start ",
+                EndDateFieldName = " Planned end "
+            },
             GlobalIncidents = new GlobalIncidentsReportOptions
             {
                 SearchPhrase = "ORX"
@@ -142,6 +149,11 @@ public sealed class AppSettingsFactoryTests
         settings.ArchTasksReport.Should().NotBeNull();
         settings.Unresolved30DaysTasksReport!.Jql.Should()
             .Be("project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC");
+        settings.RoadmapReport.Should().BeEquivalentTo(new RoadmapReportSettings(
+            "project = PROJECT_KEY AND issuetype = IDEA_TYPE",
+            "Roadmap[Dropdown]",
+            "Planned start",
+            "Planned end"));
         settings.GlobalIncidentsReport.Should().NotBeNull();
         settings.PdfReport.Enabled.Should().BeTrue();
         settings.PdfReport.OpenAfterGeneration.Should().BeTrue();

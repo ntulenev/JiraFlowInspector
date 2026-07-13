@@ -48,6 +48,11 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("Architecture Tasks");
         html.Should().Contain("Global Incidents");
         html.Should().Contain("Failed Issues");
+        html.Should().Contain("Roadmap is a current snapshot.");
+        html.Should().Contain("It is not built from historical data");
+        html.Should().Contain("Platform Growth");
+        html.Should().Contain("data-filter-operator=\"min\"");
+        html.Should().Contain("data-filter-operator=\"max\"");
         html.Should().Contain("data-table-panel");
         html.Should().Contain("data-sort-column=\"0\"");
         html.Should().Contain("Reset Filters");
@@ -62,6 +67,8 @@ public sealed class HtmlContentComposerTests
             .BeLessThan(html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal));
         html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"failures\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"failures\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"roadmap\"", StringComparison.Ordinal));
         var unresolvedSection = html[html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal)..];
         unresolvedSection.Should().Contain("data-default-sort-column=\"2\" data-default-sort-direction=\"asc\"");
     }
@@ -144,6 +151,16 @@ public sealed class HtmlContentComposerTests
                     issueType: "Story",
                     assignee: "Ada Lovelace",
                     status: "In Progress")
+            ],
+            RoadmapItems =
+            [
+                new RoadmapItem(
+                    new IssueKey("PLAN-1"),
+                    new IssueSummary("Platform Growth"),
+                    "In Progress",
+                    "Committed",
+                    new DateOnly(2026, 2, 1),
+                    new DateOnly(2026, 4, 30))
             ],
             GlobalIncidents =
             [
@@ -270,5 +287,8 @@ public sealed class HtmlContentComposerTests
             archTasksReport: new ArchTasksReportSettings("project = AAA"),
             unresolved30DaysTasksReport: new Unresolved30DaysTasksReportSettings(
                 "project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC"),
-            globalIncidentsReport: new GlobalIncidentsReportSettings(jqlFilter: "labels = INCIDENT"));
+            globalIncidentsReport: new GlobalIncidentsReportSettings(jqlFilter: "labels = INCIDENT"),
+            roadmapReport: new RoadmapReportSettings(
+                "project = PROJECT_KEY AND issuetype = IDEA_TYPE",
+                "Roadmap[Dropdown]"));
 }
