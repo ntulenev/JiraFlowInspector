@@ -114,12 +114,12 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var roadmapFieldId = await _fieldResolver
             .ResolveFieldIdAsync(new JiraFieldName(settings.RoadmapFieldName), cancellationToken)
             .ConfigureAwait(false);
-        var startDateFieldId = await _fieldResolver
-            .ResolveFieldIdAsync(new JiraFieldName(settings.StartDateFieldName), cancellationToken)
-            .ConfigureAwait(false);
-        var endDateFieldId = await _fieldResolver
-            .ResolveFieldIdAsync(new JiraFieldName(settings.EndDateFieldName), cancellationToken)
-            .ConfigureAwait(false);
+        var startDateField = await ResolveRoadmapDateFieldAsync(
+            settings.StartDateFieldName,
+            cancellationToken).ConfigureAwait(false);
+        var endDateField = await ResolveRoadmapDateFieldAsync(
+            settings.EndDateFieldName,
+            cancellationToken).ConfigureAwait(false);
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 new JqlQuery(settings.Jql),
@@ -128,16 +128,16 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
                     "summary",
                     "status",
                     roadmapFieldId.Value,
-                    startDateFieldId.Value,
-                    endDateFieldId.Value),
+                    startDateField.FieldId.Value,
+                    endDateField.FieldId.Value),
                 cancellationToken)
             .ConfigureAwait(false);
 
         return [.. issues.Select(issue => MapRoadmapItem(
             issue,
             roadmapFieldId,
-            startDateFieldId,
-            endDateFieldId))];
+            startDateField,
+            endDateField))];
     }
 
     public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
@@ -192,8 +192,8 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
     private static RoadmapItem MapRoadmapItem(
         JiraIssueKeyResponse issue,
         JiraFieldId roadmapFieldId,
-        JiraFieldId startDateFieldId,
-        JiraFieldId endDateFieldId)
+        RoadmapDateField startDateField,
+        RoadmapDateField endDateField)
     {
         var key = new IssueKey(issue.Key ?? throw new InvalidOperationException("Roadmap issue key is missing."));
         var fields = issue.Fields ?? throw new InvalidOperationException($"Roadmap issue '{key.Value}' fields are missing.");
@@ -206,8 +206,61 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
             summary,
             status,
             ReadDropdown(additionalFields, roadmapFieldId.Value),
-            ReadDate(additionalFields, startDateFieldId.Value),
-            ReadDate(additionalFields, endDateFieldId.Value));
+            ReadDate(additionalFields, startDateField),
+            ReadDate(additionalFields, endDateField));
+    }
+
+    private async Task<RoadmapDateField> ResolveRoadmapDateFieldAsync(
+        string configuredField,
+        CancellationToken cancellationToken)
+    {
+        if (TryParseIntervalFieldReference(configuredField, out var intervalField))
+        {
+            return intervalField;
+        }
+
+        var fieldId = await _fieldResolver
+            .ResolveFieldIdAsync(new JiraFieldName(configuredField), cancellationToken)
+            .ConfigureAwait(false);
+        return new RoadmapDateField(fieldId, null);
+    }
+
+    private static bool TryParseIntervalFieldReference(
+        string configuredField,
+        out RoadmapDateField field)
+    {
+        var value = configuredField.Trim();
+        var fieldIdEnd = value.IndexOf("][", StringComparison.Ordinal);
+        if (!value.StartsWith("cf[", StringComparison.OrdinalIgnoreCase)
+            || fieldIdEnd < 4
+            || !value.EndsWith(']'))
+        {
+            field = default;
+            return false;
+        }
+
+        var numericId = value[3..fieldIdEnd];
+        var component = value[(fieldIdEnd + 2)..^1];
+        if (!numericId.All(char.IsDigit))
+        {
+            field = default;
+            return false;
+        }
+
+        var jsonPropertyName = component.ToUpperInvariant() switch
+        {
+            "STARTDATE" => "start",
+            "ENDDATE" => "end",
+            _ => null
+        };
+        if (jsonPropertyName is null)
+        {
+            field = default;
+            return false;
+        }
+
+        field = new RoadmapDateField(new JiraFieldId($"customfield_{numericId}"), jsonPropertyName);
+        return true;
     }
 
     private static string? ReadDropdown(Dictionary<string, JsonElement>? fields, string fieldId)
@@ -238,11 +291,54 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         return null;
     }
 
-    private static DateOnly? ReadDate(Dictionary<string, JsonElement>? fields, string fieldId)
+    private static DateOnly? ReadDate(
+        Dictionary<string, JsonElement>? fields,
+        RoadmapDateField field)
     {
         if (fields is null
-            || !fields.TryGetValue(fieldId, out var value)
-            || value.ValueKind != JsonValueKind.String)
+            || !fields.TryGetValue(field.FieldId.Value, out var value))
+        {
+            return null;
+        }
+
+        if (field.JsonPropertyName is { } propertyName)
+        {
+            return ReadIntervalDate(value, propertyName);
+        }
+
+        return ReadDateValue(value);
+    }
+
+    private static DateOnly? ReadIntervalDate(JsonElement value, string propertyName)
+    {
+        if (value.ValueKind == JsonValueKind.Object)
+        {
+            return value.TryGetProperty(propertyName, out var propertyValue)
+                ? ReadDateValue(propertyValue)
+                : null;
+        }
+
+        if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(value.GetString()!);
+            return document.RootElement.TryGetProperty(propertyName, out var propertyValue)
+                ? ReadDateValue(propertyValue)
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static DateOnly? ReadDateValue(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.String)
         {
             return null;
         }
@@ -260,6 +356,8 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
 
     private static string? Normalize(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private readonly record struct RoadmapDateField(JiraFieldId FieldId, string? JsonPropertyName);
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly IJiraJqlFacade _jqlFacade;
     private readonly IJiraFieldResolver _fieldResolver;

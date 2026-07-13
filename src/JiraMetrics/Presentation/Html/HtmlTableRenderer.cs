@@ -71,6 +71,17 @@ internal static class HtmlTableRenderer
                     HtmlPresentationHelpers.EncodeAttribute(column.Header),
                     " to\" type=\"date\"></div>"));
             }
+            else if (string.Equals(column.FilterKind, "multi-select", StringComparison.Ordinal))
+            {
+                _ = html.Append(string.Concat(
+                    "<div class=\"multi-select\" data-multi-select data-filter-column=\"",
+                    columnIndex.ToString(CultureInfo.InvariantCulture),
+                    "\" data-multi-select-placeholder=\"",
+                    HtmlPresentationHelpers.EncodeAttribute(column.FilterPlaceholder),
+                    "\"><button class=\"multi-select-button\" data-multi-select-toggle type=\"button\" aria-expanded=\"false\"><span data-multi-select-label>",
+                    HtmlPresentationHelpers.Encode(column.FilterPlaceholder),
+                    "</span><span class=\"multi-select-chevron\" aria-hidden=\"true\"></span></button><div class=\"multi-select-menu\" data-multi-select-menu hidden></div></div>"));
+            }
             else
             {
                 _ = html.Append(string.Concat(

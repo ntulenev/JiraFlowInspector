@@ -53,6 +53,9 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("Platform Growth");
         html.Should().Contain("data-filter-operator=\"min\"");
         html.Should().Contain("data-filter-operator=\"max\"");
+        html.Should().Contain("data-multi-select");
+        html.Should().Contain("data-multi-select-label>Status</span>");
+        html.Should().Contain("data-multi-select-label>Roadmap</span>");
         html.Should().Contain("data-table-panel");
         html.Should().Contain("data-sort-column=\"0\"");
         html.Should().Contain("Reset Filters");

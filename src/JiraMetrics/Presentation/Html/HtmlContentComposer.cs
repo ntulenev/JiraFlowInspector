@@ -793,8 +793,8 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             [
                 new TableColumn("#", "number", "#", "narrow"),
                 new TableColumn("Issue", "text", "Issue", "issue-column"),
-                new TableColumn("Status", "text", "Status"),
-                new TableColumn("Roadmap", "text", "Roadmap"),
+                new TableColumn("Status", "text", "Status", FilterKind: "multi-select"),
+                new TableColumn("Roadmap", "text", "Roadmap", FilterKind: "multi-select"),
                 new TableColumn("Start Date", "text", "Start Date", FilterKind: "date-range"),
                 new TableColumn("End Date", "text", "End Date", FilterKind: "date-range"),
                 new TableColumn("Title", "text", "Title", "summary-column")
