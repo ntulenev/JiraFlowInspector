@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers report-analysis and application logic services.
+/// </summary>
 internal static class LogicServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraLogic(this IServiceCollection services)

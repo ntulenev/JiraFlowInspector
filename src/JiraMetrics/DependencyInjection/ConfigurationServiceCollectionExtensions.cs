@@ -6,6 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers application configuration services.
+/// </summary>
 internal static class ConfigurationServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraConfiguration(

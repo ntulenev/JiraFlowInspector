@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers console presentation services.
+/// </summary>
 internal static class PresentationServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraPresentation(this IServiceCollection services)

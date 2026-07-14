@@ -9,6 +9,9 @@ using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers Jira transport and resilience services.
+/// </summary>
 internal static class TransportServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraTransport(this IServiceCollection services)

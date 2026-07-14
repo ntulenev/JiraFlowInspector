@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers PDF report services.
+/// </summary>
 internal static class PdfServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraPdf(this IServiceCollection services)

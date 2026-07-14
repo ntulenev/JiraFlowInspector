@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers HTML report services.
+/// </summary>
 internal static class HtmlServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraHtml(this IServiceCollection services)

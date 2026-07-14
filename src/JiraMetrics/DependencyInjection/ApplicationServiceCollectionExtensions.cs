@@ -6,6 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers application workflow services.
+/// </summary>
 internal static class ApplicationServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraApplication(this IServiceCollection services)

@@ -8,6 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace JiraMetrics.DependencyInjection;
 
+/// <summary>
+/// Registers Jira API services.
+/// </summary>
 internal static class ApiServiceCollectionExtensions
 {
     public static IServiceCollection AddJiraApi(this IServiceCollection services)
