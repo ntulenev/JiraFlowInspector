@@ -4,6 +4,9 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Models.Configuration;
 
+/// <summary>
+/// Validates raw Jira options and creates application settings.
+/// </summary>
 internal static class AppSettingsFactory
 {
     public static AppSettings Create(JiraOptions source)
