@@ -5,6 +5,9 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.API;
 
+/// <summary>
+/// Loads Jira datasets for specialized report sections.
+/// </summary>
 internal sealed class JiraReportDataClient : IJiraReportDataClient
 {
 

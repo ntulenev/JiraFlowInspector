@@ -3,6 +3,9 @@ using JiraMetrics.Models.Configuration;
 
 namespace JiraMetrics.Abstractions.Api;
 
+/// <summary>
+/// Loads Jira datasets used by optional report sections.
+/// </summary>
 internal interface IJiraReportDataClient
 {
     Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(

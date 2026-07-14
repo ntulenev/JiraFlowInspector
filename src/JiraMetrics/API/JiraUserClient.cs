@@ -3,6 +3,9 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.API;
 
+/// <summary>
+/// Loads information about the authenticated Jira user.
+/// </summary>
 internal sealed class JiraUserClient : IJiraUserClient
 {
 

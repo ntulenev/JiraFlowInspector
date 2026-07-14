@@ -4,6 +4,9 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.API;
 
+/// <summary>
+/// Executes issue-list searches and maps their results into application models.
+/// </summary>
 internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
 {
 

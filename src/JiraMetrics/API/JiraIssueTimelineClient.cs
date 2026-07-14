@@ -9,6 +9,9 @@ using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.API;
 
+/// <summary>
+/// Loads and maps detailed Jira issue timelines.
+/// </summary>
 internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
 {
 

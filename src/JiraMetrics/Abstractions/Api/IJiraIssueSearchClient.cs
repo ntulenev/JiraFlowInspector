@@ -3,6 +3,9 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Abstractions.Api;
 
+/// <summary>
+/// Provides focused Jira issue-search operations used by application workflows.
+/// </summary>
 internal interface IJiraIssueSearchClient
 {
     Task<IReadOnlyList<IssueKey>> GetIssueKeysMovedToDoneThisMonthAsync(
