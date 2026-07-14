@@ -6,8 +6,12 @@ using static JiraMetrics.Presentation.Html.HtmlTableRenderer;
 
 namespace JiraMetrics.Presentation.Html;
 
+/// <summary>
+/// Renders the current Jira roadmap snapshot.
+/// </summary>
 internal sealed class HtmlRoadmapSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
