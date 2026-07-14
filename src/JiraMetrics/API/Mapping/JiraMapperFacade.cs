@@ -14,16 +14,19 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
         IIssueTimelineMapper issueTimelineMapper,
         IReleaseIssueMapper releaseIssueMapper,
         IGlobalIncidentMapper globalIncidentMapper,
+        IRoadmapItemMapper roadmapItemMapper,
         JiraSearchIssueMapper searchIssueMapper)
     {
         ArgumentNullException.ThrowIfNull(issueTimelineMapper);
         ArgumentNullException.ThrowIfNull(releaseIssueMapper);
         ArgumentNullException.ThrowIfNull(globalIncidentMapper);
+        ArgumentNullException.ThrowIfNull(roadmapItemMapper);
         ArgumentNullException.ThrowIfNull(searchIssueMapper);
 
         _issueTimelineMapper = issueTimelineMapper;
         _releaseIssueMapper = releaseIssueMapper;
         _globalIncidentMapper = globalIncidentMapper;
+        _roadmapItemMapper = roadmapItemMapper;
         _searchIssueMapper = searchIssueMapper;
     }
 
@@ -59,12 +62,21 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
         GlobalIncidentMappingContext context) =>
         _globalIncidentMapper.MapIssues(issues, context);
 
+    public JiraSearchFields BuildRoadmapRequestedFields(RoadmapMappingContext context) =>
+        _roadmapItemMapper.BuildRequestedFields(context);
+
+    public IReadOnlyList<RoadmapItem> MapRoadmapItems(
+        IReadOnlyList<JiraIssueKeyResponse> issues,
+        RoadmapMappingContext context) =>
+        _roadmapItemMapper.MapIssues(issues, context);
+
     public IssueTimeline MapIssueTimeline(JiraIssueResponse response, IssueKey fallbackKey) =>
         _issueTimelineMapper.Map(response, fallbackKey);
 
     private readonly IIssueTimelineMapper _issueTimelineMapper;
     private readonly IReleaseIssueMapper _releaseIssueMapper;
     private readonly IGlobalIncidentMapper _globalIncidentMapper;
+    private readonly IRoadmapItemMapper _roadmapItemMapper;
     private readonly JiraSearchIssueMapper _searchIssueMapper;
 }
 #pragma warning restore CS1591

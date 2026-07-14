@@ -2120,6 +2120,7 @@ public sealed class JiraApiClientTests
                 new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings, fieldValueReader),
                 new ReleaseIssueMapper(fieldValueReader),
                 new GlobalIncidentMapper(fieldValueReader),
+                new RoadmapItemMapper(),
                 new JiraSearchIssueMapper(fieldValueReader)));
     }
 

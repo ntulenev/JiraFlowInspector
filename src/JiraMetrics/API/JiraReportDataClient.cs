@@ -1,11 +1,7 @@
-using System.Globalization;
-using System.Text.Json;
-
 using JiraMetrics.API.Mapping;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
-using JiraMetrics.Transport.Models;
 
 namespace JiraMetrics.API;
 
@@ -120,24 +116,18 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var endDateField = await ResolveRoadmapDateFieldAsync(
             settings.EndDateFieldName,
             cancellationToken).ConfigureAwait(false);
+        var context = new RoadmapMappingContext(
+            roadmapFieldId,
+            startDateField,
+            endDateField);
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 new JqlQuery(settings.Jql),
-                JiraSearchFields.From(
-                    "key",
-                    "summary",
-                    "status",
-                    roadmapFieldId.Value,
-                    startDateField.FieldId.Value,
-                    endDateField.FieldId.Value),
+                _mapperFacade.BuildRoadmapRequestedFields(context),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. issues.Select(issue => MapRoadmapItem(
-            issue,
-            roadmapFieldId,
-            startDateField,
-            endDateField))];
+        return _mapperFacade.MapRoadmapItems(issues, context);
     }
 
     public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
@@ -189,32 +179,11 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         return _mapperFacade.MapGlobalIncidents(issues, context);
     }
 
-    private static RoadmapItem MapRoadmapItem(
-        JiraIssueKeyResponse issue,
-        JiraFieldId roadmapFieldId,
-        RoadmapDateField startDateField,
-        RoadmapDateField endDateField)
-    {
-        var key = new IssueKey(issue.Key ?? throw new InvalidOperationException("Roadmap issue key is missing."));
-        var fields = issue.Fields ?? throw new InvalidOperationException($"Roadmap issue '{key.Value}' fields are missing.");
-        var summary = new IssueSummary(fields.Summary ?? key.Value);
-        var status = string.IsNullOrWhiteSpace(fields.Status?.Name) ? "-" : fields.Status.Name.Trim();
-        var additionalFields = fields.AdditionalFields;
-
-        return new RoadmapItem(
-            key,
-            summary,
-            status,
-            ReadDropdown(additionalFields, roadmapFieldId.Value),
-            ReadDate(additionalFields, startDateField),
-            ReadDate(additionalFields, endDateField));
-    }
-
-    private async Task<RoadmapDateField> ResolveRoadmapDateFieldAsync(
+    private async Task<RoadmapDateFieldReference> ResolveRoadmapDateFieldAsync(
         string configuredField,
         CancellationToken cancellationToken)
     {
-        if (TryParseIntervalFieldReference(configuredField, out var intervalField))
+        if (RoadmapFieldReferenceParser.TryParseIntervalField(configuredField, out var intervalField))
         {
             return intervalField;
         }
@@ -222,142 +191,8 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var fieldId = await _fieldResolver
             .ResolveFieldIdAsync(new JiraFieldName(configuredField), cancellationToken)
             .ConfigureAwait(false);
-        return new RoadmapDateField(fieldId, null);
+        return new RoadmapDateFieldReference(fieldId, null);
     }
-
-    private static bool TryParseIntervalFieldReference(
-        string configuredField,
-        out RoadmapDateField field)
-    {
-        var value = configuredField.Trim();
-        var fieldIdEnd = value.IndexOf("][", StringComparison.Ordinal);
-        if (!value.StartsWith("cf[", StringComparison.OrdinalIgnoreCase)
-            || fieldIdEnd < 4
-            || !value.EndsWith(']'))
-        {
-            field = default;
-            return false;
-        }
-
-        var numericId = value[3..fieldIdEnd];
-        var component = value[(fieldIdEnd + 2)..^1];
-        if (!numericId.All(char.IsDigit))
-        {
-            field = default;
-            return false;
-        }
-
-        var jsonPropertyName = component.ToUpperInvariant() switch
-        {
-            "STARTDATE" => "start",
-            "ENDDATE" => "end",
-            _ => null
-        };
-        if (jsonPropertyName is null)
-        {
-            field = default;
-            return false;
-        }
-
-        field = new RoadmapDateField(new JiraFieldId($"customfield_{numericId}"), jsonPropertyName);
-        return true;
-    }
-
-    private static string? ReadDropdown(Dictionary<string, JsonElement>? fields, string fieldId)
-    {
-        if (fields is null || !fields.TryGetValue(fieldId, out var value))
-        {
-            return null;
-        }
-
-        if (value.ValueKind == JsonValueKind.String)
-        {
-            return Normalize(value.GetString());
-        }
-
-        if (value.ValueKind == JsonValueKind.Object)
-        {
-            if (value.TryGetProperty("value", out var optionValue))
-            {
-                return Normalize(optionValue.GetString());
-            }
-
-            if (value.TryGetProperty("name", out var optionName))
-            {
-                return Normalize(optionName.GetString());
-            }
-        }
-
-        return null;
-    }
-
-    private static DateOnly? ReadDate(
-        Dictionary<string, JsonElement>? fields,
-        RoadmapDateField field)
-    {
-        if (fields is null
-            || !fields.TryGetValue(field.FieldId.Value, out var value))
-        {
-            return null;
-        }
-
-        if (field.JsonPropertyName is { } propertyName)
-        {
-            return ReadIntervalDate(value, propertyName);
-        }
-
-        return ReadDateValue(value);
-    }
-
-    private static DateOnly? ReadIntervalDate(JsonElement value, string propertyName)
-    {
-        if (value.ValueKind == JsonValueKind.Object)
-        {
-            return value.TryGetProperty(propertyName, out var propertyValue)
-                ? ReadDateValue(propertyValue)
-                : null;
-        }
-
-        if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()))
-        {
-            return null;
-        }
-
-        try
-        {
-            using var document = JsonDocument.Parse(value.GetString()!);
-            return document.RootElement.TryGetProperty(propertyName, out var propertyValue)
-                ? ReadDateValue(propertyValue)
-                : null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static DateOnly? ReadDateValue(JsonElement value)
-    {
-        if (value.ValueKind != JsonValueKind.String)
-        {
-            return null;
-        }
-
-        var text = value.GetString();
-        if (DateOnly.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-        {
-            return date;
-        }
-
-        return DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var timestamp)
-            ? DateOnly.FromDateTime(timestamp.Date)
-            : null;
-    }
-
-    private static string? Normalize(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private readonly record struct RoadmapDateField(JiraFieldId FieldId, string? JsonPropertyName);
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly IJiraJqlFacade _jqlFacade;
     private readonly IJiraFieldResolver _fieldResolver;

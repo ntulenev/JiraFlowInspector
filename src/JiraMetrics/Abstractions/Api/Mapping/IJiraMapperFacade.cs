@@ -76,6 +76,18 @@ public interface IJiraMapperFacade
         GlobalIncidentMappingContext context);
 
     /// <summary>
+    /// Builds the field list required for roadmap mapping.
+    /// </summary>
+    JiraSearchFields BuildRoadmapRequestedFields(RoadmapMappingContext context);
+
+    /// <summary>
+    /// Maps search issues into roadmap rows.
+    /// </summary>
+    IReadOnlyList<RoadmapItem> MapRoadmapItems(
+        IReadOnlyList<JiraIssueKeyResponse> issues,
+        RoadmapMappingContext context);
+
+    /// <summary>
     /// Maps one Jira issue response into a timeline.
     /// </summary>
     /// <param name="response">The <paramref name="response"/> value.</param>
