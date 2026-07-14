@@ -6,8 +6,12 @@ using static JiraMetrics.Presentation.Html.HtmlTableRenderer;
 
 namespace JiraMetrics.Presentation.Html;
 
+/// <summary>
+/// Renders the current snapshot of unresolved tasks older than 30 days.
+/// </summary>
 internal sealed class HtmlUnresolved30DaysTasksSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
