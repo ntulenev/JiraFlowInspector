@@ -8,6 +8,22 @@ namespace JiraMetrics.Presentation.Html;
 /// </summary>
 internal static class HtmlTableRenderer
 {
+    public static TableCell BuildTextCell(string text, IFormattable? sortValue = null) =>
+        new(
+            HtmlPresentationHelpers.Encode(text),
+            sortValue is null ? text : sortValue.ToString(null, CultureInfo.InvariantCulture),
+            text);
+
+    public static TableCell BuildLinkCell(string text, string url)
+    {
+        var encodedUrl = HtmlPresentationHelpers.EncodeAttribute(url);
+        var encodedText = HtmlPresentationHelpers.Encode(text);
+        return new TableCell(
+            $"<a href=\"{encodedUrl}\" target=\"_blank\" rel=\"noreferrer\">{encodedText}</a>",
+            text,
+            text);
+    }
+
     public static string BuildTableSection(
         string sectionId,
         string title,

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
 
+using static JiraMetrics.Presentation.Html.HtmlTableRenderer;
+
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Presentation.Pdf;
@@ -972,22 +974,6 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             BuildTextCell(metricName),
             BuildTextCell(value)
         ]);
-
-    private static TableCell BuildTextCell(string text, IFormattable? sortValue = null) =>
-        new(
-            HtmlPresentationHelpers.Encode(text),
-            sortValue is null ? text : sortValue.ToString(null, CultureInfo.InvariantCulture),
-            text);
-
-    private static TableCell BuildLinkCell(string text, string url)
-    {
-        var encodedUrl = HtmlPresentationHelpers.EncodeAttribute(url);
-        var encodedText = HtmlPresentationHelpers.Encode(text);
-        return new TableCell(
-            $"<a href=\"{encodedUrl}\" target=\"_blank\" rel=\"noreferrer\">{encodedText}</a>",
-            text,
-            text);
-    }
 
     private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
         duration is null
