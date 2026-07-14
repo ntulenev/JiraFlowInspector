@@ -10,6 +10,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders workflow status and diagnostics in the console.
+/// </summary>
 internal sealed class SpectreStatusSection
 {
     public void ShowAuthenticationStarted() => AnsiConsole.MarkupLine("[grey]Authenticating with Jira...[/]");

@@ -7,6 +7,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Provides formatting helpers for Spectre.Console output.
+/// </summary>
 internal static class SpectrePresentationFormatting
 {
     public static string BuildWorkDurationText(

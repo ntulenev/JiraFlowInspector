@@ -8,6 +8,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders issue-loading failures in the console.
+/// </summary>
 internal sealed class SpectreFailuresSection
 {
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)

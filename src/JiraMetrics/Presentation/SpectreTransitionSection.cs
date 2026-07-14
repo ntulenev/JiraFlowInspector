@@ -10,6 +10,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders transition-analysis metrics in the console.
+/// </summary>
 internal sealed class SpectreTransitionSection
 {
 

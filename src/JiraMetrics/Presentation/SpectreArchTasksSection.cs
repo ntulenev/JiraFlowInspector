@@ -10,6 +10,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders architecture-task metrics in the console.
+/// </summary>
 internal sealed class SpectreArchTasksSection
 {
     public void ShowArchTasksReport(

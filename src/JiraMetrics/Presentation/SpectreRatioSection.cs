@@ -10,6 +10,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders issue-ratio metrics in the console.
+/// </summary>
 internal sealed class SpectreRatioSection
 {
     public void ShowAllTasksRatio(

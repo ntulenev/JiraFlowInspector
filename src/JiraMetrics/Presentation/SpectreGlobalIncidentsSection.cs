@@ -8,6 +8,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders global-incident metrics in the console.
+/// </summary>
 internal sealed class SpectreGlobalIncidentsSection
 {
 

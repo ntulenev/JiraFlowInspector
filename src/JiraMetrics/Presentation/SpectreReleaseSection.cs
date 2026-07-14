@@ -10,6 +10,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders release metrics in the console.
+/// </summary>
 internal sealed class SpectreReleaseSection
 {
     public void ShowReleaseReport(

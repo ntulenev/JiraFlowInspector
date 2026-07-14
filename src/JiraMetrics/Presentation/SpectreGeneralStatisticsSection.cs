@@ -9,6 +9,9 @@ using Spectre.Console;
 
 namespace JiraMetrics.Presentation;
 
+/// <summary>
+/// Renders general Jira statistics in the console.
+/// </summary>
 internal sealed class SpectreGeneralStatisticsSection
 {
     public void ShowOpenIssuesByStatusSummary(
