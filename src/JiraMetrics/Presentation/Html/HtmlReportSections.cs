@@ -95,12 +95,6 @@ internal sealed class HtmlGeneralStatisticsSection : IHtmlReportSection
         HtmlContentComposer.BuildGeneralStatisticsSection(reportData);
 }
 
-internal sealed class HtmlUnresolved30DaysTasksSection : IHtmlReportSection
-{
-    public string Compose(JiraReportData reportData) =>
-        HtmlContentComposer.BuildUnresolved30DaysTasksSection(reportData);
-}
-
 internal sealed class HtmlFailuresSection : IHtmlReportSection
 {
     public string Compose(JiraReportData reportData) =>
