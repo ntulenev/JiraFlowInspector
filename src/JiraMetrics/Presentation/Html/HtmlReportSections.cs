@@ -100,9 +100,3 @@ internal sealed class HtmlFailuresSection : IHtmlReportSection
     public string Compose(JiraReportData reportData) =>
         HtmlContentComposer.BuildFailuresTable(reportData);
 }
-
-internal sealed class HtmlRoadmapSection : IHtmlReportSection
-{
-    public string Compose(JiraReportData reportData) =>
-        HtmlContentComposer.BuildRoadmapSection(reportData);
-}
