@@ -72,8 +72,17 @@ public sealed class HtmlContentComposerTests
             .BeLessThan(html.IndexOf("id=\"failures\"", StringComparison.Ordinal));
         html.IndexOf("id=\"failures\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"roadmap\"", StringComparison.Ordinal));
-        var unresolvedSection = html[html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal)..];
+        var unresolvedSectionStart = html.IndexOf(
+            "id=\"unresolved-30-days-tasks\"",
+            StringComparison.Ordinal);
+        var unresolvedSectionEnd = html.IndexOf(
+            "id=\"failures\"",
+            unresolvedSectionStart,
+            StringComparison.Ordinal);
+        var unresolvedSection = html[unresolvedSectionStart..unresolvedSectionEnd];
         unresolvedSection.Should().Contain("data-default-sort-column=\"2\" data-default-sort-direction=\"asc\"");
+        unresolvedSection.Should().Contain("data-multi-select-label>Issue Type</span>");
+        unresolvedSection.Should().Contain("data-multi-select-label>Status</span>");
     }
 
     [Fact(DisplayName = "Compose renders empty-state text when report has no data")]

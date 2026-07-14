@@ -60,9 +60,9 @@ internal sealed class HtmlUnresolved30DaysTasksSection : IHtmlReportSection
                 new TableColumn("#", "number", "#", "narrow"),
                 new TableColumn("Issue", "text", "Issue", "issue-column"),
                 new TableColumn("Created", "number", "Created"),
-                new TableColumn("Issue Type", "text", "Issue Type"),
+                new TableColumn("Issue Type", "text", "Issue Type", FilterKind: "multi-select"),
                 new TableColumn("Assignee", "text", "Assignee"),
-                new TableColumn("Status", "text", "Status"),
+                new TableColumn("Status", "text", "Status", FilterKind: "multi-select"),
                 new TableColumn("Title", "text", "Title", "summary-column")
             ],
             rows,
