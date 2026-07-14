@@ -6,6 +6,9 @@ using JiraMetrics.Models;
 
 namespace JiraMetrics.Presentation.Html;
 
+/// <summary>
+/// Composes the complete HTML report document from embedded templates and report content.
+/// </summary>
 internal static partial class HtmlDocumentComposer
 {
     public static string Compose(JiraReportData reportData, string contentHtml)

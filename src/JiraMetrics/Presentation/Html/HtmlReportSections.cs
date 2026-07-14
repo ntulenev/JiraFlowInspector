@@ -4,14 +4,22 @@ using JiraMetrics.Models;
 
 namespace JiraMetrics.Presentation.Html;
 
+/// <summary>
+/// Renders the global-incidents HTML section.
+/// </summary>
 internal sealed class HtmlGlobalIncidentsSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData) =>
         HtmlContentComposer.BuildGlobalIncidentsTable(reportData);
 }
 
+/// <summary>
+/// Renders issue-ratio and test-coverage HTML sections.
+/// </summary>
 internal sealed class HtmlRatiosSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
         var html = new StringBuilder();
@@ -22,14 +30,22 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
     }
 }
 
+/// <summary>
+/// Renders the QA transition-analysis HTML section.
+/// </summary>
 internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData) =>
         HtmlContentComposer.BuildQaTransitionAnalysisSection(reportData);
 }
 
+/// <summary>
+/// Renders issue timeline and duration-percentile HTML sections.
+/// </summary>
 internal sealed class HtmlIssueTimelineSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
         var html = new StringBuilder();
@@ -61,8 +77,12 @@ internal sealed class HtmlIssueTimelineSection : IHtmlReportSection
     }
 }
 
+/// <summary>
+/// Renders transition path summary and detail HTML sections.
+/// </summary>
 internal sealed class HtmlPathGroupsSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
         var html = new StringBuilder();
@@ -72,8 +92,12 @@ internal sealed class HtmlPathGroupsSection : IHtmlReportSection
     }
 }
 
+/// <summary>
+/// Renders release and component-release HTML sections.
+/// </summary>
 internal sealed class HtmlReleaseSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
         var html = new StringBuilder();
@@ -83,20 +107,32 @@ internal sealed class HtmlReleaseSection : IHtmlReportSection
     }
 }
 
+/// <summary>
+/// Renders the architecture-tasks HTML section.
+/// </summary>
 internal sealed class HtmlArchTasksSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData) =>
         HtmlContentComposer.BuildArchTasksTable(reportData);
 }
 
+/// <summary>
+/// Renders the general-statistics HTML section.
+/// </summary>
 internal sealed class HtmlGeneralStatisticsSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData) =>
         HtmlContentComposer.BuildGeneralStatisticsSection(reportData);
 }
 
+/// <summary>
+/// Renders the issue-loading failures HTML section.
+/// </summary>
 internal sealed class HtmlFailuresSection : IHtmlReportSection
 {
+    /// <inheritdoc />
     public string Compose(JiraReportData reportData) =>
         HtmlContentComposer.BuildFailuresTable(reportData);
 }
