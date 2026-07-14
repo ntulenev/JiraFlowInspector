@@ -2,8 +2,17 @@ using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.API.Mapping;
 
+/// <summary>
+/// Parses Jira interval-field references used by roadmap date settings.
+/// </summary>
 internal static class RoadmapFieldReferenceParser
 {
+    /// <summary>
+    /// Attempts to parse a configured interval-field reference.
+    /// </summary>
+    /// <param name="configuredField">Configured Jira field reference.</param>
+    /// <param name="field">Parsed field reference when successful.</param>
+    /// <returns><see langword="true" /> when the reference uses a supported interval component.</returns>
     public static bool TryParseIntervalField(
         string configuredField,
         out RoadmapDateFieldReference field)
