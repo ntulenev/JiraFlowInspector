@@ -150,33 +150,3 @@ internal static class HtmlTableRenderer
         return html.ToString();
     }
 }
-
-/// <summary>
-/// Describes one interactive HTML report table column.
-/// </summary>
-/// <param name="Header">Displayed column heading.</param>
-/// <param name="SortType">Client-side sort value type.</param>
-/// <param name="FilterPlaceholder">Filter control placeholder.</param>
-/// <param name="CssClass">Optional column CSS class.</param>
-/// <param name="FilterKind">Client-side filter control kind.</param>
-internal sealed record TableColumn(
-    string Header,
-    string SortType,
-    string FilterPlaceholder,
-    string? CssClass = null,
-    string FilterKind = "text");
-
-/// <summary>
-/// Contains rendered HTML and client-side values for one table cell.
-/// </summary>
-/// <param name="Html">Rendered cell content.</param>
-/// <param name="SortValue">Client-side sort value.</param>
-/// <param name="FilterValue">Client-side filter value.</param>
-internal sealed record TableCell(string Html, string SortValue, string FilterValue);
-
-/// <summary>
-/// Contains cells and optional styling for one report table row.
-/// </summary>
-/// <param name="Cells">Ordered row cells.</param>
-/// <param name="CssClass">Optional row CSS class.</param>
-internal sealed record TableRow(IReadOnlyList<TableCell> Cells, string? CssClass = null);
