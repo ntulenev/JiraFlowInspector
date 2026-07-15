@@ -14,20 +14,17 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
         IIssueTimelineMapper issueTimelineMapper,
         IReleaseIssueMapper releaseIssueMapper,
         IGlobalIncidentMapper globalIncidentMapper,
-        IRoadmapItemMapper roadmapItemMapper,
-        JiraSearchIssueMapper searchIssueMapper)
+        IRoadmapItemMapper roadmapItemMapper)
     {
         ArgumentNullException.ThrowIfNull(issueTimelineMapper);
         ArgumentNullException.ThrowIfNull(releaseIssueMapper);
         ArgumentNullException.ThrowIfNull(globalIncidentMapper);
         ArgumentNullException.ThrowIfNull(roadmapItemMapper);
-        ArgumentNullException.ThrowIfNull(searchIssueMapper);
 
         _issueTimelineMapper = issueTimelineMapper;
         _releaseIssueMapper = releaseIssueMapper;
         _globalIncidentMapper = globalIncidentMapper;
         _roadmapItemMapper = roadmapItemMapper;
-        _searchIssueMapper = searchIssueMapper;
     }
 
     public IReadOnlyList<IssueKey> MapIssueKeys(IReadOnlyList<JiraIssueKeyResponse> issues) =>
@@ -36,7 +33,9 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     public IReadOnlyList<IssueListItem> MapIssueListItems(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         IssueListMappingContext? context = null) =>
-        _searchIssueMapper.ToIssueListItems(issues ?? throw new ArgumentNullException(nameof(issues)), context);
+        JiraSearchIssueMapper.ToIssueListItems(
+            issues ?? throw new ArgumentNullException(nameof(issues)),
+            context);
 
     public IReadOnlyList<StatusIssueTypeSummary> MapStatusIssueTypeSummaries(
         IReadOnlyList<JiraIssueKeyResponse> issues) =>
@@ -77,7 +76,6 @@ public sealed class JiraMapperFacade : IJiraMapperFacade
     private readonly IReleaseIssueMapper _releaseIssueMapper;
     private readonly IGlobalIncidentMapper _globalIncidentMapper;
     private readonly IRoadmapItemMapper _roadmapItemMapper;
-    private readonly JiraSearchIssueMapper _searchIssueMapper;
 }
 #pragma warning restore CS1591
 

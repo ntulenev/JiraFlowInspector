@@ -14,15 +14,6 @@ namespace JiraMetrics.API.Mapping;
 /// </summary>
 public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ReleaseIssueMapper"/> class.
-    /// </summary>
-    /// <param name="fieldValueReader">Field value reader.</param>
-    public ReleaseIssueMapper(JiraFieldValueReader fieldValueReader)
-    {
-        _fieldValueReader = fieldValueReader ?? throw new ArgumentNullException(nameof(fieldValueReader));
-    }
-
     public JiraSearchFields BuildRequestedFields(ReleaseIssueMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -181,7 +172,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         return null;
     }
 
-    private IReadOnlyList<string> ResolveComponentNames(
+    private static IReadOnlyList<string> ResolveComponentNames(
         JiraIssueFieldsResponse? fields,
         JiraFieldId? componentsFieldId,
         JiraFieldName? componentsFieldName)
@@ -191,13 +182,13 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
             return [];
         }
 
-        if (_fieldValueReader.TryGetAdditionalFieldValue(
+        if (JiraFieldValueParser.TryGetValue(
             fields.AdditionalFields,
             componentsFieldId?.Value,
             componentsFieldName?.Value,
             out var rawComponents))
         {
-            var resolvedValues = _fieldValueReader.ParseComponentValues(rawComponents);
+            var resolvedValues = ComponentValueReader.Read(rawComponents);
             if (resolvedValues.Count > 0)
             {
                 return resolvedValues;
@@ -206,13 +197,13 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
         if (fields.AdditionalFields.TryGetValue("components", out var standardComponents))
         {
-            return _fieldValueReader.ParseComponentValues(standardComponents);
+            return ComponentValueReader.Read(standardComponents);
         }
 
         return [];
     }
 
-    private IReadOnlyList<string> ResolveEnvironmentNames(
+    private static IReadOnlyList<string> ResolveEnvironmentNames(
         JiraIssueFieldsResponse? fields,
         JiraFieldId? environmentFieldId,
         JiraFieldName? environmentFieldName)
@@ -222,7 +213,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
             return [];
         }
 
-        if (!_fieldValueReader.TryGetAdditionalFieldValue(
+        if (!JiraFieldValueParser.TryGetValue(
             fields.AdditionalFields,
             environmentFieldId?.Value,
             environmentFieldName?.Value,
@@ -231,7 +222,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
             return [];
         }
 
-        return _fieldValueReader.ParseRawFieldValues(rawEnvironments);
+        return JiraFieldValueParser.Parse(rawEnvironments);
     }
 
     private static int CountAllLinkedTasks(JiraIssueFieldsResponse? fields)
@@ -264,7 +255,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         return keys.Count;
     }
 
-    private bool IsHotFixRelease(
+    private static bool IsHotFixRelease(
         JiraIssueFieldsResponse? fields,
         IReadOnlyList<ResolvedHotFixRule> hotFixRules)
     {
@@ -275,7 +266,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
 
         foreach (var hotFixRule in hotFixRules)
         {
-            if (!_fieldValueReader.TryGetAdditionalFieldValue(
+            if (!JiraFieldValueParser.TryGetValue(
                 fields.AdditionalFields,
                 hotFixRule.FieldId?.Value,
                 hotFixRule.FieldName.Value,
@@ -284,7 +275,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
                 continue;
             }
 
-            if (_fieldValueReader.ParseRawFieldValues(rawValue)
+            if (JiraFieldValueParser.Parse(rawValue)
                 .Select(JiraFieldValue.FromNullable)
                 .Where(static value => value is not null)
                 .Select(static value => value!.Value)
@@ -297,7 +288,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         return false;
     }
 
-    private string? ResolveRollbackPayload(
+    private static string? ResolveRollbackPayload(
         JiraIssueFieldsResponse? fields,
         JiraFieldId? rollbackFieldId,
         JiraFieldName rollbackFieldName)
@@ -307,7 +298,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
             return null;
         }
 
-        if (!_fieldValueReader.TryGetAdditionalFieldValue(
+        if (!JiraFieldValueParser.TryGetValue(
             fields.AdditionalFields,
             rollbackFieldId?.Value,
             rollbackFieldName.Value,
@@ -321,7 +312,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
             return null;
         }
 
-        var parsedValues = _fieldValueReader.ParseRawFieldValues(rawRollback);
+        var parsedValues = JiraFieldValueParser.Parse(rawRollback);
         if (parsedValues.Count > 0)
         {
             return string.Join(", ", parsedValues);
@@ -333,7 +324,6 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         return string.IsNullOrWhiteSpace(rawPayload) ? null : rawPayload.Trim();
     }
 
-    private readonly JiraFieldValueReader _fieldValueReader;
 }
 #pragma warning restore CS1591
 

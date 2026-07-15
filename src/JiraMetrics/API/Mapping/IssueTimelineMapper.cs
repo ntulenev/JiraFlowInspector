@@ -18,15 +18,12 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
     /// </summary>
     /// <param name="transitionBuilder">Transition builder.</param>
     /// <param name="settings">Application settings.</param>
-    /// <param name="fieldValueReader">Field value reader.</param>
     public IssueTimelineMapper(
         ITransitionBuilder transitionBuilder,
-        IOptions<AppSettings> settings,
-        JiraFieldValueReader fieldValueReader)
+        IOptions<AppSettings> settings)
     {
         _transitionBuilder = transitionBuilder ?? throw new ArgumentNullException(nameof(transitionBuilder));
         ArgumentNullException.ThrowIfNull(settings);
-        _fieldValueReader = fieldValueReader ?? throw new ArgumentNullException(nameof(fieldValueReader));
         var resolved = settings.Value;
         _pullRequestFieldName = resolved.PullRequestFieldName ?? string.Empty;
     }
@@ -105,14 +102,14 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
 
         if (!string.IsNullOrWhiteSpace(_pullRequestFieldName)
             && fields.AdditionalFields.TryGetValue(_pullRequestFieldName, out var configuredPullRequestField)
-            && _fieldValueReader.HasPullRequestInRawValue(configuredPullRequestField))
+            && PullRequestDetector.HasPullRequest(configuredPullRequestField))
         {
             return true;
         }
 
         foreach (var rawValue in fields.AdditionalFields.Values)
         {
-            if (_fieldValueReader.HasPullRequestInRawValue(rawValue))
+            if (PullRequestDetector.HasPullRequest(rawValue))
             {
                 return true;
             }
@@ -122,7 +119,6 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
     }
 
     private readonly ITransitionBuilder _transitionBuilder;
-    private readonly JiraFieldValueReader _fieldValueReader;
     private readonly string _pullRequestFieldName;
 }
 #pragma warning restore CS1591

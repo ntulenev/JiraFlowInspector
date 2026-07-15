@@ -25,8 +25,6 @@ internal static class ApiServiceCollectionExtensions
             .AddTransient<IArchTasksJqlBuilder, ArchTasksJqlBuilder>()
             .AddTransient<IGlobalIncidentsJqlBuilder, GlobalIncidentsJqlBuilder>()
             .AddTransient<IJiraJqlFacade, JiraJqlFacade>()
-            .AddSingleton<JiraFieldValueReader>()
-            .AddTransient<JiraSearchIssueMapper>()
             .AddTransient<IIssueTimelineMapper, IssueTimelineMapper>()
             .AddTransient<IReleaseIssueMapper, ReleaseIssueMapper>()
             .AddTransient<IGlobalIncidentMapper, GlobalIncidentMapper>()

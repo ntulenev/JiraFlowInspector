@@ -2105,8 +2105,6 @@ public sealed class JiraApiClientTests
     private static JiraApiClient CreateClient(IJiraTransport transport, IOptions<AppSettings>? settings = null)
     {
         var resolvedSettings = settings ?? CreateSettings();
-        var fieldValueReader = new JiraFieldValueReader();
-
         return new JiraApiClient(
             new JiraSearchExecutor(transport),
             new JiraJqlFacade(
@@ -2117,11 +2115,10 @@ public sealed class JiraApiClientTests
             resolvedSettings,
             new JiraFieldResolver(transport),
             new JiraMapperFacade(
-                new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings, fieldValueReader),
-                new ReleaseIssueMapper(fieldValueReader),
-                new GlobalIncidentMapper(fieldValueReader),
-                new RoadmapItemMapper(),
-                new JiraSearchIssueMapper(fieldValueReader)));
+                new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings),
+                new ReleaseIssueMapper(),
+                new GlobalIncidentMapper(),
+                new RoadmapItemMapper()));
     }
 
     private static TransitionBuilder CreateTransitionBuilder(IOptions<AppSettings> settings) => new(settings);

@@ -11,16 +11,6 @@ namespace JiraMetrics.API.Mapping;
 public sealed class JiraSearchIssueMapper
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="JiraSearchIssueMapper"/> class.
-    /// </summary>
-    /// <param name="fieldValueReader">Field value reader.</param>
-    public JiraSearchIssueMapper(JiraFieldValueReader fieldValueReader)
-    {
-        ArgumentNullException.ThrowIfNull(fieldValueReader);
-        _fieldValueReader = fieldValueReader;
-    }
-
-    /// <summary>
     /// Maps search issues into distinct ordered issue keys.
     /// </summary>
     /// <param name="issues">Transport issues.</param>
@@ -38,7 +28,7 @@ public sealed class JiraSearchIssueMapper
     /// <param name="issues">Transport issues.</param>
     /// <param name="context">Optional issue list mapping context.</param>
     /// <returns>Distinct ordered issue list items.</returns>
-    internal IReadOnlyList<IssueListItem> ToIssueListItems(
+    internal static IReadOnlyList<IssueListItem> ToIssueListItems(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         IssueListMappingContext? context) =>
         [.. issues
@@ -134,14 +124,14 @@ public sealed class JiraSearchIssueMapper
             .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase)];
     }
 
-    private bool IsReporducedOnProd(JiraIssueKeyResponse issue, IssueListMappingContext? context)
+    private static bool IsReporducedOnProd(JiraIssueKeyResponse issue, IssueListMappingContext? context)
     {
         if (context?.ReporducedOnProdFieldName is null || issue.Fields?.AdditionalFields is null)
         {
             return false;
         }
 
-        if (!_fieldValueReader.TryGetAdditionalFieldValue(
+        if (!JiraFieldValueParser.TryGetValue(
             issue.Fields.AdditionalFields,
             context.ReporducedOnProdFieldId?.Value,
             context.ReporducedOnProdFieldName.Value.Value,
@@ -162,7 +152,7 @@ public sealed class JiraSearchIssueMapper
             return false;
         }
 
-        var values = _fieldValueReader.ParseRawFieldValues(rawValue);
+        var values = JiraFieldValueParser.Parse(rawValue);
         return values.Any(static value =>
             string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
             || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase)
@@ -196,5 +186,4 @@ public sealed class JiraSearchIssueMapper
             ? null
             : new IssueLinkItem(new IssueKey(key), relationName.Trim());
 
-    private readonly JiraFieldValueReader _fieldValueReader;
 }

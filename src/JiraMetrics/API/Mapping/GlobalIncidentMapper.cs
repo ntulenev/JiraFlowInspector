@@ -14,15 +14,6 @@ namespace JiraMetrics.API.Mapping;
 /// </summary>
 public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GlobalIncidentMapper"/> class.
-    /// </summary>
-    /// <param name="fieldValueReader">Field value reader.</param>
-    public GlobalIncidentMapper(JiraFieldValueReader fieldValueReader)
-    {
-        _fieldValueReader = fieldValueReader ?? throw new ArgumentNullException(nameof(fieldValueReader));
-    }
-
     public JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -113,7 +104,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         }
     }
 
-    private DateTimeOffset? TryParseConfiguredDateTimeField(
+    private static DateTimeOffset? TryParseConfiguredDateTimeField(
         JiraIssueFieldsResponse? fields,
         IReadOnlyList<ResolvedJiraField> fieldCandidates)
     {
@@ -132,7 +123,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         return null;
     }
 
-    private DateTimeOffset? TryParseConfiguredDateTimeField(
+    private static DateTimeOffset? TryParseConfiguredDateTimeField(
         JiraIssueFieldsResponse? fields,
         JiraFieldId? fieldId,
         JiraFieldName? fieldName)
@@ -142,7 +133,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
             return null;
         }
 
-        if (!_fieldValueReader.TryGetAdditionalFieldValue(
+        if (!JiraFieldValueParser.TryGetValue(
             fields.AdditionalFields,
             fieldId?.Value,
             fieldName?.Value,
@@ -151,7 +142,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
             return null;
         }
 
-        var resolvedValues = _fieldValueReader.ParseRawFieldValues(rawDateTime);
+        var resolvedValues = JiraFieldValueParser.Parse(rawDateTime);
         if (resolvedValues.Count == 0 || string.IsNullOrWhiteSpace(resolvedValues[0]))
         {
             return null;
@@ -190,7 +181,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         return null;
     }
 
-    private string? ResolveFieldDisplayValue(
+    private static string? ResolveFieldDisplayValue(
         JiraIssueFieldsResponse? fields,
         JiraFieldId? fieldId,
         JiraFieldName? fieldName)
@@ -200,7 +191,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
             return null;
         }
 
-        if (!_fieldValueReader.TryGetAdditionalFieldValue(
+        if (!JiraFieldValueParser.TryGetValue(
             fields.AdditionalFields,
             fieldId?.Value,
             fieldName?.Value,
@@ -209,7 +200,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
             return null;
         }
 
-        var parsedValues = _fieldValueReader.ParseRawFieldValues(rawValue);
+        var parsedValues = JiraFieldValueParser.Parse(rawValue);
         if (parsedValues.Count > 0)
         {
             return string.Join(", ", parsedValues);
@@ -221,7 +212,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         return string.IsNullOrWhiteSpace(rawPayload) ? null : rawPayload.Trim();
     }
 
-    private Dictionary<string, string?> ResolveAdditionalFieldValues(
+    private static Dictionary<string, string?> ResolveAdditionalFieldValues(
         JiraIssueFieldsResponse? fields,
         IReadOnlyDictionary<JiraFieldName, JiraFieldId?> additionalFieldIds)
     {
@@ -239,7 +230,6 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         return values;
     }
 
-    private readonly JiraFieldValueReader _fieldValueReader;
 }
 #pragma warning restore CS1591
 
