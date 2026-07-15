@@ -1,7 +1,5 @@
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace JiraMetrics.API.Mapping;
 
@@ -12,53 +10,10 @@ namespace JiraMetrics.API.Mapping;
     "Performance",
     "CA1822",
     Justification = "Stateless helper is composed as a service to keep parsing behavior grouped.")]
-public sealed partial class JiraFieldValueReader
+public sealed class JiraFieldValueReader
 {
-    internal bool HasPullRequestInRawValue(JsonElement rawValue)
-    {
-        if (rawValue.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return false;
-        }
-
-        var rawText = rawValue.ValueKind == JsonValueKind.String
-            ? rawValue.GetString()
-            : rawValue.GetRawText();
-        if (string.IsNullOrWhiteSpace(rawText))
-        {
-            return false;
-        }
-
-        if (rawText.IndexOf("pullrequest", StringComparison.OrdinalIgnoreCase) < 0)
-        {
-            return false;
-        }
-
-        var matches = PullRequestCountPattern().Matches(rawText);
-        if (matches.Count == 0)
-        {
-            return true;
-        }
-
-        foreach (Match match in matches)
-        {
-            if (!int.TryParse(
-                match.Groups[1].Value,
-                NumberStyles.Integer,
-                CultureInfo.InvariantCulture,
-                out var count))
-            {
-                continue;
-            }
-
-            if (count > 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    internal bool HasPullRequestInRawValue(JsonElement rawValue) =>
+        PullRequestDetector.HasPullRequest(rawValue);
 
     internal bool TryGetAdditionalFieldValue(
         Dictionary<string, JsonElement> additionalFields,
@@ -259,6 +214,4 @@ public sealed partial class JiraFieldValueReader
         return null;
     }
 
-    [GeneratedRegex(@"(?:stateCount|count)\s*""?\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase)]
-    private static partial Regex PullRequestCountPattern();
 }
