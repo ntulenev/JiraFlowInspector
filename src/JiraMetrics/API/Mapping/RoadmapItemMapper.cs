@@ -72,12 +72,14 @@ public sealed class RoadmapItemMapper : IRoadmapItemMapper
 
         if (value.ValueKind == JsonValueKind.Object)
         {
-            if (value.TryGetProperty("value", out var optionValue))
+            if (value.TryGetProperty("value", out var optionValue)
+                && optionValue.ValueKind == JsonValueKind.String)
             {
                 return Normalize(optionValue.GetString());
             }
 
-            if (value.TryGetProperty("name", out var optionName))
+            if (value.TryGetProperty("name", out var optionName)
+                && optionName.ValueKind == JsonValueKind.String)
             {
                 return Normalize(optionName.GetString());
             }
