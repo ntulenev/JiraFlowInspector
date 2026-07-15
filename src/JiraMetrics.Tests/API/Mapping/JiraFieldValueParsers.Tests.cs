@@ -6,7 +6,7 @@ using JiraMetrics.API.Mapping;
 
 namespace JiraMetrics.Tests.API.Mapping;
 
-public sealed class JiraFieldValueReaderTests
+public sealed class JiraFieldValueParsersTests
 {
     [Theory(DisplayName = "Pull request detector handles Jira development field variants")]
     [Trait("Category", "Unit")]
@@ -23,11 +23,10 @@ public sealed class JiraFieldValueReaderTests
         bool expected)
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
         var value = Parse(json);
 
         // Act
-        var result = reader.HasPullRequestInRawValue(value);
+        var result = PullRequestDetector.HasPullRequest(value);
 
         // Assert
         result.Should().Be(expected);
@@ -38,7 +37,6 @@ public sealed class JiraFieldValueReaderTests
     public void TryGetAdditionalFieldValueWhenIdAndNameExistReturnsIdValue()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
         var fields = new Dictionary<string, JsonElement>
         {
             ["customfield_10001"] = Parse("\"by-id\""),
@@ -46,7 +44,7 @@ public sealed class JiraFieldValueReaderTests
         };
 
         // Act
-        var found = reader.TryGetAdditionalFieldValue(
+        var found = JiraFieldValueParser.TryGetValue(
             fields,
             "customfield_10001",
             "Environment",
@@ -62,14 +60,13 @@ public sealed class JiraFieldValueReaderTests
     public void TryGetAdditionalFieldValueWhenIdIsMissingReturnsNameValue()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
         var fields = new Dictionary<string, JsonElement>
         {
             ["Environment"] = Parse("\"by-name\"")
         };
 
         // Act
-        var found = reader.TryGetAdditionalFieldValue(
+        var found = JiraFieldValueParser.TryGetValue(
             fields,
             "customfield_10001",
             "Environment",
@@ -85,10 +82,8 @@ public sealed class JiraFieldValueReaderTests
     public void TryGetAdditionalFieldValueWhenReferencesAreAbsentReturnsFalse()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
-
         // Act
-        var found = reader.TryGetAdditionalFieldValue([], " ", null, out var value);
+        var found = JiraFieldValueParser.TryGetValue([], " ", null, out var value);
 
         // Assert
         found.Should().BeFalse();
@@ -100,7 +95,6 @@ public sealed class JiraFieldValueReaderTests
     public void ParseRawFieldValuesWhenArrayContainsSupportedShapesReturnsSortedDistinctValues()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
         var value = Parse(
             """
             [
@@ -117,7 +111,7 @@ public sealed class JiraFieldValueReaderTests
             """);
 
         // Act
-        var result = reader.ParseRawFieldValues(value);
+        var result = JiraFieldValueParser.Parse(value);
 
         // Assert
         result.Should().Equal("42", "Alpha", "Beta", "Delta", "Gamma", "true");
@@ -128,7 +122,6 @@ public sealed class JiraFieldValueReaderTests
     public void ParseRawFieldValuesWhenValueIsAtlassianDocumentReturnsCombinedText()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
         var value = Parse(
             """
             {
@@ -149,7 +142,7 @@ public sealed class JiraFieldValueReaderTests
             """);
 
         // Act
-        var result = reader.ParseRawFieldValues(value);
+        var result = JiraFieldValueParser.Parse(value);
 
         // Assert
         result.Should().Equal("First second third");
@@ -166,10 +159,8 @@ public sealed class JiraFieldValueReaderTests
     public void ParseRawFieldValuesWhenValueIsUnsupportedReturnsEmpty(string json)
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
-
         // Act
-        var result = reader.ParseRawFieldValues(Parse(json));
+        var result = JiraFieldValueParser.Parse(Parse(json));
 
         // Assert
         result.Should().BeEmpty();
@@ -180,7 +171,6 @@ public sealed class JiraFieldValueReaderTests
     public void ParseComponentValuesWhenValueIsArrayReturnsSortedDistinctValues()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
         var value = Parse(
             """
             [
@@ -196,7 +186,7 @@ public sealed class JiraFieldValueReaderTests
             """);
 
         // Act
-        var result = reader.ParseComponentValues(value);
+        var result = ComponentValueReader.Read(value);
 
         // Assert
         result.Should().Equal("API", "Legacy", "Platform", "UI");
@@ -207,10 +197,8 @@ public sealed class JiraFieldValueReaderTests
     public void ParseComponentValuesWhenValueIsStringReturnsSortedDistinctValues()
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
-
         // Act
-        var result = reader.ParseComponentValues(Parse("\" UI, API, ui, , Platform \""));
+        var result = ComponentValueReader.Read(Parse("\" UI, API, ui, , Platform \""));
 
         // Assert
         result.Should().Equal("API", "Platform", "UI");
@@ -226,10 +214,8 @@ public sealed class JiraFieldValueReaderTests
         string expected)
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
-
         // Act
-        var result = reader.ParseComponentValues(Parse(json));
+        var result = ComponentValueReader.Read(Parse(json));
 
         // Assert
         result.Should().Equal(expected);
@@ -245,10 +231,8 @@ public sealed class JiraFieldValueReaderTests
     public void ParseComponentValuesWhenValueIsUnsupportedReturnsEmpty(string json)
     {
         // Arrange
-        var reader = new JiraFieldValueReader();
-
         // Act
-        var result = reader.ParseComponentValues(Parse(json));
+        var result = ComponentValueReader.Read(Parse(json));
 
         // Assert
         result.Should().BeEmpty();
