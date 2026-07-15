@@ -244,7 +244,7 @@ public sealed partial class JiraFieldValueReader
                 }
             }
 
-            var adfText = TryExtractAtlassianDocumentText(value);
+            var adfText = AtlassianDocumentTextReader.Read(value);
             if (!string.IsNullOrWhiteSpace(adfText))
             {
                 return adfText;
@@ -257,64 +257,6 @@ public sealed partial class JiraFieldValueReader
         }
 
         return null;
-    }
-
-    private static string? TryExtractAtlassianDocumentText(JsonElement value)
-    {
-        if (value.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        if (!value.TryGetProperty("type", out var typeElement)
-            || typeElement.ValueKind != JsonValueKind.String
-            || !string.Equals(typeElement.GetString(), "doc", StringComparison.OrdinalIgnoreCase)
-            || !value.TryGetProperty("content", out var contentElement)
-            || contentElement.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
-
-        var fragments = new List<string>();
-        AppendAtlassianDocumentText(contentElement, fragments);
-        var text = string.Join(
-            " ",
-            fragments.Where(static fragment => !string.IsNullOrWhiteSpace(fragment))).Trim();
-        return string.IsNullOrWhiteSpace(text) ? null : text;
-    }
-
-    private static void AppendAtlassianDocumentText(JsonElement value, List<string> fragments)
-    {
-        if (value.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var item in value.EnumerateArray())
-            {
-                AppendAtlassianDocumentText(item, fragments);
-            }
-
-            return;
-        }
-
-        if (value.ValueKind != JsonValueKind.Object)
-        {
-            return;
-        }
-
-        if (value.TryGetProperty("text", out var textElement)
-            && textElement.ValueKind == JsonValueKind.String)
-        {
-            var text = textElement.GetString();
-            if (!string.IsNullOrWhiteSpace(text))
-            {
-                fragments.Add(text.Trim());
-            }
-        }
-
-        if (value.TryGetProperty("content", out var contentElement)
-            && contentElement.ValueKind == JsonValueKind.Array)
-        {
-            AppendAtlassianDocumentText(contentElement, fragments);
-        }
     }
 
     [GeneratedRegex(@"(?:stateCount|count)\s*""?\s*[:=]\s*(\d+)", RegexOptions.IgnoreCase)]
