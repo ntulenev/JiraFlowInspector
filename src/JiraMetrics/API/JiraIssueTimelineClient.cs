@@ -139,20 +139,37 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
 
     private async Task<JiraFieldId?> ResolvePullRequestFieldIdAsync(CancellationToken cancellationToken)
     {
-        if (_pullRequestFieldIdResolved)
+        Task<JiraFieldId?> resolutionTask;
+        lock (_pullRequestFieldResolutionSync)
         {
-            return _pullRequestFieldId;
+            resolutionTask = _pullRequestFieldResolutionTask
+                ??= ResolvePullRequestFieldIdCoreAsync(cancellationToken);
         }
 
-        _pullRequestFieldIdResolved = true;
-        _pullRequestFieldId = IsCustomFieldId(_pullRequestFieldName)
-            ? new JiraFieldId(_pullRequestFieldName!)
-            : await _fieldResolver.TryResolveFieldIdAsync(
-                JiraFieldName.FromNullable(_pullRequestFieldName),
-                cancellationToken)
-                .ConfigureAwait(false);
-        return _pullRequestFieldId;
+        try
+        {
+            return await resolutionTask.ConfigureAwait(false);
+        }
+        catch
+        {
+            lock (_pullRequestFieldResolutionSync)
+            {
+                if (ReferenceEquals(_pullRequestFieldResolutionTask, resolutionTask))
+                {
+                    _pullRequestFieldResolutionTask = null;
+                }
+            }
+
+            throw;
+        }
     }
+
+    private Task<JiraFieldId?> ResolvePullRequestFieldIdCoreAsync(CancellationToken cancellationToken) =>
+        IsCustomFieldId(_pullRequestFieldName)
+            ? Task.FromResult<JiraFieldId?>(new JiraFieldId(_pullRequestFieldName!))
+            : _fieldResolver.TryResolveFieldIdAsync(
+                JiraFieldName.FromNullable(_pullRequestFieldName),
+                cancellationToken);
 
     private static bool IsCustomFieldId(string? fieldName) =>
         !string.IsNullOrWhiteSpace(fieldName)
@@ -204,8 +221,8 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
     private readonly string? _pullRequestFieldName;
     private readonly IJiraFieldResolver _fieldResolver;
     private readonly IJiraMapperFacade _mapperFacade;
-    private JiraFieldId? _pullRequestFieldId;
-    private bool _pullRequestFieldIdResolved;
+    private readonly Lock _pullRequestFieldResolutionSync = new();
+    private Task<JiraFieldId?>? _pullRequestFieldResolutionTask;
 
     private const int ISSUE_TIMELINE_BULK_FETCH_BATCH_SIZE = 100;
 

@@ -132,6 +132,105 @@ public sealed class JiraIssueTimelineClientTests
             Times.Once);
     }
 
+    [Fact(DisplayName = "Concurrent timeline loads share pull request field resolution")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenCalledConcurrentlySharesPullRequestFieldResolution()
+    {
+        // Arrange
+        var firstKey = new IssueKey("FLOW-31");
+        var secondKey = new IssueKey("FLOW-32");
+        var firstResponse = new JiraIssueResponse { Key = firstKey.Value };
+        var secondResponse = new JiraIssueResponse { Key = secondKey.Value };
+        var firstTimeline = CreateTimeline(firstKey);
+        var secondTimeline = CreateTimeline(secondKey);
+        var resolutionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var resolvedField = new TaskCompletionSource<JiraFieldId?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var fieldResolver = new Mock<IJiraFieldResolver>(MockBehavior.Strict);
+        fieldResolver.Setup(r => r.TryResolveFieldIdAsync(
+                new JiraFieldName("Development"),
+                CancellationToken.None))
+            .Callback(() => resolutionStarted.SetResult())
+            .Returns(resolvedField.Task);
+
+        var searchExecutor = new Mock<IJiraSearchExecutor>(MockBehavior.Strict);
+        searchExecutor.Setup(e => e.GetIssueWithChangelogAsync(
+                firstKey,
+                It.Is<JiraSearchFields>(fields => fields.Contains("customfield_10800")),
+                CancellationToken.None))
+            .ReturnsAsync(firstResponse);
+        searchExecutor.Setup(e => e.GetIssueWithChangelogAsync(
+                secondKey,
+                It.Is<JiraSearchFields>(fields => fields.Contains("customfield_10800")),
+                CancellationToken.None))
+            .ReturnsAsync(secondResponse);
+
+        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
+        mapper.Setup(m => m.MapIssueTimeline(firstResponse, firstKey)).Returns(firstTimeline);
+        mapper.Setup(m => m.MapIssueTimeline(secondResponse, secondKey)).Returns(secondTimeline);
+
+        var client = CreateClient(
+            searchExecutor.Object,
+            fieldResolver.Object,
+            mapper.Object,
+            "Development");
+
+        // Act
+        var firstLoad = client.GetIssueTimelineAsync(firstKey, CancellationToken.None);
+        await resolutionStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var secondLoad = client.GetIssueTimelineAsync(secondKey, CancellationToken.None);
+        resolvedField.SetResult(new JiraFieldId("customfield_10800"));
+        var results = await Task.WhenAll(firstLoad, secondLoad);
+
+        // Assert
+        results.Should().Equal(firstTimeline, secondTimeline);
+        fieldResolver.Verify(
+            r => r.TryResolveFieldIdAsync(new JiraFieldName("Development"), CancellationToken.None),
+            Times.Once);
+    }
+
+    [Fact(DisplayName = "Timeline client retries pull request field resolution after failure")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelineAsyncWhenFieldResolutionFailsRetriesNextCall()
+    {
+        // Arrange
+        var issueKey = new IssueKey("FLOW-33");
+        var response = new JiraIssueResponse { Key = issueKey.Value };
+        var expected = CreateTimeline(issueKey);
+        var fieldResolver = new Mock<IJiraFieldResolver>(MockBehavior.Strict);
+        fieldResolver.SetupSequence(r => r.TryResolveFieldIdAsync(
+                new JiraFieldName("Development"),
+                CancellationToken.None))
+            .ThrowsAsync(new InvalidOperationException("Field metadata unavailable."))
+            .ReturnsAsync(new JiraFieldId("customfield_10800"));
+
+        var searchExecutor = new Mock<IJiraSearchExecutor>(MockBehavior.Strict);
+        searchExecutor.Setup(e => e.GetIssueWithChangelogAsync(
+                issueKey,
+                It.Is<JiraSearchFields>(fields => fields.Contains("customfield_10800")),
+                CancellationToken.None))
+            .ReturnsAsync(response);
+        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
+        mapper.Setup(m => m.MapIssueTimeline(response, issueKey)).Returns(expected);
+        var client = CreateClient(
+            searchExecutor.Object,
+            fieldResolver.Object,
+            mapper.Object,
+            "Development");
+
+        // Act
+        Func<Task> firstLoad = () => client.GetIssueTimelineAsync(issueKey, CancellationToken.None);
+        await firstLoad.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Field metadata unavailable.");
+        var result = await client.GetIssueTimelineAsync(issueKey, CancellationToken.None);
+
+        // Assert
+        result.Should().BeSameAs(expected);
+        fieldResolver.Verify(
+            r => r.TryResolveFieldIdAsync(new JiraFieldName("Development"), CancellationToken.None),
+            Times.Exactly(2));
+    }
+
     [Theory(DisplayName = "Batch timeline load converts supported batch exceptions to per-key failures")]
     [Trait("Category", "Unit")]
     [InlineData("http")]
