@@ -36,52 +36,86 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         ShowOptionalReportLoadingStarted();
         _reportingFacade.ShowAllTasksRatioLoadingStarted();
 
+        using var pendingLoadsCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var pendingLoadsToken = pendingLoadsCancellation.Token;
+
         var reportContextTask = TryLoadSearchDataAsync(
-            () => _dataFacade.LoadReportContextAsync(_settings, cancellationToken));
+            () => _dataFacade.LoadReportContextAsync(_settings, pendingLoadsToken));
         var allTasksRatioTask = TryLoadSearchDataAsync(
-            () => _dataFacade.LoadIssueRatioAsync(_settings, [], cancellationToken));
-        var bugRatioTask = StartBugRatioLoading(cancellationToken);
-        var internalIncidentsTask = StartInternalIncidentsLoading(cancellationToken);
-        var testCoverageTask = StartTestCoverageLoading(cancellationToken);
+            () => _dataFacade.LoadIssueRatioAsync(_settings, [], pendingLoadsToken));
+        var bugRatioTask = StartBugRatioLoading(pendingLoadsToken);
+        var internalIncidentsTask = StartInternalIncidentsLoading(pendingLoadsToken);
+        var testCoverageTask = StartTestCoverageLoading(pendingLoadsToken);
 
-        var reportContext = await reportContextTask.ConfigureAwait(false);
-        if (reportContext is null)
+        var pendingLoads = new List<Task>
         {
-            return null;
-        }
+            reportContextTask,
+            allTasksRatioTask
+        };
+        AddPendingLoad(pendingLoads, bugRatioTask);
+        AddPendingLoad(pendingLoads, internalIncidentsTask);
+        AddPendingLoad(pendingLoads, testCoverageTask);
 
-        ShowOptionalReports(reportContext);
-
-        var allTasksRatio = await LoadAndShowAllTasksRatioAsync(allTasksRatioTask).ConfigureAwait(false);
-        if (allTasksRatio is null)
+        try
         {
-            return null;
-        }
+            var reportContext = await reportContextTask.ConfigureAwait(false);
+            if (reportContext is null)
+            {
+                return null;
+            }
 
-        var bugRatio = await LoadAndShowBugRatioAsync(bugRatioTask).ConfigureAwait(false);
-        if (bugRatioTask is not null && bugRatio is null)
+            ShowOptionalReports(reportContext);
+
+            var allTasksRatio = await LoadAndShowAllTasksRatioAsync(allTasksRatioTask).ConfigureAwait(false);
+            if (allTasksRatio is null)
+            {
+                return null;
+            }
+
+            var bugRatio = await LoadAndShowBugRatioAsync(bugRatioTask).ConfigureAwait(false);
+            if (bugRatioTask is not null && bugRatio is null)
+            {
+                return null;
+            }
+
+            var internalIncidents = await LoadInternalIncidentsAsync(internalIncidentsTask).ConfigureAwait(false);
+            if (internalIncidentsTask is not null && internalIncidents is null)
+            {
+                return null;
+            }
+
+            var testCoverage = await LoadAndShowTestCoverageAsync(testCoverageTask).ConfigureAwait(false);
+            if (testCoverageTask is not null && testCoverage is null)
+            {
+                return null;
+            }
+
+            return new JiraApplicationReportData(
+                reportContext,
+                allTasksRatio,
+                bugRatio,
+                internalIncidents,
+                testCoverage ?? TestCoverageSnapshot.Empty);
+        }
+        finally
         {
-            return null;
+            await pendingLoadsCancellation.CancelAsync().ConfigureAwait(false);
+            try
+            {
+                await Task.WhenAll(pendingLoads).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+            }
         }
+    }
 
-        var internalIncidents = await LoadInternalIncidentsAsync(internalIncidentsTask).ConfigureAwait(false);
-        if (internalIncidentsTask is not null && internalIncidents is null)
+    private static void AddPendingLoad(List<Task> pendingLoads, Task? pendingLoad)
+    {
+        if (pendingLoad is not null)
         {
-            return null;
+            pendingLoads.Add(pendingLoad);
         }
-
-        var testCoverage = await LoadAndShowTestCoverageAsync(testCoverageTask).ConfigureAwait(false);
-        if (testCoverageTask is not null && testCoverage is null)
-        {
-            return null;
-        }
-
-        return new JiraApplicationReportData(
-            reportContext,
-            allTasksRatio,
-            bugRatio,
-            internalIncidents,
-            testCoverage ?? TestCoverageSnapshot.Empty);
     }
 
     private void ShowOptionalReportLoadingStarted()

@@ -28,12 +28,14 @@ public sealed class JiraApplicationBranchesTests
 
         dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
             .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cts.Token))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ThrowsAsync(new HttpRequestException("Network failure."));
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(issueTypes => issueTypes.Count == 0),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateRatioSnapshot());
         telemetryCollector.Setup(collector => collector.GetSummary())
             .Returns(new JiraRequestTelemetrySummary(0, 0, 0, TimeSpan.Zero, []));
@@ -74,12 +76,14 @@ public sealed class JiraApplicationBranchesTests
 
         dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
             .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cts.Token))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateReportContext());
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(issueTypes => issueTypes.Count == 0),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ThrowsAsync(new InvalidOperationException("Ratio data is unavailable."));
         telemetryCollector.Setup(collector => collector.GetSummary())
             .Returns(new JiraRequestTelemetrySummary(0, 0, 0, TimeSpan.Zero, []));
@@ -119,17 +123,19 @@ public sealed class JiraApplicationBranchesTests
 
         dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
             .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cts.Token))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateReportContext());
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(issueTypes => issueTypes.Count == 0),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateRatioSnapshot());
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(issueTypes => issueTypes.Count == 1 && issueTypes[0].Value == "Bug"),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ThrowsAsync(new JsonException("Bug ratio payload is invalid."));
         telemetryCollector.Setup(collector => collector.GetSummary())
             .Returns(new JiraRequestTelemetrySummary(0, 0, 0, TimeSpan.Zero, []));
@@ -170,12 +176,14 @@ public sealed class JiraApplicationBranchesTests
 
         dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
             .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cts.Token))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(reportContext);
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.IsAny<IReadOnlyList<IssueTypeName>>(),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateRatioSnapshot());
         dataFacade.Setup(facade => facade.LoadIssueTimelinesAsync(
                 reportContext.IssueKeys,
@@ -237,12 +245,14 @@ public sealed class JiraApplicationBranchesTests
 
         dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
             .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cts.Token))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(reportContext);
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.IsAny<IReadOnlyList<IssueTypeName>>(),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateRatioSnapshot());
         dataFacade.Setup(facade => facade.LoadIssueTimelinesAsync(
                 reportContext.IssueKeys,
@@ -294,12 +304,14 @@ public sealed class JiraApplicationBranchesTests
 
         dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
             .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cts.Token))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(reportContext);
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.IsAny<IReadOnlyList<IssueTypeName>>(),
-                cts.Token))
+                It.Is<CancellationToken>(token => token.CanBeCanceled)))
             .ReturnsAsync(CreateRatioSnapshot());
         dataFacade.Setup(facade => facade.LoadIssueTimelinesAsync(
                 reportContext.IssueKeys,

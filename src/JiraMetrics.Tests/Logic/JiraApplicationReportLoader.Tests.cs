@@ -24,18 +24,18 @@ public sealed class JiraApplicationReportLoaderTests
         var internalIncidents = CreateRatioSnapshot(2);
         var testCoverage = new TestCoverageSnapshot([], []);
         using var cts = new CancellationTokenSource();
-        var dataFacade = CreateDataFacade(settings, allTasksRatio, cts.Token);
+        var dataFacade = CreateDataFacade(settings, allTasksRatio);
         var reportingFacade = CreateReportingFacade();
 
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 1 && types[0].Value == "Incident"),
-                cts.Token))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(internalIncidents);
         dataFacade.Setup(facade => facade.LoadTestCoverageAsync(
                 settings,
                 coverageSettings,
-                cts.Token))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(testCoverage);
 
         var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
@@ -57,13 +57,13 @@ public sealed class JiraApplicationReportLoaderTests
         // Arrange
         var settings = CreateSettings(null, [new IssueTypeName("Incident")]);
         using var cts = new CancellationTokenSource();
-        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3), cts.Token);
+        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
         var reportingFacade = CreateReportingFacade();
 
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 1),
-                cts.Token))
+                It.IsAny<CancellationToken>()))
             .ThrowsAsync(new JsonException("Invalid incident response."));
 
         var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
@@ -87,13 +87,13 @@ public sealed class JiraApplicationReportLoaderTests
         var coverageSettings = new TestCoverageSettings();
         var settings = CreateSettings(coverageSettings, null);
         using var cts = new CancellationTokenSource();
-        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3), cts.Token);
+        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
         var reportingFacade = CreateReportingFacade();
 
         dataFacade.Setup(facade => facade.LoadTestCoverageAsync(
                 settings,
                 coverageSettings,
-                cts.Token))
+                It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Coverage service unavailable."));
 
         var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
@@ -119,7 +119,7 @@ public sealed class JiraApplicationReportLoaderTests
         // Arrange
         var settings = CreateSettings(new TestCoverageSettings(enabled: false), null);
         using var cts = new CancellationTokenSource();
-        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3), cts.Token);
+        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
         var reportingFacade = CreateReportingFacade();
         var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
 
@@ -133,22 +133,83 @@ public sealed class JiraApplicationReportLoaderTests
             facade => facade.LoadTestCoverageAsync(
                 It.IsAny<AppSettings>(),
                 It.IsAny<TestCoverageSettings>(),
-                cts.Token),
+                It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact(DisplayName = "TryLoadAsync cancels and awaits pending loads after an early failure")]
+    [Trait("Category", "Unit")]
+    public async Task TryLoadAsyncWhenReportContextFailsCancelsAndAwaitsPendingLoads()
+    {
+        // Arrange
+        var settings = CreateSettings(null, null);
+        using var cts = new CancellationTokenSource();
+        var pendingLoadStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var allowCleanup = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var dataFacade = new Mock<IJiraApplicationDataFacade>(MockBehavior.Strict);
+        var reportingFacade = CreateReportingFacade();
+
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new JsonException("Invalid report context."));
+        dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
+                settings,
+                It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .Returns(async (AppSettings _, IReadOnlyList<IssueTypeName> _, CancellationToken token) =>
+            {
+                pendingLoadStarted.SetResult();
+                try
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, token);
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    cancellationObserved.SetResult();
+                    await allowCleanup.Task;
+                }
+
+                return CreateRatioSnapshot(3);
+            });
+
+        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
+
+        // Act
+        var loadTask = sut.TryLoadAsync(cts.Token);
+        await pendingLoadStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var firstCompletedTask = await Task.WhenAny(
+            cancellationObserved.Task,
+            loadTask).WaitAsync(TimeSpan.FromSeconds(5));
+        var cancellationWasObservedBeforeReturn = firstCompletedTask == cancellationObserved.Task;
+        var loaderAwaitedPendingCleanup = !loadTask.IsCompleted;
+
+        if (!cancellationWasObservedBeforeReturn)
+        {
+            await cts.CancelAsync();
+        }
+
+        allowCleanup.SetResult();
+        var result = await loadTask;
+
+        // Assert
+        result.Should().BeNull();
+        cancellationWasObservedBeforeReturn.Should().BeTrue();
+        loaderAwaitedPendingCleanup.Should().BeTrue();
     }
 
     private static Mock<IJiraApplicationDataFacade> CreateDataFacade(
         AppSettings settings,
-        IssueRatioSnapshot allTasksRatio,
-        CancellationToken cancellationToken)
+        IssueRatioSnapshot allTasksRatio)
     {
         var dataFacade = new Mock<IJiraApplicationDataFacade>(MockBehavior.Strict);
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, cancellationToken))
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(settings, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new JiraReportContext([], [], [], [], [], [], [], []));
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 0),
-                cancellationToken))
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(allTasksRatio);
         return dataFacade;
     }
