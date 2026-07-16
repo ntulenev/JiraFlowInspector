@@ -107,7 +107,7 @@ public sealed class JiraTransport : IJiraTransport
                     inner: null,
                     response.StatusCode);
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException ex) when (ex.StatusCode is null)
             {
                 stopwatch.Stop();
                 _telemetryCollector.Record(
@@ -117,11 +117,7 @@ public sealed class JiraTransport : IJiraTransport
                     responseBytes: 0,
                     isRetry: attempt > 0);
 
-                if (_retryPolicy.TryGetDelay(
-                    attempt + 1,
-                    ex.StatusCode,
-                    ex.StatusCode is null ? ex : null,
-                    out var delay))
+                if (_retryPolicy.TryGetDelay(attempt + 1, null, ex, out var delay))
                 {
                     attempt++;
                     await Task.Delay(delay, cancellationToken).ConfigureAwait(false);

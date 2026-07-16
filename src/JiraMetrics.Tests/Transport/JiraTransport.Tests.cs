@@ -327,11 +327,12 @@ public sealed class JiraTransportTests
             .ReturnsAsync(response);
 
         using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var telemetryCollector = new JiraRequestTelemetryCollector();
         var transport = new JiraTransport(
             http,
             new JiraRetryPolicy(Options.Create(CreateOptions())),
             new SimpleJsonSerializer(),
-            new JiraRequestTelemetryCollector());
+            telemetryCollector);
 
         // Act
         Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
@@ -340,7 +341,10 @@ public sealed class JiraTransportTests
         await act.Should()
             .ThrowAsync<HttpRequestException>();
 
+        var summary = telemetryCollector.GetSummary();
         sendCalls.Should().Be(1);
+        summary.RequestCount.Should().Be(1);
+        summary.ResponseBytes.Should().Be(Encoding.UTF8.GetByteCount(body));
     }
 
     [Fact(DisplayName = "GetAsync does not retry non-transient HTTP responses")]
