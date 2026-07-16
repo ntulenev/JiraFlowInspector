@@ -343,6 +343,50 @@ public sealed class JiraTransportTests
         sendCalls.Should().Be(1);
     }
 
+    [Fact(DisplayName = "GetAsync does not retry non-transient HTTP responses")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncWhenResponseIsNonTransientDoesNotRetry()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var sendCalls = 0;
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/myself");
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get && req.RequestUri == requestUrl),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback(() => sendCalls++)
+            .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                ReasonPhrase = "Bad Request",
+                Content = new StringContent("error body", Encoding.UTF8, "text/plain")
+            });
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 2))),
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
+
+        // Act
+        Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(
+            new Uri("rest/api/3/myself", UriKind.Relative),
+            cts.Token);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<HttpRequestException>();
+        exception.Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        sendCalls.Should().Be(1);
+    }
+
     [Fact(DisplayName = "GetAsync retries transient failures and succeeds")]
     [Trait("Category", "Unit")]
     public async Task GetAsyncWhenTransientFailureRetriesAndSucceeds()

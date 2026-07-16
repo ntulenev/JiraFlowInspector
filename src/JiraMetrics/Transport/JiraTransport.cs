@@ -103,7 +103,9 @@ public sealed class JiraTransport : IJiraTransport
                 }
 
                 throw new HttpRequestException(
-                    $"Jira API error {(int)response.StatusCode} {response.ReasonPhrase}. Url={url}. Body={body}");
+                    $"Jira API error {(int)response.StatusCode} {response.ReasonPhrase}. Url={url}. Body={body}",
+                    inner: null,
+                    response.StatusCode);
             }
             catch (HttpRequestException ex)
             {
@@ -115,7 +117,11 @@ public sealed class JiraTransport : IJiraTransport
                     responseBytes: 0,
                     isRetry: attempt > 0);
 
-                if (_retryPolicy.TryGetDelay(attempt + 1, null, ex, out var delay))
+                if (_retryPolicy.TryGetDelay(
+                    attempt + 1,
+                    ex.StatusCode,
+                    ex.StatusCode is null ? ex : null,
+                    out var delay))
                 {
                     attempt++;
                     await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
