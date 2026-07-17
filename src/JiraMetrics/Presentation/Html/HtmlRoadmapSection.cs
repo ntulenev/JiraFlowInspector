@@ -31,7 +31,7 @@ internal sealed class HtmlRoadmapSection : IHtmlReportSection
             HtmlPresentationHelpers.Encode(generatedAt),
             ". It is not built from historical data and does not represent a historical period slice.",
             "</div></section>");
-        var rows = reportData.RoadmapItems
+        var rows = reportData.Source.RoadmapItems
             .OrderBy(static item => item.StartDate)
             .ThenBy(static item => item.EndDate)
             .ThenBy(static item => item.Key.Value, StringComparer.OrdinalIgnoreCase)

@@ -95,7 +95,7 @@ public sealed class HtmlContentComposerTests
         var reportData = new JiraReportData
         {
             Settings = settings,
-            SearchIssueCount = new ItemCount(0),
+            Source = new JiraReportSourceData(),
             PathSummary = new PathGroupsSummary(
                 new ItemCount(0),
                 new ItemCount(0),
@@ -135,55 +135,65 @@ public sealed class HtmlContentComposerTests
         return new JiraReportData
         {
             Settings = settings,
-            SearchIssueCount = new ItemCount(1),
-            ReleaseIssues =
-            [
-                new ReleaseIssueItem(
-                    new IssueKey("RLS-1"),
-                    new IssueSummary("Release title"),
-                    new DateOnly(2026, 2, 10),
-                    tasks: 3,
-                    components: 1,
-                    componentNames: ["Trading"],
-                    environmentNames: ["P005"])
-            ],
-            ArchTasks =
-            [
-                new ArchTaskItem(
-                    new IssueKey("AAA-7"),
-                    new IssueSummary("Architecture review"),
-                    new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero))
-            ],
-            Unresolved30DaysTasks =
-            [
-                new IssueListItem(
-                    new IssueKey("AAA-30"),
-                    new IssueSummary("Long-running task"),
-                    new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero),
-                    issueType: "Story",
-                    assignee: "Ada Lovelace",
-                    status: "In Progress")
-            ],
-            RoadmapItems =
-            [
-                new RoadmapItem(
-                    new IssueKey("PLAN-1"),
-                    new IssueSummary("Platform Growth"),
-                    "In Progress",
-                    "Committed",
-                    new DateOnly(2026, 2, 1),
-                    new DateOnly(2026, 4, 30))
-            ],
-            GlobalIncidents =
-            [
-                new GlobalIncidentItem(
-                    new IssueKey("INC-1"),
-                    new IssueSummary("ADF disabled"),
-                    new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
-                    new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero),
-                    impact: "High",
-                    urgency: "Major")
-            ],
+            Source = new JiraReportSourceData
+            {
+                SearchIssueCount = new ItemCount(1),
+                ReleaseIssues =
+                [
+                    new ReleaseIssueItem(
+                        new IssueKey("RLS-1"),
+                        new IssueSummary("Release title"),
+                        new DateOnly(2026, 2, 10),
+                        tasks: 3,
+                        components: 1,
+                        componentNames: ["Trading"],
+                        environmentNames: ["P005"])
+                ],
+                ArchTasks =
+                [
+                    new ArchTaskItem(
+                        new IssueKey("AAA-7"),
+                        new IssueSummary("Architecture review"),
+                        new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero))
+                ],
+                Unresolved30DaysTasks =
+                [
+                    new IssueListItem(
+                        new IssueKey("AAA-30"),
+                        new IssueSummary("Long-running task"),
+                        new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero),
+                        issueType: "Story",
+                        assignee: "Ada Lovelace",
+                        status: "In Progress")
+                ],
+                RoadmapItems =
+                [
+                    new RoadmapItem(
+                        new IssueKey("PLAN-1"),
+                        new IssueSummary("Platform Growth"),
+                        "In Progress",
+                        "Committed",
+                        new DateOnly(2026, 2, 1),
+                        new DateOnly(2026, 4, 30))
+                ],
+                GlobalIncidents =
+                [
+                    new GlobalIncidentItem(
+                        new IssueKey("INC-1"),
+                        new IssueSummary("ADF disabled"),
+                        new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
+                        new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero),
+                        impact: "High",
+                        urgency: "Major")
+                ],
+                OpenIssuesByStatus =
+                [
+                    new StatusIssueTypeSummary(
+                        new StatusName("In Progress"),
+                        new ItemCount(1),
+                        [new IssueTypeCountSummary(new IssueTypeName("Task"), new ItemCount(1))])
+                ]
+            },
             AllTasksCreatedThisMonth = new ItemCount(4),
             AllTasksOpenThisMonth = new ItemCount(1),
             AllTasksMovedToDoneThisMonth = new ItemCount(2),
@@ -253,13 +263,6 @@ public sealed class HtmlContentComposerTests
                 ],
                 TimeSpan.FromHours(3),
                 [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))]),
-            OpenIssuesByStatus =
-            [
-                new StatusIssueTypeSummary(
-                    new StatusName("In Progress"),
-                    new ItemCount(1),
-                    [new IssueTypeCountSummary(new IssueTypeName("Task"), new ItemCount(1))])
-            ],
             PathSummary = new PathGroupsSummary(
                 new ItemCount(1),
                 new ItemCount(1),

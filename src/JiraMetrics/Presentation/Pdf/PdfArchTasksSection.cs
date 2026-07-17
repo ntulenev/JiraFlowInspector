@@ -24,10 +24,10 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
         _ = column.Item().Text("Architecture tasks report").Bold().FontSize(12);
         _ = column.Item().Text($"JQL: {archTasksReport.Jql}").FontColor(Colors.Grey.Darken1);
 
-        var resolvedCount = reportData.ArchTasks.Count(static task => task.IsResolved);
-        var openCount = reportData.ArchTasks.Count - resolvedCount;
+        var resolvedCount = reportData.Source.ArchTasks.Count(static task => task.IsResolved);
+        var openCount = reportData.Source.ArchTasks.Count - resolvedCount;
 
-        if (reportData.ArchTasks.Count == 0)
+        if (reportData.Source.ArchTasks.Count == 0)
         {
             _ = column.Item().Text("No architecture tasks found for configured query.").FontColor(Colors.Grey.Darken1);
             _ = column.Item().Text("Total tasks: 0    Resolved: 0    Open: 0").FontColor(Colors.Grey.Darken1);
@@ -57,9 +57,9 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Title");
             });
 
-            for (var i = 0; i < reportData.ArchTasks.Count; i++)
+            for (var i = 0; i < reportData.Source.ArchTasks.Count; i++)
             {
-                var task = reportData.ArchTasks[i];
+                var task = reportData.Source.ArchTasks[i];
                 var issueUrl = PdfPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, task.Key);
 
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
@@ -91,7 +91,7 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
 
         _ = column
             .Item()
-            .Text($"Total tasks: {reportData.ArchTasks.Count}    Resolved: {resolvedCount}    Open: {openCount}")
+            .Text($"Total tasks: {reportData.Source.ArchTasks.Count}    Resolved: {resolvedCount}    Open: {openCount}")
             .FontColor(Colors.Grey.Darken1);
     }
 }

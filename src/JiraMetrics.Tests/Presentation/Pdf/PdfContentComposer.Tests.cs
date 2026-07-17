@@ -123,49 +123,62 @@ public sealed class PdfContentComposerTests
         return new JiraReportData
         {
             Settings = settings,
-            SearchIssueCount = new ItemCount(1),
-            ReleaseIssues =
-            [
-                new ReleaseIssueItem(
-                    new IssueKey("RLS-1"),
-                    new IssueSummary("Release title"),
-                    new DateOnly(2026, 2, 10),
-                    tasks: 3,
-                    components: 2,
-                    environmentNames: ["P005", "S005"])
-            ],
-            ArchTasks =
-            [
-                new ArchTaskItem(
-                    new IssueKey("AAA-7"),
-                    new IssueSummary("Architecture review"),
-                    new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero),
-                    new DateTimeOffset(2026, 2, 5, 12, 0, 0, TimeSpan.Zero))
-            ],
-            Unresolved30DaysTasks =
-            [
-                new IssueListItem(
-                    new IssueKey("AAA-30"),
-                    new IssueSummary("Long-running story"),
-                    new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero),
-                    issueType: "Story",
-                    assignee: "Ada Lovelace",
-                    status: "In Progress")
-            ],
-            GlobalIncidents =
-            [
-                new GlobalIncidentItem(
-                    new IssueKey("INC-1"),
-                    new IssueSummary("ADF disabled"),
-                    new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
-                    new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero),
-                    impact: "Significant / Large",
-                    urgency: "High",
-                    additionalFields: new Dictionary<string, string?>
-                    {
-                        ["Business Impact"] = "Live feed unavailable"
-                    })
-            ],
+            Source = new JiraReportSourceData
+            {
+                SearchIssueCount = new ItemCount(1),
+                ReleaseIssues =
+                [
+                    new ReleaseIssueItem(
+                        new IssueKey("RLS-1"),
+                        new IssueSummary("Release title"),
+                        new DateOnly(2026, 2, 10),
+                        tasks: 3,
+                        components: 2,
+                        environmentNames: ["P005", "S005"])
+                ],
+                ArchTasks =
+                [
+                    new ArchTaskItem(
+                        new IssueKey("AAA-7"),
+                        new IssueSummary("Architecture review"),
+                        new DateTimeOffset(2026, 2, 2, 9, 30, 0, TimeSpan.Zero),
+                        new DateTimeOffset(2026, 2, 5, 12, 0, 0, TimeSpan.Zero))
+                ],
+                Unresolved30DaysTasks =
+                [
+                    new IssueListItem(
+                        new IssueKey("AAA-30"),
+                        new IssueSummary("Long-running story"),
+                        new DateTimeOffset(2025, 12, 1, 9, 0, 0, TimeSpan.Zero),
+                        issueType: "Story",
+                        assignee: "Ada Lovelace",
+                        status: "In Progress")
+                ],
+                GlobalIncidents =
+                [
+                    new GlobalIncidentItem(
+                        new IssueKey("INC-1"),
+                        new IssueSummary("ADF disabled"),
+                        new DateTimeOffset(2026, 2, 12, 10, 0, 0, TimeSpan.Zero),
+                        new DateTimeOffset(2026, 2, 12, 10, 49, 0, TimeSpan.Zero),
+                        impact: "Significant / Large",
+                        urgency: "High",
+                        additionalFields: new Dictionary<string, string?>
+                        {
+                            ["Business Impact"] = "Live feed unavailable"
+                        })
+                ],
+                OpenIssuesByStatus =
+                [
+                    new StatusIssueTypeSummary(
+                        new StatusName("QA"),
+                        new ItemCount(2),
+                        [
+                            new IssueTypeCountSummary(new IssueTypeName("UserStory"), new ItemCount(1)),
+                            new IssueTypeCountSummary(new IssueTypeName("SubTask"), new ItemCount(1))
+                        ])
+                ]
+            },
             AllTasksCreatedThisMonth = new ItemCount(47),
             AllTasksOpenThisMonth = new ItemCount(33),
             AllTasksMovedToDoneThisMonth = new ItemCount(31),
@@ -181,16 +194,6 @@ public sealed class PdfContentComposerTests
             InternalIncidentOpenIssues = [new IssueListItem(new IssueKey("AAA-4"), new IssueSummary("Open incident"))],
             InternalIncidentDoneIssues = [new IssueListItem(new IssueKey("AAA-5"), new IssueSummary("Done incident"))],
             InternalIncidentRejectedIssues = [new IssueListItem(new IssueKey("AAA-6"), new IssueSummary("Rejected incident"))],
-            OpenIssuesByStatus =
-            [
-                new StatusIssueTypeSummary(
-                    new StatusName("QA"),
-                    new ItemCount(2),
-                    [
-                        new IssueTypeCountSummary(new IssueTypeName("UserStory"), new ItemCount(1)),
-                        new IssueTypeCountSummary(new IssueTypeName("SubTask"), new ItemCount(1))
-                    ])
-            ],
             DoneIssues = [issue],
             QaTransitionAnalysis = new QaTransitionAnalysis(
                 new ItemCount(1),

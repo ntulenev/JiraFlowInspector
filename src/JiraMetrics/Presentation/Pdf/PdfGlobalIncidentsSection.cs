@@ -43,14 +43,14 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
                 .FontColor(Colors.Grey.Darken1);
         }
 
-        if (reportData.GlobalIncidents.Count == 0)
+        if (reportData.Source.GlobalIncidents.Count == 0)
         {
             _ = column.Item().Text("No incidents found for selected period.").FontColor(Colors.Grey.Darken1);
             return;
         }
 
         var includeAdditionalFields = globalIncidentsReport.AdditionalFieldNames.Count > 0;
-        var orderedIncidents = reportData.GlobalIncidents
+        var orderedIncidents = reportData.Source.GlobalIncidents
             .OrderBy(static incident => incident.IncidentStartUtc)
             .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
             .ToArray();

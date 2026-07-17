@@ -274,7 +274,7 @@ public sealed class QuestPdfReportRendererTests
         return new JiraReportData
         {
             Settings = settings,
-            SearchIssueCount = new ItemCount(1),
+            Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
             DoneIssues = [issue],
             CustomTransitionIssues =
             [

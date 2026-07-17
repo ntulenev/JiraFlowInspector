@@ -31,7 +31,7 @@ internal sealed class HtmlUnresolved30DaysTasksSection : IHtmlReportSection
             HtmlPresentationHelpers.Encode(generatedAt),
             ". It is not a historical period slice.</div></section>");
 
-        var rows = reportData.Unresolved30DaysTasks
+        var rows = reportData.Source.Unresolved30DaysTasks
             .OrderBy(static issue => issue.CreatedAt)
             .ThenBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Select((issue, index) => new TableRow(

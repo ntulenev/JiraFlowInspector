@@ -305,7 +305,7 @@ public sealed class JiraApplicationReportingFacadeTests
         return new JiraReportData
         {
             Settings = CreateSettings(),
-            SearchIssueCount = new ItemCount(1),
+            Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
             PathSummary = new PathGroupsSummary(
                 new ItemCount(1),
                 new ItemCount(1),

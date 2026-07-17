@@ -83,7 +83,7 @@ public sealed class HtmlReportRendererTests
         new()
         {
             Settings = settings,
-            SearchIssueCount = new ItemCount(1),
+            Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
             PathSummary = new PathGroupsSummary(
                 new ItemCount(1),
                 new ItemCount(1),

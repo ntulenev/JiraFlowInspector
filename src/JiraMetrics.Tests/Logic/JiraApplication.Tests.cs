@@ -161,8 +161,8 @@ public sealed class JiraApplicationTests
         presentation.NoIssuesMatchedFilterShown.Should().BeTrue();
         presentation.ReportRendered.Should().BeTrue();
         presentation.LastReportData.Should().NotBeNull();
-        presentation.LastReportData!.SearchIssueCount.Should().Be(new ItemCount(0));
-        presentation.LastReportData.ReleaseIssues.Should().ContainSingle();
+        presentation.LastReportData!.Source.SearchIssueCount.Should().Be(new ItemCount(0));
+        presentation.LastReportData.Source.ReleaseIssues.Should().ContainSingle();
         presentation.LastReportData.BugCreatedThisMonth.Should().Be(new ItemCount(1));
         presentation.LastReportData.BugMovedToDoneThisMonth.Should().Be(new ItemCount(1));
         presentation.LastReportData.DoneIssues.Should().BeEmpty();
@@ -610,7 +610,7 @@ public sealed class JiraApplicationTests
         releaseIndex.Should().BeGreaterThanOrEqualTo(0);
         globalIncidentsIndex.Should().BeGreaterThan(releaseIndex);
         presentation.LastReportData.Should().NotBeNull();
-        presentation.LastReportData!.GlobalIncidents.Should().ContainSingle();
+        presentation.LastReportData!.Source.GlobalIncidents.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "RunAsync shows rejected issues table when reject status is configured")]
@@ -845,7 +845,7 @@ public sealed class JiraApplicationTests
         presentation.ReportRendered.Should().BeTrue();
         presentation.LastReportData.Should().NotBeNull();
         presentation.LastReportData!.DoneIssues.Should().ContainSingle();
-        presentation.LastReportData.SearchIssueCount.Value.Should().Be(1);
+        presentation.LastReportData.Source.SearchIssueCount.Value.Should().Be(1);
     }
 
     [Fact(DisplayName = "RunAsync shows open issues by status summary after path groups")]
@@ -962,7 +962,7 @@ public sealed class JiraApplicationTests
         presentation.Calls.Should().NotContain("OpenIssuesByStatusSummary");
         presentation.LastReportData.Should().NotBeNull();
         presentation.LastReportData!.Settings.ShowGeneralStatistics.Should().BeFalse();
-        presentation.LastReportData.OpenIssuesByStatus.Should().BeEmpty();
+        presentation.LastReportData.Source.OpenIssuesByStatus.Should().BeEmpty();
     }
 
     private static JiraApplicationDataFacade CreateDataFacade(

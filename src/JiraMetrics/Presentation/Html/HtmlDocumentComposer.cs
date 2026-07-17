@@ -25,7 +25,7 @@ internal static partial class HtmlDocumentComposer
                     DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)),
                 ["__PERIOD__"] = HtmlPresentationHelpers.Encode(reportData.Settings.ReportPeriod.Label),
                 ["__DONE_STATUS__"] = HtmlPresentationHelpers.Encode(reportData.Settings.DoneStatusName.Value),
-                ["__SEARCH_ISSUES__"] = reportData.SearchIssueCount.Value.ToString(CultureInfo.InvariantCulture),
+                ["__SEARCH_ISSUES__"] = reportData.Source.SearchIssueCount.Value.ToString(CultureInfo.InvariantCulture),
                 ["__DONE_ISSUES__"] = reportData.DoneIssues.Count.ToString(CultureInfo.InvariantCulture),
                 ["__REJECTED_ISSUES__"] = reportData.RejectedIssues.Count.ToString(CultureInfo.InvariantCulture),
                 ["__PATH_GROUPS__"] = reportData.PathSummary.PathGroupCount.Value.ToString(CultureInfo.InvariantCulture),

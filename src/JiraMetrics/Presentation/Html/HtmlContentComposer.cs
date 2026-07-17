@@ -234,7 +234,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         var excludedStatuses = reportData.Settings.RejectStatusName is { } rejectStatus
             ? $"{reportData.Settings.DoneStatusName.Value}, {rejectStatus.Value}"
             : reportData.Settings.DoneStatusName.Value;
-        var rows = reportData.OpenIssuesByStatus
+        var rows = reportData.Source.OpenIssuesByStatus
             .OrderByDescending(static summary => summary.Count.Value)
             .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase)
             .Select(summary => new TableRow(
@@ -465,7 +465,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             return string.Empty;
         }
 
-        var rows = reportData.ReleaseIssues
+        var rows = reportData.Source.ReleaseIssues
             .OrderBy(static release => release.ReleaseDate)
             .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Select((release, index) => new TableRow(
@@ -507,7 +507,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             return string.Empty;
         }
 
-        var rows = PresentationFormatting.BuildComponentReleaseSummaries(reportData.ReleaseIssues)
+        var rows = PresentationFormatting.BuildComponentReleaseSummaries(reportData.Source.ReleaseIssues)
             .Select((item, index) => new TableRow(
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
@@ -612,7 +612,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             return string.Empty;
         }
 
-        var rows = reportData.ArchTasks
+        var rows = reportData.Source.ArchTasks
             .OrderBy(static task => task.CreatedAt)
             .ThenBy(static task => task.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Select((task, index) => new TableRow(
@@ -647,7 +647,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             return string.Empty;
         }
 
-        var rows = reportData.GlobalIncidents
+        var rows = reportData.Source.GlobalIncidents
             .OrderBy(static incident => incident.IncidentStartUtc)
             .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Select((incident, index) => new TableRow(

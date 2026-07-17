@@ -137,12 +137,16 @@ public sealed class JiraReportData
         new()
         {
             Settings = settings,
-            SearchIssueCount = new ItemCount(reportContext.IssueKeys.Count),
-            ReleaseIssues = reportContext.ReleaseIssues,
-            ArchTasks = reportContext.ArchTasks,
-            GlobalIncidents = reportContext.GlobalIncidents,
-            Unresolved30DaysTasks = reportContext.Unresolved30DaysTasks,
-            RoadmapItems = reportContext.RoadmapItems,
+            Source = new JiraReportSourceData
+            {
+                SearchIssueCount = new ItemCount(reportContext.IssueKeys.Count),
+                ReleaseIssues = reportContext.ReleaseIssues,
+                ArchTasks = reportContext.ArchTasks,
+                GlobalIncidents = reportContext.GlobalIncidents,
+                Unresolved30DaysTasks = reportContext.Unresolved30DaysTasks,
+                RoadmapItems = reportContext.RoadmapItems,
+                OpenIssuesByStatus = reportContext.OpenIssuesByStatus
+            },
             AllTasksCreatedThisMonth = allTasksRatio.CreatedThisMonth,
             AllTasksOpenThisMonth = allTasksRatio.OpenThisMonth,
             AllTasksMovedToDoneThisMonth = allTasksRatio.MovedToDoneThisMonth,
@@ -162,7 +166,6 @@ public sealed class JiraReportData
             InternalIncidentDoneIssues = internalIncidents?.DoneIssues ?? [],
             InternalIncidentRejectedIssues = internalIncidents?.RejectedIssues ?? [],
             TestCoverage = testCoverage,
-            OpenIssuesByStatus = reportContext.OpenIssuesByStatus,
             DoneIssues = doneIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
             CustomTransitionIssues = customTransitionIssues,
@@ -180,34 +183,9 @@ public sealed class JiraReportData
     public required AppSettings Settings { get; init; }
 
     /// <summary>
-    /// Gets or sets count of issues returned by search query.
+    /// Gets the source datasets loaded before report analysis.
     /// </summary>
-    public required ItemCount SearchIssueCount { get; init; }
-
-    /// <summary>
-    /// Gets or sets release issues for the selected period.
-    /// </summary>
-    public IReadOnlyList<ReleaseIssueItem> ReleaseIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets architecture tasks for selected report query.
-    /// </summary>
-    public IReadOnlyList<ArchTaskItem> ArchTasks { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets incidents for the selected period.
-    /// </summary>
-    public IReadOnlyList<GlobalIncidentItem> GlobalIncidents { get; init; } = [];
-
-    /// <summary>
-    /// Gets unresolved tasks older than 30 days as of report generation.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> Unresolved30DaysTasks { get; init; } = [];
-
-    /// <summary>
-    /// Gets roadmap issues as they existed when the report was generated.
-    /// </summary>
-    public IReadOnlyList<RoadmapItem> RoadmapItems { get; init; } = [];
+    public JiraReportSourceData Source { get; init; } = new();
 
     /// <summary>
     /// Gets or sets all-tasks count created in month.
@@ -293,11 +271,6 @@ public sealed class JiraReportData
     /// Gets or sets automated test coverage snapshot.
     /// </summary>
     public TestCoverageSnapshot TestCoverage { get; init; } = TestCoverageSnapshot.Empty;
-
-    /// <summary>
-    /// Gets or sets issue counts grouped by status and issue type outside done/rejected statuses.
-    /// </summary>
-    public IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus { get; init; } = [];
 
     /// <summary>
     /// Gets or sets issues moved to done in the selected period.

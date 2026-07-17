@@ -37,7 +37,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
             .Text($"Hot-fix markers: {PresentationFormatting.BuildHotFixRulesText(releaseReport.HotFixRules)}")
             .FontColor(Colors.Grey.Darken1);
 
-        if (reportData.ReleaseIssues.Count == 0)
+        if (reportData.Source.ReleaseIssues.Count == 0)
         {
             _ = column.Item().Text("No releases found for selected period.").FontColor(Colors.Grey.Darken1);
             _ = column.Item().Text("Total releases: 0    Hotfix count: 0    Rollbacks count: 0").FontColor(Colors.Grey.Darken1);
@@ -47,7 +47,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
         var includeComponents = !string.IsNullOrWhiteSpace(releaseReport.ComponentsFieldName);
         var includeEnvironments = !string.IsNullOrWhiteSpace(releaseReport.EnvironmentFieldName);
         var jiraBaseUrl = reportData.Settings.BaseUrl;
-        var orderedReleases = reportData.ReleaseIssues
+        var orderedReleases = reportData.Source.ReleaseIssues
             .OrderBy(static release => release.ReleaseDate)
             .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
             .ToArray();

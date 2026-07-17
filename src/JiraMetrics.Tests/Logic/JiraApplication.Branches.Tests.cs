@@ -209,7 +209,7 @@ public sealed class JiraApplicationBranchesTests
             Times.Once);
         reportingFacade.Verify(
             facade => facade.RenderReport(It.Is<JiraReportData>(report =>
-                report.SearchIssueCount == new ItemCount(1)
+                report.Source.SearchIssueCount == new ItemCount(1)
                 && report.DoneIssues.Count == 0
                 && report.PathSummary.SuccessfulCount == new ItemCount(0)
                 && report.PathSummary.PathGroupCount == new ItemCount(0)
@@ -278,7 +278,7 @@ public sealed class JiraApplicationBranchesTests
         reportingFacade.Verify(facade => facade.ShowFailures(failures), Times.Once);
         reportingFacade.Verify(
             facade => facade.RenderReport(It.Is<JiraReportData>(report =>
-                report.SearchIssueCount == new ItemCount(1)
+                report.Source.SearchIssueCount == new ItemCount(1)
                 && report.DoneIssues.Count == 0
                 && report.PathSummary.SuccessfulCount == new ItemCount(1)
                 && report.PathSummary.MatchedStageCount == new ItemCount(0)

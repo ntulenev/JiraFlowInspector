@@ -30,13 +30,13 @@ internal sealed class PdfGeneralStatisticsSection : IPdfReportSection
             : reportData.Settings.DoneStatusName.Value;
         _ = column.Item().Text("Statuses excluded: " + excludedStatuses).FontColor(Colors.Grey.Darken1);
 
-        if (reportData.OpenIssuesByStatus.Count == 0)
+        if (reportData.Source.OpenIssuesByStatus.Count == 0)
         {
             _ = column.Item().Text("No issues outside excluded statuses.").FontColor(Colors.Grey.Darken1);
             return;
         }
 
-        var orderedStatuses = reportData.OpenIssuesByStatus
+        var orderedStatuses = reportData.Source.OpenIssuesByStatus
             .OrderByDescending(static summary => summary.Count.Value)
             .ThenBy(static summary => summary.Status.Value, StringComparer.OrdinalIgnoreCase)
             .ToArray();

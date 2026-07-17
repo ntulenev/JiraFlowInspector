@@ -76,7 +76,7 @@ public sealed class PdfFailuresSectionTests
                 new StatusName("Rejected"),
                 [new StageName("Code Review")],
                 ReportPeriod.FromMonthLabel(new MonthLabel("2026-03"))),
-            SearchIssueCount = new ItemCount(1),
+            Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
             PathSummary = new PathGroupsSummary(
                 new ItemCount(1),
                 new ItemCount(1),

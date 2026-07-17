@@ -26,13 +26,13 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
             .Text($"Current snapshot as of {generatedAt}; this is not a historical period slice.")
             .FontColor(Colors.Grey.Darken1);
 
-        if (reportData.Unresolved30DaysTasks.Count == 0)
+        if (reportData.Source.Unresolved30DaysTasks.Count == 0)
         {
             _ = column.Item().Text("No unresolved tasks older than 30 days found.").FontColor(Colors.Grey.Darken1);
             return;
         }
 
-        var orderedIssues = reportData.Unresolved30DaysTasks
+        var orderedIssues = reportData.Source.Unresolved30DaysTasks
             .OrderBy(static issue => issue.CreatedAt)
             .ThenBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .ToArray();
