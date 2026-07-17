@@ -147,25 +147,13 @@ public sealed class JiraReportData
                 RoadmapItems = reportContext.RoadmapItems,
                 OpenIssuesByStatus = reportContext.OpenIssuesByStatus
             },
-            AllTasksCreatedThisMonth = allTasksRatio.CreatedThisMonth,
-            AllTasksOpenThisMonth = allTasksRatio.OpenThisMonth,
-            AllTasksMovedToDoneThisMonth = allTasksRatio.MovedToDoneThisMonth,
-            AllTasksRejectedThisMonth = allTasksRatio.RejectedThisMonth,
-            AllTasksFinishedThisMonth = allTasksRatio.FinishedThisMonth,
-            BugCreatedThisMonth = bugRatio?.CreatedThisMonth,
-            BugMovedToDoneThisMonth = bugRatio?.MovedToDoneThisMonth,
-            BugRejectedThisMonth = bugRatio?.RejectedThisMonth,
-            BugFinishedThisMonth = bugRatio?.FinishedThisMonth,
-            BugReporducedOnProd = bugRatio is null
-                ? null
-                : new ItemCount(bugRatio.ReporducedOnProdIssues.Count),
-            BugOpenIssues = bugRatio?.OpenIssues ?? [],
-            BugDoneIssues = bugRatio?.DoneIssues ?? [],
-            BugRejectedIssues = bugRatio?.RejectedIssues ?? [],
-            InternalIncidentOpenIssues = internalIncidents?.OpenIssues ?? [],
-            InternalIncidentDoneIssues = internalIncidents?.DoneIssues ?? [],
-            InternalIncidentRejectedIssues = internalIncidents?.RejectedIssues ?? [],
-            TestCoverage = testCoverage,
+            Ratios = new JiraReportRatioData
+            {
+                AllTasks = allTasksRatio,
+                Bugs = bugRatio,
+                InternalIncidents = internalIncidents,
+                TestCoverage = testCoverage
+            },
             DoneIssues = doneIssues,
             DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
             CustomTransitionIssues = customTransitionIssues,
@@ -188,89 +176,9 @@ public sealed class JiraReportData
     public JiraReportSourceData Source { get; init; } = new();
 
     /// <summary>
-    /// Gets or sets all-tasks count created in month.
+    /// Gets ratio snapshots and automated test coverage.
     /// </summary>
-    public ItemCount? AllTasksCreatedThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets all-tasks count still open from issues created in month.
-    /// </summary>
-    public ItemCount? AllTasksOpenThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets all-tasks count moved to done in month.
-    /// </summary>
-    public ItemCount? AllTasksMovedToDoneThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets all-tasks count moved to rejected in month.
-    /// </summary>
-    public ItemCount? AllTasksRejectedThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets finished all-tasks count in month.
-    /// </summary>
-    public ItemCount? AllTasksFinishedThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets bug issue count created in month.
-    /// </summary>
-    public ItemCount? BugCreatedThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets bug issue count moved to done in month.
-    /// </summary>
-    public ItemCount? BugMovedToDoneThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets bug issue count moved to rejected in month.
-    /// </summary>
-    public ItemCount? BugRejectedThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets finished bug issue count in month.
-    /// </summary>
-    public ItemCount? BugFinishedThisMonth { get; init; }
-
-    /// <summary>
-    /// Gets or sets unique bug issue count reproduced on production.
-    /// </summary>
-    public ItemCount? BugReporducedOnProd { get; init; }
-
-    /// <summary>
-    /// Gets or sets open bug issues.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> BugOpenIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets done bug issues.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> BugDoneIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets rejected bug issues.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> BugRejectedIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets open internal incident issues.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> InternalIncidentOpenIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets done internal incident issues.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> InternalIncidentDoneIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets rejected internal incident issues.
-    /// </summary>
-    public IReadOnlyList<IssueListItem> InternalIncidentRejectedIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets automated test coverage snapshot.
-    /// </summary>
-    public TestCoverageSnapshot TestCoverage { get; init; } = TestCoverageSnapshot.Empty;
+    public JiraReportRatioData Ratios { get; init; } = new();
 
     /// <summary>
     /// Gets or sets issues moved to done in the selected period.

@@ -163,8 +163,8 @@ public sealed class JiraApplicationTests
         presentation.LastReportData.Should().NotBeNull();
         presentation.LastReportData!.Source.SearchIssueCount.Should().Be(new ItemCount(0));
         presentation.LastReportData.Source.ReleaseIssues.Should().ContainSingle();
-        presentation.LastReportData.BugCreatedThisMonth.Should().Be(new ItemCount(1));
-        presentation.LastReportData.BugMovedToDoneThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.Ratios.Bugs!.CreatedThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.Ratios.Bugs.MovedToDoneThisMonth.Should().Be(new ItemCount(1));
         presentation.LastReportData.DoneIssues.Should().BeEmpty();
         presentation.LastReportData.PathSummary.PathGroupCount.Should().Be(new ItemCount(0));
     }
@@ -334,11 +334,11 @@ public sealed class JiraApplicationTests
         presentation.AllTasksRatioLoadingCompletedShown.Should().BeTrue();
         presentation.AllTasksRatioShown.Should().BeTrue();
         presentation.BugRatioShown.Should().BeFalse();
-        presentation.LastReportData!.AllTasksCreatedThisMonth.Should().Be(new ItemCount(2));
-        presentation.LastReportData!.AllTasksOpenThisMonth.Should().Be(new ItemCount(1));
-        presentation.LastReportData!.AllTasksMovedToDoneThisMonth.Should().Be(new ItemCount(1));
-        presentation.LastReportData!.AllTasksRejectedThisMonth.Should().Be(new ItemCount(1));
-        presentation.LastReportData!.AllTasksFinishedThisMonth.Should().Be(new ItemCount(2));
+        presentation.LastReportData!.Ratios.AllTasks!.CreatedThisMonth.Should().Be(new ItemCount(2));
+        presentation.LastReportData.Ratios.AllTasks.OpenThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.Ratios.AllTasks.MovedToDoneThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.Ratios.AllTasks.RejectedThisMonth.Should().Be(new ItemCount(1));
+        presentation.LastReportData.Ratios.AllTasks.FinishedThisMonth.Should().Be(new ItemCount(2));
     }
 
     [Fact(DisplayName = "RunAsync reuses all-tasks searches for report context when created-after is not configured")]

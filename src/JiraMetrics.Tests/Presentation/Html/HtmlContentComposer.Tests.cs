@@ -194,41 +194,47 @@ public sealed class HtmlContentComposerTests
                         [new IssueTypeCountSummary(new IssueTypeName("Task"), new ItemCount(1))])
                 ]
             },
-            AllTasksCreatedThisMonth = new ItemCount(4),
-            AllTasksOpenThisMonth = new ItemCount(1),
-            AllTasksMovedToDoneThisMonth = new ItemCount(2),
-            AllTasksRejectedThisMonth = new ItemCount(1),
-            AllTasksFinishedThisMonth = new ItemCount(3),
-            BugCreatedThisMonth = new ItemCount(2),
-            BugMovedToDoneThisMonth = new ItemCount(1),
-            BugRejectedThisMonth = new ItemCount(0),
-            BugFinishedThisMonth = new ItemCount(1),
-            BugReporducedOnProd = new ItemCount(1),
-            BugOpenIssues =
-            [
-                new IssueListItem(
-                    new IssueKey("AAA-2"),
-                    new IssueSummary("Open prod bug"),
-                    new DateTimeOffset(2026, 2, 8, 10, 0, 0, TimeSpan.Zero),
-                    reporducedOnProd: true,
-                    priority: "P1")
-            ],
-            BugDoneIssues =
-            [
-                new IssueListItem(
-                    new IssueKey("AAA-3"),
-                    new IssueSummary("Done bug"),
-                    new DateTimeOffset(2026, 2, 7, 10, 0, 0, TimeSpan.Zero))
-            ],
-            BugRejectedIssues = [],
-            TestCoverage = new TestCoverageSnapshot(
-            [
-                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask")),
-                new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Uncovered supertask"))
-            ],
-            [
-                new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask"))
-            ]),
+            Ratios = new JiraReportRatioData
+            {
+                AllTasks = new IssueRatioSnapshot(
+                    new ItemCount(4),
+                    new ItemCount(1),
+                    new ItemCount(2),
+                    new ItemCount(1),
+                    new ItemCount(3),
+                    [],
+                    [],
+                    []),
+                Bugs = new IssueRatioSnapshot(
+                    new ItemCount(2),
+                    new ItemCount(1),
+                    new ItemCount(1),
+                    new ItemCount(0),
+                    new ItemCount(1),
+                    [
+                        new IssueListItem(
+                            new IssueKey("AAA-2"),
+                            new IssueSummary("Open prod bug"),
+                            new DateTimeOffset(2026, 2, 8, 10, 0, 0, TimeSpan.Zero),
+                            reporducedOnProd: true,
+                            priority: "P1")
+                    ],
+                    [
+                        new IssueListItem(
+                            new IssueKey("AAA-3"),
+                            new IssueSummary("Done bug"),
+                            new DateTimeOffset(2026, 2, 7, 10, 0, 0, TimeSpan.Zero))
+                    ],
+                    []),
+                TestCoverage = new TestCoverageSnapshot(
+                [
+                    new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask")),
+                    new IssueListItem(new IssueKey("AAA-11"), new IssueSummary("Uncovered supertask"))
+                ],
+                [
+                    new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask"))
+                ])
+            },
             DoneIssues = [issue],
             DoneDaysAtWork75PerType =
             [

@@ -81,6 +81,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         QaTransitionAnalysis analysis,
         bool showTimeCalculationsInHoursOnly)
     {
+        var bugRatio = reportData.Ratios.Bugs;
         _ = column.Item().Text("Summary").Bold();
         column.Item().Table(table =>
         {
@@ -98,12 +99,12 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
             AddSummaryRow(table, "Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.DoneIssues));
             AddSummaryRow(table, "Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.RejectedIssues));
-            AddSummaryRow(table, "Open Bugs", reportData.BugOpenIssues.Count);
-            AddSummaryRow(table, "Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugOpenIssues));
-            AddSummaryRow(table, "Done Bugs", reportData.BugDoneIssues.Count);
-            AddSummaryRow(table, "Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugDoneIssues));
-            AddSummaryRow(table, "Rejected Bugs", reportData.BugRejectedIssues.Count);
-            AddSummaryRow(table, "Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugRejectedIssues));
+            AddSummaryRow(table, "Open Bugs", bugRatio?.OpenIssues.Count ?? 0);
+            AddSummaryRow(table, "Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.OpenIssues ?? []));
+            AddSummaryRow(table, "Done Bugs", bugRatio?.DoneIssues.Count ?? 0);
+            AddSummaryRow(table, "Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.DoneIssues ?? []));
+            AddSummaryRow(table, "Rejected Bugs", bugRatio?.RejectedIssues.Count ?? 0);
+            AddSummaryRow(table, "Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.RejectedIssues ?? []));
             AddSummaryRow(table, "QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis));
             AddSummaryRow(
                 table,

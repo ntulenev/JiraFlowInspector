@@ -179,21 +179,36 @@ public sealed class PdfContentComposerTests
                         ])
                 ]
             },
-            AllTasksCreatedThisMonth = new ItemCount(47),
-            AllTasksOpenThisMonth = new ItemCount(33),
-            AllTasksMovedToDoneThisMonth = new ItemCount(31),
-            AllTasksRejectedThisMonth = new ItemCount(37),
-            AllTasksFinishedThisMonth = new ItemCount(68),
-            BugCreatedThisMonth = new ItemCount(2),
-            BugMovedToDoneThisMonth = new ItemCount(1),
-            BugRejectedThisMonth = new ItemCount(0),
-            BugFinishedThisMonth = new ItemCount(1),
-            BugOpenIssues = [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Open bug"))],
-            BugDoneIssues = [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Done bug"))],
-            BugRejectedIssues = [],
-            InternalIncidentOpenIssues = [new IssueListItem(new IssueKey("AAA-4"), new IssueSummary("Open incident"))],
-            InternalIncidentDoneIssues = [new IssueListItem(new IssueKey("AAA-5"), new IssueSummary("Done incident"))],
-            InternalIncidentRejectedIssues = [new IssueListItem(new IssueKey("AAA-6"), new IssueSummary("Rejected incident"))],
+            Ratios = new JiraReportRatioData
+            {
+                AllTasks = new IssueRatioSnapshot(
+                    new ItemCount(47),
+                    new ItemCount(33),
+                    new ItemCount(31),
+                    new ItemCount(37),
+                    new ItemCount(68),
+                    [],
+                    [],
+                    []),
+                Bugs = new IssueRatioSnapshot(
+                    new ItemCount(2),
+                    new ItemCount(1),
+                    new ItemCount(1),
+                    new ItemCount(0),
+                    new ItemCount(1),
+                    [new IssueListItem(new IssueKey("AAA-2"), new IssueSummary("Open bug"))],
+                    [new IssueListItem(new IssueKey("AAA-3"), new IssueSummary("Done bug"))],
+                    []),
+                InternalIncidents = new IssueRatioSnapshot(
+                    new ItemCount(3),
+                    new ItemCount(1),
+                    new ItemCount(1),
+                    new ItemCount(1),
+                    new ItemCount(2),
+                    [new IssueListItem(new IssueKey("AAA-4"), new IssueSummary("Open incident"))],
+                    [new IssueListItem(new IssueKey("AAA-5"), new IssueSummary("Done incident"))],
+                    [new IssueListItem(new IssueKey("AAA-6"), new IssueSummary("Rejected incident"))])
+            },
             DoneIssues = [issue],
             QaTransitionAnalysis = new QaTransitionAnalysis(
                 new ItemCount(1),

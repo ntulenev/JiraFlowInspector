@@ -23,10 +23,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
 
     private static void ComposeBugRatioSection(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (!reportData.BugCreatedThisMonth.HasValue
-            || !reportData.BugMovedToDoneThisMonth.HasValue
-            || !reportData.BugRejectedThisMonth.HasValue
-            || !reportData.BugFinishedThisMonth.HasValue)
+        if (reportData.Ratios.Bugs is not { } bugRatio)
         {
             return;
         }
@@ -39,53 +36,49 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             "Bug ratio",
             "Bug issue types",
             bugTypesLabel,
-            new ItemCount(reportData.BugOpenIssues.Count),
-            reportData.BugCreatedThisMonth.Value,
-            reportData.BugMovedToDoneThisMonth.Value,
-            reportData.BugRejectedThisMonth.Value,
-            reportData.BugFinishedThisMonth.Value,
-            reportData.BugReporducedOnProd,
-            new ItemCount(CountReporducedOnProd(reportData.BugOpenIssues)),
-            new ItemCount(CountReporducedOnProd(reportData.BugDoneIssues)),
-            new ItemCount(CountReporducedOnProd(reportData.BugRejectedIssues)),
+            bugRatio.OpenThisMonth,
+            bugRatio.CreatedThisMonth,
+            bugRatio.MovedToDoneThisMonth,
+            bugRatio.RejectedThisMonth,
+            bugRatio.FinishedThisMonth,
+            new ItemCount(bugRatio.ReporducedOnProdIssues.Count),
+            new ItemCount(CountReporducedOnProd(bugRatio.OpenIssues)),
+            new ItemCount(CountReporducedOnProd(bugRatio.DoneIssues)),
+            new ItemCount(CountReporducedOnProd(bugRatio.RejectedIssues)),
             new ItemCount(CountReporducedOnProd(
-                reportData.BugDoneIssues
-                    .Concat(reportData.BugRejectedIssues)
+                bugRatio.DoneIssues
+                    .Concat(bugRatio.RejectedIssues)
                     .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase))));
 
         ComposeIssueListItemsSection(
             column,
             "Open issues",
-            reportData.BugOpenIssues,
+            bugRatio.OpenIssues,
             PresentationFormatting.OPEN_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true,
-            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
+            includeReporducedOnProd: true);
         ComposeIssueListItemsSection(
             column,
             "Done issues",
-            reportData.BugDoneIssues,
+            bugRatio.DoneIssues,
             PresentationFormatting.DONE_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true,
-            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
+            includeReporducedOnProd: true);
         ComposeIssueListItemsSection(
             column,
             "Rejected issues",
-            reportData.BugRejectedIssues,
+            bugRatio.RejectedIssues,
             PresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: false,
-            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue);
+            includeReporducedOnProd: true);
     }
 
     private static void ComposeAllTasksRatioSection(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (!reportData.AllTasksCreatedThisMonth.HasValue
-            || !reportData.AllTasksOpenThisMonth.HasValue
-            || !reportData.AllTasksMovedToDoneThisMonth.HasValue
-            || !reportData.AllTasksRejectedThisMonth.HasValue
-            || !reportData.AllTasksFinishedThisMonth.HasValue)
+        if (reportData.Ratios.AllTasks is not { } allTasksRatio)
         {
             return;
         }
@@ -95,16 +88,17 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             "All tasks ratio",
             "Issue types",
             "All",
-            reportData.AllTasksOpenThisMonth.Value,
-            reportData.AllTasksCreatedThisMonth.Value,
-            reportData.AllTasksMovedToDoneThisMonth.Value,
-            reportData.AllTasksRejectedThisMonth.Value,
-            reportData.AllTasksFinishedThisMonth.Value);
+            allTasksRatio.OpenThisMonth,
+            allTasksRatio.CreatedThisMonth,
+            allTasksRatio.MovedToDoneThisMonth,
+            allTasksRatio.RejectedThisMonth,
+            allTasksRatio.FinishedThisMonth);
     }
 
     private static void ComposeInternalIncidentsSection(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (reportData.Settings.InternalIncidentIssueNames.Count == 0)
+        if (reportData.Settings.InternalIncidentIssueNames.Count == 0
+            || reportData.Ratios.InternalIncidents is not { } internalIncidents)
         {
             return;
         }
@@ -119,21 +113,21 @@ internal sealed class PdfRatiosSection : IPdfReportSection
         ComposeIssueListItemsSection(
             column,
             "Open issues",
-            reportData.InternalIncidentOpenIssues,
+            internalIncidents.OpenIssues,
             PresentationFormatting.OPEN_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true);
         ComposeIssueListItemsSection(
             column,
             "Done issues",
-            reportData.InternalIncidentDoneIssues,
+            internalIncidents.DoneIssues,
             PresentationFormatting.DONE_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: true);
         ComposeIssueListItemsSection(
             column,
             "Rejected issues",
-            reportData.InternalIncidentRejectedIssues,
+            internalIncidents.RejectedIssues,
             PresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
             reportData.Settings.BaseUrl,
             includeCreationDate: false);

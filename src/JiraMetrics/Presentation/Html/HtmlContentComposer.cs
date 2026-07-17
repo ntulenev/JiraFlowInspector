@@ -30,11 +30,11 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
     internal static string BuildRatiosSection(JiraReportData reportData)
     {
         var rows = new List<TableRow>();
-        AddRatioRows(rows, "All tasks", reportData.AllTasksCreatedThisMonth, reportData.AllTasksOpenThisMonth, reportData.AllTasksMovedToDoneThisMonth, reportData.AllTasksRejectedThisMonth, reportData.AllTasksFinishedThisMonth);
-        AddRatioRows(rows, "Bugs", reportData.BugCreatedThisMonth, new ItemCount(reportData.BugOpenIssues.Count), reportData.BugMovedToDoneThisMonth, reportData.BugRejectedThisMonth, reportData.BugFinishedThisMonth);
-        if (reportData.BugReporducedOnProd.HasValue)
+        AddRatioRows(rows, "All tasks", reportData.Ratios.AllTasks);
+        AddRatioRows(rows, "Bugs", reportData.Ratios.Bugs);
+        if (reportData.Ratios.Bugs is { } bugRatio)
         {
-            rows.Add(BuildMetricRow("Bugs: Reproduced on prod", reportData.BugReporducedOnProd.Value.Value));
+            rows.Add(BuildMetricRow("Bugs: Reproduced on prod", bugRatio.ReporducedOnProdIssues.Count));
         }
 
         return BuildTableSection(
@@ -65,12 +65,12 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                     string.Join(", ", testCoverageSettings.IssueTypes.Select(static issueType => issueType.Value))),
                 BuildTextMetricRow("Test Project", testCoverageSettings.TestProjectKey.Value),
                 BuildTextMetricRow("Link", testCoverageSettings.LinkName),
-                BuildMetricRow("Done in selected period", reportData.TestCoverage.TotalIssues.Value),
-                BuildMetricRow("Covered by automated tests", reportData.TestCoverage.CoveredIssueCount.Value),
+                BuildMetricRow("Done in selected period", reportData.Ratios.TestCoverage.TotalIssues.Value),
+                BuildMetricRow("Covered by automated tests", reportData.Ratios.TestCoverage.CoveredIssueCount.Value),
                 new TableRow(
                 [
                     BuildTextCell("Coverage"),
-                    BuildTextCell(PresentationFormatting.FormatPercentage(reportData.TestCoverage.CoveragePercentage), reportData.TestCoverage.CoveragePercentage)
+                    BuildTextCell(PresentationFormatting.FormatPercentage(reportData.Ratios.TestCoverage.CoveragePercentage), reportData.Ratios.TestCoverage.CoveragePercentage)
                 ])
             ],
             defaultSortColumn: 0,
@@ -80,32 +80,30 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
     private static void AddRatioRows(
         List<TableRow> rows,
         string scope,
-        ItemCount? created,
-        ItemCount? open,
-        ItemCount? done,
-        ItemCount? rejected,
-        ItemCount? finished)
+        IssueRatioSnapshot? snapshot)
     {
-        if (!created.HasValue || !open.HasValue || !done.HasValue || !rejected.HasValue || !finished.HasValue)
+        if (snapshot is null)
         {
             return;
         }
 
-        rows.Add(BuildMetricRow($"{scope}: Created", created.Value.Value));
-        rows.Add(BuildMetricRow($"{scope}: Open", open.Value.Value));
-        rows.Add(BuildMetricRow($"{scope}: Done", done.Value.Value));
-        rows.Add(BuildMetricRow($"{scope}: Rejected", rejected.Value.Value));
-        rows.Add(BuildMetricRow($"{scope}: Finished", finished.Value.Value));
+        rows.Add(BuildMetricRow($"{scope}: Created", snapshot.CreatedThisMonth.Value));
+        rows.Add(BuildMetricRow($"{scope}: Open", snapshot.OpenThisMonth.Value));
+        rows.Add(BuildMetricRow($"{scope}: Done", snapshot.MovedToDoneThisMonth.Value));
+        rows.Add(BuildMetricRow($"{scope}: Rejected", snapshot.RejectedThisMonth.Value));
+        rows.Add(BuildMetricRow($"{scope}: Finished", snapshot.FinishedThisMonth.Value));
         rows.Add(new TableRow(
         [
             BuildTextCell($"{scope}: Finished / Created"),
-            BuildTextCell(PresentationFormatting.BuildFinishedToCreatedRatioText(created.Value, finished.Value))
+            BuildTextCell(PresentationFormatting.BuildFinishedToCreatedRatioText(
+                snapshot.CreatedThisMonth,
+                snapshot.FinishedThisMonth))
         ]));
     }
 
     internal static string BuildBugRatioDetailsSection(JiraReportData reportData)
     {
-        if (!reportData.BugCreatedThisMonth.HasValue)
+        if (reportData.Ratios.Bugs is not { } bugRatio)
         {
             return string.Empty;
         }
@@ -114,24 +112,24 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         _ = html.Append(BuildIssueListItemsTable(
             "bug-open-issues",
             "Bug Ratio: Open Issues",
-            reportData.BugOpenIssues,
+            bugRatio.OpenIssues,
             reportData,
             includeCreatedAt: true,
-            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue));
+            includeReporducedOnProd: true));
         _ = html.Append(BuildIssueListItemsTable(
             "bug-done-issues",
             "Bug Ratio: Done Issues",
-            reportData.BugDoneIssues,
+            bugRatio.DoneIssues,
             reportData,
             includeCreatedAt: true,
-            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue));
+            includeReporducedOnProd: true));
         _ = html.Append(BuildIssueListItemsTable(
             "bug-rejected-issues",
             "Bug Ratio: Rejected Issues",
-            reportData.BugRejectedIssues,
+            bugRatio.RejectedIssues,
             reportData,
             includeCreatedAt: false,
-            includeReporducedOnProd: reportData.BugReporducedOnProd.HasValue));
+            includeReporducedOnProd: true));
         return html.ToString();
     }
 
@@ -144,6 +142,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         }
 
         var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
+        var bugRatio = reportData.Ratios.Bugs;
         var html = new StringBuilder();
         _ = html.Append(BuildTableSection(
             "qa-summary",
@@ -153,12 +152,12 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             [
                 BuildTextMetricRow("Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.DoneIssues).ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open Bugs", reportData.BugOpenIssues.Count.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugOpenIssues)),
-                BuildTextMetricRow("Done Bugs", reportData.BugDoneIssues.Count.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugDoneIssues)),
-                BuildTextMetricRow("Rejected Bugs", reportData.BugRejectedIssues.Count.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(reportData.BugRejectedIssues)),
+                BuildTextMetricRow("Open Bugs", (bugRatio?.OpenIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.OpenIssues ?? [])),
+                BuildTextMetricRow("Done Bugs", (bugRatio?.DoneIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.DoneIssues ?? [])),
+                BuildTextMetricRow("Rejected Bugs", (bugRatio?.RejectedIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.RejectedIssues ?? [])),
                 BuildTextMetricRow("QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis)),
                 BuildTextMetricRow("QA In Progress 75P", FormatDuration(analysis.PickupDuration75, showHoursOnly)),
                 BuildTextMetricRow("QA Transition 75P", FormatDuration(analysis.TestingDuration75, showHoursOnly)),
