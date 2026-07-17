@@ -16,14 +16,14 @@ internal sealed class HtmlIssueTimelineSection : IHtmlReportSection
         _ = html.Append(HtmlContentComposer.BuildIssueTimelineTable(
             "done-issues",
             "Issues moved to Done in selected period",
-            reportData.DoneIssues,
+            reportData.Transitions.DoneIssues,
             reportData.Settings.DoneStatusName,
             "Done At",
             reportData));
         _ = html.Append(HtmlContentComposer.BuildDuration75PerTypeTable(
             "done-duration-75",
             $"{PresentationFormatting.GetWorkDuration75Title(reportData.Settings.ShowTimeCalculationsInHoursOnly)} per type",
-            reportData.DoneDaysAtWork75PerType,
+            reportData.Transitions.DoneDaysAtWork75PerType,
             reportData.Settings.ShowTimeCalculationsInHoursOnly));
 
         if (reportData.Settings.RejectStatusName is { } rejectStatusName)
@@ -31,7 +31,7 @@ internal sealed class HtmlIssueTimelineSection : IHtmlReportSection
             _ = html.Append(HtmlContentComposer.BuildIssueTimelineTable(
                 "rejected-issues",
                 "Issues moved to Rejected in selected period",
-                reportData.RejectedIssues,
+                reportData.Transitions.RejectedIssues,
                 rejectStatusName,
                 "Rejected At",
                 reportData));

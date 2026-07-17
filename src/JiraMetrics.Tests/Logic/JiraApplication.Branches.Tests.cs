@@ -210,9 +210,9 @@ public sealed class JiraApplicationBranchesTests
         reportingFacade.Verify(
             facade => facade.RenderReport(It.Is<JiraReportData>(report =>
                 report.Source.SearchIssueCount == new ItemCount(1)
-                && report.DoneIssues.Count == 0
-                && report.PathSummary.SuccessfulCount == new ItemCount(0)
-                && report.PathSummary.PathGroupCount == new ItemCount(0)
+                && report.Transitions.DoneIssues.Count == 0
+                && report.Transitions.PathSummary.SuccessfulCount == new ItemCount(0)
+                && report.Transitions.PathSummary.PathGroupCount == new ItemCount(0)
                 && report.Failures.Count == 1)),
             Times.Once);
         analysisFacade.Verify(
@@ -279,10 +279,10 @@ public sealed class JiraApplicationBranchesTests
         reportingFacade.Verify(
             facade => facade.RenderReport(It.Is<JiraReportData>(report =>
                 report.Source.SearchIssueCount == new ItemCount(1)
-                && report.DoneIssues.Count == 0
-                && report.PathSummary.SuccessfulCount == new ItemCount(1)
-                && report.PathSummary.MatchedStageCount == new ItemCount(0)
-                && report.PathSummary.PathGroupCount == new ItemCount(0)
+                && report.Transitions.DoneIssues.Count == 0
+                && report.Transitions.PathSummary.SuccessfulCount == new ItemCount(1)
+                && report.Transitions.PathSummary.MatchedStageCount == new ItemCount(0)
+                && report.Transitions.PathSummary.PathGroupCount == new ItemCount(0)
                 && report.Failures.Count == 1)),
             Times.Once);
     }

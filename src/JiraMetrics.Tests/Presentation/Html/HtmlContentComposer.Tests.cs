@@ -96,11 +96,7 @@ public sealed class HtmlContentComposerTests
         {
             Settings = settings,
             Source = new JiraReportSourceData(),
-            PathSummary = new PathGroupsSummary(
-                new ItemCount(0),
-                new ItemCount(0),
-                new ItemCount(0),
-                new ItemCount(0))
+            Transitions = new JiraReportTransitionData()
         };
 
         // Act
@@ -235,12 +231,14 @@ public sealed class HtmlContentComposerTests
                     new IssueListItem(new IssueKey("AAA-10"), new IssueSummary("Covered supertask"))
                 ])
             },
-            DoneIssues = [issue],
-            DoneDaysAtWork75PerType =
+            Transitions = new JiraReportTransitionData
+            {
+                DoneIssues = [issue],
+                DoneDaysAtWork75PerType =
             [
                 new IssueTypeWorkDays75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))
             ],
-            QaTransitionAnalysis = new QaTransitionAnalysis(
+                QaTransitionAnalysis = new QaTransitionAnalysis(
                 new ItemCount(1),
                 [
                     new TransitionMeasurementIssue(
@@ -269,19 +267,20 @@ public sealed class HtmlContentComposerTests
                 ],
                 TimeSpan.FromHours(3),
                 [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(3))]),
-            PathSummary = new PathGroupsSummary(
+                PathSummary = new PathGroupsSummary(
                 new ItemCount(1),
                 new ItemCount(1),
                 new ItemCount(1),
                 new ItemCount(1)),
-            PathGroups =
+                PathGroups =
             [
                 new PathGroup(
                     issue.PathLabel,
                     [issue],
                     [new PercentileTransition(new StatusName("Open"), new StatusName("Done"), TimeSpan.FromHours(3))],
                     TimeSpan.FromHours(3))
-            ],
+            ]
+            },
             Failures = [new LoadFailure(new IssueKey("AAA-9"), new ErrorMessage("Timeout"))]
         };
     }

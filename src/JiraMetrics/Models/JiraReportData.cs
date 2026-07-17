@@ -154,14 +154,17 @@ public sealed class JiraReportData
                 InternalIncidents = internalIncidents,
                 TestCoverage = testCoverage
             },
-            DoneIssues = doneIssues,
-            DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
-            CustomTransitionIssues = customTransitionIssues,
-            CustomTransitionDuration75PerType = customTransitionDuration75PerType,
-            QaTransitionAnalysis = qaTransitionAnalysis,
-            RejectedIssues = rejectedIssues,
-            PathSummary = pathSummary,
-            PathGroups = pathGroups,
+            Transitions = new JiraReportTransitionData
+            {
+                DoneIssues = doneIssues,
+                DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
+                CustomTransitionIssues = customTransitionIssues,
+                CustomTransitionDuration75PerType = customTransitionDuration75PerType,
+                QaTransitionAnalysis = qaTransitionAnalysis,
+                RejectedIssues = rejectedIssues,
+                PathSummary = pathSummary,
+                PathGroups = pathGroups
+            },
             Failures = failures
         };
 
@@ -181,44 +184,9 @@ public sealed class JiraReportData
     public JiraReportRatioData Ratios { get; init; } = new();
 
     /// <summary>
-    /// Gets or sets issues moved to done in the selected period.
+    /// Gets transition analysis results.
     /// </summary>
-    public IReadOnlyList<IssueTimeline> DoneIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets days-at-work P75 grouped by issue type for done issues.
-    /// </summary>
-    public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets issues matched by configured custom transition analysis.
-    /// </summary>
-    public IReadOnlyList<CustomTransitionIssue> CustomTransitionIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets custom transition P75 duration summaries per issue type.
-    /// </summary>
-    public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets QA-specific transition measurements.
-    /// </summary>
-    public QaTransitionAnalysis QaTransitionAnalysis { get; init; } = QaTransitionAnalysis.Empty;
-
-    /// <summary>
-    /// Gets or sets issues moved to rejected in the selected period.
-    /// </summary>
-    public IReadOnlyList<IssueTimeline> RejectedIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets or sets transition path summary.
-    /// </summary>
-    public required PathGroupsSummary PathSummary { get; init; }
-
-    /// <summary>
-    /// Gets or sets transition path groups.
-    /// </summary>
-    public IReadOnlyList<PathGroup> PathGroups { get; init; } = [];
+    public JiraReportTransitionData Transitions { get; init; } = new();
 
     /// <summary>
     /// Gets or sets failed issue loads.

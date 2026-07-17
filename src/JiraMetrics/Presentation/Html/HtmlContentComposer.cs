@@ -135,7 +135,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
 
     internal static string BuildQaTransitionAnalysisSection(JiraReportData reportData)
     {
-        var analysis = reportData.QaTransitionAnalysis;
+        var analysis = reportData.Transitions.QaTransitionAnalysis;
         if (analysis.AnalyzedIssueCount.Value == 0)
         {
             return string.Empty;
@@ -150,8 +150,8 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             "No QA transition data.",
             MetricColumns,
             [
-                BuildTextMetricRow("Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.DoneIssues).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.Transitions.DoneIssues).ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.Transitions.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Open Bugs", (bugRatio?.OpenIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.OpenIssues ?? [])),
                 BuildTextMetricRow("Done Bugs", (bugRatio?.DoneIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
@@ -418,15 +418,15 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         }
 
         _ = html.AppendLine("        </tr></thead><tbody>");
-        if (reportData.PathGroups.Count == 0)
+        if (reportData.Transitions.PathGroups.Count == 0)
         {
             _ = html.AppendLine("          <tr class=\"empty\"><td class=\"empty-cell\" colspan=\"4\">No path groups.</td></tr>");
         }
         else
         {
-            for (var index = 0; index < reportData.PathGroups.Count; index++)
+            for (var index = 0; index < reportData.Transitions.PathGroups.Count; index++)
             {
-                var group = reportData.PathGroups[index];
+                var group = reportData.Transitions.PathGroups[index];
                 var groupNumber = index + 1;
                 var filterValue = string.Join(
                     " ",

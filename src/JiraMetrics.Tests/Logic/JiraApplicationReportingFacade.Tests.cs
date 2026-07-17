@@ -306,11 +306,14 @@ public sealed class JiraApplicationReportingFacadeTests
         {
             Settings = CreateSettings(),
             Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
-            PathSummary = new PathGroupsSummary(
-                new ItemCount(1),
-                new ItemCount(1),
-                new ItemCount(0),
-                new ItemCount(1))
+            Transitions = new JiraReportTransitionData
+            {
+                PathSummary = new PathGroupsSummary(
+                    new ItemCount(1),
+                    new ItemCount(1),
+                    new ItemCount(0),
+                    new ItemCount(1))
+            }
         };
     }
 

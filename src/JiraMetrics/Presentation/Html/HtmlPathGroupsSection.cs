@@ -13,7 +13,7 @@ internal sealed class HtmlPathGroupsSection : IHtmlReportSection
     public string Compose(JiraReportData reportData)
     {
         var html = new StringBuilder();
-        _ = html.Append(HtmlContentComposer.BuildPathSummaryTable(reportData.PathSummary));
+        _ = html.Append(HtmlContentComposer.BuildPathSummaryTable(reportData.Transitions.PathSummary));
         _ = html.Append(HtmlContentComposer.BuildPathGroupsTable(reportData));
         return html.ToString();
     }

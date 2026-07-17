@@ -77,11 +77,14 @@ public sealed class PdfFailuresSectionTests
                 [new StageName("Code Review")],
                 ReportPeriod.FromMonthLabel(new MonthLabel("2026-03"))),
             Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
-            PathSummary = new PathGroupsSummary(
-                new ItemCount(1),
-                new ItemCount(1),
-                new ItemCount(failures.Count),
-                new ItemCount(1)),
+            Transitions = new JiraReportTransitionData
+            {
+                PathSummary = new PathGroupsSummary(
+                    new ItemCount(1),
+                    new ItemCount(1),
+                    new ItemCount(failures.Count),
+                    new ItemCount(1))
+            },
             Failures = failures
         };
     }

@@ -16,10 +16,10 @@ internal sealed class PdfPathGroupsSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        ComposePathSummarySection(column, reportData.PathSummary);
+        ComposePathSummarySection(column, reportData.Transitions.PathSummary);
         ComposePathGroupsSectionCore(
             column,
-            reportData.PathGroups,
+            reportData.Transitions.PathGroups,
             reportData.Settings.BaseUrl,
             reportData.Settings.ShowTimeCalculationsInHoursOnly);
     }

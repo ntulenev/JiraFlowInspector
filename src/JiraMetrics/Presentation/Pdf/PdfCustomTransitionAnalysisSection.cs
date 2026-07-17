@@ -26,7 +26,7 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
             return;
         }
 
-        var issues = reportData.CustomTransitionIssues;
+        var issues = reportData.Transitions.CustomTransitionIssues;
 
         _ = column.Item().Text("Custom transition analysis").Bold().FontSize(12);
         _ = column.Item().Text($"Issues with {settings.Label} transition").Bold();
@@ -41,7 +41,7 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
         ComposeTransitionP75PerTypeSection(
             column,
             settings,
-            reportData.CustomTransitionDuration75PerType,
+            reportData.Transitions.CustomTransitionDuration75PerType,
             reportData.Settings.ShowTimeCalculationsInHoursOnly);
     }
 

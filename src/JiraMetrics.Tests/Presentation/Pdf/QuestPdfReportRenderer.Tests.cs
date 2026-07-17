@@ -275,18 +275,21 @@ public sealed class QuestPdfReportRendererTests
         {
             Settings = settings,
             Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
-            DoneIssues = [issue],
-            CustomTransitionIssues =
+            Transitions = new JiraReportTransitionData
+            {
+                DoneIssues = [issue],
+                CustomTransitionIssues =
             [
                 new CustomTransitionIssue(issue, transitions[0].At, transitions[0].SincePrevious)
             ],
-            CustomTransitionDuration75PerType =
+                CustomTransitionDuration75PerType =
             [
                 new IssueTypeDuration75Summary(issue.IssueType, new ItemCount(1), transitions[0].SincePrevious)
             ],
-            RejectedIssues = [],
-            PathSummary = summary,
-            PathGroups = [group]
+                RejectedIssues = [],
+                PathSummary = summary,
+                PathGroups = [group]
+            }
         };
     }
 }

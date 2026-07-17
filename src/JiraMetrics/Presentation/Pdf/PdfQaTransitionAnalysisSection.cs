@@ -20,7 +20,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         ArgumentNullException.ThrowIfNull(column);
         ArgumentNullException.ThrowIfNull(reportData);
 
-        var analysis = reportData.QaTransitionAnalysis;
+        var analysis = reportData.Transitions.QaTransitionAnalysis;
         if (analysis.AnalyzedIssueCount.Value == 0)
         {
             return;
@@ -97,8 +97,8 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
             });
 
-            AddSummaryRow(table, "Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.DoneIssues));
-            AddSummaryRow(table, "Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.RejectedIssues));
+            AddSummaryRow(table, "Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.Transitions.DoneIssues));
+            AddSummaryRow(table, "Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.Transitions.RejectedIssues));
             AddSummaryRow(table, "Open Bugs", bugRatio?.OpenIssues.Count ?? 0);
             AddSummaryRow(table, "Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.OpenIssues ?? []));
             AddSummaryRow(table, "Done Bugs", bugRatio?.DoneIssues.Count ?? 0);

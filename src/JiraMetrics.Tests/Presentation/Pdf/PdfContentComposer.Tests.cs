@@ -209,8 +209,10 @@ public sealed class PdfContentComposerTests
                     [new IssueListItem(new IssueKey("AAA-5"), new IssueSummary("Done incident"))],
                     [new IssueListItem(new IssueKey("AAA-6"), new IssueSummary("Rejected incident"))])
             },
-            DoneIssues = [issue],
-            QaTransitionAnalysis = new QaTransitionAnalysis(
+            Transitions = new JiraReportTransitionData
+            {
+                DoneIssues = [issue],
+                QaTransitionAnalysis = new QaTransitionAnalysis(
                 new ItemCount(1),
                 [
                     new TransitionMeasurementIssue(
@@ -245,9 +247,10 @@ public sealed class PdfContentComposerTests
                 ],
                 TimeSpan.FromHours(1),
                 [new IssueTypeDuration75Summary(new IssueTypeName("Task"), new ItemCount(1), TimeSpan.FromHours(1))]),
-            RejectedIssues = [],
-            PathSummary = summary,
-            PathGroups = [group],
+                RejectedIssues = [],
+                PathSummary = summary,
+                PathGroups = [group]
+            },
             Failures = []
         };
     }

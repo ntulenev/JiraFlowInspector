@@ -21,7 +21,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
         ComposeIssueTimelineSection(
             column,
             "Issues moved to Done in selected period",
-            reportData.DoneIssues,
+            reportData.Transitions.DoneIssues,
             reportData.Settings.BaseUrl,
             reportData.Settings.DoneStatusName,
             "Done At",
@@ -30,7 +30,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
             includeDaysAtWork: true);
         ComposeDoneDaysAtWork75PerTypeSection(
             column,
-            reportData.DoneDaysAtWork75PerType,
+            reportData.Transitions.DoneDaysAtWork75PerType,
             reportData.Settings.DoneStatusName,
             reportData.Settings.ShowTimeCalculationsInHoursOnly);
 
@@ -39,7 +39,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
             ComposeIssueTimelineSection(
                 column,
                 "Issues moved to Rejected in selected period",
-                reportData.RejectedIssues,
+                reportData.Transitions.RejectedIssues,
                 reportData.Settings.BaseUrl,
                 rejectStatusName,
                 "Rejected At",

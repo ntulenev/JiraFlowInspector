@@ -165,8 +165,8 @@ public sealed class JiraApplicationTests
         presentation.LastReportData.Source.ReleaseIssues.Should().ContainSingle();
         presentation.LastReportData.Ratios.Bugs!.CreatedThisMonth.Should().Be(new ItemCount(1));
         presentation.LastReportData.Ratios.Bugs.MovedToDoneThisMonth.Should().Be(new ItemCount(1));
-        presentation.LastReportData.DoneIssues.Should().BeEmpty();
-        presentation.LastReportData.PathSummary.PathGroupCount.Should().Be(new ItemCount(0));
+        presentation.LastReportData.Transitions.DoneIssues.Should().BeEmpty();
+        presentation.LastReportData.Transitions.PathSummary.PathGroupCount.Should().Be(new ItemCount(0));
     }
 
     [Fact(DisplayName = "RunAsync shows failures when issue loading fails")]
@@ -844,7 +844,7 @@ public sealed class JiraApplicationTests
         // Assert
         presentation.ReportRendered.Should().BeTrue();
         presentation.LastReportData.Should().NotBeNull();
-        presentation.LastReportData!.DoneIssues.Should().ContainSingle();
+        presentation.LastReportData!.Transitions.DoneIssues.Should().ContainSingle();
         presentation.LastReportData.Source.SearchIssueCount.Value.Should().Be(1);
     }
 
