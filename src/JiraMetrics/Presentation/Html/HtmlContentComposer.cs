@@ -26,80 +26,6 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         return HtmlDocumentComposer.Compose(reportData, content.ToString());
     }
 
-    internal static string BuildRatiosSection(JiraReportData reportData)
-    {
-        var rows = new List<TableRow>();
-        AddRatioRows(rows, "All tasks", reportData.Ratios.AllTasks);
-        AddRatioRows(rows, "Bugs", reportData.Ratios.Bugs);
-        if (reportData.Ratios.Bugs is { } bugRatio)
-        {
-            rows.Add(BuildMetricRow("Bugs: Reproduced on prod", bugRatio.ReporducedOnProdIssues.Count));
-        }
-
-        return BuildTableSection(
-            "ratios",
-            "Task Ratios",
-            "No ratio data available.",
-            MetricColumns,
-            rows,
-            defaultSortColumn: 0,
-            compact: true);
-    }
-
-    internal static string BuildTestCoverageSection(JiraReportData reportData)
-    {
-        if (reportData.Settings.TestCoverage is not { Enabled: true } testCoverageSettings)
-        {
-            return string.Empty;
-        }
-
-        return BuildTableSection(
-            "test-coverage",
-            "Automated Test Coverage",
-            "No automated test coverage data available.",
-            MetricColumns,
-            [
-                BuildTextMetricRow(
-                    "Issue Types",
-                    string.Join(", ", testCoverageSettings.IssueTypes.Select(static issueType => issueType.Value))),
-                BuildTextMetricRow("Test Project", testCoverageSettings.TestProjectKey.Value),
-                BuildTextMetricRow("Link", testCoverageSettings.LinkName),
-                BuildMetricRow("Done in selected period", reportData.Ratios.TestCoverage.TotalIssues.Value),
-                BuildMetricRow("Covered by automated tests", reportData.Ratios.TestCoverage.CoveredIssueCount.Value),
-                new TableRow(
-                [
-                    BuildTextCell("Coverage"),
-                    BuildTextCell(PresentationFormatting.FormatPercentage(reportData.Ratios.TestCoverage.CoveragePercentage), reportData.Ratios.TestCoverage.CoveragePercentage)
-                ])
-            ],
-            defaultSortColumn: 0,
-            compact: true);
-    }
-
-    private static void AddRatioRows(
-        List<TableRow> rows,
-        string scope,
-        IssueRatioSnapshot? snapshot)
-    {
-        if (snapshot is null)
-        {
-            return;
-        }
-
-        rows.Add(BuildMetricRow($"{scope}: Created", snapshot.CreatedThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Open", snapshot.OpenThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Done", snapshot.MovedToDoneThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Rejected", snapshot.RejectedThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Finished", snapshot.FinishedThisMonth.Value));
-        rows.Add(new TableRow(
-        [
-            BuildTextCell($"{scope}: Finished / Created"),
-            BuildTextCell(PresentationFormatting.BuildFinishedToCreatedRatioText(
-                snapshot.CreatedThisMonth,
-                snapshot.FinishedThisMonth))
-        ]));
-    }
-
     internal static string BuildBugRatioDetailsSection(JiraReportData reportData)
     {
         if (reportData.Ratios.Bugs is not { } bugRatio)
@@ -864,20 +790,6 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
             defaultSortDirection,
             compact);
 
-    private static TableRow BuildMetricRow(string metricName, int value) =>
-        new(
-        [
-            BuildTextCell(metricName),
-            BuildTextCell(value.ToString(CultureInfo.InvariantCulture), value)
-        ]);
-
-    private static TableRow BuildTextMetricRow(string metricName, string value) =>
-        new(
-        [
-            BuildTextCell(metricName),
-            BuildTextCell(value)
-        ]);
-
     private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
         duration is null
             ? "-"
@@ -901,12 +813,6 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                     .OrderByDescending(static summary => summary.Count.Value)
                     .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)
                     .Select(static summary => $"{summary.IssueType.Value} - {summary.Count.Value.ToString(CultureInfo.InvariantCulture)}"));
-
-    private static IReadOnlyList<TableColumn> MetricColumns { get; } =
-    [
-        new TableColumn("Metric", "text", "Metric"),
-        new TableColumn("Value", "number", "Value")
-    ];
 
     private static IReadOnlyList<IHtmlReportSection> DefaultSections { get; } =
     [

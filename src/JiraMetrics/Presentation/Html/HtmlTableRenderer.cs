@@ -8,6 +8,26 @@ namespace JiraMetrics.Presentation.Html;
 /// </summary>
 internal static class HtmlTableRenderer
 {
+    public static IReadOnlyList<TableColumn> MetricColumns { get; } =
+    [
+        new TableColumn("Metric", "text", "Metric"),
+        new TableColumn("Value", "number", "Value")
+    ];
+
+    public static TableRow BuildMetricRow(string metricName, int value) =>
+        new(
+        [
+            BuildTextCell(metricName),
+            BuildTextCell(value.ToString(CultureInfo.InvariantCulture), value)
+        ]);
+
+    public static TableRow BuildTextMetricRow(string metricName, string value) =>
+        new(
+        [
+            BuildTextCell(metricName),
+            BuildTextCell(value)
+        ]);
+
     public static TableCell BuildTextCell(string text, IFormattable? sortValue = null) =>
         new(
             HtmlPresentationHelpers.Encode(text),
