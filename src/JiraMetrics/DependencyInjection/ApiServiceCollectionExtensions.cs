@@ -33,11 +33,6 @@ internal static class ApiServiceCollectionExtensions
             .AddTransient<IJiraUserClient, JiraUserClient>()
             .AddTransient<IJiraIssueSearchClient, JiraIssueSearchClient>()
             .AddTransient<IJiraReportDataClient, JiraReportDataClient>()
-            .AddTransient<IJiraIssueTimelineClient, JiraIssueTimelineClient>()
-            .AddTransient<IJiraApiClient>(sp => new JiraApiClient(
-                sp.GetRequiredService<IJiraUserClient>(),
-                sp.GetRequiredService<IJiraIssueSearchClient>(),
-                sp.GetRequiredService<IJiraReportDataClient>(),
-                sp.GetRequiredService<IJiraIssueTimelineClient>()));
+            .AddTransient<IJiraIssueTimelineClient, JiraIssueTimelineClient>();
     }
 }

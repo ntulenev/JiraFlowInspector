@@ -1063,7 +1063,6 @@ public sealed class JiraApplicationTests
     }
 
     private sealed class FakeApiClient :
-        IJiraApiClient,
         IJiraUserClient,
         IJiraIssueSearchClient,
         IJiraReportDataClient,

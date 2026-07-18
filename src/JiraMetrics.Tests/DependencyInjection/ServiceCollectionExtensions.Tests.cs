@@ -85,10 +85,6 @@ public sealed class ServiceCollectionExtensionsTests
             && descriptor.ImplementationType != null
             && descriptor.ImplementationType.Name == "JiraMapperFacade"
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
-        services.Any(static descriptor =>
-            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Api.IJiraApiClient)
-            && descriptor.ImplementationFactory != null
-            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
     }
 
     [Fact(DisplayName = "AddJiraLogic registers logic services")]
