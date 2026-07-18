@@ -529,41 +529,6 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
         return html.ToString();
     }
 
-    internal static string BuildArchTasksTable(JiraReportData reportData)
-    {
-        if (reportData.Settings.ArchTasksReport is null)
-        {
-            return string.Empty;
-        }
-
-        var rows = reportData.Source.ArchTasks
-            .OrderBy(static task => task.CreatedAt)
-            .ThenBy(static task => task.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .Select((task, index) => new TableRow(
-            [
-                BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
-                BuildLinkCell(task.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, task.Key)),
-                BuildTextCell(HtmlPresentationHelpers.FormatDateTime(task.CreatedAt), task.CreatedAt.ToUnixTimeSeconds()),
-                BuildTextCell(HtmlPresentationHelpers.FormatDateTime(task.ResolvedAt), task.ResolvedAt?.ToUnixTimeSeconds()),
-                BuildTextCell(task.Title.Value)
-            ]))
-            .ToList();
-
-        return BuildTableSection(
-            "arch-tasks",
-            "Architecture Tasks",
-            "No architecture tasks found.",
-            [
-                new TableColumn("#", "number", "#", "narrow"),
-                new TableColumn("Issue", "text", "Issue", "issue-column"),
-                new TableColumn("Created", "number", "Created"),
-                new TableColumn("Resolved", "number", "Resolved"),
-                new TableColumn("Title", "text", "Title", "summary-column")
-            ],
-            rows,
-            defaultSortColumn: 2);
-    }
-
     internal static string BuildGlobalIncidentsTable(JiraReportData reportData)
     {
         if (reportData.Settings.GlobalIncidentsReport is null)
