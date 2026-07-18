@@ -93,7 +93,7 @@ internal sealed class PdfPathGroupsSection : IPdfReportSection
             });
             _ = column
                 .Item()
-                .Text("TTM 75P: " + PdfPresentationHelpers.ToDurationLabel(group.TotalP75, showTimeCalculationsInHoursOnly));
+                .Text("TTM 75P: " + PresentationFormatting.ToDurationLabel(group.TotalP75, showTimeCalculationsInHoursOnly));
 
             if (group.P75Transitions.Count == 0)
             {
@@ -125,7 +125,7 @@ internal sealed class PdfPathGroupsSection : IPdfReportSection
                     _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(transition.To.Value);
                     _ = table.Cell()
                         .Element(PdfPresentationHelpers.StyleBodyCell)
-                        .Text(PdfPresentationHelpers.ToDurationLabel(transition.P75Duration, showTimeCalculationsInHoursOnly));
+                        .Text(PresentationFormatting.ToDurationLabel(transition.P75Duration, showTimeCalculationsInHoursOnly));
                 }
             });
         }

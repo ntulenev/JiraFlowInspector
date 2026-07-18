@@ -112,6 +112,11 @@ internal static class PresentationFormatting
     public static string FormatPercentage(double? value) =>
         value.HasValue ? value.Value.ToString("0.##", CultureInfo.InvariantCulture) + "%" : "N/A";
 
+    public static string ToDurationLabel(
+        TimeSpan duration,
+        bool showTimeCalculationsInHoursOnly = false) =>
+        DurationLabel.FromDuration(duration, showTimeCalculationsInHoursOnly).Value;
+
     public static string BuildHotFixRulesText(IReadOnlyDictionary<string, IReadOnlyList<string>> hotFixRules)
     {
         return string.Join(

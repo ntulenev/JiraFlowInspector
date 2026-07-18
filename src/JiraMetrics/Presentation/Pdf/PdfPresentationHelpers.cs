@@ -42,8 +42,6 @@ internal static class PdfPresentationHelpers
         return $"{baseUrl.Value}/browse/{issueKey.Value}";
     }
 
-    public static string ToDurationLabel(TimeSpan duration, bool showTimeCalculationsInHoursOnly = false) =>
-        DurationLabel.FromDuration(duration, showTimeCalculationsInHoursOnly).Value;
     private const string HEADER_BACKGROUND_COLOR_HEX = "#1f2937";
     private const string HEADER_TEXT_COLOR_HEX = "#f9fafb";
 }

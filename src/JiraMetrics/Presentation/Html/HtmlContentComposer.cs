@@ -5,7 +5,6 @@ using static JiraMetrics.Presentation.Html.HtmlTableRenderer;
 
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
-using JiraMetrics.Presentation.Pdf;
 
 namespace JiraMetrics.Presentation.Html;
 
@@ -441,7 +440,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                     groupNumber.ToString(CultureInfo.InvariantCulture),
                     "</td>"));
                 _ = html.AppendLine(string.Concat("            <td data-sort='", group.Issues.Count.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", group.Issues.Count.ToString(CultureInfo.InvariantCulture), "</td>"));
-                _ = html.AppendLine(string.Concat("            <td data-sort='", group.TotalP75.TotalMinutes.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", HtmlPresentationHelpers.Encode(PdfPresentationHelpers.ToDurationLabel(group.TotalP75, reportData.Settings.ShowTimeCalculationsInHoursOnly)), "</td>"));
+                _ = html.AppendLine(string.Concat("            <td data-sort='", group.TotalP75.TotalMinutes.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", HtmlPresentationHelpers.Encode(PresentationFormatting.ToDurationLabel(group.TotalP75, reportData.Settings.ShowTimeCalculationsInHoursOnly)), "</td>"));
                 _ = html.AppendLine(string.Concat("            <td data-sort='", group.P75Transitions.Count.ToString(CultureInfo.InvariantCulture), "' data-filter='", HtmlPresentationHelpers.EncodeAttribute(filterValue), "'>", group.P75Transitions.Count.ToString(CultureInfo.InvariantCulture), "</td>"));
                 _ = html.AppendLine("          </tr>");
                 _ = html.AppendLine("          <tr class=\"detail-row\" hidden><td colspan=\"4\">");
@@ -886,7 +885,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
 
     private static string FormatDurationWithHours(TimeSpan duration, bool showTimeCalculationsInHoursOnly)
     {
-        var durationLabel = PdfPresentationHelpers.ToDurationLabel(duration, showTimeCalculationsInHoursOnly);
+        var durationLabel = PresentationFormatting.ToDurationLabel(duration, showTimeCalculationsInHoursOnly);
         var hoursLabel = duration.TotalHours.ToString("0.##", CultureInfo.InvariantCulture) + "h";
         return showTimeCalculationsInHoursOnly
             ? durationLabel
