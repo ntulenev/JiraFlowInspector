@@ -342,9 +342,9 @@ public sealed class JiraApplicationBranchesTests
         reportingFacade.Verify(facade => facade.ShowExecutionSummary(It.IsAny<TimeSpan>(), It.IsAny<JiraRequestTelemetrySummary>()), Times.Once);
     }
 
-    private static Mock<IJiraApplicationReportingFacade> CreateReportingFacade()
+    private static Mock<IJiraPresentationService> CreateReportingFacade()
     {
-        var reportingFacade = new Mock<IJiraApplicationReportingFacade>(MockBehavior.Strict);
+        var reportingFacade = new Mock<IJiraPresentationService>(MockBehavior.Strict);
         reportingFacade.Setup(facade => facade.ShowAuthenticationStarted());
         reportingFacade.Setup(facade => facade.ShowAuthenticationSucceeded(It.IsAny<JiraAuthUser>()));
         reportingFacade.Setup(facade => facade.ShowAuthenticationFailed(It.IsAny<ErrorMessage>()));
@@ -355,7 +355,7 @@ public sealed class JiraApplicationBranchesTests
         reportingFacade.Setup(facade => facade.ShowReportHeader(It.IsAny<AppSettings>(), It.IsAny<ItemCount>()));
         reportingFacade.Setup(facade => facade.ShowNoIssuesMatchedFilter());
         reportingFacade.Setup(facade => facade.ShowProcessingStep(It.IsAny<string>()));
-        reportingFacade.Setup(facade => facade.ShowSpacer());
+        reportingFacade.As<IJiraStatusPresenter>().Setup(presenter => presenter.ShowSpacer());
         reportingFacade.Setup(facade => facade.ShowNoIssuesLoaded());
         reportingFacade.Setup(facade => facade.ShowNoIssuesMatchedRequiredStage());
         reportingFacade.Setup(facade => facade.ShowExecutionSummary(
@@ -388,17 +388,23 @@ public sealed class JiraApplicationBranchesTests
         AppSettings settings,
         Mock<IJiraApplicationDataFacade> dataFacade,
         Mock<IJiraApplicationAnalysisFacade> analysisFacade,
-        Mock<IJiraApplicationReportingFacade> reportingFacade,
+        Mock<IJiraPresentationService> reportingFacade,
         Mock<IJiraRequestTelemetryCollector> telemetryCollector)
     {
         return new JiraApplication(
             reportingFacade.Object,
             telemetryCollector.Object,
-            new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object),
+            new JiraApplicationReportLoader(
+                settings,
+                dataFacade.Object,
+                reportingFacade.Object,
+                reportingFacade.Object),
             new JiraApplicationAnalysisRunner(
                 settings,
                 dataFacade.Object,
                 analysisFacade.Object,
+                reportingFacade.Object,
+                reportingFacade.Object,
                 reportingFacade.Object,
                 reportingFacade.As<IJiraReportPipeline>().Object));
     }

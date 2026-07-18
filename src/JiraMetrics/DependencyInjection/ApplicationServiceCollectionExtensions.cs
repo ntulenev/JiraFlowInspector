@@ -19,17 +19,19 @@ internal static class ApplicationServiceCollectionExtensions
             .AddTransient<IJiraApplicationReportLoader>(sp => new JiraApplicationReportLoader(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>(),
-                sp.GetRequiredService<IJiraApplicationReportingFacade>()))
+                sp.GetRequiredService<IJiraStatusPresenter>(),
+                sp.GetRequiredService<IJiraReportSectionsPresenter>()))
             .AddTransient<IJiraApplicationAnalysisRunner>(sp => new JiraApplicationAnalysisRunner(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>(),
                 sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
-                sp.GetRequiredService<IJiraApplicationReportingFacade>(),
+                sp.GetRequiredService<IJiraStatusPresenter>(),
+                sp.GetRequiredService<IJiraAnalysisPresenter>(),
+                sp.GetRequiredService<IJiraDiagnosticsPresenter>(),
                 sp.GetRequiredService<IJiraReportPipeline>()))
             .AddTransient<IJiraReportPipeline, JiraReportPipeline>()
-            .AddTransient<IJiraApplicationReportingFacade, JiraApplicationReportingFacade>()
             .AddTransient<IJiraApplication>(sp => new JiraApplication(
-                sp.GetRequiredService<IJiraApplicationReportingFacade>(),
+                sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraRequestTelemetryCollector>(),
                 sp.GetRequiredService<IJiraApplicationReportLoader>(),
                 sp.GetRequiredService<IJiraApplicationAnalysisRunner>()));

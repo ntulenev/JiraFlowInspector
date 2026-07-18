@@ -38,7 +38,11 @@ public sealed class JiraApplicationReportLoaderTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(testCoverage);
 
-        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
+        var sut = new JiraApplicationReportLoader(
+            settings,
+            dataFacade.Object,
+            reportingFacade.Object,
+            reportingFacade.Object);
 
         // Act
         var result = await sut.TryLoadAsync(cts.Token);
@@ -66,7 +70,11 @@ public sealed class JiraApplicationReportLoaderTests
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new JsonException("Invalid incident response."));
 
-        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
+        var sut = new JiraApplicationReportLoader(
+            settings,
+            dataFacade.Object,
+            reportingFacade.Object,
+            reportingFacade.Object);
 
         // Act
         var result = await sut.TryLoadAsync(cts.Token);
@@ -96,7 +104,11 @@ public sealed class JiraApplicationReportLoaderTests
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("Coverage service unavailable."));
 
-        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
+        var sut = new JiraApplicationReportLoader(
+            settings,
+            dataFacade.Object,
+            reportingFacade.Object,
+            reportingFacade.Object);
 
         // Act
         var result = await sut.TryLoadAsync(cts.Token);
@@ -121,7 +133,11 @@ public sealed class JiraApplicationReportLoaderTests
         using var cts = new CancellationTokenSource();
         var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
         var reportingFacade = CreateReportingFacade();
-        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
+        var sut = new JiraApplicationReportLoader(
+            settings,
+            dataFacade.Object,
+            reportingFacade.Object,
+            reportingFacade.Object);
 
         // Act
         var result = await sut.TryLoadAsync(cts.Token);
@@ -174,7 +190,11 @@ public sealed class JiraApplicationReportLoaderTests
                 return CreateRatioSnapshot(3);
             });
 
-        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object, reportingFacade.Object);
+        var sut = new JiraApplicationReportLoader(
+            settings,
+            dataFacade.Object,
+            reportingFacade.Object,
+            reportingFacade.Object);
 
         // Act
         var loadTask = sut.TryLoadAsync(cts.Token);
@@ -214,13 +234,13 @@ public sealed class JiraApplicationReportLoaderTests
         return dataFacade;
     }
 
-    private static Mock<IJiraApplicationReportingFacade> CreateReportingFacade()
+    private static Mock<IJiraPresentationService> CreateReportingFacade()
     {
-        var reportingFacade = new Mock<IJiraApplicationReportingFacade>(MockBehavior.Strict);
+        var reportingFacade = new Mock<IJiraPresentationService>(MockBehavior.Strict);
         reportingFacade.Setup(facade => facade.ShowReportPeriodContext(
             It.IsAny<ReportPeriod>(),
             It.IsAny<CreatedAfterDate?>()));
-        reportingFacade.Setup(facade => facade.ShowSpacer());
+        reportingFacade.As<IJiraStatusPresenter>().Setup(presenter => presenter.ShowSpacer());
         reportingFacade.Setup(facade => facade.ShowAllTasksRatioLoadingStarted());
         reportingFacade.Setup(facade => facade.ShowAllTasksRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()));
         reportingFacade.Setup(facade => facade.ShowAllTasksRatio(

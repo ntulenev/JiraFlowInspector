@@ -16,7 +16,7 @@ public sealed class JiraApplicationTests
     public void ConstructorWhenReportingFacadeIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IJiraApplicationReportingFacade reportingFacade = null!;
+        IJiraStatusPresenter reportingFacade = null!;
 
         // Act
         Action act = () => _ = new JiraApplication(
@@ -1004,11 +1004,13 @@ public sealed class JiraApplicationTests
         return new JiraApplication(
             presentation,
             requestTelemetryCollector,
-            new JiraApplicationReportLoader(appSettings, dataFacade, presentation),
+            new JiraApplicationReportLoader(appSettings, dataFacade, presentation, presentation),
             new JiraApplicationAnalysisRunner(
                 appSettings,
                 dataFacade,
                 analysisFacade,
+                presentation,
+                presentation,
                 presentation,
                 presentation));
     }
@@ -1357,7 +1359,6 @@ public sealed class JiraApplicationTests
 
     private sealed class FakePresentationService :
         IJiraPresentationService,
-        IJiraApplicationReportingFacade,
         IJiraReportPipeline
     {
         public List<string> Calls { get; } = [];

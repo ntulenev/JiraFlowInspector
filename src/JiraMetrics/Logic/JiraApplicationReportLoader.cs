@@ -14,15 +14,18 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
     public JiraApplicationReportLoader(
         AppSettings settings,
         IJiraApplicationDataFacade dataFacade,
-        IJiraApplicationReportingFacade reportingFacade)
+        IJiraStatusPresenter statusPresenter,
+        IJiraReportSectionsPresenter reportSectionsPresenter)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(dataFacade);
-        ArgumentNullException.ThrowIfNull(reportingFacade);
+        ArgumentNullException.ThrowIfNull(statusPresenter);
+        ArgumentNullException.ThrowIfNull(reportSectionsPresenter);
 
         _settings = settings;
         _dataFacade = dataFacade;
-        _reportingFacade = reportingFacade;
+        _statusPresenter = statusPresenter;
+        _reportSectionsPresenter = reportSectionsPresenter;
     }
 
     public Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken) =>
@@ -30,11 +33,11 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
 
     public async Task<JiraApplicationReportData?> TryLoadAsync(CancellationToken cancellationToken)
     {
-        _reportingFacade.ShowReportPeriodContext(_settings.ReportPeriod, _settings.CreatedAfter);
-        _reportingFacade.ShowSpacer();
+        _statusPresenter.ShowReportPeriodContext(_settings.ReportPeriod, _settings.CreatedAfter);
+        _statusPresenter.ShowSpacer();
 
         ShowOptionalReportLoadingStarted();
-        _reportingFacade.ShowAllTasksRatioLoadingStarted();
+        _reportSectionsPresenter.ShowAllTasksRatioLoadingStarted();
 
         using var pendingLoadsCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var pendingLoadsToken = pendingLoadsCancellation.Token;
@@ -122,17 +125,17 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
     {
         if (_settings.ReleaseReport is not null)
         {
-            _reportingFacade.ShowReleaseReportLoadingStarted();
+            _reportSectionsPresenter.ShowReleaseReportLoadingStarted();
         }
 
         if (_settings.ArchTasksReport is not null)
         {
-            _reportingFacade.ShowArchTasksReportLoadingStarted();
+            _reportSectionsPresenter.ShowArchTasksReportLoadingStarted();
         }
 
         if (_settings.GlobalIncidentsReport is not null)
         {
-            _reportingFacade.ShowGlobalIncidentsReportLoadingStarted();
+            _reportSectionsPresenter.ShowGlobalIncidentsReportLoadingStarted();
         }
     }
 
@@ -140,29 +143,29 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
     {
         if (_settings.ReleaseReport is { } releaseReportSettings)
         {
-            _reportingFacade.ShowSpacer();
-            _reportingFacade.ShowReleaseReport(
+            _statusPresenter.ShowSpacer();
+            _reportSectionsPresenter.ShowReleaseReport(
                 releaseReportSettings,
                 _settings.ReportPeriod,
                 reportContext.ReleaseIssues);
-            _reportingFacade.ShowSpacer();
+            _statusPresenter.ShowSpacer();
         }
 
         if (_settings.ArchTasksReport is { } archTasksReportSettings)
         {
-            _reportingFacade.ShowArchTasksReport(
+            _reportSectionsPresenter.ShowArchTasksReport(
                 archTasksReportSettings,
                 reportContext.ArchTasks);
-            _reportingFacade.ShowSpacer();
+            _statusPresenter.ShowSpacer();
         }
 
         if (_settings.GlobalIncidentsReport is { } globalIncidentsReportSettings)
         {
-            _reportingFacade.ShowGlobalIncidentsReport(
+            _reportSectionsPresenter.ShowGlobalIncidentsReport(
                 globalIncidentsReportSettings,
                 _settings.ReportPeriod,
                 reportContext.GlobalIncidents);
-            _reportingFacade.ShowSpacer();
+            _statusPresenter.ShowSpacer();
         }
     }
 
@@ -173,7 +176,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        _reportingFacade.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
+        _reportSectionsPresenter.ShowBugRatioLoadingStarted(_settings.BugIssueNames);
         return TryLoadSearchDataAsync(
             () => _dataFacade.LoadIssueRatioAsync(
                 _settings,
@@ -202,7 +205,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        _reportingFacade.ShowTestCoverageLoadingStarted(testCoverageSettings);
+        _reportSectionsPresenter.ShowTestCoverageLoadingStarted(testCoverageSettings);
         return TryLoadSearchDataAsync(
             () => _dataFacade.LoadTestCoverageAsync(_settings, testCoverageSettings, cancellationToken));
     }
@@ -215,12 +218,12 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        _reportingFacade.ShowAllTasksRatioLoadingCompleted(allTasksRatio);
-        _reportingFacade.ShowAllTasksRatio(
+        _reportSectionsPresenter.ShowAllTasksRatioLoadingCompleted(allTasksRatio);
+        _reportSectionsPresenter.ShowAllTasksRatio(
             _settings.CustomFieldName,
             _settings.CustomFieldValue,
             allTasksRatio);
-        _reportingFacade.ShowSpacer();
+        _statusPresenter.ShowSpacer();
 
         return allTasksRatio;
     }
@@ -238,13 +241,13 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        _reportingFacade.ShowBugRatioLoadingCompleted(bugRatio);
-        _reportingFacade.ShowBugRatio(
+        _reportSectionsPresenter.ShowBugRatioLoadingCompleted(bugRatio);
+        _reportSectionsPresenter.ShowBugRatio(
             _settings.BugIssueNames,
             _settings.CustomFieldName,
             _settings.CustomFieldValue,
             bugRatio);
-        _reportingFacade.ShowSpacer();
+        _statusPresenter.ShowSpacer();
 
         return bugRatio;
     }
@@ -274,8 +277,8 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        _reportingFacade.ShowTestCoverage(testCoverageSettings, testCoverage);
-        _reportingFacade.ShowSpacer();
+        _reportSectionsPresenter.ShowTestCoverage(testCoverageSettings, testCoverage);
+        _statusPresenter.ShowSpacer();
 
         return testCoverage;
     }
@@ -289,15 +292,15 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         }
         catch (HttpRequestException ex)
         {
-            _reportingFacade.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
         }
         catch (InvalidOperationException ex)
         {
-            _reportingFacade.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
         }
         catch (JsonException ex)
         {
-            _reportingFacade.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
+            _statusPresenter.ShowIssueSearchFailed(ErrorMessage.FromException(ex));
         }
 
         return null;
@@ -305,5 +308,6 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
 
     private readonly AppSettings _settings;
     private readonly IJiraApplicationDataFacade _dataFacade;
-    private readonly IJiraApplicationReportingFacade _reportingFacade;
+    private readonly IJiraStatusPresenter _statusPresenter;
+    private readonly IJiraReportSectionsPresenter _reportSectionsPresenter;
 }
