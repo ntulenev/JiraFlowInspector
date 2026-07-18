@@ -11,15 +11,12 @@ internal sealed class JiraApplicationReportingFacade : IJiraApplicationReporting
 {
     public JiraApplicationReportingFacade(
         IJiraPresentationService presentationService,
-        IHtmlReportRenderer htmlReportRenderer,
-        IPdfReportRenderer pdfReportRenderer)
+        IJiraReportPipeline reportPipeline)
     {
         ArgumentNullException.ThrowIfNull(presentationService);
-        ArgumentNullException.ThrowIfNull(htmlReportRenderer);
-        ArgumentNullException.ThrowIfNull(pdfReportRenderer);
+        ArgumentNullException.ThrowIfNull(reportPipeline);
         _presentationService = presentationService;
-        _htmlReportRenderer = htmlReportRenderer;
-        _pdfReportRenderer = pdfReportRenderer;
+        _reportPipeline = reportPipeline;
     }
 
     public void ShowAuthenticationStarted() => _presentationService.ShowAuthenticationStarted();
@@ -147,13 +144,8 @@ internal sealed class JiraApplicationReportingFacade : IJiraApplicationReporting
     public void ShowFailures(IReadOnlyList<LoadFailure> failures) =>
         _presentationService.ShowFailures(failures);
 
-    public void RenderReport(JiraReportData reportData)
-    {
-        _htmlReportRenderer.RenderReport(reportData);
-        _pdfReportRenderer.RenderReport(reportData);
-    }
+    public void RenderReport(JiraReportData reportData) => _reportPipeline.RenderReport(reportData);
 
     private readonly IJiraPresentationService _presentationService;
-    private readonly IHtmlReportRenderer _htmlReportRenderer;
-    private readonly IPdfReportRenderer _pdfReportRenderer;
+    private readonly IJiraReportPipeline _reportPipeline;
 }

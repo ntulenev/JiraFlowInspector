@@ -2,7 +2,6 @@ using System.Globalization;
 
 using FluentAssertions;
 
-using JiraMetrics.Abstractions.Html;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -19,43 +18,39 @@ public sealed class JiraApplicationReportingFacadeTests
     public void ConstructorWhenPresentationServiceIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IHtmlReportRenderer htmlReportRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict).Object;
-        IPdfReportRenderer pdfReportRenderer = new Mock<IPdfReportRenderer>(MockBehavior.Strict).Object;
+        IJiraReportPipeline reportPipeline = new Mock<IJiraReportPipeline>(MockBehavior.Strict).Object;
 
         // Act
-        Action act = () => _ = new JiraApplicationReportingFacade(null!, htmlReportRenderer, pdfReportRenderer);
+        Action act = () => _ = new JiraApplicationReportingFacade(null!, reportPipeline);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "Constructor throws when PDF renderer is null")]
+    [Fact(DisplayName = "Constructor throws when report pipeline is null")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenPdfReportRendererIsNullThrowsArgumentNullException()
+    public void ConstructorWhenReportPipelineIsNullThrowsArgumentNullException()
     {
         // Arrange
         IJiraPresentationService presentationService = new Mock<IJiraPresentationService>(MockBehavior.Strict).Object;
-        IHtmlReportRenderer htmlReportRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict).Object;
 
         // Act
-        Action act = () => _ = new JiraApplicationReportingFacade(presentationService, htmlReportRenderer, null!);
+        Action act = () => _ = new JiraApplicationReportingFacade(presentationService, null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "Facade delegates all reporting calls to presentation service and PDF renderer")]
+    [Fact(DisplayName = "Facade delegates all reporting calls to presentation service and report pipeline")]
     [Trait("Category", "Unit")]
     public void ReportingCallsWhenInvokedDelegateToUnderlyingServices()
     {
         // Arrange
         var presentationService = new Mock<IJiraPresentationService>(MockBehavior.Strict);
-        var htmlReportRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict);
-        var pdfReportRenderer = new Mock<IPdfReportRenderer>(MockBehavior.Strict);
+        var reportPipeline = new Mock<IJiraReportPipeline>(MockBehavior.Strict);
         var facade = new JiraApplicationReportingFacade(
             presentationService.Object,
-            htmlReportRenderer.Object,
-            pdfReportRenderer.Object);
+            reportPipeline.Object);
 
         var user = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123");
         var errorMessage = new ErrorMessage("Search failed.");
@@ -176,8 +171,7 @@ public sealed class JiraApplicationReportingFacadeTests
             new StatusName("Done"),
             new StatusName("Rejected")));
         presentationService.Setup(service => service.ShowFailures(failures));
-        htmlReportRenderer.Setup(renderer => renderer.RenderReport(reportData));
-        pdfReportRenderer.Setup(renderer => renderer.RenderReport(reportData));
+        reportPipeline.Setup(pipeline => pipeline.RenderReport(reportData));
 
         // Act
         facade.ShowAuthenticationStarted();
@@ -283,8 +277,7 @@ public sealed class JiraApplicationReportingFacadeTests
                 new StatusName("Rejected")),
             Times.Once);
         presentationService.Verify(service => service.ShowFailures(failures), Times.Once);
-        htmlReportRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
-        pdfReportRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
+        reportPipeline.Verify(pipeline => pipeline.RenderReport(reportData), Times.Once);
     }
 
     private static AppSettings CreateSettings()
