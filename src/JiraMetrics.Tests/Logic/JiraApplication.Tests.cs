@@ -1009,6 +1009,7 @@ public sealed class JiraApplicationTests
                 appSettings,
                 dataFacade,
                 analysisFacade,
+                presentation,
                 presentation));
     }
 
@@ -1354,7 +1355,10 @@ public sealed class JiraApplicationTests
             Task.CompletedTask;
     }
 
-    private sealed class FakePresentationService : IJiraPresentationService, IJiraApplicationReportingFacade
+    private sealed class FakePresentationService :
+        IJiraPresentationService,
+        IJiraApplicationReportingFacade,
+        IJiraReportPipeline
     {
         public List<string> Calls { get; } = [];
 

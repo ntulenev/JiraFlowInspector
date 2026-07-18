@@ -7,8 +7,7 @@ public interface IJiraApplicationReportingFacade :
     IJiraStatusPresenter,
     IJiraReportSectionsPresenter,
     IJiraAnalysisPresenter,
-    IJiraDiagnosticsPresenter,
-    IPdfReportRenderer
+    IJiraDiagnosticsPresenter
 {
     /// <summary>
     /// Shows a spacer line between report sections.

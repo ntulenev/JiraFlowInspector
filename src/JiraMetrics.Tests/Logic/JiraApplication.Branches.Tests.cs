@@ -50,7 +50,8 @@ public sealed class JiraApplicationBranchesTests
             facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message => message.Value.Contains("Network failure.", StringComparison.Ordinal))),
             Times.Once);
         reportingFacade.Verify(facade => facade.ShowReportHeader(It.IsAny<AppSettings>(), It.IsAny<ItemCount>()), Times.Never);
-        reportingFacade.Verify(facade => facade.RenderReport(It.IsAny<JiraReportData>()), Times.Never);
+        reportingFacade.As<IJiraReportPipeline>()
+            .Verify(pipeline => pipeline.RenderReport(It.IsAny<JiraReportData>()), Times.Never);
         reportingFacade.Verify(facade => facade.ShowExecutionSummary(It.IsAny<TimeSpan>(), It.IsAny<JiraRequestTelemetrySummary>()), Times.Once);
         analysisFacade.Verify(
             facade => facade.Analyze(
@@ -207,8 +208,8 @@ public sealed class JiraApplicationBranchesTests
                 settings.DoneStatusName,
                 settings.RejectStatusName),
             Times.Once);
-        reportingFacade.Verify(
-            facade => facade.RenderReport(It.Is<JiraReportData>(report =>
+        reportingFacade.As<IJiraReportPipeline>().Verify(
+            pipeline => pipeline.RenderReport(It.Is<JiraReportData>(report =>
                 report.Source.SearchIssueCount == new ItemCount(1)
                 && report.Transitions.DoneIssues.Count == 0
                 && report.Transitions.PathSummary.SuccessfulCount == new ItemCount(0)
@@ -276,8 +277,8 @@ public sealed class JiraApplicationBranchesTests
         // Assert
         reportingFacade.Verify(facade => facade.ShowNoIssuesMatchedRequiredStage(), Times.Once);
         reportingFacade.Verify(facade => facade.ShowFailures(failures), Times.Once);
-        reportingFacade.Verify(
-            facade => facade.RenderReport(It.Is<JiraReportData>(report =>
+        reportingFacade.As<IJiraReportPipeline>().Verify(
+            pipeline => pipeline.RenderReport(It.Is<JiraReportData>(report =>
                 report.Source.SearchIssueCount == new ItemCount(1)
                 && report.Transitions.DoneIssues.Count == 0
                 && report.Transitions.PathSummary.SuccessfulCount == new ItemCount(1)
@@ -378,7 +379,8 @@ public sealed class JiraApplicationBranchesTests
             It.IsAny<StatusName>(),
             It.IsAny<StatusName?>()));
         reportingFacade.Setup(facade => facade.ShowFailures(It.IsAny<IReadOnlyList<LoadFailure>>()));
-        reportingFacade.Setup(facade => facade.RenderReport(It.IsAny<JiraReportData>()));
+        reportingFacade.As<IJiraReportPipeline>()
+            .Setup(pipeline => pipeline.RenderReport(It.IsAny<JiraReportData>()));
         return reportingFacade;
     }
 
@@ -397,7 +399,8 @@ public sealed class JiraApplicationBranchesTests
                 settings,
                 dataFacade.Object,
                 analysisFacade.Object,
-                reportingFacade.Object));
+                reportingFacade.Object,
+                reportingFacade.As<IJiraReportPipeline>().Object));
     }
 
     private static AppSettings CreateSettings(IReadOnlyList<IssueTypeName>? bugIssueNames = null)

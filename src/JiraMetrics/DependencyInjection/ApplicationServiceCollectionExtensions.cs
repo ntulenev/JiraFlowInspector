@@ -24,7 +24,8 @@ internal static class ApplicationServiceCollectionExtensions
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>(),
                 sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
-                sp.GetRequiredService<IJiraApplicationReportingFacade>()))
+                sp.GetRequiredService<IJiraApplicationReportingFacade>(),
+                sp.GetRequiredService<IJiraReportPipeline>()))
             .AddTransient<IJiraReportPipeline, JiraReportPipeline>()
             .AddTransient<IJiraApplicationReportingFacade, JiraApplicationReportingFacade>()
             .AddTransient<IJiraApplication>(sp => new JiraApplication(

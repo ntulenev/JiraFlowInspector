@@ -18,39 +18,20 @@ public sealed class JiraApplicationReportingFacadeTests
     public void ConstructorWhenPresentationServiceIsNullThrowsArgumentNullException()
     {
         // Arrange
-        IJiraReportPipeline reportPipeline = new Mock<IJiraReportPipeline>(MockBehavior.Strict).Object;
-
         // Act
-        Action act = () => _ = new JiraApplicationReportingFacade(null!, reportPipeline);
+        Action act = () => _ = new JiraApplicationReportingFacade(null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "Constructor throws when report pipeline is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenReportPipelineIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        IJiraPresentationService presentationService = new Mock<IJiraPresentationService>(MockBehavior.Strict).Object;
-
-        // Act
-        Action act = () => _ = new JiraApplicationReportingFacade(presentationService, null!);
-
-        // Assert
-        act.Should().Throw<ArgumentNullException>();
-    }
-
-    [Fact(DisplayName = "Facade delegates all reporting calls to presentation service and report pipeline")]
+    [Fact(DisplayName = "Facade delegates all reporting calls to presentation service")]
     [Trait("Category", "Unit")]
     public void ReportingCallsWhenInvokedDelegateToUnderlyingServices()
     {
         // Arrange
         var presentationService = new Mock<IJiraPresentationService>(MockBehavior.Strict);
-        var reportPipeline = new Mock<IJiraReportPipeline>(MockBehavior.Strict);
-        var facade = new JiraApplicationReportingFacade(
-            presentationService.Object,
-            reportPipeline.Object);
+        var facade = new JiraApplicationReportingFacade(presentationService.Object);
 
         var user = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123");
         var errorMessage = new ErrorMessage("Search failed.");
@@ -132,7 +113,6 @@ public sealed class JiraApplicationReportingFacadeTests
         {
             new LoadFailure(new IssueKey("APP-3"), new ErrorMessage("Timeout"))
         };
-        var reportData = CreateReportData();
 
         presentationService.Setup(service => service.ShowAuthenticationStarted());
         presentationService.Setup(service => service.ShowAuthenticationSucceeded(user));
@@ -171,7 +151,6 @@ public sealed class JiraApplicationReportingFacadeTests
             new StatusName("Done"),
             new StatusName("Rejected")));
         presentationService.Setup(service => service.ShowFailures(failures));
-        reportPipeline.Setup(pipeline => pipeline.RenderReport(reportData));
 
         // Act
         facade.ShowAuthenticationStarted();
@@ -208,7 +187,6 @@ public sealed class JiraApplicationReportingFacadeTests
             new StatusName("Done"),
             new StatusName("Rejected"));
         facade.ShowFailures(failures);
-        facade.RenderReport(reportData);
 
         // Assert
         presentationService.Verify(service => service.ShowAuthenticationStarted(), Times.Once);
@@ -277,7 +255,6 @@ public sealed class JiraApplicationReportingFacadeTests
                 new StatusName("Rejected")),
             Times.Once);
         presentationService.Verify(service => service.ShowFailures(failures), Times.Once);
-        reportPipeline.Verify(pipeline => pipeline.RenderReport(reportData), Times.Once);
     }
 
     private static AppSettings CreateSettings()
@@ -291,23 +268,6 @@ public sealed class JiraApplicationReportingFacadeTests
             new StatusName("Rejected"),
             [new StageName("In Progress")],
             ReportPeriod.FromMonthLabel(new MonthLabel("2026-03")));
-    }
-
-    private static JiraReportData CreateReportData()
-    {
-        return new JiraReportData
-        {
-            Settings = CreateSettings(),
-            Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
-            Transitions = new JiraReportTransitionData
-            {
-                PathSummary = new PathGroupsSummary(
-                    new ItemCount(1),
-                    new ItemCount(1),
-                    new ItemCount(0),
-                    new ItemCount(1))
-            }
-        };
     }
 
     private static IssueTimeline CreateIssue(string issueKey)

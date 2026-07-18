@@ -9,14 +9,10 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraApplicationReportingFacade : IJiraApplicationReportingFacade
 {
-    public JiraApplicationReportingFacade(
-        IJiraPresentationService presentationService,
-        IJiraReportPipeline reportPipeline)
+    public JiraApplicationReportingFacade(IJiraPresentationService presentationService)
     {
         ArgumentNullException.ThrowIfNull(presentationService);
-        ArgumentNullException.ThrowIfNull(reportPipeline);
         _presentationService = presentationService;
-        _reportPipeline = reportPipeline;
     }
 
     public void ShowAuthenticationStarted() => _presentationService.ShowAuthenticationStarted();
@@ -144,8 +140,5 @@ internal sealed class JiraApplicationReportingFacade : IJiraApplicationReporting
     public void ShowFailures(IReadOnlyList<LoadFailure> failures) =>
         _presentationService.ShowFailures(failures);
 
-    public void RenderReport(JiraReportData reportData) => _reportPipeline.RenderReport(reportData);
-
     private readonly IJiraPresentationService _presentationService;
-    private readonly IJiraReportPipeline _reportPipeline;
 }

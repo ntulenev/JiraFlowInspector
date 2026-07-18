@@ -13,17 +13,20 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         AppSettings settings,
         IJiraApplicationDataFacade dataFacade,
         IJiraApplicationAnalysisFacade analysisFacade,
-        IJiraApplicationReportingFacade reportingFacade)
+        IJiraApplicationReportingFacade reportingFacade,
+        IJiraReportPipeline reportPipeline)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(dataFacade);
         ArgumentNullException.ThrowIfNull(analysisFacade);
         ArgumentNullException.ThrowIfNull(reportingFacade);
+        ArgumentNullException.ThrowIfNull(reportPipeline);
 
         _settings = settings;
         _dataFacade = dataFacade;
         _analysisFacade = analysisFacade;
         _reportingFacade = reportingFacade;
+        _reportPipeline = reportPipeline;
     }
 
     public async Task RunAsync(
@@ -188,7 +191,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         IReadOnlyList<LoadFailure> failures)
     {
         _reportingFacade.ShowProcessingStep("Rendering PDF report...");
-        _reportingFacade.RenderReport(JiraReportData.Create(
+        _reportPipeline.RenderReport(JiraReportData.Create(
             _settings,
             reportData.ReportContext,
             reportData.AllTasksRatio,
@@ -206,7 +209,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         ItemCount matchedStageCount)
     {
         _reportingFacade.ShowProcessingStep("Rendering PDF report...");
-        _reportingFacade.RenderReport(JiraReportData.CreateWithoutTransitionAnalysis(
+        _reportPipeline.RenderReport(JiraReportData.CreateWithoutTransitionAnalysis(
             _settings,
             reportData.ReportContext,
             reportData.AllTasksRatio,
@@ -239,4 +242,5 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
     private readonly IJiraApplicationDataFacade _dataFacade;
     private readonly IJiraApplicationAnalysisFacade _analysisFacade;
     private readonly IJiraApplicationReportingFacade _reportingFacade;
+    private readonly IJiraReportPipeline _reportPipeline;
 }
