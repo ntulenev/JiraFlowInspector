@@ -15,17 +15,23 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         IJiraSearchExecutor searchExecutor,
         IJiraJqlFacade jqlFacade,
         IJiraFieldResolver fieldResolver,
-        IJiraMapperFacade mapperFacade)
+        IReleaseIssueMapper releaseIssueMapper,
+        IGlobalIncidentMapper globalIncidentMapper,
+        IRoadmapItemMapper roadmapItemMapper)
     {
         ArgumentNullException.ThrowIfNull(searchExecutor);
         ArgumentNullException.ThrowIfNull(jqlFacade);
         ArgumentNullException.ThrowIfNull(fieldResolver);
-        ArgumentNullException.ThrowIfNull(mapperFacade);
+        ArgumentNullException.ThrowIfNull(releaseIssueMapper);
+        ArgumentNullException.ThrowIfNull(globalIncidentMapper);
+        ArgumentNullException.ThrowIfNull(roadmapItemMapper);
 
         _searchExecutor = searchExecutor;
         _jqlFacade = jqlFacade;
         _fieldResolver = fieldResolver;
-        _mapperFacade = mapperFacade;
+        _releaseIssueMapper = releaseIssueMapper;
+        _globalIncidentMapper = globalIncidentMapper;
+        _roadmapItemMapper = roadmapItemMapper;
     }
 
     public async Task<IReadOnlyList<ReleaseIssueItem>> GetReleaseIssuesForMonthAsync(
@@ -64,11 +70,11 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 jql,
-                _mapperFacade.BuildReleaseRequestedFields(context),
+                _releaseIssueMapper.BuildRequestedFields(context),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return _mapperFacade.MapReleaseIssues(issues, context);
+        return _releaseIssueMapper.MapIssues(issues, context);
     }
 
     public async Task<IReadOnlyList<ArchTaskItem>> GetArchTasksAsync(
@@ -85,7 +91,7 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return _mapperFacade.MapArchTaskItems(issues);
+        return JiraSearchIssueMapper.ToArchTaskItems(issues);
     }
 
     public async Task<IReadOnlyList<IssueListItem>> GetUnresolved30DaysTasksAsync(
@@ -101,7 +107,7 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return _mapperFacade.MapIssueListItems(issues);
+        return JiraSearchIssueMapper.ToIssueListItems(issues, context: null);
     }
 
     public async Task<IReadOnlyList<RoadmapItem>> GetRoadmapItemsAsync(
@@ -126,11 +132,11 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 new JqlQuery(settings.Jql),
-                _mapperFacade.BuildRoadmapRequestedFields(context),
+                _roadmapItemMapper.BuildRequestedFields(context),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return _mapperFacade.MapRoadmapItems(issues, context);
+        return _roadmapItemMapper.MapIssues(issues, context);
     }
 
     public async Task<IReadOnlyList<GlobalIncidentItem>> GetGlobalIncidentsForMonthAsync(
@@ -175,11 +181,11 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
         var issues = await _searchExecutor
             .SearchIssuesAsync(
                 jql,
-                _mapperFacade.BuildGlobalIncidentRequestedFields(context),
+                _globalIncidentMapper.BuildRequestedFields(context),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return _mapperFacade.MapGlobalIncidents(issues, context);
+        return _globalIncidentMapper.MapIssues(issues, context);
     }
 
     private async Task<RoadmapDateFieldReference> ResolveRoadmapDateFieldAsync(
@@ -199,5 +205,7 @@ internal sealed class JiraReportDataClient : IJiraReportDataClient
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly IJiraJqlFacade _jqlFacade;
     private readonly IJiraFieldResolver _fieldResolver;
-    private readonly IJiraMapperFacade _mapperFacade;
+    private readonly IReleaseIssueMapper _releaseIssueMapper;
+    private readonly IGlobalIncidentMapper _globalIncidentMapper;
+    private readonly IRoadmapItemMapper _roadmapItemMapper;
 }

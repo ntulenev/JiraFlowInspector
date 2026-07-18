@@ -19,17 +19,17 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
         IJiraSearchExecutor searchExecutor,
         IOptions<AppSettings> settings,
         IJiraFieldResolver fieldResolver,
-        IJiraMapperFacade mapperFacade)
+        IIssueTimelineMapper issueTimelineMapper)
     {
         ArgumentNullException.ThrowIfNull(searchExecutor);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(fieldResolver);
-        ArgumentNullException.ThrowIfNull(mapperFacade);
+        ArgumentNullException.ThrowIfNull(issueTimelineMapper);
 
         _searchExecutor = searchExecutor;
         _pullRequestFieldName = settings.Value.PullRequestFieldName;
         _fieldResolver = fieldResolver;
-        _mapperFacade = mapperFacade;
+        _issueTimelineMapper = issueTimelineMapper;
     }
 
     public async Task<IssueTimeline> GetIssueTimelineAsync(
@@ -46,7 +46,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
             throw new InvalidOperationException("Jira issue response is empty.");
         }
 
-        return _mapperFacade.MapIssueTimeline(response, issueKey);
+        return _issueTimelineMapper.Map(response, issueKey);
     }
 
     public async Task<IssueTimelineBatchResult> GetIssueTimelinesAsync(
@@ -89,7 +89,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
 
                     try
                     {
-                        issues.Add(_mapperFacade.MapIssueTimeline(
+                        issues.Add(_issueTimelineMapper.Map(
                             AttachChangelog(issueResponse, changelogsByIssueId),
                             issueKey));
                     }
@@ -220,7 +220,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly string? _pullRequestFieldName;
     private readonly IJiraFieldResolver _fieldResolver;
-    private readonly IJiraMapperFacade _mapperFacade;
+    private readonly IIssueTimelineMapper _issueTimelineMapper;
     private readonly Lock _pullRequestFieldResolutionSync = new();
     private Task<JiraFieldId?>? _pullRequestFieldResolutionTask;
 

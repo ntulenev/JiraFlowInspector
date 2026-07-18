@@ -23,7 +23,7 @@ public sealed class JiraIssueTimelineClientTests
         // Arrange
         var searchExecutor = new Mock<IJiraSearchExecutor>(MockBehavior.Strict);
         var fieldResolver = new Mock<IJiraFieldResolver>(MockBehavior.Strict);
-        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
+        var mapper = new Mock<IIssueTimelineMapper>(MockBehavior.Strict);
         var client = CreateClient(searchExecutor.Object, fieldResolver.Object, mapper.Object);
 
         // Act
@@ -49,7 +49,7 @@ public sealed class JiraIssueTimelineClientTests
         var client = CreateClient(
             searchExecutor.Object,
             new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object,
-            new Mock<IJiraMapperFacade>(MockBehavior.Strict).Object);
+            new Mock<IIssueTimelineMapper>(MockBehavior.Strict).Object);
 
         // Act
         Task<IssueTimeline> Act()
@@ -79,8 +79,8 @@ public sealed class JiraIssueTimelineClientTests
                 CancellationToken.None))
             .ReturnsAsync(response);
         var fieldResolver = new Mock<IJiraFieldResolver>(MockBehavior.Strict);
-        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
-        mapper.Setup(m => m.MapIssueTimeline(response, issueKey)).Returns(expected);
+        var mapper = new Mock<IIssueTimelineMapper>(MockBehavior.Strict);
+        mapper.Setup(m => m.Map(response, issueKey)).Returns(expected);
         var client = CreateClient(
             searchExecutor.Object,
             fieldResolver.Object,
@@ -114,8 +114,8 @@ public sealed class JiraIssueTimelineClientTests
                 new JiraFieldName("Development"),
                 CancellationToken.None))
             .ReturnsAsync(new JiraFieldId("customfield_10800"));
-        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
-        mapper.Setup(m => m.MapIssueTimeline(response, issueKey)).Returns(expected);
+        var mapper = new Mock<IIssueTimelineMapper>(MockBehavior.Strict);
+        mapper.Setup(m => m.Map(response, issueKey)).Returns(expected);
         var client = CreateClient(
             searchExecutor.Object,
             fieldResolver.Object,
@@ -165,9 +165,9 @@ public sealed class JiraIssueTimelineClientTests
                 CancellationToken.None))
             .ReturnsAsync(secondResponse);
 
-        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
-        mapper.Setup(m => m.MapIssueTimeline(firstResponse, firstKey)).Returns(firstTimeline);
-        mapper.Setup(m => m.MapIssueTimeline(secondResponse, secondKey)).Returns(secondTimeline);
+        var mapper = new Mock<IIssueTimelineMapper>(MockBehavior.Strict);
+        mapper.Setup(m => m.Map(firstResponse, firstKey)).Returns(firstTimeline);
+        mapper.Setup(m => m.Map(secondResponse, secondKey)).Returns(secondTimeline);
 
         var client = CreateClient(
             searchExecutor.Object,
@@ -210,8 +210,8 @@ public sealed class JiraIssueTimelineClientTests
                 It.Is<JiraSearchFields>(fields => fields.Contains("customfield_10800")),
                 CancellationToken.None))
             .ReturnsAsync(response);
-        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
-        mapper.Setup(m => m.MapIssueTimeline(response, issueKey)).Returns(expected);
+        var mapper = new Mock<IIssueTimelineMapper>(MockBehavior.Strict);
+        mapper.Setup(m => m.Map(response, issueKey)).Returns(expected);
         var client = CreateClient(
             searchExecutor.Object,
             fieldResolver.Object,
@@ -256,7 +256,7 @@ public sealed class JiraIssueTimelineClientTests
         var client = CreateClient(
             searchExecutor.Object,
             new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object,
-            new Mock<IJiraMapperFacade>(MockBehavior.Strict).Object);
+            new Mock<IIssueTimelineMapper>(MockBehavior.Strict).Object);
 
         // Act
         var result = await client.GetIssueTimelinesAsync(issueKeys, CancellationToken.None);
@@ -296,8 +296,8 @@ public sealed class JiraIssueTimelineClientTests
                 ["10006"] = [history]
             });
 
-        var mapper = new Mock<IJiraMapperFacade>(MockBehavior.Strict);
-        mapper.Setup(m => m.MapIssueTimeline(
+        var mapper = new Mock<IIssueTimelineMapper>(MockBehavior.Strict);
+        mapper.Setup(m => m.Map(
                 It.Is<JiraIssueResponse>(response =>
                     response.Key == firstKey.Value
                     && response.Changelog != null
@@ -305,7 +305,7 @@ public sealed class JiraIssueTimelineClientTests
                     && ReferenceEquals(response.Changelog.Histories[0], history)),
                 firstKey))
             .Returns(expected);
-        mapper.Setup(m => m.MapIssueTimeline(
+        mapper.Setup(m => m.Map(
                 It.Is<JiraIssueResponse>(response => response.Key == invalidKey.Value),
                 invalidKey))
             .Throws(new InvalidOperationException("invalid issue payload"));
@@ -331,7 +331,7 @@ public sealed class JiraIssueTimelineClientTests
     private static JiraIssueTimelineClient CreateClient(
         IJiraSearchExecutor searchExecutor,
         IJiraFieldResolver fieldResolver,
-        IJiraMapperFacade mapper,
+        IIssueTimelineMapper mapper,
         string? pullRequestFieldName = null) =>
         new(
             searchExecutor,

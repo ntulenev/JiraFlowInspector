@@ -1,9 +1,7 @@
 using FluentAssertions;
 
 using JiraMetrics.API;
-using JiraMetrics.API.Mapping;
 using JiraMetrics.Models.ValueObjects;
-using JiraMetrics.Transport.Models;
 
 using Moq;
 
@@ -30,14 +28,6 @@ public sealed class JiraIssueSearchClientTests
                 It.Is<JiraSearchFields>(fields => fields.Contains(fieldId.Value) && !fields.Contains(fieldName.Value)),
                 fixture.Token))
             .ReturnsAsync([]);
-        fixture.MapperFacade.Setup(mapper => mapper.MapIssueListItems(
-                It.IsAny<IReadOnlyList<JiraIssueKeyResponse>>(),
-                It.Is<IssueListMappingContext>(context =>
-                    context.ReporducedOnProdFieldId == fieldId
-                    && context.ReporducedOnProdFieldName == fieldName
-                    && !context.IncludeIssueLinks)))
-            .Returns([]);
-
         // Act
         var result = await fixture.Sut.GetIssuesCreatedThisMonthAsync(
             fixture.ProjectKey,
@@ -49,7 +39,6 @@ public sealed class JiraIssueSearchClientTests
         result.Should().BeEmpty();
         fixture.FieldResolver.VerifyAll();
         fixture.SearchExecutor.VerifyAll();
-        fixture.MapperFacade.VerifyAll();
     }
 
     [Fact(DisplayName = "GetIssuesCreatedThisMonth falls back to custom field name when id is unresolved")]
@@ -70,13 +59,6 @@ public sealed class JiraIssueSearchClientTests
                 It.Is<JiraSearchFields>(fields => fields.Contains(fieldName.Value)),
                 fixture.Token))
             .ReturnsAsync([]);
-        fixture.MapperFacade.Setup(mapper => mapper.MapIssueListItems(
-                It.IsAny<IReadOnlyList<JiraIssueKeyResponse>>(),
-                It.Is<IssueListMappingContext>(context =>
-                    context.ReporducedOnProdFieldId == null
-                    && context.ReporducedOnProdFieldName == fieldName)))
-            .Returns([]);
-
         // Act
         var result = await fixture.Sut.GetIssuesCreatedThisMonthAsync(
             fixture.ProjectKey,
@@ -87,7 +69,6 @@ public sealed class JiraIssueSearchClientTests
         // Assert
         result.Should().BeEmpty();
         fixture.SearchExecutor.VerifyAll();
-        fixture.MapperFacade.VerifyAll();
     }
 
     [Fact(DisplayName = "GetIssuesMovedToDoneThisMonth requests issue links without resolving a custom field")]
@@ -109,14 +90,6 @@ public sealed class JiraIssueSearchClientTests
                 It.Is<JiraSearchFields>(fields => fields.Contains("issuelinks")),
                 fixture.Token))
             .ReturnsAsync([]);
-        fixture.MapperFacade.Setup(mapper => mapper.MapIssueListItems(
-                It.IsAny<IReadOnlyList<JiraIssueKeyResponse>>(),
-                It.Is<IssueListMappingContext>(context =>
-                    context.ReporducedOnProdFieldId == null
-                    && context.ReporducedOnProdFieldName == null
-                    && context.IncludeIssueLinks)))
-            .Returns([]);
-
         // Act
         var result = await fixture.Sut.GetIssuesMovedToDoneThisMonthAsync(
             fixture.ProjectKey,
@@ -130,7 +103,6 @@ public sealed class JiraIssueSearchClientTests
         fixture.FieldResolver.Verify(
             resolver => resolver.TryResolveFieldIdAsync(It.IsAny<JiraFieldName>(), fixture.Token),
             Times.Never);
-        fixture.MapperFacade.VerifyAll();
     }
 
     [Fact(DisplayName = "Constructor rejects null collaborators")]
@@ -141,19 +113,16 @@ public sealed class JiraIssueSearchClientTests
         var searchExecutor = new Mock<IJiraSearchExecutor>(MockBehavior.Strict).Object;
         var jqlFacade = new Mock<IJiraJqlFacade>(MockBehavior.Strict).Object;
         var fieldResolver = new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object;
-        var mapperFacade = new Mock<IJiraMapperFacade>(MockBehavior.Strict).Object;
 
         // Act
-        Action nullSearchExecutor = () => _ = new JiraIssueSearchClient(null!, jqlFacade, fieldResolver, mapperFacade);
-        Action nullJqlFacade = () => _ = new JiraIssueSearchClient(searchExecutor, null!, fieldResolver, mapperFacade);
-        Action nullFieldResolver = () => _ = new JiraIssueSearchClient(searchExecutor, jqlFacade, null!, mapperFacade);
-        Action nullMapperFacade = () => _ = new JiraIssueSearchClient(searchExecutor, jqlFacade, fieldResolver, null!);
+        Action nullSearchExecutor = () => _ = new JiraIssueSearchClient(null!, jqlFacade, fieldResolver);
+        Action nullJqlFacade = () => _ = new JiraIssueSearchClient(searchExecutor, null!, fieldResolver);
+        Action nullFieldResolver = () => _ = new JiraIssueSearchClient(searchExecutor, jqlFacade, null!);
 
         // Assert
         nullSearchExecutor.Should().Throw<ArgumentNullException>();
         nullJqlFacade.Should().Throw<ArgumentNullException>();
         nullFieldResolver.Should().Throw<ArgumentNullException>();
-        nullMapperFacade.Should().Throw<ArgumentNullException>();
     }
 
     private sealed class Fixture
@@ -163,8 +132,7 @@ public sealed class JiraIssueSearchClientTests
             Sut = new JiraIssueSearchClient(
                 SearchExecutor.Object,
                 JqlFacade.Object,
-                FieldResolver.Object,
-                MapperFacade.Object);
+                FieldResolver.Object);
         }
 
         public Mock<IJiraSearchExecutor> SearchExecutor { get; } = new(MockBehavior.Strict);
@@ -172,8 +140,6 @@ public sealed class JiraIssueSearchClientTests
         public Mock<IJiraJqlFacade> JqlFacade { get; } = new(MockBehavior.Strict);
 
         public Mock<IJiraFieldResolver> FieldResolver { get; } = new(MockBehavior.Strict);
-
-        public Mock<IJiraMapperFacade> MapperFacade { get; } = new(MockBehavior.Strict);
 
         public JiraIssueSearchClient Sut { get; }
 

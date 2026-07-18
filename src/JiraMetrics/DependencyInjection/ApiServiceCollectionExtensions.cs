@@ -29,7 +29,6 @@ internal static class ApiServiceCollectionExtensions
             .AddTransient<IReleaseIssueMapper, ReleaseIssueMapper>()
             .AddTransient<IGlobalIncidentMapper, GlobalIncidentMapper>()
             .AddTransient<IRoadmapItemMapper, RoadmapItemMapper>()
-            .AddTransient<IJiraMapperFacade, JiraMapperFacade>()
             .AddTransient<IJiraUserClient, JiraUserClient>()
             .AddTransient<IJiraIssueSearchClient, JiraIssueSearchClient>()
             .AddTransient<IJiraReportDataClient, JiraReportDataClient>()

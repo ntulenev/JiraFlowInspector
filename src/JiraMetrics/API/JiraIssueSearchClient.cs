@@ -13,18 +13,15 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
     public JiraIssueSearchClient(
         IJiraSearchExecutor searchExecutor,
         IJiraJqlFacade jqlFacade,
-        IJiraFieldResolver fieldResolver,
-        IJiraMapperFacade mapperFacade)
+        IJiraFieldResolver fieldResolver)
     {
         ArgumentNullException.ThrowIfNull(searchExecutor);
         ArgumentNullException.ThrowIfNull(jqlFacade);
         ArgumentNullException.ThrowIfNull(fieldResolver);
-        ArgumentNullException.ThrowIfNull(mapperFacade);
 
         _searchExecutor = searchExecutor;
         _jqlFacade = jqlFacade;
         _fieldResolver = fieldResolver;
-        _mapperFacade = mapperFacade;
     }
 
     public async Task<IReadOnlyList<IssueKey>> GetIssueKeysMovedToDoneThisMonthAsync(
@@ -37,7 +34,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
         var issues = await _searchExecutor
             .SearchIssuesAsync(jql, JiraSearchFields.From("key"), cancellationToken)
             .ConfigureAwait(false);
-        return _mapperFacade.MapIssueKeys(issues);
+        return JiraSearchIssueMapper.ToIssueKeys(issues);
     }
 
     public async Task<IReadOnlyList<IssueListItem>> GetIssuesCreatedThisMonthAsync(
@@ -55,7 +52,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
                 BuildIssueListRequestedFields(context),
                 cancellationToken)
             .ConfigureAwait(false);
-        return _mapperFacade.MapIssueListItems(issues, context);
+        return JiraSearchIssueMapper.ToIssueListItems(issues, context);
     }
 
     public async Task<IReadOnlyList<IssueListItem>> GetIssuesMovedToDoneThisMonthAsync(
@@ -78,7 +75,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
                 BuildIssueListRequestedFields(context),
                 cancellationToken)
             .ConfigureAwait(false);
-        return _mapperFacade.MapIssueListItems(issues, context);
+        return JiraSearchIssueMapper.ToIssueListItems(issues, context);
     }
 
     public async Task<IReadOnlyList<StatusIssueTypeSummary>> GetIssueCountsByStatusExcludingDoneAndRejectAsync(
@@ -94,7 +91,7 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
         var issues = await _searchExecutor
             .SearchIssuesAsync(jql, JiraSearchFields.From("status", "issuetype"), cancellationToken)
             .ConfigureAwait(false);
-        return _mapperFacade.MapStatusIssueTypeSummaries(issues);
+        return JiraSearchIssueMapper.ToStatusIssueTypeSummaries(issues);
     }
 
     private async Task<IssueListMappingContext?> CreateIssueListMappingContextAsync(
@@ -140,6 +137,5 @@ internal sealed class JiraIssueSearchClient : IJiraIssueSearchClient
     private readonly IJiraSearchExecutor _searchExecutor;
     private readonly IJiraJqlFacade _jqlFacade;
     private readonly IJiraFieldResolver _fieldResolver;
-    private readonly IJiraMapperFacade _mapperFacade;
 }
 
