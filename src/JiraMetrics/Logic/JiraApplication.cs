@@ -1,5 +1,6 @@
 using System.Diagnostics;
 
+using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Logic;
@@ -45,13 +46,13 @@ public sealed class JiraApplication : IJiraApplication
         try
         {
             await EnsureReportAccessAsync(cancellationToken).ConfigureAwait(false);
-            var reportData = await _reportLoader.TryLoadAsync(cancellationToken).ConfigureAwait(false);
-            if (reportData is null)
+            var loadResult = await _reportLoader.LoadAsync(cancellationToken).ConfigureAwait(false);
+            if (loadResult is not ReportLoadResult.Success success)
             {
                 return;
             }
 
-            await _analysisRunner.RunAsync(reportData, cancellationToken).ConfigureAwait(false);
+            await _analysisRunner.RunAsync(success.ReportData, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

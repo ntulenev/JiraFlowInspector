@@ -1347,8 +1347,8 @@ public sealed class JiraApplicationTests
         public Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken) =>
             Task.FromResult(new JiraAuthUser(new UserDisplayName("Test"), "user@example.com", "1"));
 
-        public Task<JiraApplicationReportData?> TryLoadAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<JiraApplicationReportData?>(null);
+        public Task<ReportLoadResult> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<ReportLoadResult>(ReportLoadResult.Failure.Instance);
     }
 
     private sealed class NoOpAnalysisRunner : IJiraApplicationAnalysisRunner

@@ -31,7 +31,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
     public Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken) =>
         _dataFacade.GetCurrentUserAsync(cancellationToken);
 
-    public async Task<JiraApplicationReportData?> TryLoadAsync(CancellationToken cancellationToken)
+    public async Task<ReportLoadResult> LoadAsync(CancellationToken cancellationToken)
     {
         _statusPresenter.ShowReportPeriodContext(_settings.ReportPeriod, _settings.CreatedAfter);
         _statusPresenter.ShowSpacer();
@@ -64,7 +64,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             var reportContext = await reportContextTask.ConfigureAwait(false);
             if (reportContext is null)
             {
-                return null;
+                return ReportLoadResult.Failure.Instance;
             }
 
             ShowOptionalReports(reportContext);
@@ -72,33 +72,34 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             var allTasksRatio = await LoadAndShowAllTasksRatioAsync(allTasksRatioTask).ConfigureAwait(false);
             if (allTasksRatio is null)
             {
-                return null;
+                return ReportLoadResult.Failure.Instance;
             }
 
             var bugRatio = await LoadAndShowBugRatioAsync(bugRatioTask).ConfigureAwait(false);
             if (bugRatioTask is not null && bugRatio is null)
             {
-                return null;
+                return ReportLoadResult.Failure.Instance;
             }
 
             var internalIncidents = await LoadInternalIncidentsAsync(internalIncidentsTask).ConfigureAwait(false);
             if (internalIncidentsTask is not null && internalIncidents is null)
             {
-                return null;
+                return ReportLoadResult.Failure.Instance;
             }
 
             var testCoverage = await LoadAndShowTestCoverageAsync(testCoverageTask).ConfigureAwait(false);
             if (testCoverageTask is not null && testCoverage is null)
             {
-                return null;
+                return ReportLoadResult.Failure.Instance;
             }
 
-            return new JiraApplicationReportData(
-                reportContext,
-                allTasksRatio,
-                bugRatio,
-                internalIncidents,
-                testCoverage ?? TestCoverageSnapshot.Empty);
+            return new ReportLoadResult.Success(
+                new JiraApplicationReportData(
+                    reportContext,
+                    allTasksRatio,
+                    bugRatio,
+                    internalIncidents,
+                    testCoverage ?? TestCoverageSnapshot.Empty));
         }
         finally
         {

@@ -9,5 +9,5 @@ internal interface IJiraApplicationReportLoader
 {
     Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken);
 
-    Task<JiraApplicationReportData?> TryLoadAsync(CancellationToken cancellationToken);
+    Task<ReportLoadResult> LoadAsync(CancellationToken cancellationToken);
 }

@@ -13,9 +13,9 @@ namespace JiraMetrics.Tests.Logic;
 
 public sealed class JiraApplicationReportLoaderTests
 {
-    [Fact(DisplayName = "TryLoadAsync returns internal incidents and test coverage when optional loads succeed")]
+    [Fact(DisplayName = "LoadAsync returns internal incidents and test coverage when optional loads succeed")]
     [Trait("Category", "Unit")]
-    public async Task TryLoadAsyncWhenOptionalLoadsSucceedReturnsTheirData()
+    public async Task LoadAsyncWhenOptionalLoadsSucceedReturnsTheirData()
     {
         // Arrange
         var coverageSettings = new TestCoverageSettings();
@@ -45,18 +45,18 @@ public sealed class JiraApplicationReportLoaderTests
             reportingFacade.Object);
 
         // Act
-        var result = await sut.TryLoadAsync(cts.Token);
+        var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.InternalIncidents.Should().BeSameAs(internalIncidents);
-        result.TestCoverage.Should().BeSameAs(testCoverage);
+        var success = result.Should().BeOfType<ReportLoadResult.Success>().Subject;
+        success.ReportData.InternalIncidents.Should().BeSameAs(internalIncidents);
+        success.ReportData.TestCoverage.Should().BeSameAs(testCoverage);
         reportingFacade.Verify(facade => facade.ShowTestCoverage(coverageSettings, testCoverage), Times.Once);
     }
 
-    [Fact(DisplayName = "TryLoadAsync stops when internal-incident loading fails")]
+    [Fact(DisplayName = "LoadAsync returns failure when internal-incident loading fails")]
     [Trait("Category", "Unit")]
-    public async Task TryLoadAsyncWhenInternalIncidentLoadFailsReturnsNull()
+    public async Task LoadAsyncWhenInternalIncidentLoadFailsReturnsFailure()
     {
         // Arrange
         var settings = CreateSettings(null, [new IssueTypeName("Incident")]);
@@ -77,19 +77,19 @@ public sealed class JiraApplicationReportLoaderTests
             reportingFacade.Object);
 
         // Act
-        var result = await sut.TryLoadAsync(cts.Token);
+        var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeSameAs(ReportLoadResult.Failure.Instance);
         reportingFacade.Verify(
             facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message =>
                 message.Value.Contains("Invalid incident response.", StringComparison.Ordinal))),
             Times.Once);
     }
 
-    [Fact(DisplayName = "TryLoadAsync stops when test-coverage loading fails")]
+    [Fact(DisplayName = "LoadAsync returns failure when test-coverage loading fails")]
     [Trait("Category", "Unit")]
-    public async Task TryLoadAsyncWhenTestCoverageLoadFailsReturnsNull()
+    public async Task LoadAsyncWhenTestCoverageLoadFailsReturnsFailure()
     {
         // Arrange
         var coverageSettings = new TestCoverageSettings();
@@ -111,10 +111,10 @@ public sealed class JiraApplicationReportLoaderTests
             reportingFacade.Object);
 
         // Act
-        var result = await sut.TryLoadAsync(cts.Token);
+        var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeSameAs(ReportLoadResult.Failure.Instance);
         reportingFacade.Verify(
             facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message =>
                 message.Value.Contains("Coverage service unavailable.", StringComparison.Ordinal))),
@@ -124,9 +124,9 @@ public sealed class JiraApplicationReportLoaderTests
             Times.Never);
     }
 
-    [Fact(DisplayName = "TryLoadAsync skips test-coverage loading when the feature is disabled")]
+    [Fact(DisplayName = "LoadAsync skips test-coverage loading when the feature is disabled")]
     [Trait("Category", "Unit")]
-    public async Task TryLoadAsyncWhenTestCoverageIsDisabledSkipsCoverageRequest()
+    public async Task LoadAsyncWhenTestCoverageIsDisabledSkipsCoverageRequest()
     {
         // Arrange
         var settings = CreateSettings(new TestCoverageSettings(enabled: false), null);
@@ -140,11 +140,11 @@ public sealed class JiraApplicationReportLoaderTests
             reportingFacade.Object);
 
         // Act
-        var result = await sut.TryLoadAsync(cts.Token);
+        var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.TestCoverage.Should().BeSameAs(TestCoverageSnapshot.Empty);
+        var success = result.Should().BeOfType<ReportLoadResult.Success>().Subject;
+        success.ReportData.TestCoverage.Should().BeSameAs(TestCoverageSnapshot.Empty);
         dataFacade.Verify(
             facade => facade.LoadTestCoverageAsync(
                 It.IsAny<AppSettings>(),
@@ -153,9 +153,9 @@ public sealed class JiraApplicationReportLoaderTests
             Times.Never);
     }
 
-    [Fact(DisplayName = "TryLoadAsync cancels and awaits pending loads after an early failure")]
+    [Fact(DisplayName = "LoadAsync cancels and awaits pending loads after an early failure")]
     [Trait("Category", "Unit")]
-    public async Task TryLoadAsyncWhenReportContextFailsCancelsAndAwaitsPendingLoads()
+    public async Task LoadAsyncWhenReportContextFailsCancelsAndAwaitsPendingLoads()
     {
         // Arrange
         var settings = CreateSettings(null, null);
@@ -197,7 +197,7 @@ public sealed class JiraApplicationReportLoaderTests
             reportingFacade.Object);
 
         // Act
-        var loadTask = sut.TryLoadAsync(cts.Token);
+        var loadTask = sut.LoadAsync(cts.Token);
         await pendingLoadStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
         var firstCompletedTask = await Task.WhenAny(
             cancellationObserved.Task,
@@ -214,7 +214,7 @@ public sealed class JiraApplicationReportLoaderTests
         var result = await loadTask;
 
         // Assert
-        result.Should().BeNull();
+        result.Should().BeSameAs(ReportLoadResult.Failure.Instance);
         cancellationWasObservedBeforeReturn.Should().BeTrue();
         loaderAwaitedPendingCleanup.Should().BeTrue();
     }
