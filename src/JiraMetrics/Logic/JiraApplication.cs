@@ -38,7 +38,7 @@ public sealed class JiraApplication : IJiraApplication
     /// Executes the application flow.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task RunAsync(CancellationToken cancellationToken = default)
+    public async Task<JiraApplicationExitCode> RunAsync(CancellationToken cancellationToken = default)
     {
         _requestTelemetryCollector.Reset();
         var totalStopwatch = Stopwatch.StartNew();
@@ -49,10 +49,11 @@ public sealed class JiraApplication : IJiraApplication
             var loadResult = await _reportLoader.LoadAsync(cancellationToken).ConfigureAwait(false);
             if (loadResult is not ReportLoadResult.Success success)
             {
-                return;
+                return JiraApplicationExitCode.ReportLoadFailed;
             }
 
             await _analysisRunner.RunAsync(success.ReportData, cancellationToken).ConfigureAwait(false);
+            return JiraApplicationExitCode.Success;
         }
         finally
         {

@@ -30,18 +30,22 @@ WriteStartupMessage("Services started. Launching Jira workflow...");
 
 var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 var app = host.Services.GetRequiredService<IJiraApplication>();
+var exitCode = JiraApplicationExitCode.Success;
 
 try
 {
-    await app.RunAsync(lifetime.ApplicationStopping).ConfigureAwait(false);
+    exitCode = await app.RunAsync(lifetime.ApplicationStopping).ConfigureAwait(false);
 }
 catch (OperationCanceledException) when (lifetime.ApplicationStopping.IsCancellationRequested)
 {
+    exitCode = JiraApplicationExitCode.Canceled;
 }
 finally
 {
     await host.StopAsync(CancellationToken.None).ConfigureAwait(false);
 }
+
+return (int)exitCode;
 
 [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Startup progress messages are internal CLI status output.")]
 static void WriteStartupMessage(string message)

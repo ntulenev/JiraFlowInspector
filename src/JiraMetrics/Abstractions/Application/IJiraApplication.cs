@@ -9,7 +9,7 @@ public interface IJiraApplication
     /// Executes the application workflow.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Asynchronous operation result.</returns>
-    Task RunAsync(CancellationToken cancellationToken = default);
+    /// <returns>The process exit code for the completed workflow.</returns>
+    Task<JiraApplicationExitCode> RunAsync(CancellationToken cancellationToken = default);
 }
 

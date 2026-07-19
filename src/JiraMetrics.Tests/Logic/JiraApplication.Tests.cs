@@ -155,9 +155,10 @@ public sealed class JiraApplicationTests
             new FakeRequestTelemetryCollector());
 
         // Act
-        await app.RunAsync();
+        var exitCode = await app.RunAsync();
 
         // Assert
+        exitCode.Should().Be(JiraApplicationExitCode.Success);
         presentation.NoIssuesMatchedFilterShown.Should().BeTrue();
         presentation.ReportRendered.Should().BeTrue();
         presentation.LastReportData.Should().NotBeNull();

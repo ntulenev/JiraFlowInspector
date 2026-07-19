@@ -43,9 +43,10 @@ public sealed class JiraApplicationBranchesTests
         var app = CreateApplication(settings, dataFacade, analysisFacade, reportingFacade, telemetryCollector);
 
         // Act
-        await app.RunAsync(cts.Token);
+        var exitCode = await app.RunAsync(cts.Token);
 
         // Assert
+        exitCode.Should().Be(JiraApplicationExitCode.ReportLoadFailed);
         reportingFacade.Verify(
             facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message => message.Value.Contains("Network failure.", StringComparison.Ordinal))),
             Times.Once);
