@@ -9,6 +9,31 @@ namespace JiraMetrics.Tests.Presentation.Html;
 
 public sealed class HtmlContentComposerTests
 {
+    [Fact(DisplayName = "Compose renders injected sections in configured order")]
+    [Trait("Category", "Unit")]
+    public void ComposeWithInjectedSectionsPreservesTheirOrder()
+    {
+        // Arrange
+        var composer = new HtmlContentComposer(
+        [
+            new StubHtmlSection("<section id=\"first\"></section>"),
+            new StubHtmlSection("<section id=\"second\"></section>")
+        ]);
+        var reportData = new JiraReportData
+        {
+            Settings = CreateSettings(),
+            Source = new JiraReportSourceData(),
+            Transitions = new JiraReportTransitionData()
+        };
+
+        // Act
+        var html = composer.Compose(reportData);
+
+        // Assert
+        html.IndexOf("id=\"first\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"second\"", StringComparison.Ordinal));
+    }
+
     [Fact(DisplayName = "Compose renders interactive Jira report sections")]
     [Trait("Category", "Unit")]
     public void ComposeWhenDataExistsRendersExpectedSectionsAndControls()
@@ -311,4 +336,9 @@ public sealed class HtmlContentComposerTests
             roadmapReport: new RoadmapReportSettings(
                 "project = PROJECT_KEY AND issuetype = IDEA_TYPE",
                 "Roadmap[Dropdown]"));
+
+    private sealed class StubHtmlSection(string html) : IHtmlReportSection
+    {
+        public string Compose(JiraReportData reportData) => html;
+    }
 }
