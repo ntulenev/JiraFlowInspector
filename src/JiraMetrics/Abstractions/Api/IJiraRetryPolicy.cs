@@ -12,9 +12,15 @@ public interface IJiraRetryPolicy
     /// </summary>
     /// <param name="retryAttempt">1-based retry attempt count.</param>
     /// <param name="statusCode">HTTP status code, if available.</param>
+    /// <param name="serverDelay">Delay requested by the remote server, if available.</param>
     /// <param name="exception">Exception, if available.</param>
     /// <param name="delay">Delay before the retry.</param>
     /// <returns><see langword="true"/> when the request should be retried.</returns>
-    bool TryGetDelay(int retryAttempt, HttpStatusCode? statusCode, Exception? exception, out TimeSpan delay);
+    bool TryGetDelay(
+        int retryAttempt,
+        HttpStatusCode? statusCode,
+        TimeSpan? serverDelay,
+        Exception? exception,
+        out TimeSpan delay);
 }
 

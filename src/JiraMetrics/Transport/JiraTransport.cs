@@ -95,17 +95,24 @@ public sealed class JiraTransport : IJiraTransport
                     return _serializer.Deserialize<TDto>(body);
                 }
 
-                if (_retryPolicy.TryGetDelay(attempt + 1, response.StatusCode, null, out var delay))
+                var retryAfter = ResolveRetryAfter(response);
+                if (_retryPolicy.TryGetDelay(
+                    attempt + 1,
+                    response.StatusCode,
+                    retryAfter,
+                    null,
+                    out var delay))
                 {
                     attempt++;
                     await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
-                throw new HttpRequestException(
-                    $"Jira API error {(int)response.StatusCode} {response.ReasonPhrase}. Url={url}. Body={body}",
-                    inner: null,
-                    response.StatusCode);
+                throw new JiraTransportException(
+                    ClassifyFailure(response.StatusCode),
+                    NormalizeEndpoint(url),
+                    response.StatusCode,
+                    retryAfter);
             }
             catch (HttpRequestException ex) when (ex.StatusCode is null)
             {
@@ -117,16 +124,83 @@ public sealed class JiraTransport : IJiraTransport
                     responseBytes: 0,
                     isRetry: attempt > 0);
 
-                if (_retryPolicy.TryGetDelay(attempt + 1, null, ex, out var delay))
+                if (_retryPolicy.TryGetDelay(attempt + 1, null, null, ex, out var delay))
                 {
                     attempt++;
                     await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
-                throw;
+                throw new JiraTransportException(
+                    JiraTransportFailureKind.Network,
+                    NormalizeEndpoint(url),
+                    statusCode: null,
+                    retryAfter: null,
+                    ex);
+            }
+            catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                stopwatch.Stop();
+                _telemetryCollector.Record(
+                    request.Method.Method,
+                    url,
+                    stopwatch.Elapsed,
+                    responseBytes: 0,
+                    isRetry: attempt > 0);
+
+                var timeoutException = new TimeoutException("The Jira request timed out.", ex);
+                if (_retryPolicy.TryGetDelay(attempt + 1, null, null, timeoutException, out var delay))
+                {
+                    attempt++;
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                throw new JiraTransportException(
+                    JiraTransportFailureKind.Timeout,
+                    NormalizeEndpoint(url),
+                    statusCode: null,
+                    retryAfter: null,
+                    timeoutException);
             }
         }
+    }
+
+    private static TimeSpan? ResolveRetryAfter(HttpResponseMessage response)
+    {
+        var retryAfter = response.Headers.RetryAfter;
+        if (retryAfter?.Delta is { } delta)
+        {
+            return delta > TimeSpan.Zero ? delta : null;
+        }
+
+        if (retryAfter?.Date is not { } retryDate)
+        {
+            return null;
+        }
+
+        var dateDelay = retryDate - DateTimeOffset.UtcNow;
+        return dateDelay > TimeSpan.Zero ? dateDelay : null;
+    }
+
+    private static JiraTransportFailureKind ClassifyFailure(System.Net.HttpStatusCode statusCode)
+    {
+        if (statusCode == System.Net.HttpStatusCode.TooManyRequests)
+        {
+            return JiraTransportFailureKind.RateLimited;
+        }
+
+        return (int)statusCode >= 500
+            ? JiraTransportFailureKind.ServerError
+            : JiraTransportFailureKind.ClientError;
+    }
+
+    private static string NormalizeEndpoint(Uri url)
+    {
+        var path = url.IsAbsoluteUri
+            ? url.AbsolutePath
+            : url.OriginalString.Split('?', 2)[0];
+        return string.IsNullOrWhiteSpace(path) ? "/" : path;
     }
 
     private readonly HttpClient _http;

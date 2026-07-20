@@ -34,8 +34,8 @@ public sealed class JiraRetryPolicyTests
         var policy = new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1)));
 
         // Act
-        var resultZero = policy.TryGetDelay(0, HttpStatusCode.ServiceUnavailable, null, out _);
-        var resultTooHigh = policy.TryGetDelay(2, HttpStatusCode.ServiceUnavailable, null, out _);
+        var resultZero = policy.TryGetDelay(0, HttpStatusCode.ServiceUnavailable, null, null, out _);
+        var resultTooHigh = policy.TryGetDelay(2, HttpStatusCode.ServiceUnavailable, null, null, out _);
 
         // Assert
         resultZero.Should().BeFalse();
@@ -50,11 +50,12 @@ public sealed class JiraRetryPolicyTests
         var policy = new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1)));
 
         // Act
-        var result = policy.TryGetDelay(1, HttpStatusCode.TooManyRequests, null, out var delay);
+        var result = policy.TryGetDelay(1, HttpStatusCode.TooManyRequests, null, null, out var delay);
 
         // Assert
         result.Should().BeTrue();
-        delay.Should().Be(TimeSpan.FromMilliseconds(200));
+        delay.Should().BeGreaterThanOrEqualTo(TimeSpan.FromMilliseconds(200));
+        delay.Should().BeLessThanOrEqualTo(TimeSpan.FromMilliseconds(300));
     }
 
     [Fact(DisplayName = "TryGetDelay retries on HttpRequestException")]
@@ -65,11 +66,50 @@ public sealed class JiraRetryPolicyTests
         var policy = new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1)));
 
         // Act
-        var result = policy.TryGetDelay(1, null, new HttpRequestException("boom"), out var delay);
+        var result = policy.TryGetDelay(1, null, null, new HttpRequestException("boom"), out var delay);
 
         // Assert
         result.Should().BeTrue();
-        delay.Should().Be(TimeSpan.FromMilliseconds(200));
+        delay.Should().BeGreaterThanOrEqualTo(TimeSpan.FromMilliseconds(200));
+        delay.Should().BeLessThanOrEqualTo(TimeSpan.FromMilliseconds(300));
+
+    }
+
+    [Fact(DisplayName = "TryGetDelay honors server retry delay")]
+    [Trait("Category", "Unit")]
+    public void TryGetDelayWhenServerDelayExistsUsesIt()
+    {
+        // Arrange
+        var policy = new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1)));
+        var serverDelay = TimeSpan.FromSeconds(15);
+
+        // Act
+        var result = policy.TryGetDelay(
+            1,
+            HttpStatusCode.TooManyRequests,
+            serverDelay,
+            null,
+            out var delay);
+
+        // Assert
+        result.Should().BeTrue();
+        delay.Should().Be(serverDelay);
+    }
+
+    [Fact(DisplayName = "TryGetDelay increases exponential backoff")]
+    [Trait("Category", "Unit")]
+    public void TryGetDelayForLaterAttemptIncreasesBackoff()
+    {
+        // Arrange
+        var policy = new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 2)));
+
+        // Act
+        _ = policy.TryGetDelay(1, HttpStatusCode.ServiceUnavailable, null, null, out var firstDelay);
+        _ = policy.TryGetDelay(2, HttpStatusCode.ServiceUnavailable, null, null, out var secondDelay);
+
+        // Assert
+        firstDelay.Should().BeLessThanOrEqualTo(TimeSpan.FromMilliseconds(300));
+        secondDelay.Should().BeGreaterThanOrEqualTo(TimeSpan.FromMilliseconds(400));
     }
 
     [Fact(DisplayName = "TryGetDelay returns false for non-retryable status codes")]
@@ -80,7 +120,7 @@ public sealed class JiraRetryPolicyTests
         var policy = new JiraRetryPolicy(Options.Create(CreateOptions(retryCount: 1)));
 
         // Act
-        var result = policy.TryGetDelay(1, HttpStatusCode.BadRequest, null, out _);
+        var result = policy.TryGetDelay(1, HttpStatusCode.BadRequest, null, null, out _);
 
         // Assert
         result.Should().BeFalse();

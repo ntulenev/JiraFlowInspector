@@ -299,7 +299,7 @@ public sealed class JiraTransportTests
 
     [Fact(DisplayName = "GetAsync throws when response is not successful")]
     [Trait("Category", "Unit")]
-    public async Task GetAsyncWhenResponseIsFailureThrowsHttpRequestException()
+    public async Task GetAsyncWhenResponseIsFailureThrowsTypedTransportException()
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -338,11 +338,14 @@ public sealed class JiraTransportTests
         Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(new Uri("rest/api/3/myself", UriKind.Relative), cts.Token);
 
         // Assert
-        await act.Should()
-            .ThrowAsync<HttpRequestException>();
+        var exception = await act.Should()
+            .ThrowAsync<JiraTransportException>();
 
         var summary = telemetryCollector.GetSummary();
         sendCalls.Should().Be(1);
+        exception.Which.FailureKind.Should().Be(JiraTransportFailureKind.ClientError);
+        exception.Which.Endpoint.Should().Be("rest/api/3/myself");
+        exception.Which.Message.Should().NotContain(body);
         summary.RequestCount.Should().Be(1);
         summary.ResponseBytes.Should().Be(Encoding.UTF8.GetByteCount(body));
     }
@@ -386,9 +389,95 @@ public sealed class JiraTransportTests
             cts.Token);
 
         // Assert
-        var exception = await act.Should().ThrowAsync<HttpRequestException>();
+        var exception = await act.Should().ThrowAsync<JiraTransportException>();
         exception.Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        exception.Which.FailureKind.Should().Be(JiraTransportFailureKind.ClientError);
         sendCalls.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "GetAsync exposes Jira rate-limit metadata")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncWhenRateLimitedExposesRetryAfter()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/myself");
+        var retryAfter = TimeSpan.FromSeconds(12);
+
+        using var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+        {
+            Content = new StringContent("rate-limit details", Encoding.UTF8, "text/plain")
+        };
+        response.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(retryAfter);
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(request => request.RequestUri == requestUrl),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
+
+        // Act
+        Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(
+            new Uri("rest/api/3/myself", UriKind.Relative),
+            cts.Token);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<JiraTransportException>();
+        exception.Which.FailureKind.Should().Be(JiraTransportFailureKind.RateLimited);
+        exception.Which.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        exception.Which.RetryAfter.Should().Be(retryAfter);
+        exception.Which.Message.Should().NotContain("rate-limit details");
+    }
+
+    [Fact(DisplayName = "GetAsync classifies exhausted network failures")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncWhenNetworkFailsThrowsTypedTransportException()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/myself");
+        var networkFailure = new HttpRequestException("Connection refused.");
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(request => request.RequestUri == requestUrl),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(networkFailure);
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
+
+        // Act
+        Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(
+            new Uri("rest/api/3/myself", UriKind.Relative),
+            cts.Token);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<JiraTransportException>();
+        exception.Which.FailureKind.Should().Be(JiraTransportFailureKind.Network);
+        exception.Which.StatusCode.Should().BeNull();
+        exception.Which.InnerException.Should().BeSameAs(networkFailure);
     }
 
     [Fact(DisplayName = "GetAsync retries transient failures and succeeds")]
