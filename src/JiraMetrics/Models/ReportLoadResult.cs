@@ -1,3 +1,5 @@
+using JiraMetrics.Models.ValueObjects;
+
 namespace JiraMetrics.Models;
 
 /// <summary>
@@ -28,10 +30,11 @@ internal abstract record ReportLoadResult
     /// </summary>
     internal sealed record Failure : ReportLoadResult
     {
-        private Failure()
+        public Failure(ErrorMessage error)
         {
+            Error = error;
         }
 
-        public static Failure Instance { get; } = new();
+        public ErrorMessage Error { get; }
     }
 }

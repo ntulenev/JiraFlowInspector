@@ -25,8 +25,6 @@ public sealed class JiraApplicationReportLoaderTests
         var testCoverage = new TestCoverageSnapshot([], []);
         using var cts = new CancellationTokenSource();
         var dataFacade = CreateDataFacade(settings, allTasksRatio);
-        var reportingFacade = CreateReportingFacade();
-
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 1 && types[0].Value == "Incident"),
@@ -40,9 +38,7 @@ public sealed class JiraApplicationReportLoaderTests
 
         var sut = new JiraApplicationReportLoader(
             settings,
-            dataFacade.Object,
-            reportingFacade.Object,
-            reportingFacade.Object);
+            dataFacade.Object);
 
         // Act
         var result = await sut.LoadAsync(cts.Token);
@@ -51,7 +47,6 @@ public sealed class JiraApplicationReportLoaderTests
         var success = result.Should().BeOfType<ReportLoadResult.Success>().Subject;
         success.ReportData.InternalIncidents.Should().BeSameAs(internalIncidents);
         success.ReportData.TestCoverage.Should().BeSameAs(testCoverage);
-        reportingFacade.Verify(facade => facade.ShowTestCoverage(coverageSettings, testCoverage), Times.Once);
     }
 
     [Fact(DisplayName = "LoadAsync returns failure when internal-incident loading fails")]
@@ -62,8 +57,6 @@ public sealed class JiraApplicationReportLoaderTests
         var settings = CreateSettings(null, [new IssueTypeName("Incident")]);
         using var cts = new CancellationTokenSource();
         var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
-        var reportingFacade = CreateReportingFacade();
-
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 1),
@@ -72,19 +65,14 @@ public sealed class JiraApplicationReportLoaderTests
 
         var sut = new JiraApplicationReportLoader(
             settings,
-            dataFacade.Object,
-            reportingFacade.Object,
-            reportingFacade.Object);
+            dataFacade.Object);
 
         // Act
         var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        result.Should().BeSameAs(ReportLoadResult.Failure.Instance);
-        reportingFacade.Verify(
-            facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message =>
-                message.Value.Contains("Invalid incident response.", StringComparison.Ordinal))),
-            Times.Once);
+        var failure = result.Should().BeOfType<ReportLoadResult.Failure>().Subject;
+        failure.Error.Value.Should().Contain("Invalid incident response.");
     }
 
     [Fact(DisplayName = "LoadAsync returns failure when test-coverage loading fails")]
@@ -96,8 +84,6 @@ public sealed class JiraApplicationReportLoaderTests
         var settings = CreateSettings(coverageSettings, null);
         using var cts = new CancellationTokenSource();
         var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
-        var reportingFacade = CreateReportingFacade();
-
         dataFacade.Setup(facade => facade.LoadTestCoverageAsync(
                 settings,
                 coverageSettings,
@@ -106,22 +92,14 @@ public sealed class JiraApplicationReportLoaderTests
 
         var sut = new JiraApplicationReportLoader(
             settings,
-            dataFacade.Object,
-            reportingFacade.Object,
-            reportingFacade.Object);
+            dataFacade.Object);
 
         // Act
         var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        result.Should().BeSameAs(ReportLoadResult.Failure.Instance);
-        reportingFacade.Verify(
-            facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message =>
-                message.Value.Contains("Coverage service unavailable.", StringComparison.Ordinal))),
-            Times.Once);
-        reportingFacade.Verify(
-            facade => facade.ShowTestCoverage(It.IsAny<TestCoverageSettings>(), It.IsAny<TestCoverageSnapshot>()),
-            Times.Never);
+        var failure = result.Should().BeOfType<ReportLoadResult.Failure>().Subject;
+        failure.Error.Value.Should().Contain("Coverage service unavailable.");
     }
 
     [Fact(DisplayName = "LoadAsync skips test-coverage loading when the feature is disabled")]
@@ -132,12 +110,9 @@ public sealed class JiraApplicationReportLoaderTests
         var settings = CreateSettings(new TestCoverageSettings(enabled: false), null);
         using var cts = new CancellationTokenSource();
         var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
-        var reportingFacade = CreateReportingFacade();
         var sut = new JiraApplicationReportLoader(
             settings,
-            dataFacade.Object,
-            reportingFacade.Object,
-            reportingFacade.Object);
+            dataFacade.Object);
 
         // Act
         var result = await sut.LoadAsync(cts.Token);
@@ -164,8 +139,6 @@ public sealed class JiraApplicationReportLoaderTests
         var cancellationObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var allowCleanup = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var dataFacade = new Mock<IJiraApplicationDataFacade>(MockBehavior.Strict);
-        var reportingFacade = CreateReportingFacade();
-
         dataFacade.Setup(facade => facade.LoadReportContextAsync(
                 settings,
                 It.IsAny<CancellationToken>()))
@@ -192,9 +165,7 @@ public sealed class JiraApplicationReportLoaderTests
 
         var sut = new JiraApplicationReportLoader(
             settings,
-            dataFacade.Object,
-            reportingFacade.Object,
-            reportingFacade.Object);
+            dataFacade.Object);
 
         // Act
         var loadTask = sut.LoadAsync(cts.Token);
@@ -214,7 +185,7 @@ public sealed class JiraApplicationReportLoaderTests
         var result = await loadTask;
 
         // Assert
-        result.Should().BeSameAs(ReportLoadResult.Failure.Instance);
+        result.Should().BeOfType<ReportLoadResult.Failure>();
         cancellationWasObservedBeforeReturn.Should().BeTrue();
         loaderAwaitedPendingCleanup.Should().BeTrue();
     }
@@ -232,34 +203,6 @@ public sealed class JiraApplicationReportLoaderTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(allTasksRatio);
         return dataFacade;
-    }
-
-    private static Mock<IJiraPresentationService> CreateReportingFacade()
-    {
-        var reportingFacade = new Mock<IJiraPresentationService>(MockBehavior.Strict);
-        reportingFacade.Setup(facade => facade.ShowReportPeriodContext(
-            It.IsAny<ReportPeriod>(),
-            It.IsAny<CreatedAfterDate?>()));
-        reportingFacade.As<IJiraStatusPresenter>().Setup(presenter => presenter.ShowSpacer());
-        reportingFacade.Setup(facade => facade.ShowAllTasksRatioLoadingStarted());
-        reportingFacade.Setup(facade => facade.ShowAllTasksRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()));
-        reportingFacade.Setup(facade => facade.ShowAllTasksRatio(
-            It.IsAny<string?>(),
-            It.IsAny<string?>(),
-            It.IsAny<IssueRatioSnapshot>()));
-        reportingFacade.Setup(facade => facade.ShowBugRatioLoadingStarted(It.IsAny<IReadOnlyList<IssueTypeName>>()));
-        reportingFacade.Setup(facade => facade.ShowBugRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()));
-        reportingFacade.Setup(facade => facade.ShowBugRatio(
-            It.IsAny<IReadOnlyList<IssueTypeName>>(),
-            It.IsAny<string?>(),
-            It.IsAny<string?>(),
-            It.IsAny<IssueRatioSnapshot>()));
-        reportingFacade.Setup(facade => facade.ShowTestCoverageLoadingStarted(It.IsAny<TestCoverageSettings>()));
-        reportingFacade.Setup(facade => facade.ShowTestCoverage(
-            It.IsAny<TestCoverageSettings>(),
-            It.IsAny<TestCoverageSnapshot>()));
-        reportingFacade.Setup(facade => facade.ShowIssueSearchFailed(It.IsAny<ErrorMessage>()));
-        return reportingFacade;
     }
 
     private static AppSettings CreateSettings(

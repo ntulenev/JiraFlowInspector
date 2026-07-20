@@ -1,5 +1,6 @@
 using JiraMetrics.Logic;
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Presentation;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -18,7 +19,9 @@ internal static class ApplicationServiceCollectionExtensions
         return services
             .AddTransient<IJiraApplicationReportLoader>(sp => new JiraApplicationReportLoader(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
-                sp.GetRequiredService<IJiraApplicationDataFacade>(),
+                sp.GetRequiredService<IJiraApplicationDataFacade>()))
+            .AddTransient<IJiraApplicationReportPresenter>(sp => new JiraApplicationReportPresenter(
+                sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraReportSectionsPresenter>()))
             .AddTransient<IJiraApplicationAnalysisRunner>(sp => new JiraApplicationAnalysisRunner(
@@ -34,6 +37,7 @@ internal static class ApplicationServiceCollectionExtensions
                 sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraRequestTelemetryCollector>(),
                 sp.GetRequiredService<IJiraApplicationReportLoader>(),
+                sp.GetRequiredService<IJiraApplicationReportPresenter>(),
                 sp.GetRequiredService<IJiraApplicationAnalysisRunner>()));
     }
 }

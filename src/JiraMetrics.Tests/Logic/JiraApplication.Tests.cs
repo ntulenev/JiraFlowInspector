@@ -4,6 +4,7 @@ using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
+using JiraMetrics.Presentation;
 
 using Microsoft.Extensions.Options;
 
@@ -23,6 +24,7 @@ public sealed class JiraApplicationTests
             reportingFacade,
             new FakeRequestTelemetryCollector(),
             new NoOpReportLoader(),
+            new NoOpReportPresenter(),
             new NoOpAnalysisRunner());
 
         // Assert
@@ -43,6 +45,7 @@ public sealed class JiraApplicationTests
             presentation,
             requestTelemetryCollector,
             new NoOpReportLoader(),
+            new NoOpReportPresenter(),
             new NoOpAnalysisRunner());
 
         // Assert
@@ -63,6 +66,7 @@ public sealed class JiraApplicationTests
             presentation,
             new FakeRequestTelemetryCollector(),
             reportLoader,
+            new NoOpReportPresenter(),
             new NoOpAnalysisRunner());
 
         // Assert
@@ -83,6 +87,7 @@ public sealed class JiraApplicationTests
             presentation,
             new FakeRequestTelemetryCollector(),
             new NoOpReportLoader(),
+            new NoOpReportPresenter(),
             analysisRunner);
 
         // Assert
@@ -1005,7 +1010,8 @@ public sealed class JiraApplicationTests
         return new JiraApplication(
             presentation,
             requestTelemetryCollector,
-            new JiraApplicationReportLoader(appSettings, dataFacade, presentation, presentation),
+            new JiraApplicationReportLoader(appSettings, dataFacade),
+            new JiraApplicationReportPresenter(appSettings, presentation, presentation),
             new JiraApplicationAnalysisRunner(
                 appSettings,
                 dataFacade,
@@ -1349,7 +1355,18 @@ public sealed class JiraApplicationTests
             Task.FromResult(new JiraAuthUser(new UserDisplayName("Test"), "user@example.com", "1"));
 
         public Task<ReportLoadResult> LoadAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<ReportLoadResult>(ReportLoadResult.Failure.Instance);
+            Task.FromResult<ReportLoadResult>(new ReportLoadResult.Failure(new ErrorMessage("Report load failed.")));
+    }
+
+    private sealed class NoOpReportPresenter : IJiraApplicationReportPresenter
+    {
+        public void ShowLoadingStarted()
+        {
+        }
+
+        public void ShowLoaded(JiraApplicationReportData reportData)
+        {
+        }
     }
 
     private sealed class NoOpAnalysisRunner : IJiraApplicationAnalysisRunner

@@ -16,21 +16,25 @@ public sealed class JiraApplication : IJiraApplication
     /// <param name="statusPresenter">Application status presenter.</param>
     /// <param name="requestTelemetryCollector">Jira transport telemetry collector.</param>
     /// <param name="reportLoader">Pre-analysis report data loader.</param>
+    /// <param name="reportPresenter">Report-loading workflow presenter.</param>
     /// <param name="analysisRunner">Analysis and rendering workflow runner.</param>
     internal JiraApplication(
         IJiraStatusPresenter statusPresenter,
         IJiraRequestTelemetryCollector requestTelemetryCollector,
         IJiraApplicationReportLoader reportLoader,
+        IJiraApplicationReportPresenter reportPresenter,
         IJiraApplicationAnalysisRunner analysisRunner)
     {
         ArgumentNullException.ThrowIfNull(statusPresenter);
         ArgumentNullException.ThrowIfNull(requestTelemetryCollector);
         ArgumentNullException.ThrowIfNull(reportLoader);
+        ArgumentNullException.ThrowIfNull(reportPresenter);
         ArgumentNullException.ThrowIfNull(analysisRunner);
 
         _statusPresenter = statusPresenter;
         _requestTelemetryCollector = requestTelemetryCollector;
         _reportLoader = reportLoader;
+        _reportPresenter = reportPresenter;
         _analysisRunner = analysisRunner;
     }
 
@@ -46,12 +50,16 @@ public sealed class JiraApplication : IJiraApplication
         try
         {
             await EnsureReportAccessAsync(cancellationToken).ConfigureAwait(false);
+            _reportPresenter.ShowLoadingStarted();
             var loadResult = await _reportLoader.LoadAsync(cancellationToken).ConfigureAwait(false);
-            if (loadResult is not ReportLoadResult.Success success)
+            if (loadResult is ReportLoadResult.Failure failure)
             {
+                _statusPresenter.ShowIssueSearchFailed(failure.Error);
                 return JiraApplicationExitCode.ReportLoadFailed;
             }
 
+            var success = (ReportLoadResult.Success)loadResult;
+            _reportPresenter.ShowLoaded(success.ReportData);
             await _analysisRunner.RunAsync(success.ReportData, cancellationToken).ConfigureAwait(false);
             return JiraApplicationExitCode.Success;
         }
@@ -83,6 +91,7 @@ public sealed class JiraApplication : IJiraApplication
     private readonly IJiraStatusPresenter _statusPresenter;
     private readonly IJiraRequestTelemetryCollector _requestTelemetryCollector;
     private readonly IJiraApplicationReportLoader _reportLoader;
+    private readonly IJiraApplicationReportPresenter _reportPresenter;
     private readonly IJiraApplicationAnalysisRunner _analysisRunner;
 }
 

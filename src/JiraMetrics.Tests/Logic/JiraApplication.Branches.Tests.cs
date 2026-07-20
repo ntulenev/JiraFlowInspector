@@ -6,6 +6,7 @@ using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
+using JiraMetrics.Presentation;
 
 using Moq;
 
@@ -149,8 +150,8 @@ public sealed class JiraApplicationBranchesTests
 
         // Assert
         reportingFacade.Verify(facade => facade.ShowBugRatioLoadingStarted(settings.BugIssueNames), Times.Once);
-        reportingFacade.Verify(facade => facade.ShowAllTasksRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()), Times.Once);
-        reportingFacade.Verify(facade => facade.ShowAllTasksRatio(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<IssueRatioSnapshot>()), Times.Once);
+        reportingFacade.Verify(facade => facade.ShowAllTasksRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()), Times.Never);
+        reportingFacade.Verify(facade => facade.ShowAllTasksRatio(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<IssueRatioSnapshot>()), Times.Never);
         reportingFacade.Verify(
             facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message => message.Value.Contains("Bug ratio payload is invalid.", StringComparison.Ordinal))),
             Times.Once);
@@ -397,7 +398,9 @@ public sealed class JiraApplicationBranchesTests
             telemetryCollector.Object,
             new JiraApplicationReportLoader(
                 settings,
-                dataFacade.Object,
+                dataFacade.Object),
+            new JiraApplicationReportPresenter(
+                settings,
                 reportingFacade.Object,
                 reportingFacade.Object),
             new JiraApplicationAnalysisRunner(
