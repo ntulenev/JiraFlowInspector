@@ -21,7 +21,9 @@ internal sealed class PdfGeneralStatisticsSection : IPdfReportSection
         }
 
         _ = column.Item().Text("General statistics").Bold().FontSize(12);
-        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        var generatedAt = reportData.RunContext.GeneratedAt.ToString(
+            "yyyy-MM-dd HH:mm:ss zzz",
+            CultureInfo.InvariantCulture);
         _ = column.Item().Text("Data as of: " + generatedAt).FontColor(Colors.Grey.Darken1);
         _ = column.Item().Text("Scope: all not finished tasks").FontColor(Colors.Grey.Darken1);
 

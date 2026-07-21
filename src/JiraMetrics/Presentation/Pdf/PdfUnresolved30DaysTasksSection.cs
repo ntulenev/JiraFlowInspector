@@ -21,7 +21,9 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
         }
 
         _ = column.Item().Text("Unresolved 30+ Days Tasks").Bold().FontSize(12);
-        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        var generatedAt = reportData.RunContext.GeneratedAt.ToString(
+            "yyyy-MM-dd HH:mm:ss zzz",
+            CultureInfo.InvariantCulture);
         _ = column.Item()
             .Text($"Current snapshot as of {generatedAt}; this is not a historical period slice.")
             .FontColor(Colors.Grey.Darken1);

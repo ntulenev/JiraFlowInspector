@@ -34,7 +34,7 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
             return;
         }
 
-        var now = DateTimeOffset.Now;
+        var now = reportData.RunContext.GeneratedAt;
         column.Item().Table(table =>
         {
             table.ColumnsDefinition(columns =>

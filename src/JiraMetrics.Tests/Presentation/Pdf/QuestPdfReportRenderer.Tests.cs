@@ -1,5 +1,3 @@
-using System.Globalization;
-
 using FluentAssertions;
 
 using JiraMetrics.Models;
@@ -86,9 +84,8 @@ public sealed class QuestPdfReportRendererTests
             outputPath: Path.Combine("reports", "result.pdf"));
         var options = Options.Create(settings);
         var reportData = CreateReportData(settings);
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
         var expectedPath = Path.GetFullPath(
-            Path.Combine("reports", $"result_{dateSuffix}.pdf"),
+            Path.Combine("reports", "result_03_02_2026.pdf"),
             Directory.GetCurrentDirectory());
 
         var composeCalls = 0;
@@ -144,12 +141,11 @@ public sealed class QuestPdfReportRendererTests
                 generateSeparateReport: true));
         var options = Options.Create(settings);
         var reportData = CreateReportData(settings);
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
         var expectedMainPath = Path.GetFullPath(
-            Path.Combine("reports", $"result_{dateSuffix}.pdf"),
+            Path.Combine("reports", "result_03_02_2026.pdf"),
             Directory.GetCurrentDirectory());
         var expectedCustomTransitionPath = Path.GetFullPath(
-            Path.Combine("reports", $"CustomTransition_result_{dateSuffix}.pdf"),
+            Path.Combine("reports", "CustomTransition_result_03_02_2026.pdf"),
             Directory.GetCurrentDirectory());
 
         var composer = new Mock<IPdfContentComposer>(MockBehavior.Strict);
@@ -273,6 +269,8 @@ public sealed class QuestPdfReportRendererTests
 
         return new JiraReportData
         {
+            RunContext = new ReportRunContext(
+                new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2))),
             Settings = settings,
             Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
             Transitions = new JiraReportTransitionData

@@ -1019,7 +1019,9 @@ public sealed class JiraApplicationTests
                 presentation,
                 presentation,
                 presentation,
-                presentation));
+                presentation,
+                new ReportRunContext(
+                    new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)))));
     }
 
     private static AppSettings CreateSettings(

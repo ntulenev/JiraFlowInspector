@@ -18,7 +18,9 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     /// Initializes a new instance of the <see cref="SpectreJiraPresentationService"/> class.
     /// </summary>
     public SpectreJiraPresentationService()
-        : this(showTimeCalculationsInHoursOnly: false)
+        : this(
+            showTimeCalculationsInHoursOnly: false,
+            ReportRunContext.Create(TimeProvider.System))
     {
     }
 
@@ -29,19 +31,40 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     public SpectreJiraPresentationService(IOptions<AppSettings> settings)
         : this(settings is null
             ? throw new ArgumentNullException(nameof(settings))
-            : settings.Value.ShowTimeCalculationsInHoursOnly)
+            : settings.Value.ShowTimeCalculationsInHoursOnly,
+            ReportRunContext.Create(TimeProvider.System))
     {
     }
 
-    private SpectreJiraPresentationService(bool showTimeCalculationsInHoursOnly)
+    /// <summary>
+    /// Initializes a new instance with a context shared by the report run.
+    /// </summary>
+    /// <param name="settings">Application settings options.</param>
+    /// <param name="runContext">Current report run context.</param>
+    public SpectreJiraPresentationService(
+        IOptions<AppSettings> settings,
+        ReportRunContext runContext)
+        : this(
+            settings is null
+                ? throw new ArgumentNullException(nameof(settings))
+                : settings.Value.ShowTimeCalculationsInHoursOnly,
+            runContext)
     {
+    }
+
+    private SpectreJiraPresentationService(
+        bool showTimeCalculationsInHoursOnly,
+        ReportRunContext runContext)
+    {
+        ArgumentNullException.ThrowIfNull(runContext);
+
         _statusSection = new SpectreStatusSection();
         _ratioSection = new SpectreRatioSection();
         _releaseSection = new SpectreReleaseSection();
-        _archTasksSection = new SpectreArchTasksSection();
+        _archTasksSection = new SpectreArchTasksSection(runContext.GeneratedAt);
         _globalIncidentsSection = new SpectreGlobalIncidentsSection(showTimeCalculationsInHoursOnly);
         _transitionSection = new SpectreTransitionSection(showTimeCalculationsInHoursOnly);
-        _generalStatisticsSection = new SpectreGeneralStatisticsSection();
+        _generalStatisticsSection = new SpectreGeneralStatisticsSection(runContext.GeneratedAt);
         _failuresSection = new SpectreFailuresSection();
     }
 

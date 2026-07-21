@@ -22,7 +22,7 @@ internal static partial class HtmlDocumentComposer
             {
                 ["__PROJECT__"] = HtmlPresentationHelpers.Encode(reportData.Settings.ProjectKey.Value),
                 ["__GENERATED_AT__"] = HtmlPresentationHelpers.Encode(
-                    DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)),
+                    reportData.RunContext.GeneratedAt.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)),
                 ["__PERIOD__"] = HtmlPresentationHelpers.Encode(reportData.Settings.ReportPeriod.Label),
                 ["__DONE_STATUS__"] = HtmlPresentationHelpers.Encode(reportData.Settings.DoneStatusName.Value),
                 ["__SEARCH_ISSUES__"] = reportData.Source.SearchIssueCount.Value.ToString(CultureInfo.InvariantCulture),

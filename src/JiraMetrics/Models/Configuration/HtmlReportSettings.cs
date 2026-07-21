@@ -36,17 +36,20 @@ public sealed record HtmlReportSettings
     public bool OpenAfterGeneration { get; }
 
     /// <summary>
-    /// Resolves output path to absolute path and appends date suffix.
+    /// Resolves output path using the timestamp captured for the report run.
     /// </summary>
+    /// <param name="generatedAt">Report generation timestamp.</param>
     /// <returns>Absolute dated output path.</returns>
-    public string ResolveOutputPath() => ResolveOutputPath(fileNamePrefix: null);
+    public string ResolveOutputPath(DateTimeOffset generatedAt) =>
+        ResolveOutputPath(generatedAt, fileNamePrefix: null);
 
     /// <summary>
-    /// Resolves output path to absolute path, prepends an optional filename prefix, and appends date suffix.
+    /// Resolves output path using the report timestamp and an optional filename prefix.
     /// </summary>
+    /// <param name="generatedAt">Report generation timestamp.</param>
     /// <param name="fileNamePrefix">Optional filename prefix.</param>
     /// <returns>Absolute dated output path.</returns>
-    public string ResolveOutputPath(string? fileNamePrefix)
+    public string ResolveOutputPath(DateTimeOffset generatedAt, string? fileNamePrefix)
     {
         var candidatePath = string.IsNullOrWhiteSpace(OutputPath)
             ? DEFAULT_OUTPUT_PATH
@@ -56,10 +59,10 @@ public sealed record HtmlReportSettings
             ? Path.GetFullPath(candidatePath)
             : Path.GetFullPath(candidatePath, Directory.GetCurrentDirectory());
 
-        return AppendDateSuffix(absolutePath, DateTime.Now, fileNamePrefix);
+        return AppendDateSuffix(absolutePath, generatedAt, fileNamePrefix);
     }
 
-    private static string AppendDateSuffix(string absolutePath, DateTime currentDate, string? fileNamePrefix)
+    private static string AppendDateSuffix(string absolutePath, DateTimeOffset generatedAt, string? fileNamePrefix)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(absolutePath);
 
@@ -76,7 +79,7 @@ public sealed record HtmlReportSettings
             fileNameWithoutExtension = fileNamePrefix.Trim() + "_" + fileNameWithoutExtension;
         }
 
-        var dateSuffix = currentDate.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var dateSuffix = generatedAt.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
         var datedFileName = fileNameWithoutExtension + "_" + dateSuffix + extension;
 
         return string.IsNullOrWhiteSpace(directoryPath)

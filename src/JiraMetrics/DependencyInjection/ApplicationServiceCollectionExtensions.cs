@@ -1,8 +1,10 @@
 using JiraMetrics.Logic;
+using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Presentation;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace JiraMetrics.DependencyInjection;
@@ -15,6 +17,10 @@ internal static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddJiraApplication(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton(static sp =>
+            ReportRunContext.Create(sp.GetRequiredService<TimeProvider>()));
 
         return services
             .AddTransient<IJiraApplicationReportLoader>(sp => new JiraApplicationReportLoader(
@@ -31,7 +37,8 @@ internal static class ApplicationServiceCollectionExtensions
                 sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraAnalysisPresenter>(),
                 sp.GetRequiredService<IJiraDiagnosticsPresenter>(),
-                sp.GetRequiredService<IJiraReportPipeline>()))
+                sp.GetRequiredService<IJiraReportPipeline>(),
+                sp.GetRequiredService<ReportRunContext>()))
             .AddTransient<IJiraReportPipeline, JiraReportPipeline>()
             .AddTransient<IJiraApplication>(sp => new JiraApplication(
                 sp.GetRequiredService<IJiraStatusPresenter>(),

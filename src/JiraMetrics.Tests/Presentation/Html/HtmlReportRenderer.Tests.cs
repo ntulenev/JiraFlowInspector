@@ -42,12 +42,15 @@ public sealed class HtmlReportRendererTests
         var settings = CreateSettings(htmlEnabled: true, openAfterGeneration: true);
         var options = Options.Create(settings);
         var reportData = CreateReportData(settings);
+        var expectedPath = Path.GetFullPath(
+            "report_03_02_2026.html",
+            Directory.GetCurrentDirectory());
         string? savedPath = null;
 
         var fileStore = new Mock<IHtmlReportFileStore>(MockBehavior.Strict);
         fileStore
             .Setup(x => x.Save(
-                It.Is<string>(path => Path.GetFileName(path).StartsWith("report_", StringComparison.OrdinalIgnoreCase)),
+                It.Is<string>(path => string.Equals(path, expectedPath, StringComparison.OrdinalIgnoreCase)),
                 "<html>report</html>"))
             .Callback<string, string>((path, _) => savedPath = path);
 
@@ -82,6 +85,8 @@ public sealed class HtmlReportRendererTests
     private static JiraReportData CreateReportData(AppSettings settings) =>
         new()
         {
+            RunContext = new ReportRunContext(
+                new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2))),
             Settings = settings,
             Source = new JiraReportSourceData { SearchIssueCount = new ItemCount(1) },
             Transitions = new JiraReportTransitionData

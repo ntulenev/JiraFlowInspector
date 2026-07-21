@@ -53,7 +53,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
             return;
         }
 
-        var outputPath = _settings.PdfReport.ResolveOutputPath();
+        var outputPath = _settings.PdfReport.ResolveOutputPath(reportData.RunContext.GeneratedAt);
 
         QuestPDF.Settings.License = QLicenseType.Community;
 
@@ -66,7 +66,9 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
 
         if (ShouldRenderCustomTransitionReport(reportData))
         {
-            var customTransitionOutputPath = _settings.PdfReport.ResolveOutputPath(CUSTOM_TRANSITION_REPORT_PREFIX);
+            var customTransitionOutputPath = _settings.PdfReport.ResolveOutputPath(
+                reportData.RunContext.GeneratedAt,
+                CUSTOM_TRANSITION_REPORT_PREFIX);
             var customTransitionSection = new PdfCustomTransitionAnalysisSection();
             var customTransitionDocument = CreateReportDocument(
                 reportData,
@@ -97,7 +99,7 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                         string.Format(
                             CultureInfo.InvariantCulture,
                             "Generated: {0:yyyy-MM-dd HH:mm:ss zzz}",
-                            DateTimeOffset.Now));
+                            reportData.RunContext.GeneratedAt));
                     _ = column.Item().Text(
                         "Project: "
                         + reportData.Settings.ProjectKey.Value

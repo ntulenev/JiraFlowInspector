@@ -21,6 +21,7 @@ public sealed class HtmlContentComposerTests
         ]);
         var reportData = new JiraReportData
         {
+            RunContext = CreateRunContext(),
             Settings = CreateSettings(),
             Source = new JiraReportSourceData(),
             Transitions = new JiraReportTransitionData()
@@ -47,6 +48,7 @@ public sealed class HtmlContentComposerTests
 
         // Assert
         html.Should().Contain("JiraFlowInspector HTML Report");
+        html.Should().Contain("2026-02-03 23:59:58 +02:00");
         html.Should().Contain("report-nav");
         html.Should().Contain("href=\"#path-groups\"");
         html.Should().Contain("Issues moved to Done in selected period");
@@ -119,6 +121,7 @@ public sealed class HtmlContentComposerTests
         var settings = CreateSettings();
         var reportData = new JiraReportData
         {
+            RunContext = CreateRunContext(),
             Settings = settings,
             Source = new JiraReportSourceData(),
             Transitions = new JiraReportTransitionData()
@@ -155,6 +158,7 @@ public sealed class HtmlContentComposerTests
 
         return new JiraReportData
         {
+            RunContext = CreateRunContext(),
             Settings = settings,
             Source = new JiraReportSourceData
             {
@@ -336,6 +340,9 @@ public sealed class HtmlContentComposerTests
             roadmapReport: new RoadmapReportSettings(
                 "project = PROJECT_KEY AND issuetype = IDEA_TYPE",
                 "Roadmap[Dropdown]"));
+
+    private static ReportRunContext CreateRunContext() =>
+        new(new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)));
 
     private sealed class StubHtmlSection(string html) : IHtmlReportSection
     {

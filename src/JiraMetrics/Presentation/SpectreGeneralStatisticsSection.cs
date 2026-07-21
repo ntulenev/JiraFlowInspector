@@ -14,6 +14,11 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 internal sealed class SpectreGeneralStatisticsSection
 {
+    public SpectreGeneralStatisticsSection(DateTimeOffset generatedAt)
+    {
+        _generatedAt = generatedAt;
+    }
+
     public void ShowOpenIssuesByStatusSummary(
         IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
         StatusName doneStatusName,
@@ -22,7 +27,7 @@ internal sealed class SpectreGeneralStatisticsSection
         var excludedStatuses = rejectStatusName is { } rejectStatus
             ? $"{doneStatusName.Value}, {rejectStatus.Value}"
             : doneStatusName.Value;
-        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        var generatedAt = _generatedAt.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
 
         AnsiConsole.MarkupLine("[bold]General statistics[/]");
         AnsiConsole.MarkupLine($"[grey]Data as of:[/] {Markup.Escape(generatedAt)}");
@@ -64,4 +69,6 @@ internal sealed class SpectreGeneralStatisticsSection
 
         AnsiConsole.Write(table);
     }
+
+    private readonly DateTimeOffset _generatedAt;
 }

@@ -1,5 +1,3 @@
-using System.Globalization;
-
 using FluentAssertions;
 
 using JiraMetrics.Models.Configuration;
@@ -36,13 +34,13 @@ public sealed class PdfReportSettingsTests
     {
         // Arrange
         var settings = new PdfReportSettings(enabled: true, outputPath: Path.Combine("reports", "result.pdf"));
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
         var expected = Path.GetFullPath(
-            Path.Combine("reports", $"result_{dateSuffix}.pdf"),
+            Path.Combine("reports", "result_03_02_2026.pdf"),
             Directory.GetCurrentDirectory());
 
         // Act
-        var result = settings.ResolveOutputPath();
+        var result = settings.ResolveOutputPath(generatedAt);
 
         // Assert
         result.Should().Be(expected);
@@ -54,13 +52,13 @@ public sealed class PdfReportSettingsTests
     {
         // Arrange
         var settings = new PdfReportSettings(enabled: true, outputPath: "  report.pdf  ");
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
         var expected = Path.GetFullPath(
-            $"report_{dateSuffix}.pdf",
+            "report_03_02_2026.pdf",
             Directory.GetCurrentDirectory());
 
         // Act
-        var result = settings.ResolveOutputPath();
+        var result = settings.ResolveOutputPath(generatedAt);
 
         // Assert
         result.Should().Be(expected);
@@ -72,13 +70,13 @@ public sealed class PdfReportSettingsTests
     {
         // Arrange
         var settings = new PdfReportSettings(enabled: true, outputPath: " ");
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
         var expected = Path.GetFullPath(
-            $"jiraflowinspector-report_{dateSuffix}.pdf",
+            "jiraflowinspector-report_03_02_2026.pdf",
             Directory.GetCurrentDirectory());
 
         // Act
-        var result = settings.ResolveOutputPath();
+        var result = settings.ResolveOutputPath(generatedAt);
 
         // Assert
         result.Should().Be(expected);
@@ -90,13 +88,13 @@ public sealed class PdfReportSettingsTests
     {
         // Arrange
         var settings = new PdfReportSettings(enabled: true, outputPath: Path.Combine("reports", "result.pdf"));
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
         var expected = Path.GetFullPath(
-            Path.Combine("reports", $"CustomTransition_result_{dateSuffix}.pdf"),
+            Path.Combine("reports", "CustomTransition_result_03_02_2026.pdf"),
             Directory.GetCurrentDirectory());
 
         // Act
-        var result = settings.ResolveOutputPath("CustomTransition");
+        var result = settings.ResolveOutputPath(generatedAt, "CustomTransition");
 
         // Assert
         result.Should().Be(expected);

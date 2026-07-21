@@ -15,6 +15,11 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 internal sealed class SpectreArchTasksSection
 {
+    public SpectreArchTasksSection(DateTimeOffset generatedAt)
+    {
+        _generatedAt = generatedAt;
+    }
+
     public void ShowArchTasksReport(
         ArchTasksReportSettings settings,
         IReadOnlyList<ArchTaskItem> tasks)
@@ -33,7 +38,7 @@ internal sealed class SpectreArchTasksSection
             return;
         }
 
-        var now = DateTimeOffset.Now;
+        var now = _generatedAt;
         var table = new Table()
             .RoundedBorder()
             .BorderColor(Color.Grey)
@@ -69,4 +74,6 @@ internal sealed class SpectreArchTasksSection
         AnsiConsole.MarkupLine(
             $"[grey]Total tasks:[/] {tasks.Count}    [grey]Resolved:[/] {resolvedCount}    [grey]Open:[/] {openCount}");
     }
+
+    private readonly DateTimeOffset _generatedAt;
 }

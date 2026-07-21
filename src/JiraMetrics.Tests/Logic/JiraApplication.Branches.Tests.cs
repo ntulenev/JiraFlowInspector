@@ -410,7 +410,9 @@ public sealed class JiraApplicationBranchesTests
                 reportingFacade.Object,
                 reportingFacade.Object,
                 reportingFacade.Object,
-                reportingFacade.As<IJiraReportPipeline>().Object));
+                reportingFacade.As<IJiraReportPipeline>().Object,
+                new ReportRunContext(
+                    new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)))));
     }
 
     private static AppSettings CreateSettings(IReadOnlyList<IssueTypeName>? bugIssueNames = null)

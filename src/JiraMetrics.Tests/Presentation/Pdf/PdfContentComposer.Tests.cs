@@ -122,6 +122,8 @@ public sealed class PdfContentComposerTests
 
         return new JiraReportData
         {
+            RunContext = new ReportRunContext(
+                new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2))),
             Settings = settings,
             Source = new JiraReportSourceData
             {

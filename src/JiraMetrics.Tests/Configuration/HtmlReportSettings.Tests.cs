@@ -1,5 +1,3 @@
-using System.Globalization;
-
 using FluentAssertions;
 
 using JiraMetrics.Models.Configuration;
@@ -25,13 +23,13 @@ public sealed class HtmlReportSettingsTests
     {
         // Arrange
         var settings = new HtmlReportSettings(enabled: true, outputPath: Path.Combine("reports", "result.html"));
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
         var expected = Path.GetFullPath(
-            Path.Combine("reports", $"result_{dateSuffix}.html"),
+            Path.Combine("reports", "result_03_02_2026.html"),
             Directory.GetCurrentDirectory());
 
         // Act
-        var result = settings.ResolveOutputPath();
+        var result = settings.ResolveOutputPath(generatedAt);
 
         // Assert
         result.Should().Be(expected);
@@ -43,13 +41,13 @@ public sealed class HtmlReportSettingsTests
     {
         // Arrange
         var settings = new HtmlReportSettings(enabled: true, outputPath: Path.Combine("reports", "result"));
-        var dateSuffix = DateTime.Now.ToString("dd_MM_yyyy", CultureInfo.InvariantCulture);
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
         var expected = Path.GetFullPath(
-            Path.Combine("reports", $"result_{dateSuffix}.html"),
+            Path.Combine("reports", "result_03_02_2026.html"),
             Directory.GetCurrentDirectory());
 
         // Act
-        var result = settings.ResolveOutputPath();
+        var result = settings.ResolveOutputPath(generatedAt);
 
         // Assert
         result.Should().Be(expected);

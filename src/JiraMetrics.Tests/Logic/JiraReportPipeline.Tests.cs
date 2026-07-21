@@ -59,6 +59,8 @@ public sealed class JiraReportPipelineTests
     private static JiraReportData CreateReportData() =>
         new()
         {
+            RunContext = new ReportRunContext(
+                new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2))),
             Settings = new AppSettings(
                 new JiraBaseUrl("https://example.atlassian.net"),
                 new JiraEmail("user@example.test"),

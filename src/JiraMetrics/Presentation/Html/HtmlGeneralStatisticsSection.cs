@@ -19,7 +19,9 @@ internal sealed class HtmlGeneralStatisticsSection : IHtmlReportSection
             return string.Empty;
         }
 
-        var generatedAt = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
+        var generatedAt = reportData.RunContext.GeneratedAt.ToString(
+            "yyyy-MM-dd HH:mm:ss zzz",
+            CultureInfo.InvariantCulture);
         var excludedStatuses = reportData.Settings.RejectStatusName is { } rejectStatus
             ? $"{reportData.Settings.DoneStatusName.Value}, {rejectStatus.Value}"
             : reportData.Settings.DoneStatusName.Value;

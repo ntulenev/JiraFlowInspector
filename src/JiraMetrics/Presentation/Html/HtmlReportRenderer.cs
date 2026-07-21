@@ -46,7 +46,7 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
             return;
         }
 
-        var outputPath = _settings.HtmlReport.ResolveOutputPath();
+        var outputPath = _settings.HtmlReport.ResolveOutputPath(reportData.RunContext.GeneratedAt);
         var html = _htmlContentComposer.Compose(reportData);
         _htmlReportFileStore.Save(outputPath, html);
 

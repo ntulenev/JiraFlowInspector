@@ -9,14 +9,15 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRunner
 {
-    public JiraApplicationAnalysisRunner(
+    internal JiraApplicationAnalysisRunner(
         AppSettings settings,
         IJiraApplicationDataFacade dataFacade,
         IJiraApplicationAnalysisFacade analysisFacade,
         IJiraStatusPresenter statusPresenter,
         IJiraAnalysisPresenter analysisPresenter,
         IJiraDiagnosticsPresenter diagnosticsPresenter,
-        IJiraReportPipeline reportPipeline)
+        IJiraReportPipeline reportPipeline,
+        ReportRunContext runContext)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(dataFacade);
@@ -25,6 +26,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         ArgumentNullException.ThrowIfNull(analysisPresenter);
         ArgumentNullException.ThrowIfNull(diagnosticsPresenter);
         ArgumentNullException.ThrowIfNull(reportPipeline);
+        ArgumentNullException.ThrowIfNull(runContext);
 
         _settings = settings;
         _dataFacade = dataFacade;
@@ -33,6 +35,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         _analysisPresenter = analysisPresenter;
         _diagnosticsPresenter = diagnosticsPresenter;
         _reportPipeline = reportPipeline;
+        _runContext = runContext;
     }
 
     public async Task RunAsync(
@@ -198,6 +201,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
     {
         _statusPresenter.ShowProcessingStep("Rendering PDF report...");
         _reportPipeline.RenderReport(JiraReportData.Create(
+            _runContext,
             _settings,
             reportData.ReportContext,
             reportData.AllTasksRatio,
@@ -216,6 +220,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
     {
         _statusPresenter.ShowProcessingStep("Rendering PDF report...");
         _reportPipeline.RenderReport(JiraReportData.CreateWithoutTransitionAnalysis(
+            _runContext,
             _settings,
             reportData.ReportContext,
             reportData.AllTasksRatio,
@@ -251,4 +256,5 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
     private readonly IJiraAnalysisPresenter _analysisPresenter;
     private readonly IJiraDiagnosticsPresenter _diagnosticsPresenter;
     private readonly IJiraReportPipeline _reportPipeline;
+    private readonly ReportRunContext _runContext;
 }

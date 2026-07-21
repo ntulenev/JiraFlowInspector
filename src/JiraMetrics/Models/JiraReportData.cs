@@ -12,6 +12,7 @@ public sealed class JiraReportData
     /// Creates aggregated report data when transition analysis is unavailable,
     /// while keeping optional sections such as release and ratio reports.
     /// </summary>
+    /// <param name="runContext">Context shared by every output generated for this report.</param>
     /// <param name="settings">Application settings.</param>
     /// <param name="reportContext">Preloaded report context.</param>
     /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
@@ -23,6 +24,7 @@ public sealed class JiraReportData
     /// <param name="matchedStageCount">Count of issues that matched transition-analysis prerequisites.</param>
     /// <returns>Aggregated report data.</returns>
     public static JiraReportData CreateWithoutTransitionAnalysis(
+        ReportRunContext runContext,
         AppSettings settings,
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
@@ -33,12 +35,14 @@ public sealed class JiraReportData
         ItemCount successfulCount,
         ItemCount matchedStageCount)
     {
+        ArgumentNullException.ThrowIfNull(runContext);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(reportContext);
         ArgumentNullException.ThrowIfNull(allTasksRatio);
         ArgumentNullException.ThrowIfNull(failures);
 
         return CreateCore(
+            runContext,
             settings,
             reportContext,
             allTasksRatio,
@@ -63,6 +67,7 @@ public sealed class JiraReportData
     /// <summary>
     /// Creates aggregated report data for a successful analysis run.
     /// </summary>
+    /// <param name="runContext">Context shared by every output generated for this report.</param>
     /// <param name="settings">Application settings.</param>
     /// <param name="reportContext">Preloaded report context.</param>
     /// <param name="allTasksRatio">All-tasks ratio snapshot.</param>
@@ -73,6 +78,7 @@ public sealed class JiraReportData
     /// <param name="failures">Issue load failures.</param>
     /// <returns>Aggregated report data.</returns>
     public static JiraReportData Create(
+        ReportRunContext runContext,
         AppSettings settings,
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
@@ -82,6 +88,7 @@ public sealed class JiraReportData
         JiraIssueAnalysisResult analysis,
         IReadOnlyList<LoadFailure> failures)
     {
+        ArgumentNullException.ThrowIfNull(runContext);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(reportContext);
         ArgumentNullException.ThrowIfNull(allTasksRatio);
@@ -101,6 +108,7 @@ public sealed class JiraReportData
         }
 
         return CreateCore(
+            runContext,
             settings,
             reportContext,
             allTasksRatio,
@@ -119,6 +127,7 @@ public sealed class JiraReportData
     }
 
     private static JiraReportData CreateCore(
+        ReportRunContext runContext,
         AppSettings settings,
         JiraReportContext reportContext,
         IssueRatioSnapshot allTasksRatio,
@@ -136,6 +145,7 @@ public sealed class JiraReportData
         IReadOnlyList<LoadFailure> failures) =>
         new()
         {
+            RunContext = runContext,
             Settings = settings,
             Source = new JiraReportSourceData
             {
@@ -167,6 +177,11 @@ public sealed class JiraReportData
             },
             Failures = failures
         };
+
+    /// <summary>
+    /// Gets the context shared by every output generated during this report run.
+    /// </summary>
+    public required ReportRunContext RunContext { get; init; }
 
     /// <summary>
     /// Gets or sets application settings.

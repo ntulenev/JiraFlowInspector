@@ -21,7 +21,7 @@ internal sealed class HtmlRoadmapSection : IHtmlReportSection
             return string.Empty;
         }
 
-        var generatedAt = DateTimeOffset.Now.ToString(
+        var generatedAt = reportData.RunContext.GeneratedAt.ToString(
             "yyyy-MM-dd HH:mm:ss zzz",
             CultureInfo.InvariantCulture);
         var note = string.Concat(
