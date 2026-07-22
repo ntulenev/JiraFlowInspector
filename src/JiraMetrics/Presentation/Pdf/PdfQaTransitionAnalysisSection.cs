@@ -67,7 +67,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             analysis.HoldIssues,
             reportData,
             showHoursOnly,
-            showHoursOnly ? "Hours on hold" : "Days on hold");
+            QaTransitionPresentationSummary.GetHoldDurationColumnLabel(showHoursOnly));
         ComposeDuration75PerTypeSection(
             column,
             "QA hold 75P per type",
@@ -108,16 +108,16 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             AddSummaryRow(table, "QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis));
             AddSummaryRow(
                 table,
-                GetQaInProgressDuration75Label(showTimeCalculationsInHoursOnly),
-                FormatDuration(analysis.PickupDuration75, showTimeCalculationsInHoursOnly));
+                QaTransitionPresentationSummary.GetPickupDuration75Label(showTimeCalculationsInHoursOnly),
+                QaTransitionPresentationSummary.FormatDuration(analysis.PickupDuration75, showTimeCalculationsInHoursOnly));
             AddSummaryRow(
                 table,
-                GetQaTransitionDuration75Label(showTimeCalculationsInHoursOnly),
-                FormatDuration(analysis.TestingDuration75, showTimeCalculationsInHoursOnly));
+                QaTransitionPresentationSummary.GetTestingDuration75Label(showTimeCalculationsInHoursOnly),
+                QaTransitionPresentationSummary.FormatDuration(analysis.TestingDuration75, showTimeCalculationsInHoursOnly));
             AddSummaryRow(
                 table,
-                GetQaHoldDuration75Label(showTimeCalculationsInHoursOnly),
-                FormatDuration(analysis.HoldDuration75, showTimeCalculationsInHoursOnly));
+                QaTransitionPresentationSummary.GetHoldDuration75Label(showTimeCalculationsInHoursOnly),
+                QaTransitionPresentationSummary.FormatDuration(analysis.HoldDuration75, showTimeCalculationsInHoursOnly));
         });
     }
 
@@ -145,7 +145,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Share");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(GetDuration75Title(showTimeCalculationsInHoursOnly));
+                    .Text(QaTransitionPresentationSummary.GetDuration75Title(showTimeCalculationsInHoursOnly));
             });
 
             _ = table.Cell()
@@ -159,7 +159,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 .Text(analysis.PickupIssuePercentage.ToString("0.##", CultureInfo.InvariantCulture) + "%");
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(FormatDuration(analysis.PickupDuration75, showTimeCalculationsInHoursOnly));
+                .Text(QaTransitionPresentationSummary.FormatDuration(analysis.PickupDuration75, showTimeCalculationsInHoursOnly));
         });
     }
 
@@ -185,7 +185,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(GetDuration75Title(showTimeCalculationsInHoursOnly));
+                    .Text(QaTransitionPresentationSummary.GetDuration75Title(showTimeCalculationsInHoursOnly));
             });
 
             _ = table.Cell()
@@ -196,7 +196,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 .Text(analysis.TestingIssues.Count.ToString(CultureInfo.InvariantCulture));
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(FormatDuration(analysis.TestingDuration75, showTimeCalculationsInHoursOnly));
+                .Text(QaTransitionPresentationSummary.FormatDuration(analysis.TestingDuration75, showTimeCalculationsInHoursOnly));
         });
     }
 
@@ -222,7 +222,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(GetDuration75Title(showTimeCalculationsInHoursOnly));
+                    .Text(QaTransitionPresentationSummary.GetDuration75Title(showTimeCalculationsInHoursOnly));
             });
 
             _ = table.Cell()
@@ -233,7 +233,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 .Text(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture));
             _ = table.Cell()
                 .Element(PdfPresentationHelpers.StyleBodyCell)
-                .Text(FormatDuration(analysis.HoldDuration75, showTimeCalculationsInHoursOnly));
+                .Text(QaTransitionPresentationSummary.FormatDuration(analysis.HoldDuration75, showTimeCalculationsInHoursOnly));
         });
     }
 
@@ -280,7 +280,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Transition At");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(durationColumnLabel ?? GetDurationColumnLabel(showTimeCalculationsInHoursOnly));
+                    .Text(durationColumnLabel ?? QaTransitionPresentationSummary.GetDurationColumnLabel(showTimeCalculationsInHoursOnly));
             });
 
             for (var i = 0; i < issues.Count; i++)
@@ -340,7 +340,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Issues");
                 _ = header.Cell()
                     .Element(PdfPresentationHelpers.StyleHeaderCell)
-                    .Text(GetDuration75Title(showTimeCalculationsInHoursOnly));
+                    .Text(QaTransitionPresentationSummary.GetDuration75Title(showTimeCalculationsInHoursOnly));
             });
 
             foreach (var summary in summaries)
@@ -356,11 +356,6 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         });
     }
 
-    private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
-        duration is null
-            ? "-"
-            : PresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
-
     private static void AddSummaryRow(TableDescriptor table, string metric, int value) =>
         AddSummaryRow(table, metric, value.ToString(CultureInfo.InvariantCulture));
 
@@ -370,18 +365,4 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(value);
     }
 
-    private static string GetDurationColumnLabel(bool showTimeCalculationsInHoursOnly) =>
-        showTimeCalculationsInHoursOnly ? "Hours in QA" : "Days in QA";
-
-    private static string GetDuration75Title(bool showTimeCalculationsInHoursOnly) =>
-        showTimeCalculationsInHoursOnly ? "Hours in QA 75P" : "Days in QA 75P";
-
-    private static string GetQaInProgressDuration75Label(bool showTimeCalculationsInHoursOnly) =>
-        showTimeCalculationsInHoursOnly ? "QA In Progress Hours 75p" : "QA In Progress Days 75p";
-
-    private static string GetQaTransitionDuration75Label(bool showTimeCalculationsInHoursOnly) =>
-        showTimeCalculationsInHoursOnly ? "QA Transition Hours 75p" : "QA Transition Days 75p";
-
-    private static string GetQaHoldDuration75Label(bool showTimeCalculationsInHoursOnly) =>
-        showTimeCalculationsInHoursOnly ? "QA Hold Hours 75p" : "QA Hold Days 75p";
 }

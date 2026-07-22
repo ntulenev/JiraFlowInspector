@@ -39,9 +39,9 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                 BuildTextMetricRow("Rejected Bugs", (bugRatio?.RejectedIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.RejectedIssues ?? [])),
                 BuildTextMetricRow("QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis)),
-                BuildTextMetricRow("QA In Progress 75P", FormatDuration(analysis.PickupDuration75, showHoursOnly)),
-                BuildTextMetricRow("QA Transition 75P", FormatDuration(analysis.TestingDuration75, showHoursOnly)),
-                BuildTextMetricRow("QA Hold 75P", FormatDuration(analysis.HoldDuration75, showHoursOnly))
+                BuildTextMetricRow("QA In Progress 75P", QaTransitionPresentationSummary.FormatDuration(analysis.PickupDuration75, showHoursOnly)),
+                BuildTextMetricRow("QA Transition 75P", QaTransitionPresentationSummary.FormatDuration(analysis.TestingDuration75, showHoursOnly)),
+                BuildTextMetricRow("QA Hold 75P", QaTransitionPresentationSummary.FormatDuration(analysis.HoldDuration75, showHoursOnly))
             ],
             defaultSortColumn: 0,
             compact: true));
@@ -62,7 +62,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                     BuildTextCell(QaTransitionPresentationSummary.BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.PickupTransitions)),
                     BuildTextCell($"{analysis.PickupIssues.Count.ToString(CultureInfo.InvariantCulture)}/{analysis.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture)}"),
                     BuildTextCell(analysis.PickupIssuePercentage.ToString("0.##", CultureInfo.InvariantCulture) + "%", analysis.PickupIssuePercentage),
-                    BuildTextCell(FormatDuration(analysis.PickupDuration75, showHoursOnly), analysis.PickupDuration75?.TotalMinutes)
+                    BuildTextCell(QaTransitionPresentationSummary.FormatDuration(analysis.PickupDuration75, showHoursOnly), analysis.PickupDuration75?.TotalMinutes)
                 ])
             ],
             defaultSortColumn: 2,
@@ -86,7 +86,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                 [
                     BuildTextCell(QaTransitionPresentationSummary.BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.HoldTransitions)),
                     BuildTextCell(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture), analysis.HoldIssues.Count),
-                    BuildTextCell(FormatDuration(analysis.HoldDuration75, showHoursOnly), analysis.HoldDuration75?.TotalMinutes)
+                    BuildTextCell(QaTransitionPresentationSummary.FormatDuration(analysis.HoldDuration75, showHoursOnly), analysis.HoldDuration75?.TotalMinutes)
                 ])
             ],
             defaultSortColumn: 1,
@@ -97,7 +97,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             "QA hold time by issue",
             analysis.HoldIssues,
             reportData,
-            showHoursOnly ? "Hours on hold" : "Days on hold"));
+            QaTransitionPresentationSummary.GetHoldDurationColumnLabel(showHoursOnly)));
         _ = html.Append(BuildIssueTypeDuration75Table("qa-hold-75", "QA hold 75P per type", analysis.HoldDuration75PerType, showHoursOnly));
         return html.ToString();
     }
@@ -140,7 +140,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                 new TableColumn("Summary", "text", "Summary", "summary-column"),
                 new TableColumn("Measured transition", "text", "Measured transition"),
                 new TableColumn("Transition At", "number", "Transition At"),
-                new TableColumn(durationColumnTitle ?? (showHoursOnly ? "Hours in QA" : "Days in QA"), "number", "Duration")
+                new TableColumn(durationColumnTitle ?? QaTransitionPresentationSummary.GetDurationColumnLabel(showHoursOnly), "number", "Duration")
             ],
             rows,
             defaultSortColumn: 8,
@@ -182,8 +182,4 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             compact: true);
     }
 
-    private static string FormatDuration(TimeSpan? duration, bool showTimeCalculationsInHoursOnly) =>
-        duration is null
-            ? "-"
-            : PresentationFormatting.FormatWorkDurationValue(duration.Value, showTimeCalculationsInHoursOnly);
 }

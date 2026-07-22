@@ -51,6 +51,33 @@ internal static class QaTransitionPresentationSummary
     public static string BuildRulesLabel(IReadOnlyList<TransitionMeasurementRule> rules) =>
         string.Join("; ", rules.Select(static rule => rule.Label));
 
+    public static string FormatDuration(
+        TimeSpan? duration,
+        bool showTimeCalculationsInHoursOnly) =>
+        duration is null
+            ? "-"
+            : PresentationFormatting.FormatWorkDurationValue(
+                duration.Value,
+                showTimeCalculationsInHoursOnly);
+
+    public static string GetDurationColumnLabel(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "Hours in QA" : "Days in QA";
+
+    public static string GetHoldDurationColumnLabel(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "Hours on hold" : "Days on hold";
+
+    public static string GetDuration75Title(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "Hours in QA 75P" : "Days in QA 75P";
+
+    public static string GetPickupDuration75Label(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "QA In Progress Hours 75p" : "QA In Progress Days 75p";
+
+    public static string GetTestingDuration75Label(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "QA Transition Hours 75p" : "QA Transition Days 75p";
+
+    public static string GetHoldDuration75Label(bool showTimeCalculationsInHoursOnly) =>
+        showTimeCalculationsInHoursOnly ? "QA Hold Hours 75p" : "QA Hold Days 75p";
+
     private static int GetPrioritySortKey(string priority)
     {
         if (priority.Length >= 2
