@@ -79,9 +79,9 @@ internal sealed class SpectreGlobalIncidentsSection
                 (i + 1).ToString(CultureInfo.InvariantCulture),
                 Markup.Escape(incident.Key.Value),
                 Markup.Escape(incident.Title.Truncate(new TextLength(120)).Value),
-                Markup.Escape(SpectrePresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentStartUtc)),
-                Markup.Escape(SpectrePresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc)),
-                Markup.Escape(SpectrePresentationFormatting.FormatIncidentDuration(incident.Duration, _showTimeCalculationsInHoursOnly)),
+                Markup.Escape(PresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentStartUtc)),
+                Markup.Escape(PresentationFormatting.FormatIncidentDateTimeUtc(incident.IncidentRecoveryUtc)),
+                Markup.Escape(PresentationFormatting.FormatIncidentDuration(incident.Duration, _showTimeCalculationsInHoursOnly)),
                 Markup.Escape(incident.Impact ?? "-"),
                 Markup.Escape(incident.Urgency ?? "-")
             };
@@ -100,8 +100,8 @@ internal sealed class SpectreGlobalIncidentsSection
         }
 
         AnsiConsole.Write(table);
-        var totalDuration = SpectrePresentationFormatting.SumIncidentDurations(orderedIncidents);
-        AnsiConsole.MarkupLine($"[grey]Total duration:[/] {Markup.Escape(SpectrePresentationFormatting.FormatIncidentDuration(totalDuration, _showTimeCalculationsInHoursOnly))}");
+        var totalDuration = PresentationFormatting.SumIncidentDurations(orderedIncidents);
+        AnsiConsole.MarkupLine($"[grey]Total duration:[/] {Markup.Escape(PresentationFormatting.FormatIncidentDuration(totalDuration, _showTimeCalculationsInHoursOnly))}");
     }
     private readonly bool _showTimeCalculationsInHoursOnly;
 }

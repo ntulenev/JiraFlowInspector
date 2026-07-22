@@ -41,7 +41,7 @@ internal sealed class SpectreTransitionSection
             .AddColumn("[bold]Summary[/]")
             .AddColumn("[bold]Created At[/]")
             .AddColumn("[bold]Done At[/]")
-            .AddColumn($"[bold]{SpectrePresentationFormatting.GetWorkDurationColumnLabel(_showTimeCalculationsInHoursOnly)}[/]");
+            .AddColumn($"[bold]{PresentationFormatting.GetWorkDurationColumnLabel(_showTimeCalculationsInHoursOnly)}[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -50,9 +50,9 @@ internal sealed class SpectreTransitionSection
         for (var i = 0; i < orderedIssues.Count; i++)
         {
             var issue = orderedIssues[i];
-            var lastDoneAtText = SpectrePresentationFormatting.BuildLastStatusAtText(issue, doneStatusName);
+            var lastDoneAtText = PresentationFormatting.BuildLastStatusAtText(issue, doneStatusName);
             var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-            var daysAtWorkText = SpectrePresentationFormatting.BuildWorkDurationText(issue, doneStatusName, _showTimeCalculationsInHoursOnly);
+            var daysAtWorkText = PresentationFormatting.BuildWorkDurationText(issue, doneStatusName, _showTimeCalculationsInHoursOnly);
             var codeText = issue.HasPullRequest ? "[green]+[/]" : string.Empty;
 
             _ = table.AddRow(
@@ -74,7 +74,7 @@ internal sealed class SpectreTransitionSection
         IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
         StatusName doneStatusName)
     {
-        var title = SpectrePresentationFormatting.GetWorkDuration75Title(_showTimeCalculationsInHoursOnly);
+        var title = PresentationFormatting.GetWorkDuration75Title(_showTimeCalculationsInHoursOnly);
         AnsiConsole.MarkupLine($"[bold]{title} per type (moved to {Markup.Escape(doneStatusName.Value)})[/]");
         if (summaries.Count == 0)
         {
@@ -97,7 +97,7 @@ internal sealed class SpectreTransitionSection
             _ = table.AddRow(
                 Markup.Escape(summary.IssueType.Value),
                 summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture),
-                SpectrePresentationFormatting.FormatWorkDurationValue(summary.DaysAtWorkP75, _showTimeCalculationsInHoursOnly));
+                PresentationFormatting.FormatWorkDurationValue(summary.DaysAtWorkP75, _showTimeCalculationsInHoursOnly));
         }
 
         AnsiConsole.Write(table);
@@ -122,7 +122,7 @@ internal sealed class SpectreTransitionSection
             .AddColumn("[bold]Summary[/]")
             .AddColumn("[bold]Created At[/]")
             .AddColumn("[bold]Rejected At[/]")
-            .AddColumn($"[bold]{SpectrePresentationFormatting.GetWorkDurationColumnLabel(_showTimeCalculationsInHoursOnly)}[/]");
+            .AddColumn($"[bold]{PresentationFormatting.GetWorkDurationColumnLabel(_showTimeCalculationsInHoursOnly)}[/]");
 
         var orderedIssues = issues
             .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
@@ -131,9 +131,9 @@ internal sealed class SpectreTransitionSection
         for (var i = 0; i < orderedIssues.Count; i++)
         {
             var issue = orderedIssues[i];
-            var lastRejectAtText = SpectrePresentationFormatting.BuildLastStatusAtText(issue, rejectStatusName);
+            var lastRejectAtText = PresentationFormatting.BuildLastStatusAtText(issue, rejectStatusName);
             var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-            var daysAtWorkText = SpectrePresentationFormatting.BuildWorkDurationText(issue, rejectStatusName, _showTimeCalculationsInHoursOnly);
+            var daysAtWorkText = PresentationFormatting.BuildWorkDurationText(issue, rejectStatusName, _showTimeCalculationsInHoursOnly);
 
             _ = table.AddRow(
                 (i + 1).ToString(CultureInfo.InvariantCulture),

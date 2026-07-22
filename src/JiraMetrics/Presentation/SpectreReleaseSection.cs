@@ -128,7 +128,7 @@ internal sealed class SpectreReleaseSection
             return;
         }
 
-        var componentSummaries = SpectrePresentationFormatting.BuildComponentReleaseSummaries(orderedReleases);
+        var componentSummaries = PresentationFormatting.BuildComponentReleaseSummaries(orderedReleases);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Components release table[/]");
         if (componentSummaries.Count == 0)

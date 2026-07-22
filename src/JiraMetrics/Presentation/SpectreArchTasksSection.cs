@@ -56,7 +56,7 @@ internal sealed class SpectreArchTasksSection
             var resolvedAtText = task.ResolvedAt.HasValue
                 ? task.ResolvedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
                 : "-";
-            var daysInWorkText = SpectrePresentationFormatting.FormatCalendarDayDurationValue(task.GetElapsed(now));
+            var daysInWorkText = PresentationFormatting.FormatCalendarDayDurationValue(task.GetElapsed(now));
             var daysInWorkMarkup = task.IsResolved
                 ? Markup.Escape(daysInWorkText)
                 : $"[red]{Markup.Escape(daysInWorkText)}[/]";
