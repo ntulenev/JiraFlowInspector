@@ -6,13 +6,27 @@ namespace JiraMetrics.Presentation;
 /// <summary>
 /// Prepared release data shared by all report renderers.
 /// </summary>
-internal sealed record ReleasePresentationData(
-    IReadOnlyList<ReleaseIssueItem> Releases,
-    ItemCount TotalCount,
-    ItemCount HotFixCount,
-    ItemCount RollbackCount,
-    IReadOnlyList<ComponentReleaseSummary> Components)
+internal sealed class ReleasePresentationData
 {
+    private ReleasePresentationData(
+        IReadOnlyList<ReleaseIssueItem> releases,
+        ItemCount totalCount,
+        ItemCount hotFixCount,
+        ItemCount rollbackCount,
+        IReadOnlyList<ComponentReleaseSummary> components)
+    {
+        Releases = releases;
+        TotalCount = totalCount;
+        HotFixCount = hotFixCount;
+        RollbackCount = rollbackCount;
+        Components = components;
+    }
+
+    /// <summary>
+    /// Creates consistently ordered release data and aggregate counts for report renderers.
+    /// </summary>
+    /// <param name="releases">Source release rows.</param>
+    /// <returns>Prepared release presentation data.</returns>
     public static ReleasePresentationData Create(IReadOnlyList<ReleaseIssueItem> releases)
     {
         ArgumentNullException.ThrowIfNull(releases);
@@ -54,40 +68,29 @@ internal sealed record ReleasePresentationData(
             new ItemCount(orderedReleases.Count(static release => !string.IsNullOrWhiteSpace(release.RollbackType))),
             components);
     }
-}
 
-/// <summary>
-/// Prepared release count for one component.
-/// </summary>
-internal sealed record ComponentReleaseSummary(
-    string ComponentName,
-    ItemCount ReleaseCount);
+    /// <summary>
+    /// Gets release rows ordered by release date and issue key.
+    /// </summary>
+    public IReadOnlyList<ReleaseIssueItem> Releases { get; }
 
-/// <summary>
-/// Prepared global-incident data shared by all report renderers.
-/// </summary>
-internal sealed record GlobalIncidentsPresentationData(
-    IReadOnlyList<GlobalIncidentItem> Incidents,
-    TimeSpan? TotalDuration)
-{
-    public static GlobalIncidentsPresentationData Create(IReadOnlyList<GlobalIncidentItem> incidents)
-    {
-        ArgumentNullException.ThrowIfNull(incidents);
+    /// <summary>
+    /// Gets the total release count.
+    /// </summary>
+    public ItemCount TotalCount { get; }
 
-        var orderedIncidents = incidents
-            .OrderBy(static incident => incident.IncidentStartUtc)
-            .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        var durations = orderedIncidents
-            .Select(static incident => incident.Duration)
-            .Where(static duration => duration.HasValue && duration.Value >= TimeSpan.Zero)
-            .Select(static duration => duration!.Value)
-            .ToArray();
+    /// <summary>
+    /// Gets the hot-fix release count.
+    /// </summary>
+    public ItemCount HotFixCount { get; }
 
-        return new GlobalIncidentsPresentationData(
-            orderedIncidents,
-            durations.Length == 0
-                ? null
-                : durations.Aggregate(TimeSpan.Zero, static (sum, duration) => sum + duration));
-    }
+    /// <summary>
+    /// Gets the release count with rollback information.
+    /// </summary>
+    public ItemCount RollbackCount { get; }
+
+    /// <summary>
+    /// Gets release counts grouped and ordered by component.
+    /// </summary>
+    public IReadOnlyList<ComponentReleaseSummary> Components { get; }
 }
