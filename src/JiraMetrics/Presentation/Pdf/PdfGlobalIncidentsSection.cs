@@ -50,10 +50,8 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
         }
 
         var includeAdditionalFields = globalIncidentsReport.AdditionalFieldNames.Count > 0;
-        var orderedIncidents = reportData.Source.GlobalIncidents
-            .OrderBy(static incident => incident.IncidentStartUtc)
-            .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var presentationData = GlobalIncidentsPresentationData.Create(reportData.Source.GlobalIncidents);
+        var orderedIncidents = presentationData.Incidents;
 
         column.Item().Table(table =>
         {
@@ -89,7 +87,7 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
                 }
             });
 
-            for (var i = 0; i < orderedIncidents.Length; i++)
+            for (var i = 0; i < orderedIncidents.Count; i++)
             {
                 var incident = orderedIncidents[i];
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
@@ -118,10 +116,9 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
             }
         });
 
-        var totalDuration = PresentationFormatting.SumIncidentDurations(orderedIncidents);
         _ = column
             .Item()
-            .Text("Total duration: " + PresentationFormatting.FormatIncidentDuration(totalDuration, reportData.Settings.ShowTimeCalculationsInHoursOnly))
+            .Text("Total duration: " + PresentationFormatting.FormatIncidentDuration(presentationData.TotalDuration, reportData.Settings.ShowTimeCalculationsInHoursOnly))
             .FontColor(Colors.Grey.Darken1);
     }
 }

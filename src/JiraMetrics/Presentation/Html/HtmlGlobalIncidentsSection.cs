@@ -19,9 +19,8 @@ internal sealed class HtmlGlobalIncidentsSection : IHtmlReportSection
             return string.Empty;
         }
 
-        var rows = reportData.Source.GlobalIncidents
-            .OrderBy(static incident => incident.IncidentStartUtc)
-            .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
+        var presentationData = GlobalIncidentsPresentationData.Create(reportData.Source.GlobalIncidents);
+        var rows = presentationData.Incidents
             .Select((incident, index) => new TableRow(
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),

@@ -42,7 +42,8 @@ internal sealed class SpectreGlobalIncidentsSection
             AnsiConsole.MarkupLine($"[grey]Additional fields:[/] {Markup.Escape(additionalFields)}");
         }
 
-        if (incidents.Count == 0)
+        var presentationData = GlobalIncidentsPresentationData.Create(incidents);
+        if (presentationData.Incidents.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No incidents found for selected period.[/]");
             return;
@@ -66,10 +67,7 @@ internal sealed class SpectreGlobalIncidentsSection
             _ = table.AddColumn("[bold]Additional fields[/]");
         }
 
-        var orderedIncidents = incidents
-            .OrderBy(static incident => incident.IncidentStartUtc)
-            .ThenBy(static incident => incident.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var orderedIncidents = presentationData.Incidents;
 
         for (var i = 0; i < orderedIncidents.Count; i++)
         {
@@ -100,8 +98,7 @@ internal sealed class SpectreGlobalIncidentsSection
         }
 
         AnsiConsole.Write(table);
-        var totalDuration = PresentationFormatting.SumIncidentDurations(orderedIncidents);
-        AnsiConsole.MarkupLine($"[grey]Total duration:[/] {Markup.Escape(PresentationFormatting.FormatIncidentDuration(totalDuration, _showTimeCalculationsInHoursOnly))}");
+        AnsiConsole.MarkupLine($"[grey]Total duration:[/] {Markup.Escape(PresentationFormatting.FormatIncidentDuration(presentationData.TotalDuration, _showTimeCalculationsInHoursOnly))}");
     }
     private readonly bool _showTimeCalculationsInHoursOnly;
 }

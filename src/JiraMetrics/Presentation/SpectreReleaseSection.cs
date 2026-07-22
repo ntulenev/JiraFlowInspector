@@ -40,15 +40,13 @@ internal sealed class SpectreReleaseSection
             AnsiConsole.MarkupLine($"[grey]-[/] {Markup.Escape(fieldName)} = {Markup.Escape(valuesText)}");
         }
 
-        var totalReleases = releases.Count;
-        var hotFixCount = releases.Count(static release => release.IsHotFix);
-        var rollbackCount = releases.Count(static release => !string.IsNullOrWhiteSpace(release.RollbackType));
+        var presentationData = ReleasePresentationData.Create(releases);
 
-        if (releases.Count == 0)
+        if (presentationData.Releases.Count == 0)
         {
             AnsiConsole.MarkupLine("[yellow]No releases found for selected period.[/]");
             AnsiConsole.MarkupLine(
-                $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}    [grey]Rollbacks count:[/] {rollbackCount}");
+                $"[grey]Total releases:[/] {presentationData.TotalCount.Value}    [grey]Hotfix count:[/] {presentationData.HotFixCount.Value}    [grey]Rollbacks count:[/] {presentationData.RollbackCount.Value}");
             return;
         }
 
@@ -77,10 +75,7 @@ internal sealed class SpectreReleaseSection
         _ = table.AddColumn(new TableColumn("[bold]Rollback type[/]").NoWrap());
         _ = table.AddColumn("[bold]Title[/]");
 
-        var orderedReleases = releases
-            .OrderBy(static release => release.ReleaseDate)
-            .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var orderedReleases = presentationData.Releases;
 
         for (var i = 0; i < orderedReleases.Count; i++)
         {
@@ -121,14 +116,14 @@ internal sealed class SpectreReleaseSection
 
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine(
-            $"[grey]Total releases:[/] {totalReleases}    [grey]Hotfix count:[/] {hotFixCount}    [grey]Rollbacks count:[/] {rollbackCount}");
+            $"[grey]Total releases:[/] {presentationData.TotalCount.Value}    [grey]Hotfix count:[/] {presentationData.HotFixCount.Value}    [grey]Rollbacks count:[/] {presentationData.RollbackCount.Value}");
 
         if (!includeComponents)
         {
             return;
         }
 
-        var componentSummaries = PresentationFormatting.BuildComponentReleaseSummaries(orderedReleases);
+        var componentSummaries = presentationData.Components;
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Components release table[/]");
         if (componentSummaries.Count == 0)
@@ -146,11 +141,11 @@ internal sealed class SpectreReleaseSection
 
         for (var i = 0; i < componentSummaries.Count; i++)
         {
-            var (componentName, releaseCount) = componentSummaries[i];
+            var componentSummary = componentSummaries[i];
             _ = componentsTable.AddRow(
                 (i + 1).ToString(CultureInfo.InvariantCulture),
-                Markup.Escape(componentName),
-                releaseCount.ToString(CultureInfo.InvariantCulture));
+                Markup.Escape(componentSummary.ComponentName),
+                componentSummary.ReleaseCount.Value.ToString(CultureInfo.InvariantCulture));
         }
 
         AnsiConsole.Write(componentsTable);

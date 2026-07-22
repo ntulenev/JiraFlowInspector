@@ -85,22 +85,6 @@ internal static class PresentationFormatting
     public static string GetWorkDuration75Title(bool showTimeCalculationsInHoursOnly) =>
         showTimeCalculationsInHoursOnly ? "Hours at Work 75P" : "Days at Work 75P";
 
-    public static TimeSpan? SumIncidentDurations(IReadOnlyList<GlobalIncidentItem> incidents)
-    {
-        var durations = incidents
-            .Select(static incident => incident.Duration)
-            .Where(static duration => duration.HasValue && duration.Value >= TimeSpan.Zero)
-            .Select(static duration => duration!.Value)
-            .ToList();
-
-        if (durations.Count == 0)
-        {
-            return null;
-        }
-
-        return durations.Aggregate(TimeSpan.Zero, static (sum, duration) => sum + duration);
-    }
-
     public static string BuildFinishedToCreatedRatioText(ItemCount createdThisMonth, ItemCount finishedThisMonth) =>
         BuildRatioText(finishedThisMonth.Value, createdThisMonth.Value);
 
@@ -155,33 +139,6 @@ internal static class PresentationFormatting
 
         return [.. stageDurations
             .Select(static segment => (float)Math.Max(0.001, Math.Max(0.0, segment.duration.TotalSeconds)))];
-    }
-
-    public static IReadOnlyList<(string componentName, int releaseCount)> BuildComponentReleaseSummaries(
-        IReadOnlyList<ReleaseIssueItem> releases)
-    {
-        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var release in releases)
-        {
-            foreach (var componentName in release.ComponentNames)
-            {
-                if (string.IsNullOrWhiteSpace(componentName))
-                {
-                    continue;
-                }
-
-                var normalized = componentName.Trim();
-                counts[normalized] = counts.TryGetValue(normalized, out var currentCount)
-                    ? currentCount + 1
-                    : 1;
-            }
-        }
-
-        return [.. counts
-            .Select(static pair => (componentName: pair.Key, releaseCount: pair.Value))
-            .OrderByDescending(static pair => pair.releaseCount)
-            .ThenBy(static pair => pair.componentName, StringComparer.OrdinalIgnoreCase)];
     }
 
     private static readonly string[] _timelinePaletteHex =

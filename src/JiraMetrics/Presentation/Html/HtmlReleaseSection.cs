@@ -15,22 +15,23 @@ internal sealed class HtmlReleaseSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
+        var presentationData = ReleasePresentationData.Create(reportData.Source.ReleaseIssues);
         var html = new StringBuilder();
-        _ = html.Append(BuildReleaseTable(reportData));
-        _ = html.Append(BuildComponentsReleaseTable(reportData));
+        _ = html.Append(BuildReleaseTable(reportData, presentationData));
+        _ = html.Append(BuildComponentsReleaseTable(reportData, presentationData));
         return html.ToString();
     }
 
-    private static string BuildReleaseTable(JiraReportData reportData)
+    private static string BuildReleaseTable(
+        JiraReportData reportData,
+        ReleasePresentationData presentationData)
     {
         if (reportData.Settings.ReleaseReport is null)
         {
             return string.Empty;
         }
 
-        var rows = reportData.Source.ReleaseIssues
-            .OrderBy(static release => release.ReleaseDate)
-            .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
+        var rows = presentationData.Releases
             .Select((release, index) => new TableRow(
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
@@ -62,7 +63,9 @@ internal sealed class HtmlReleaseSection : IHtmlReportSection
             defaultSortColumn: 1);
     }
 
-    private static string BuildComponentsReleaseTable(JiraReportData reportData)
+    private static string BuildComponentsReleaseTable(
+        JiraReportData reportData,
+        ReleasePresentationData presentationData)
     {
         if (reportData.Settings.ReleaseReport is null
             || string.IsNullOrWhiteSpace(reportData.Settings.ReleaseReport.ComponentsFieldName))
@@ -70,12 +73,12 @@ internal sealed class HtmlReleaseSection : IHtmlReportSection
             return string.Empty;
         }
 
-        var rows = PresentationFormatting.BuildComponentReleaseSummaries(reportData.Source.ReleaseIssues)
+        var rows = presentationData.Components
             .Select((item, index) => new TableRow(
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
-                BuildTextCell(item.componentName),
-                BuildTextCell(item.releaseCount.ToString(CultureInfo.InvariantCulture), item.releaseCount)
+                BuildTextCell(item.ComponentName),
+                BuildTextCell(item.ReleaseCount.Value.ToString(CultureInfo.InvariantCulture), item.ReleaseCount.Value)
             ]))
             .ToList();
 

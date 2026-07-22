@@ -47,12 +47,8 @@ internal sealed class PdfReleaseSection : IPdfReportSection
         var includeComponents = !string.IsNullOrWhiteSpace(releaseReport.ComponentsFieldName);
         var includeEnvironments = !string.IsNullOrWhiteSpace(releaseReport.EnvironmentFieldName);
         var jiraBaseUrl = reportData.Settings.BaseUrl;
-        var orderedReleases = reportData.Source.ReleaseIssues
-            .OrderBy(static release => release.ReleaseDate)
-            .ThenBy(static release => release.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        var hotFixCount = orderedReleases.Count(static release => release.IsHotFix);
-        var rollbackCount = orderedReleases.Count(static release => !string.IsNullOrWhiteSpace(release.RollbackType));
+        var presentationData = ReleasePresentationData.Create(reportData.Source.ReleaseIssues);
+        var orderedReleases = presentationData.Releases;
 
         column.Item().Table(table =>
         {
@@ -96,7 +92,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Title");
             });
 
-            for (var i = 0; i < orderedReleases.Length; i++)
+            for (var i = 0; i < orderedReleases.Count; i++)
             {
                 var release = orderedReleases[i];
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
@@ -225,7 +221,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
 
         _ = column
             .Item()
-            .Text($"Total releases: {orderedReleases.Length}    Hotfix count: {hotFixCount}    Rollbacks count: {rollbackCount}")
+            .Text($"Total releases: {presentationData.TotalCount.Value}    Hotfix count: {presentationData.HotFixCount.Value}    Rollbacks count: {presentationData.RollbackCount.Value}")
             .FontColor(Colors.Grey.Darken1);
 
         if (!includeComponents)
@@ -233,7 +229,7 @@ internal sealed class PdfReleaseSection : IPdfReportSection
             return;
         }
 
-        var componentSummaries = PresentationFormatting.BuildComponentReleaseSummaries(orderedReleases);
+        var componentSummaries = presentationData.Components;
         _ = column.Item().Text("Components release table").Bold();
         if (componentSummaries.Count == 0)
         {
@@ -259,10 +255,10 @@ internal sealed class PdfReleaseSection : IPdfReportSection
 
             for (var i = 0; i < componentSummaries.Count; i++)
             {
-                var (componentName, releaseCount) = componentSummaries[i];
+                var componentSummary = componentSummaries[i];
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(componentName);
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(releaseCount.ToString(CultureInfo.InvariantCulture));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(componentSummary.ComponentName);
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(componentSummary.ReleaseCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         });
     }
