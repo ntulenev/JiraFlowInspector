@@ -781,7 +781,7 @@ public sealed class JiraApplicationTests
             "Applying issue type and required-stage filters...",
             "Calculating transition metrics and percentiles...",
             "Building path groups...",
-            "Rendering PDF report...");
+            "Rendering reports...");
     }
 
     [Fact(DisplayName = "RunAsync loads issue timelines with bulk API call")]
