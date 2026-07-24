@@ -1,7 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
-
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Models.ValueObjects;
 
 using Microsoft.Extensions.Options;
 
@@ -37,40 +36,35 @@ public sealed class HtmlReportRenderer : IHtmlReportRenderer
     }
 
     /// <inheritdoc />
-    public void RenderReport(JiraReportData reportData)
+    public IReadOnlyList<ReportOutput> RenderReport(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
         if (!_settings.HtmlReport.Enabled)
         {
-            return;
+            return [];
         }
 
         var outputPath = _settings.HtmlReport.ResolveOutputPath(reportData.RunContext.GeneratedAt);
         var html = _htmlContentComposer.Compose(reportData);
         _htmlReportFileStore.Save(outputPath, html);
 
-        Console.WriteLine($"HTML report saved to: {outputPath}");
-
         if (!_settings.HtmlReport.OpenAfterGeneration)
         {
-            return;
+            return [new ReportOutput(ReportOutputFormat.Html, outputPath)];
         }
 
+        ErrorMessage? openFailure = null;
         try
         {
             _htmlReportLauncher.Open(outputPath);
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            WriteHtmlOpenFailedMessage(outputPath, ex.Message);
+            openFailure = ErrorMessage.FromException(ex);
         }
-    }
 
-    [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "CLI warning message for local desktop usage.")]
-    private static void WriteHtmlOpenFailedMessage(string outputPath, string reason)
-    {
-        Console.WriteLine($"Failed to open HTML automatically: {outputPath} ({reason})");
+        return [new ReportOutput(ReportOutputFormat.Html, outputPath, openFailure)];
     }
 
     private readonly AppSettings _settings;

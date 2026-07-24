@@ -26,12 +26,13 @@ public sealed class HtmlReportRendererTests
         var renderer = new HtmlReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
 
         // Act
-        renderer.RenderReport(CreateReportData(options.Value));
+        var outputs = renderer.RenderReport(CreateReportData(options.Value));
 
         // Assert
         fileStore.Verify(x => x.Save(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         launcher.Verify(x => x.Open(It.IsAny<string>()), Times.Never);
         composer.Verify(x => x.Compose(It.IsAny<JiraReportData>()), Times.Never);
+        outputs.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "RenderReport saves HTML and opens browser when configured")]
@@ -64,10 +65,34 @@ public sealed class HtmlReportRendererTests
         var renderer = new HtmlReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
 
         // Act
-        renderer.RenderReport(reportData);
+        var outputs = renderer.RenderReport(reportData);
 
         // Assert
         savedPath.Should().NotBeNullOrWhiteSpace();
+        outputs.Should().ContainSingle()
+            .Which.Should().Be(new ReportOutput(ReportOutputFormat.Html, expectedPath));
+    }
+
+    [Fact(DisplayName = "RenderReport returns browser open failure with saved HTML output")]
+    [Trait("Category", "Unit")]
+    public void RenderReportWhenBrowserOpenFailsReturnsOutputFailure()
+    {
+        var settings = CreateSettings(htmlEnabled: true, openAfterGeneration: true);
+        var options = Options.Create(settings);
+        var reportData = CreateReportData(settings);
+        var fileStore = new Mock<IHtmlReportFileStore>(MockBehavior.Strict);
+        fileStore.Setup(x => x.Save(It.IsAny<string>(), It.IsAny<string>()));
+        var launcher = new Mock<IHtmlReportLauncher>(MockBehavior.Strict);
+        launcher.Setup(x => x.Open(It.IsAny<string>()))
+            .Throws(new InvalidOperationException("Browser is unavailable."));
+        var composer = new Mock<IHtmlContentComposer>(MockBehavior.Strict);
+        composer.Setup(x => x.Compose(reportData)).Returns("<html>report</html>");
+        var renderer = new HtmlReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
+
+        var output = renderer.RenderReport(reportData).Should().ContainSingle().Subject;
+
+        output.Format.Should().Be(ReportOutputFormat.Html);
+        output.OpenFailure.Should().Be(new ErrorMessage("Browser is unavailable."));
     }
 
     private static AppSettings CreateSettings(bool htmlEnabled, bool openAfterGeneration = false) =>

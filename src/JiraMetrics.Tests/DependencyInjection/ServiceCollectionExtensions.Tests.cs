@@ -131,8 +131,7 @@ public sealed class ServiceCollectionExtensionsTests
             && descriptor.ImplementationType == typeof(PdfReportLauncher)
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
         services.Any(static descriptor =>
-            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Pdf.IPdfReportRenderer)
-            && descriptor.ImplementationType == typeof(QuestPdfReportRenderer)
+            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Application.IReportRenderer)
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
     }
 
@@ -158,8 +157,7 @@ public sealed class ServiceCollectionExtensionsTests
             && descriptor.ImplementationType == typeof(HtmlReportLauncher)
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
         services.Any(static descriptor =>
-            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Html.IHtmlReportRenderer)
-            && descriptor.ImplementationType == typeof(HtmlReportRenderer)
+            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Application.IReportRenderer)
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
     }
 
@@ -178,6 +176,7 @@ public sealed class ServiceCollectionExtensionsTests
         var sections = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraReportSectionsPresenter>();
         var analysis = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraAnalysisPresenter>();
         var diagnostics = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraDiagnosticsPresenter>();
+        var reportOutput = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IReportOutputPresenter>();
 
         presentation.Should().BeOfType<SpectreJiraPresentationService>();
         status.Should().BeSameAs(presentation);
@@ -185,6 +184,7 @@ public sealed class ServiceCollectionExtensionsTests
         sections.Should().BeSameAs(presentation);
         analysis.Should().BeSameAs(presentation);
         diagnostics.Should().BeSameAs(presentation);
+        reportOutput.Should().BeSameAs(presentation);
     }
 
     [Fact(DisplayName = "AddJiraConfiguration binds Jira options and app settings")]
@@ -231,8 +231,7 @@ public sealed class ServiceCollectionExtensionsTests
         services.AddSingleton<IOptions<AppSettings>>(Options.Create(CreateAppSettings()));
         services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(new Mock<JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade>(MockBehavior.Strict).Object);
         services.AddSingleton<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(new Mock<JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade>(MockBehavior.Strict).Object);
-        services.AddSingleton<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>(new Mock<JiraMetrics.Abstractions.Html.IHtmlReportRenderer>(MockBehavior.Strict).Object);
-        services.AddSingleton<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(new Mock<JiraMetrics.Abstractions.Pdf.IPdfReportRenderer>(MockBehavior.Strict).Object);
+        services.AddSingleton<JiraMetrics.Abstractions.Application.IReportRenderer>(new Mock<JiraMetrics.Abstractions.Application.IReportRenderer>(MockBehavior.Strict).Object);
         services.AddSingleton<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(new Mock<JiraMetrics.Abstractions.Logic.IJiraRequestTelemetryCollector>(MockBehavior.Strict).Object);
         services.AddJiraPresentation();
         services.AddJiraApplication();

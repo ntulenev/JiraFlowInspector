@@ -45,7 +45,7 @@ public sealed class QuestPdfReportRendererTests
         var renderer = new QuestPdfReportRenderer(options, fileStore, launcher, composer);
 
         // Act
-        Action act = () => renderer.RenderReport(null!);
+        Action act = () => _ = renderer.RenderReport(null!);
 
         // Assert
         act.Should().Throw<ArgumentNullException>()
@@ -64,7 +64,7 @@ public sealed class QuestPdfReportRendererTests
         var renderer = new QuestPdfReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
 
         // Act
-        renderer.RenderReport(CreateReportData(options.Value));
+        var outputs = renderer.RenderReport(CreateReportData(options.Value));
 
         // Assert
         fileStore.Verify(x => x.Save(It.IsAny<string>(), It.IsAny<IDocument>()), Times.Never);
@@ -72,6 +72,7 @@ public sealed class QuestPdfReportRendererTests
         composer.Verify(
             x => x.ComposeContent(It.IsAny<QuestPDF.Fluent.ColumnDescriptor>(), It.IsAny<JiraReportData>()),
             Times.Never);
+        outputs.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "RenderReport composes stores and opens PDF when enabled and auto-open is on")]
@@ -119,12 +120,14 @@ public sealed class QuestPdfReportRendererTests
         var renderer = new QuestPdfReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
 
         // Act
-        renderer.RenderReport(reportData);
+        var outputs = renderer.RenderReport(reportData);
 
         // Assert
         composeCalls.Should().Be(1);
         saveCalls.Should().Be(1);
         openCalls.Should().Be(1);
+        outputs.Should().ContainSingle()
+            .Which.Should().Be(new ReportOutput(ReportOutputFormat.Pdf, expectedPath));
     }
 
     [Fact(DisplayName = "RenderReport stores and opens custom transition PDF when enabled")]
@@ -173,11 +176,13 @@ public sealed class QuestPdfReportRendererTests
         var renderer = new QuestPdfReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
 
         // Act
-        renderer.RenderReport(reportData);
+        var outputs = renderer.RenderReport(reportData);
 
         // Assert
         savedPaths.Should().Equal(expectedMainPath, expectedCustomTransitionPath);
         openedPaths.Should().Equal(expectedMainPath, expectedCustomTransitionPath);
+        outputs.Select(static output => output.OutputPath)
+            .Should().Equal(expectedMainPath, expectedCustomTransitionPath);
     }
 
     [Fact(DisplayName = "RenderReport stores PDF but does not open it when auto-open is disabled")]
@@ -207,11 +212,35 @@ public sealed class QuestPdfReportRendererTests
         var renderer = new QuestPdfReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
 
         // Act
-        renderer.RenderReport(reportData);
+        var outputs = renderer.RenderReport(reportData);
 
         // Assert
         fileStore.Verify(x => x.Save(It.IsAny<string>(), It.IsAny<IDocument>()), Times.Once);
         launcher.Verify(x => x.Open(It.IsAny<string>()), Times.Never);
+        outputs.Should().ContainSingle()
+            .Which.OpenFailure.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "RenderReport returns PDF open failure with saved output")]
+    [Trait("Category", "Unit")]
+    public void RenderReportWhenPdfOpenFailsReturnsOutputFailure()
+    {
+        var settings = CreateSettings(pdfEnabled: true);
+        var options = Options.Create(settings);
+        var reportData = CreateReportData(settings);
+        var composer = new Mock<IPdfContentComposer>(MockBehavior.Strict);
+        composer.Setup(x => x.ComposeContent(It.IsAny<ColumnDescriptor>(), reportData));
+        var fileStore = new Mock<IPdfReportFileStore>(MockBehavior.Strict);
+        fileStore.Setup(x => x.Save(It.IsAny<string>(), It.IsAny<IDocument>()));
+        var launcher = new Mock<IPdfReportLauncher>(MockBehavior.Strict);
+        launcher.Setup(x => x.Open(It.IsAny<string>()))
+            .Throws(new InvalidOperationException("PDF viewer is unavailable."));
+        var renderer = new QuestPdfReportRenderer(options, fileStore.Object, launcher.Object, composer.Object);
+
+        var output = renderer.RenderReport(reportData).Should().ContainSingle().Subject;
+
+        output.Format.Should().Be(ReportOutputFormat.Pdf);
+        output.OpenFailure.Should().Be(new ErrorMessage("PDF viewer is unavailable."));
     }
 
     private static AppSettings CreateSettings(

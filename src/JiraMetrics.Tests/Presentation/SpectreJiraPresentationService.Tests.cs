@@ -381,6 +381,42 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("Rendering PDF report...");
     }
 
+    [Fact(DisplayName = "ShowReportSaved writes generated format and path")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReportSavedWhenCalledWritesOutputDetails()
+    {
+        var service = new SpectreJiraPresentationService();
+
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReportSaved(ReportOutputFormat.Html, "C:\\reports\\report.html");
+            return Task.FromResult(console.Output);
+        });
+
+        output.Should().Contain("HTML report saved to:");
+        output.Should().Contain("C:\\reports\\report.html");
+    }
+
+    [Fact(DisplayName = "ShowReportOpenFailed writes generated format path and reason")]
+    [Trait("Category", "Unit")]
+    public async Task ShowReportOpenFailedWhenCalledWritesOutputDetails()
+    {
+        var service = new SpectreJiraPresentationService();
+
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowReportOpenFailed(
+                ReportOutputFormat.Pdf,
+                "C:\\reports\\report.pdf",
+                new ErrorMessage("Viewer unavailable."));
+            return Task.FromResult(console.Output);
+        });
+
+        output.Should().Contain("Failed to open PDF automatically:");
+        output.Should().Contain("C:\\reports\\report.pdf");
+        output.Should().Contain("Viewer unavailable.");
+    }
+
     [Fact(DisplayName = "ShowDoneIssuesTable writes issue type column and value")]
     [Trait("Category", "Unit")]
     public async Task ShowDoneIssuesTableWhenCalledWritesIssueType()

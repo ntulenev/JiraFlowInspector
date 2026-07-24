@@ -86,6 +86,23 @@ internal sealed class SpectreStatusSection
         AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
     }
 
+    public void ShowReportSaved(ReportOutputFormat format, string outputPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        AnsiConsole.MarkupLine(
+            $"[green]{FormatReportOutput(format)} report saved to:[/] {Markup.Escape(outputPath)}");
+    }
+
+    public void ShowReportOpenFailed(
+        ReportOutputFormat format,
+        string outputPath,
+        ErrorMessage errorMessage)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        AnsiConsole.MarkupLine(
+            $"[yellow]Failed to open {FormatReportOutput(format)} automatically:[/] {Markup.Escape(outputPath)} ({Markup.Escape(errorMessage.Value)})");
+    }
+
     public void ShowSpacer() => AnsiConsole.WriteLine();
 
     public void ShowNoIssuesLoaded() => AnsiConsole.MarkupLine("[red]No issues were loaded successfully.[/]");
@@ -132,4 +149,12 @@ internal sealed class SpectreStatusSection
 
         AnsiConsole.Write(table);
     }
+
+    private static string FormatReportOutput(ReportOutputFormat format) =>
+        format switch
+        {
+            ReportOutputFormat.Html => "HTML",
+            ReportOutputFormat.Pdf => "PDF",
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unsupported report output format.")
+        };
 }

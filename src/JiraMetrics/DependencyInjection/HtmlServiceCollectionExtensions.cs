@@ -17,6 +17,8 @@ internal static class HtmlServiceCollectionExtensions
             .AddTransient<IHtmlContentComposer, HtmlContentComposer>()
             .AddTransient<IHtmlReportFileStore, HtmlReportFileStore>()
             .AddTransient<IHtmlReportLauncher, HtmlReportLauncher>()
-            .AddTransient<IHtmlReportRenderer, HtmlReportRenderer>();
+            .AddTransient<HtmlReportRenderer>()
+            .AddTransient<IHtmlReportRenderer>(static sp => sp.GetRequiredService<HtmlReportRenderer>())
+            .AddTransient<IReportRenderer>(static sp => sp.GetRequiredService<HtmlReportRenderer>());
     }
 }

@@ -1,8 +1,8 @@
 using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
 
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
+using JiraMetrics.Models.ValueObjects;
 
 using Microsoft.Extensions.Options;
 
@@ -44,13 +44,13 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
     }
 
     /// <inheritdoc />
-    public void RenderReport(JiraReportData reportData)
+    public IReadOnlyList<ReportOutput> RenderReport(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
         if (!_settings.PdfReport.Enabled)
         {
-            return;
+            return [];
         }
 
         var outputPath = _settings.PdfReport.ResolveOutputPath(reportData.RunContext.GeneratedAt);
@@ -62,7 +62,10 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
             "Jira Analytics",
             column => _pdfContentComposer.ComposeContent(column, reportData));
 
-        SaveAndOpenReport(outputPath, document, shouldOpen: _settings.PdfReport.OpenAfterGeneration);
+        var outputs = new List<ReportOutput>
+        {
+            SaveAndOpenReport(outputPath, document, shouldOpen: _settings.PdfReport.OpenAfterGeneration)
+        };
 
         if (ShouldRenderCustomTransitionReport(reportData))
         {
@@ -74,8 +77,10 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
                 reportData,
                 "Custom Transition Analysis",
                 column => customTransitionSection.Compose(column, reportData));
-            SaveAndOpenReport(customTransitionOutputPath, customTransitionDocument, shouldOpen: true);
+            outputs.Add(SaveAndOpenReport(customTransitionOutputPath, customTransitionDocument, shouldOpen: true));
         }
+
+        return outputs;
     }
 
     private static Document CreateReportDocument(
@@ -137,12 +142,11 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
         return document;
     }
 
-    private void SaveAndOpenReport(string outputPath, IDocument document, bool shouldOpen)
+    private ReportOutput SaveAndOpenReport(string outputPath, IDocument document, bool shouldOpen)
     {
         _pdfReportFileStore.Save(outputPath, document);
 
-        System.Console.WriteLine($"PDF report saved to: {outputPath}");
-
+        ErrorMessage? openFailure = null;
         if (shouldOpen)
         {
             try
@@ -151,19 +155,15 @@ public sealed class QuestPdfReportRenderer : IPdfReportRenderer
             }
             catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
             {
-                WritePdfOpenFailedMessage(outputPath, ex.Message);
+                openFailure = ErrorMessage.FromException(ex);
             }
         }
+
+        return new ReportOutput(ReportOutputFormat.Pdf, outputPath, openFailure);
     }
 
     private static bool ShouldRenderCustomTransitionReport(JiraReportData reportData) =>
         reportData.Settings.CustomTransitionAnalysis is { GenerateSeparateReport: true };
-
-    [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "CLI warning message for local desktop usage.")]
-    private static void WritePdfOpenFailedMessage(string outputPath, string reason)
-    {
-        System.Console.WriteLine($"Failed to open PDF automatically: {outputPath} ({reason})");
-    }
 
     private readonly AppSettings _settings;
     private readonly IPdfReportFileStore _pdfReportFileStore;

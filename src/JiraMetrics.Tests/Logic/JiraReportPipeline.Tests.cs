@@ -1,6 +1,5 @@
 using FluentAssertions;
 
-using JiraMetrics.Abstractions.Html;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -12,35 +11,66 @@ namespace JiraMetrics.Tests.Logic;
 
 public sealed class JiraReportPipelineTests
 {
-    [Fact(DisplayName = "Constructor rejects null report renderers")]
+    [Fact(DisplayName = "Constructor rejects null dependencies")]
     [Trait("Category", "Unit")]
-    public void ConstructorWhenRendererIsNullThrowsArgumentNullException()
+    public void ConstructorWhenDependencyIsNullThrowsArgumentNullException()
     {
-        var htmlRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict).Object;
-        var pdfRenderer = new Mock<IPdfReportRenderer>(MockBehavior.Strict).Object;
+        var presenter = new Mock<IReportOutputPresenter>(MockBehavior.Strict).Object;
 
-        Action nullHtmlRenderer = () => _ = new JiraReportPipeline(null!, pdfRenderer);
-        Action nullPdfRenderer = () => _ = new JiraReportPipeline(htmlRenderer, null!);
+        Action nullRenderers = () => _ = new JiraReportPipeline(null!, presenter);
+        Action nullPresenter = () => _ = new JiraReportPipeline([], null!);
 
-        nullHtmlRenderer.Should().Throw<ArgumentNullException>();
-        nullPdfRenderer.Should().Throw<ArgumentNullException>();
+        nullRenderers.Should().Throw<ArgumentNullException>();
+        nullPresenter.Should().Throw<ArgumentNullException>();
     }
 
-    [Fact(DisplayName = "RenderReport invokes HTML and PDF renderers")]
+    [Fact(DisplayName = "RenderReport invokes every renderer and presents generated outputs")]
     [Trait("Category", "Unit")]
-    public void RenderReportWhenCalledInvokesEveryRenderer()
+    public void RenderReportWhenCalledInvokesEveryRendererAndPresentsOutputs()
     {
         var reportData = CreateReportData();
-        var htmlRenderer = new Mock<IHtmlReportRenderer>(MockBehavior.Strict);
-        var pdfRenderer = new Mock<IPdfReportRenderer>(MockBehavior.Strict);
-        htmlRenderer.Setup(renderer => renderer.RenderReport(reportData));
-        pdfRenderer.Setup(renderer => renderer.RenderReport(reportData));
-        var pipeline = new JiraReportPipeline(htmlRenderer.Object, pdfRenderer.Object);
+        var htmlOutput = new ReportOutput(ReportOutputFormat.Html, "report.html");
+        var openFailure = new ErrorMessage("No associated PDF viewer.");
+        var pdfOutput = new ReportOutput(ReportOutputFormat.Pdf, "report.pdf", openFailure);
+        var htmlRenderer = new Mock<IReportRenderer>(MockBehavior.Strict);
+        var pdfRenderer = new Mock<IReportRenderer>(MockBehavior.Strict);
+        var presenter = new Mock<IReportOutputPresenter>(MockBehavior.Strict);
+        htmlRenderer.Setup(renderer => renderer.RenderReport(reportData)).Returns([htmlOutput]);
+        pdfRenderer.Setup(renderer => renderer.RenderReport(reportData)).Returns([pdfOutput]);
+        presenter.Setup(x => x.ShowReportSaved(ReportOutputFormat.Html, htmlOutput.OutputPath));
+        presenter.Setup(x => x.ShowReportSaved(ReportOutputFormat.Pdf, pdfOutput.OutputPath));
+        presenter.Setup(x => x.ShowReportOpenFailed(
+            ReportOutputFormat.Pdf,
+            pdfOutput.OutputPath,
+            openFailure));
+        var pipeline = new JiraReportPipeline(
+            [htmlRenderer.Object, pdfRenderer.Object],
+            presenter.Object);
 
         pipeline.RenderReport(reportData);
 
         htmlRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
         pdfRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
+        presenter.Verify(x => x.ShowReportSaved(It.IsAny<ReportOutputFormat>(), It.IsAny<string>()), Times.Exactly(2));
+        presenter.Verify(x => x.ShowReportOpenFailed(
+            It.IsAny<ReportOutputFormat>(),
+            It.IsAny<string>(),
+            It.IsAny<ErrorMessage>()), Times.Once);
+    }
+
+    [Fact(DisplayName = "RenderReport ignores disabled renderer outputs")]
+    [Trait("Category", "Unit")]
+    public void RenderReportWhenRendererReturnsNoOutputsDoesNotPresentAnything()
+    {
+        var reportData = CreateReportData();
+        var renderer = new Mock<IReportRenderer>(MockBehavior.Strict);
+        var presenter = new Mock<IReportOutputPresenter>(MockBehavior.Strict);
+        renderer.Setup(x => x.RenderReport(reportData)).Returns([]);
+        var pipeline = new JiraReportPipeline([renderer.Object], presenter.Object);
+
+        pipeline.RenderReport(reportData);
+
+        presenter.VerifyNoOtherCalls();
     }
 
     [Fact(DisplayName = "RenderReport rejects null report data")]
@@ -48,8 +78,8 @@ public sealed class JiraReportPipelineTests
     public void RenderReportWhenReportDataIsNullThrowsArgumentNullException()
     {
         var pipeline = new JiraReportPipeline(
-            new Mock<IHtmlReportRenderer>(MockBehavior.Strict).Object,
-            new Mock<IPdfReportRenderer>(MockBehavior.Strict).Object);
+            [],
+            new Mock<IReportOutputPresenter>(MockBehavior.Strict).Object);
 
         Action act = () => pipeline.RenderReport(null!);
 

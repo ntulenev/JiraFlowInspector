@@ -11,7 +11,7 @@ namespace JiraMetrics.Presentation;
 /// <summary>
 /// Spectre.Console-based presentation service.
 /// </summary>
-public sealed class SpectreJiraPresentationService : IJiraPresentationService
+public sealed class SpectreJiraPresentationService : IJiraPresentationService, IReportOutputPresenter
 {
 
     /// <summary>
@@ -146,6 +146,23 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService
     {
         StopAllLoaders();
         _statusSection.ShowProcessingStep(message);
+    }
+
+    /// <inheritdoc />
+    public void ShowReportSaved(ReportOutputFormat format, string outputPath)
+    {
+        StopAllLoaders();
+        _statusSection.ShowReportSaved(format, outputPath);
+    }
+
+    /// <inheritdoc />
+    public void ShowReportOpenFailed(
+        ReportOutputFormat format,
+        string outputPath,
+        ErrorMessage errorMessage)
+    {
+        StopAllLoaders();
+        _statusSection.ShowReportOpenFailed(format, outputPath, errorMessage);
     }
 
     /// <inheritdoc />
