@@ -10,7 +10,7 @@ namespace JiraMetrics.API.Jql;
 /// <summary>
 /// Builds JQL queries for team task reports.
 /// </summary>
-public sealed class TeamTasksJqlBuilder : ITeamTasksJqlBuilder
+public sealed class TeamTasksJqlBuilder
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="TeamTasksJqlBuilder"/> class.

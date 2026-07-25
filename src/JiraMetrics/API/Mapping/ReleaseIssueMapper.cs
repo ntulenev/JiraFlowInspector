@@ -12,9 +12,9 @@ namespace JiraMetrics.API.Mapping;
 /// <summary>
 /// Maps Jira search issues into release issue rows.
 /// </summary>
-public sealed class ReleaseIssueMapper : IReleaseIssueMapper
+public static class ReleaseIssueMapper
 {
-    public JiraSearchFields BuildRequestedFields(ReleaseIssueMappingContext context)
+    public static JiraSearchFields BuildRequestedFields(ReleaseIssueMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -59,7 +59,7 @@ public sealed class ReleaseIssueMapper : IReleaseIssueMapper
         return new JiraSearchFields(fields);
     }
 
-    public IReadOnlyList<ReleaseIssueItem> MapIssues(
+    public static IReadOnlyList<ReleaseIssueItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         ReleaseIssueMappingContext context)
     {

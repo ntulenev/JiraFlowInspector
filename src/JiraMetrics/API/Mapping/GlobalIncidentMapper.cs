@@ -12,9 +12,9 @@ namespace JiraMetrics.API.Mapping;
 /// <summary>
 /// Maps Jira search issues into global incident rows.
 /// </summary>
-public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
+public static class GlobalIncidentMapper
 {
-    public JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context)
+    public static JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -45,7 +45,7 @@ public sealed class GlobalIncidentMapper : IGlobalIncidentMapper
         return new JiraSearchFields(fields);
     }
 
-    public IReadOnlyList<GlobalIncidentItem> MapIssues(
+    public static IReadOnlyList<GlobalIncidentItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         GlobalIncidentMappingContext context)
     {

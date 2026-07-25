@@ -10,10 +10,10 @@ namespace JiraMetrics.API.Mapping;
 /// <summary>
 /// Maps Jira search issues into roadmap rows.
 /// </summary>
-public sealed class RoadmapItemMapper : IRoadmapItemMapper
+public static class RoadmapItemMapper
 {
     /// <inheritdoc />
-    public JiraSearchFields BuildRequestedFields(RoadmapMappingContext context)
+    public static JiraSearchFields BuildRequestedFields(RoadmapMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -27,7 +27,7 @@ public sealed class RoadmapItemMapper : IRoadmapItemMapper
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<RoadmapItem> MapIssues(
+    public static IReadOnlyList<RoadmapItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         RoadmapMappingContext context)
     {

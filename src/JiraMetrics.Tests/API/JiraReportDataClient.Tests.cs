@@ -5,7 +5,6 @@ using FluentAssertions;
 using JiraMetrics.API;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.API.Jql;
-using JiraMetrics.API.Mapping;
 using JiraMetrics.API.Search;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -1122,9 +1121,6 @@ public sealed class JiraReportDataClientTests
                 new ReleaseIssuesJqlBuilder(resolvedSettings),
                 new ArchTasksJqlBuilder(resolvedSettings),
                 new GlobalIncidentsJqlBuilder(resolvedSettings)),
-            new JiraFieldResolver(transport),
-            new ReleaseIssueMapper(),
-            new GlobalIncidentMapper(),
-            new RoadmapItemMapper());
+            new JiraFieldResolver(transport));
     }
 }

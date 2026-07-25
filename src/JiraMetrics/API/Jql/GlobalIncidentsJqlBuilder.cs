@@ -11,7 +11,7 @@ namespace JiraMetrics.API.Jql;
 /// <summary>
 /// Builds JQL for global incident queries.
 /// </summary>
-public sealed class GlobalIncidentsJqlBuilder : IGlobalIncidentsJqlBuilder
+public sealed class GlobalIncidentsJqlBuilder
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobalIncidentsJqlBuilder"/> class.

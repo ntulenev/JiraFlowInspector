@@ -11,7 +11,7 @@ namespace JiraMetrics.API.Jql;
 /// <summary>
 /// Builds JQL for release issue queries.
 /// </summary>
-public sealed class ReleaseIssuesJqlBuilder : IReleaseIssuesJqlBuilder
+public sealed class ReleaseIssuesJqlBuilder
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ReleaseIssuesJqlBuilder"/> class.

@@ -12,10 +12,10 @@ namespace JiraMetrics.API.Jql;
 public sealed class JiraJqlFacade : IJiraJqlFacade
 {
     public JiraJqlFacade(
-        ITeamTasksJqlBuilder teamTasksJqlBuilder,
-        IReleaseIssuesJqlBuilder releaseIssuesJqlBuilder,
-        IArchTasksJqlBuilder archTasksJqlBuilder,
-        IGlobalIncidentsJqlBuilder globalIncidentsJqlBuilder)
+        TeamTasksJqlBuilder teamTasksJqlBuilder,
+        ReleaseIssuesJqlBuilder releaseIssuesJqlBuilder,
+        ArchTasksJqlBuilder archTasksJqlBuilder,
+        GlobalIncidentsJqlBuilder globalIncidentsJqlBuilder)
     {
         ArgumentNullException.ThrowIfNull(teamTasksJqlBuilder);
         ArgumentNullException.ThrowIfNull(releaseIssuesJqlBuilder);
@@ -63,10 +63,10 @@ public sealed class JiraJqlFacade : IJiraJqlFacade
         IReadOnlyList<ResolvedJiraField> incidentStartFields) =>
         _globalIncidentsJqlBuilder.BuildQuery(settings, incidentStartFields);
 
-    private readonly ITeamTasksJqlBuilder _teamTasksJqlBuilder;
-    private readonly IReleaseIssuesJqlBuilder _releaseIssuesJqlBuilder;
-    private readonly IArchTasksJqlBuilder _archTasksJqlBuilder;
-    private readonly IGlobalIncidentsJqlBuilder _globalIncidentsJqlBuilder;
+    private readonly TeamTasksJqlBuilder _teamTasksJqlBuilder;
+    private readonly ReleaseIssuesJqlBuilder _releaseIssuesJqlBuilder;
+    private readonly ArchTasksJqlBuilder _archTasksJqlBuilder;
+    private readonly GlobalIncidentsJqlBuilder _globalIncidentsJqlBuilder;
 }
 #pragma warning restore CS1591
 

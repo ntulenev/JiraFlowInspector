@@ -52,11 +52,10 @@ public sealed class RoadmapMappingTests
     public void BuildRequestedFieldsReturnsBaseAndConfiguredFields()
     {
         // Arrange
-        var mapper = new RoadmapItemMapper();
         var context = CreateContext();
 
         // Act
-        var fields = mapper.BuildRequestedFields(context);
+        var fields = RoadmapItemMapper.BuildRequestedFields(context);
 
         // Assert
         fields.Should().Equal(
@@ -73,7 +72,6 @@ public sealed class RoadmapMappingTests
     public void MapIssuesWhenPayloadContainsSupportedVariantsReturnsRoadmapItem()
     {
         // Arrange
-        var mapper = new RoadmapItemMapper();
         var issue = new JiraIssueKeyResponse
         {
             Key = "FLOW-42",
@@ -91,7 +89,7 @@ public sealed class RoadmapMappingTests
         };
 
         // Act
-        var result = mapper.MapIssues([issue], CreateContext());
+        var result = RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
         result.Should().ContainSingle();
@@ -108,7 +106,6 @@ public sealed class RoadmapMappingTests
     public void MapIssuesWhenOptionalFieldsAreMissingReturnsFallbackValues()
     {
         // Arrange
-        var mapper = new RoadmapItemMapper();
         var issue = new JiraIssueKeyResponse
         {
             Key = "FLOW-43",
@@ -116,7 +113,7 @@ public sealed class RoadmapMappingTests
         };
 
         // Act
-        var result = mapper.MapIssues([issue], CreateContext());
+        var result = RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
         result.Should().ContainSingle();
@@ -132,7 +129,6 @@ public sealed class RoadmapMappingTests
     public void MapIssuesWhenOptionalFieldsAreMalformedReturnsNullOptionalValues()
     {
         // Arrange
-        var mapper = new RoadmapItemMapper();
         var issue = new JiraIssueKeyResponse
         {
             Key = "FLOW-44",
@@ -148,7 +144,7 @@ public sealed class RoadmapMappingTests
         };
 
         // Act
-        var act = () => mapper.MapIssues([issue], CreateContext());
+        var act = () => RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
         act.Should().NotThrow();
@@ -163,11 +159,10 @@ public sealed class RoadmapMappingTests
     public void MapIssuesWhenIssueKeyIsMissingThrowsInvalidOperationException()
     {
         // Arrange
-        var mapper = new RoadmapItemMapper();
         var issue = new JiraIssueKeyResponse { Fields = new JiraIssueFieldsResponse() };
 
         // Act
-        Action act = () => _ = mapper.MapIssues([issue], CreateContext());
+        Action act = () => _ = RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
         act.Should().Throw<InvalidOperationException>()
@@ -179,11 +174,10 @@ public sealed class RoadmapMappingTests
     public void MapIssuesWhenIssueFieldsAreMissingThrowsInvalidOperationException()
     {
         // Arrange
-        var mapper = new RoadmapItemMapper();
         var issue = new JiraIssueKeyResponse { Key = "FLOW-45" };
 
         // Act
-        Action act = () => _ = mapper.MapIssues([issue], CreateContext());
+        Action act = () => _ = RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
         act.Should().Throw<InvalidOperationException>()

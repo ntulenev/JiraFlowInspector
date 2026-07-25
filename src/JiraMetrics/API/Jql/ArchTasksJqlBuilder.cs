@@ -9,7 +9,7 @@ namespace JiraMetrics.API.Jql;
 /// <summary>
 /// Builds JQL for architecture tasks queries.
 /// </summary>
-public sealed class ArchTasksJqlBuilder : IArchTasksJqlBuilder
+public sealed class ArchTasksJqlBuilder
 {
     public ArchTasksJqlBuilder(IOptions<AppSettings> settings)
     {
