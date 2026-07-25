@@ -26,7 +26,12 @@ public sealed class TransitionBuilder
         _excludedDays = new HashSet<DateOnly>(settings.ExcludedDays).ToFrozenSet();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Builds normalized transition events and their working durations.
+    /// </summary>
+    /// <param name="rawTransitions">Raw transition timestamps and status changes.</param>
+    /// <param name="created">Issue creation timestamp used as the timeline start.</param>
+    /// <returns>Chronologically ordered transition events.</returns>
     public IReadOnlyList<TransitionEvent> BuildTransitions(
         IReadOnlyList<(DateTimeOffset At, StatusName From, StatusName To)> rawTransitions,
         DateTimeOffset created)
