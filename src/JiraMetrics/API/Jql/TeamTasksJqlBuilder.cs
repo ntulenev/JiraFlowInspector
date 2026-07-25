@@ -30,6 +30,13 @@ public sealed class TeamTasksJqlBuilder
         _reportPeriod = resolved.ReportPeriod;
     }
 
+    /// <summary>
+    /// Builds a query for issue keys moved to the done status during the report period.
+    /// </summary>
+    /// <param name="projectKey">Jira project key.</param>
+    /// <param name="doneStatusName">Done status name.</param>
+    /// <param name="createdAfter">Optional lower bound for the issue creation date.</param>
+    /// <returns>The JQL query.</returns>
     public JqlQuery BuildMovedToDoneIssueKeysQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -48,6 +55,12 @@ public sealed class TeamTasksJqlBuilder
         return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
+    /// <summary>
+    /// Builds a query for issues created during the report period.
+    /// </summary>
+    /// <param name="projectKey">Jira project key.</param>
+    /// <param name="issueTypes">Optional issue types to include.</param>
+    /// <returns>The JQL query.</returns>
     public JqlQuery BuildCreatedIssuesQuery(ProjectKey projectKey, IReadOnlyList<IssueTypeName> issueTypes)
     {
         ArgumentNullException.ThrowIfNull(issueTypes);
@@ -62,6 +75,13 @@ public sealed class TeamTasksJqlBuilder
         return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
+    /// <summary>
+    /// Builds a query for issues moved to the done status during the report period.
+    /// </summary>
+    /// <param name="projectKey">Jira project key.</param>
+    /// <param name="doneStatusName">Done status name.</param>
+    /// <param name="issueTypes">Optional issue types to include.</param>
+    /// <returns>The JQL query.</returns>
     public JqlQuery BuildMovedToDoneIssuesQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
@@ -78,6 +98,13 @@ public sealed class TeamTasksJqlBuilder
         return new JqlQuery($"{string.Join(" AND ", clauses)} ORDER BY key ASC");
     }
 
+    /// <summary>
+    /// Builds a query for open issue counts grouped by status and issue type.
+    /// </summary>
+    /// <param name="projectKey">Jira project key.</param>
+    /// <param name="doneStatusName">Done status to exclude.</param>
+    /// <param name="rejectStatusName">Optional rejected status to exclude.</param>
+    /// <returns>The JQL query.</returns>
     public JqlQuery BuildIssueCountsByStatusExcludingDoneAndRejectQuery(
         ProjectKey projectKey,
         StatusName doneStatusName,
