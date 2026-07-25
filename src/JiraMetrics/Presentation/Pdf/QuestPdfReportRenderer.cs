@@ -17,7 +17,7 @@ namespace JiraMetrics.Presentation.Pdf;
 /// <summary>
 /// QuestPDF implementation for Jira report rendering.
 /// </summary>
-public sealed class QuestPdfReportRenderer : IPdfReportRenderer
+public sealed class QuestPdfReportRenderer : IReportRenderer
 {
     /// <inheritdoc />
     public ReportOutputFormat Format => ReportOutputFormat.Pdf;

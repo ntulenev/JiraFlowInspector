@@ -17,8 +17,6 @@ internal static class PdfServiceCollectionExtensions
             .AddTransient<IPdfContentComposer, PdfContentComposer>()
             .AddTransient<IPdfReportFileStore, PdfReportFileStore>()
             .AddTransient<IPdfReportLauncher, PdfReportLauncher>()
-            .AddTransient<QuestPdfReportRenderer>()
-            .AddTransient<IPdfReportRenderer>(static sp => sp.GetRequiredService<QuestPdfReportRenderer>())
-            .AddTransient<IReportRenderer>(static sp => sp.GetRequiredService<QuestPdfReportRenderer>());
+            .AddTransient<IReportRenderer, QuestPdfReportRenderer>();
     }
 }

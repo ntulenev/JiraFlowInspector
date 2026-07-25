@@ -9,7 +9,7 @@ namespace JiraMetrics.Presentation.Html;
 /// <summary>
 /// HTML implementation for Jira report rendering.
 /// </summary>
-public sealed class HtmlReportRenderer : IHtmlReportRenderer
+public sealed class HtmlReportRenderer : IReportRenderer
 {
     /// <inheritdoc />
     public ReportOutputFormat Format => ReportOutputFormat.Html;
