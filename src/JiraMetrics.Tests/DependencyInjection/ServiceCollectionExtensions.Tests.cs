@@ -177,9 +177,9 @@ public sealed class ServiceCollectionExtensionsTests
         presentation.Should().BeOfType<SpectreJiraPresentationService>();
         status.Should().BeSameAs(presentation);
         progress.Should().BeOfType<SpectreIssueLoadingProgressPresenter>();
-        sections.Should().BeSameAs(presentation);
-        analysis.Should().BeSameAs(presentation);
-        diagnostics.Should().BeSameAs(presentation);
+        sections.Should().BeOfType<SpectreReportSectionsPresenter>();
+        analysis.Should().BeSameAs(sections);
+        diagnostics.Should().BeSameAs(sections);
         reportOutput.Should().BeSameAs(presentation);
     }
 

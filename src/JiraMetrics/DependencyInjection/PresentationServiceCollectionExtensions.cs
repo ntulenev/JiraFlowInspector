@@ -19,9 +19,12 @@ internal static class PresentationServiceCollectionExtensions
             .AddSingleton<IJiraStatusPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
             .AddSingleton<IJiraIssueLoadingProgressPresenter>(sp =>
                 sp.GetRequiredService<SpectreJiraPresentationService>().ProgressPresenter)
-            .AddSingleton<IJiraReportSectionsPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
-            .AddSingleton<IJiraAnalysisPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
-            .AddSingleton<IJiraDiagnosticsPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
+            .AddSingleton<IJiraReportSectionsPresenter>(sp =>
+                sp.GetRequiredService<SpectreJiraPresentationService>().ReportSectionsPresenter)
+            .AddSingleton<IJiraAnalysisPresenter>(sp =>
+                sp.GetRequiredService<SpectreJiraPresentationService>().ReportSectionsPresenter)
+            .AddSingleton<IJiraDiagnosticsPresenter>(sp =>
+                sp.GetRequiredService<SpectreJiraPresentationService>().ReportSectionsPresenter)
             .AddSingleton<IReportOutputPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
     }
 }

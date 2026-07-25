@@ -58,16 +58,15 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
 
         _statusSection = new SpectreStatusSection();
         ProgressPresenter = new SpectreIssueLoadingProgressPresenter(_statusSection);
-        _ratioSection = new SpectreRatioSection();
-        _releaseSection = new SpectreReleaseSection();
-        _archTasksSection = new SpectreArchTasksSection(runContext.GeneratedAt);
-        _globalIncidentsSection = new SpectreGlobalIncidentsSection(showTimeCalculationsInHoursOnly);
-        _transitionSection = new SpectreTransitionSection(showTimeCalculationsInHoursOnly);
-        _generalStatisticsSection = new SpectreGeneralStatisticsSection(runContext.GeneratedAt);
-        _failuresSection = new SpectreFailuresSection();
+        ReportSectionsPresenter = new SpectreReportSectionsPresenter(
+            showTimeCalculationsInHoursOnly,
+            runContext,
+            ProgressPresenter);
     }
 
     internal SpectreIssueLoadingProgressPresenter ProgressPresenter { get; }
+
+    internal SpectreReportSectionsPresenter ReportSectionsPresenter { get; }
 
     /// <inheritdoc />
     public void ShowAuthenticationStarted() => _statusSection.ShowAuthenticationStarted();
@@ -179,125 +178,72 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
 
     /// <inheritdoc />
     public void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName)
-    {
-        ArgumentNullException.ThrowIfNull(issues);
-        StopAllLoaders();
-        _transitionSection.ShowDoneIssuesTable(issues, doneStatusName);
-    }
+        => ReportSectionsPresenter.ShowDoneIssuesTable(issues, doneStatusName);
 
     /// <inheritdoc />
     public void ShowDoneDaysAtWork75PerType(
         IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
         StatusName doneStatusName)
-    {
-        ArgumentNullException.ThrowIfNull(summaries);
-        StopAllLoaders();
-        _transitionSection.ShowDoneDaysAtWork75PerType(summaries, doneStatusName);
-    }
+        => ReportSectionsPresenter.ShowDoneDaysAtWork75PerType(summaries, doneStatusName);
 
     /// <inheritdoc />
     public void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName)
-    {
-        ArgumentNullException.ThrowIfNull(issues);
-        StopAllLoaders();
-        _transitionSection.ShowRejectedIssuesTable(issues, rejectStatusName);
-    }
+        => ReportSectionsPresenter.ShowRejectedIssuesTable(issues, rejectStatusName);
 
     /// <inheritdoc />
     public void ShowPathGroupsSummary(PathGroupsSummary summary)
-    {
-        ArgumentNullException.ThrowIfNull(summary);
-        StopAllLoaders();
-        _transitionSection.ShowPathGroupsSummary(summary);
-    }
+        => ReportSectionsPresenter.ShowPathGroupsSummary(summary);
 
     /// <inheritdoc />
-    public void ShowReleaseReportLoadingStarted() => ProgressPresenter.ShowPending("Loading release report data...");
+    public void ShowReleaseReportLoadingStarted() => ReportSectionsPresenter.ShowReleaseReportLoadingStarted();
 
     /// <inheritdoc />
-    public void ShowGlobalIncidentsReportLoadingStarted() => ProgressPresenter.ShowPending("Loading global incidents report data...");
+    public void ShowGlobalIncidentsReportLoadingStarted() => ReportSectionsPresenter.ShowGlobalIncidentsReportLoadingStarted();
 
     /// <inheritdoc />
-    public void ShowArchTasksReportLoadingStarted() => ProgressPresenter.ShowPending("Loading architecture tasks report data...");
+    public void ShowArchTasksReportLoadingStarted() => ReportSectionsPresenter.ShowArchTasksReportLoadingStarted();
 
     /// <inheritdoc />
     public void ShowReleaseReport(
         ReleaseReportSettings settings,
         ReportPeriod reportPeriod,
         IReadOnlyList<ReleaseIssueItem> releases)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(releases);
-        StopAllLoaders();
-        _releaseSection.ShowReleaseReport(settings, reportPeriod, releases);
-    }
+        => ReportSectionsPresenter.ShowReleaseReport(settings, reportPeriod, releases);
 
     /// <inheritdoc />
     public void ShowArchTasksReport(
         ArchTasksReportSettings settings,
         IReadOnlyList<ArchTaskItem> tasks)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(tasks);
-        StopAllLoaders();
-        _archTasksSection.ShowArchTasksReport(settings, tasks);
-    }
+        => ReportSectionsPresenter.ShowArchTasksReport(settings, tasks);
 
     /// <inheritdoc />
     public void ShowGlobalIncidentsReport(
         GlobalIncidentsReportSettings settings,
         ReportPeriod reportPeriod,
         IReadOnlyList<GlobalIncidentItem> incidents)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(incidents);
-        StopAllLoaders();
-        _globalIncidentsSection.ShowGlobalIncidentsReport(settings, reportPeriod, incidents);
-    }
+        => ReportSectionsPresenter.ShowGlobalIncidentsReport(settings, reportPeriod, incidents);
 
     /// <inheritdoc />
-    public void ShowAllTasksRatioLoadingStarted() => ProgressPresenter.ShowPending("Loading all tasks ratio data...");
+    public void ShowAllTasksRatioLoadingStarted() => ReportSectionsPresenter.ShowAllTasksRatioLoadingStarted();
 
     /// <inheritdoc />
     public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        StopAllLoaders();
-        _ratioSection.ShowAllTasksRatioLoadingCompleted(snapshot);
-    }
+        => ReportSectionsPresenter.ShowAllTasksRatioLoadingCompleted(snapshot);
 
     /// <inheritdoc />
     public void ShowAllTasksRatio(
         string? customFieldName,
         string? customFieldValue,
         IssueRatioSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        StopAllLoaders();
-        _ratioSection.ShowAllTasksRatio(
-            customFieldName,
-            customFieldValue,
-            snapshot);
-    }
+        => ReportSectionsPresenter.ShowAllTasksRatio(customFieldName, customFieldValue, snapshot);
 
     /// <inheritdoc />
     public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)
-    {
-        ArgumentNullException.ThrowIfNull(bugIssueNames);
-
-        var bugTypes = bugIssueNames.Count == 0
-            ? "-"
-            : string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
-        ProgressPresenter.ShowPending($"Loading bug ratio data for: {bugTypes}");
-    }
+        => ReportSectionsPresenter.ShowBugRatioLoadingStarted(bugIssueNames);
 
     /// <inheritdoc />
     public void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(snapshot);
-        StopAllLoaders();
-        _ratioSection.ShowBugRatioLoadingCompleted(snapshot);
-    }
+        => ReportSectionsPresenter.ShowBugRatioLoadingCompleted(snapshot);
 
     /// <inheritdoc />
     public void ShowBugRatio(
@@ -305,52 +251,33 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
         string? customFieldName,
         string? customFieldValue,
         IssueRatioSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(bugIssueNames);
-        ArgumentNullException.ThrowIfNull(snapshot);
-        StopAllLoaders();
-        _ratioSection.ShowBugRatio(
+        => ReportSectionsPresenter.ShowBugRatio(
             bugIssueNames,
             customFieldName,
             customFieldValue,
             snapshot);
-    }
 
     /// <inheritdoc />
     public void ShowTestCoverageLoadingStarted(TestCoverageSettings settings)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
-        ProgressPresenter.ShowPending($"Loading automated test coverage for: {issueTypes}");
-    }
+        => ReportSectionsPresenter.ShowTestCoverageLoadingStarted(settings);
 
     /// <inheritdoc />
     public void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(snapshot);
-        StopAllLoaders();
-        _ratioSection.ShowTestCoverage(settings, snapshot);
-    }
+        => ReportSectionsPresenter.ShowTestCoverage(settings, snapshot);
 
     /// <inheritdoc />
     public void ShowOpenIssuesByStatusSummary(
         IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
         StatusName doneStatusName,
         StatusName? rejectStatusName)
-    {
-        ArgumentNullException.ThrowIfNull(statusSummaries);
-        StopAllLoaders();
-        _generalStatisticsSection.ShowOpenIssuesByStatusSummary(statusSummaries, doneStatusName, rejectStatusName);
-    }
+        => ReportSectionsPresenter.ShowOpenIssuesByStatusSummary(
+            statusSummaries,
+            doneStatusName,
+            rejectStatusName);
 
     /// <inheritdoc />
     public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
-    {
-        ArgumentNullException.ThrowIfNull(groups);
-        StopAllLoaders();
-        _transitionSection.ShowPathGroups(groups);
-    }
+        => ReportSectionsPresenter.ShowPathGroups(groups);
 
     /// <inheritdoc />
     public void ShowExecutionSummary(TimeSpan totalDuration, JiraRequestTelemetrySummary requestTelemetry)
@@ -362,20 +289,9 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
 
     /// <inheritdoc />
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)
-    {
-        ArgumentNullException.ThrowIfNull(failures);
-        StopAllLoaders();
-        _failuresSection.ShowFailures(failures);
-    }
+        => ReportSectionsPresenter.ShowFailures(failures);
 
     private void StopAllLoaders() => ProgressPresenter.Stop();
     private readonly SpectreStatusSection _statusSection;
-    private readonly SpectreRatioSection _ratioSection;
-    private readonly SpectreReleaseSection _releaseSection;
-    private readonly SpectreArchTasksSection _archTasksSection;
-    private readonly SpectreGlobalIncidentsSection _globalIncidentsSection;
-    private readonly SpectreTransitionSection _transitionSection;
-    private readonly SpectreGeneralStatisticsSection _generalStatisticsSection;
-    private readonly SpectreFailuresSection _failuresSection;
 }
 
