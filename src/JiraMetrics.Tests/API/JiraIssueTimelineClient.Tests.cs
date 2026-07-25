@@ -132,6 +132,46 @@ public sealed class JiraIssueTimelineClientTests
             Times.Once);
     }
 
+    [Fact(DisplayName = "Batch timeline load fetches issue data and changelogs concurrently")]
+    [Trait("Category", "Unit")]
+    public async Task GetIssueTimelinesAsyncWhenBatchStartsFetchesIndependentResourcesConcurrently()
+    {
+        var issueKey = new IssueKey("FLOW-4");
+        var issueResponses = new TaskCompletionSource<IReadOnlyList<JiraIssueResponse>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var changelogs = new TaskCompletionSource<IReadOnlyDictionary<string, IReadOnlyList<JiraHistoryResponse>>>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var searchExecutor = new Mock<IJiraSearchExecutor>(MockBehavior.Strict);
+        searchExecutor.Setup(e => e.GetIssuesAsync(
+                It.Is<IReadOnlyList<IssueKey>>(keys => keys.SequenceEqual(new[] { issueKey })),
+                null,
+                CancellationToken.None))
+            .Returns(issueResponses.Task);
+        searchExecutor.Setup(e => e.GetIssueChangelogsAsync(
+                It.Is<IReadOnlyList<IssueKey>>(keys => keys.SequenceEqual(new[] { issueKey })),
+                CancellationToken.None))
+            .Returns(changelogs.Task);
+        var client = CreateClient(
+            searchExecutor.Object,
+            new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object,
+            new Mock<IIssueTimelineMapper>(MockBehavior.Strict).Object);
+
+        var loadTask = client.GetIssueTimelinesAsync([issueKey], CancellationToken.None);
+
+        searchExecutor.Verify(e => e.GetIssuesAsync(
+            It.IsAny<IReadOnlyList<IssueKey>>(),
+            null,
+            CancellationToken.None), Times.Once);
+        searchExecutor.Verify(e => e.GetIssueChangelogsAsync(
+            It.IsAny<IReadOnlyList<IssueKey>>(),
+            CancellationToken.None), Times.Once);
+        issueResponses.SetResult([]);
+        changelogs.SetResult(new Dictionary<string, IReadOnlyList<JiraHistoryResponse>>());
+
+        var result = await loadTask;
+        result.Failures.Should().ContainSingle();
+    }
+
     [Fact(DisplayName = "Concurrent timeline loads share pull request field resolution")]
     [Trait("Category", "Unit")]
     public async Task GetIssueTimelineAsyncWhenCalledConcurrentlySharesPullRequestFieldResolution()
@@ -253,6 +293,10 @@ public sealed class JiraIssueTimelineClientTests
                 null,
                 CancellationToken.None))
             .ThrowsAsync(exception);
+        searchExecutor.Setup(e => e.GetIssueChangelogsAsync(
+                It.Is<IReadOnlyList<IssueKey>>(keys => keys.SequenceEqual(issueKeys)),
+                CancellationToken.None))
+            .ReturnsAsync(new Dictionary<string, IReadOnlyList<JiraHistoryResponse>>());
         var client = CreateClient(
             searchExecutor.Object,
             new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object,

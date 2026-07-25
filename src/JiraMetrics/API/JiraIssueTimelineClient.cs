@@ -69,12 +69,13 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
         {
             try
             {
-                var issueResponses = await _searchExecutor
-                    .GetIssuesAsync(issueKeyBatch, requestedFields, cancellationToken)
-                    .ConfigureAwait(false);
-                var changelogsByIssueId = await _searchExecutor
-                    .GetIssueChangelogsAsync(issueKeyBatch, cancellationToken)
-                    .ConfigureAwait(false);
+                var issueResponsesTask = _searchExecutor
+                    .GetIssuesAsync(issueKeyBatch, requestedFields, cancellationToken);
+                var changelogsByIssueIdTask = _searchExecutor
+                    .GetIssueChangelogsAsync(issueKeyBatch, cancellationToken);
+                await Task.WhenAll(issueResponsesTask, changelogsByIssueIdTask).ConfigureAwait(false);
+                var issueResponses = await issueResponsesTask.ConfigureAwait(false);
+                var changelogsByIssueId = await changelogsByIssueIdTask.ConfigureAwait(false);
                 var returnedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var issueResponse in issueResponses)
