@@ -64,8 +64,14 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
             ProgressPresenter);
     }
 
+    /// <summary>
+    /// Gets the presenter that owns issue-loading and pending-operation progress state.
+    /// </summary>
     internal SpectreIssueLoadingProgressPresenter ProgressPresenter { get; }
 
+    /// <summary>
+    /// Gets the presenter responsible for report sections, analysis, and diagnostics.
+    /// </summary>
     internal SpectreReportSectionsPresenter ReportSectionsPresenter { get; }
 
     /// <inheritdoc />
