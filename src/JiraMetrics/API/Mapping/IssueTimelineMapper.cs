@@ -1,3 +1,4 @@
+using JiraMetrics.Helpers;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -18,14 +19,18 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
     /// </summary>
     /// <param name="transitionBuilder">Transition builder.</param>
     /// <param name="settings">Application settings.</param>
+    /// <param name="runContext">Context shared by the current report run.</param>
     public IssueTimelineMapper(
         ITransitionBuilder transitionBuilder,
-        IOptions<AppSettings> settings)
+        IOptions<AppSettings> settings,
+        ReportRunContext runContext)
     {
         _transitionBuilder = transitionBuilder ?? throw new ArgumentNullException(nameof(transitionBuilder));
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(runContext);
         var resolved = settings.Value;
         _pullRequestFieldName = resolved.PullRequestFieldName ?? string.Empty;
+        _reportGeneratedAt = runContext.GeneratedAt;
     }
 
     public IssueTimeline Map(JiraIssueResponse response, IssueKey fallbackKey)
@@ -37,18 +42,15 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
             throw new InvalidOperationException("Response missing fields.");
         }
 
-        if (string.IsNullOrWhiteSpace(response.Fields.Created)
-            || !DateTimeOffset.TryParse(response.Fields.Created, out var created))
+        if (response.Fields.Created.ParseNullableDateTimeOffset() is not { } created)
         {
             throw new InvalidOperationException("Issue created date is missing.");
         }
 
         var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created);
 
-        DateTimeOffset? endTime = !string.IsNullOrWhiteSpace(response.Fields.ResolutionDate)
-            && DateTimeOffset.TryParse(response.Fields.ResolutionDate, out var parsedResolutionDate)
-                ? parsedResolutionDate
-                : null;
+        var endTime = response.Fields.ResolutionDate.ParseNullableDateTimeOffset()
+            ?? _reportGeneratedAt;
 
         return IssueTimeline.Create(
             !string.IsNullOrWhiteSpace(response.Key) ? new IssueKey(response.Key.Trim()) : fallbackKey,
@@ -72,8 +74,7 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
 
         foreach (var history in histories)
         {
-            if (string.IsNullOrWhiteSpace(history.Created)
-                || !DateTimeOffset.TryParse(history.Created, out var at))
+            if (history.Created.ParseNullableDateTimeOffset() is not { } at)
             {
                 continue;
             }
@@ -120,6 +121,7 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
 
     private readonly ITransitionBuilder _transitionBuilder;
     private readonly string _pullRequestFieldName;
+    private readonly DateTimeOffset _reportGeneratedAt;
 }
 #pragma warning restore CS1591
 

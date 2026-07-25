@@ -15,7 +15,7 @@ public sealed record IssueTimeline
     /// <param name="summary">Issue summary.</param>
     /// <param name="created">Issue creation timestamp.</param>
     /// <param name="transitions">Ordered status transition events.</param>
-    /// <param name="endTime">Optional issue end timestamp used for analytics.</param>
+    /// <param name="endTime">Issue end timestamp used for analytics.</param>
     /// <param name="subItemsCount">Number of sub-items.</param>
     /// <param name="hasPullRequest">Whether issue has linked pull request(s).</param>
     /// <returns>Normalized issue timeline.</returns>
@@ -25,13 +25,13 @@ public sealed record IssueTimeline
         IssueSummary summary,
         DateTimeOffset created,
         IReadOnlyList<TransitionEvent> transitions,
-        DateTimeOffset? endTime = null,
+        DateTimeOffset endTime,
         int subItemsCount = 0,
         bool hasPullRequest = false)
     {
         ArgumentNullException.ThrowIfNull(transitions);
 
-        var resolvedEndTime = endTime ?? DateTimeOffset.UtcNow;
+        var resolvedEndTime = endTime;
         if (resolvedEndTime < created)
         {
             resolvedEndTime = created;

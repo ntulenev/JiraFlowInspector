@@ -7,6 +7,7 @@ using JiraMetrics.API.FieldResolution;
 using JiraMetrics.API.Mapping;
 using JiraMetrics.API.Search;
 using JiraMetrics.Logic;
+using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
@@ -501,14 +502,18 @@ public sealed class JiraIssueTimelineClientBehaviorTests
     }
     private static JiraIssueTimelineClient CreateClient(
         IJiraTransport transport,
-        IOptions<AppSettings>? settings = null)
+        IOptions<AppSettings>? settings = null,
+        ReportRunContext? runContext = null)
     {
         var resolvedSettings = settings ?? CreateSettings();
         return new JiraIssueTimelineClient(
             new JiraSearchExecutor(transport),
             resolvedSettings,
             new JiraFieldResolver(transport),
-            new IssueTimelineMapper(CreateTransitionBuilder(resolvedSettings), resolvedSettings));
+            new IssueTimelineMapper(
+                CreateTransitionBuilder(resolvedSettings),
+                resolvedSettings,
+                runContext ?? new ReportRunContext(new DateTimeOffset(2026, 2, 28, 23, 59, 0, TimeSpan.Zero))));
     }
 
     private static TransitionBuilder CreateTransitionBuilder(IOptions<AppSettings> settings) => new(settings);
