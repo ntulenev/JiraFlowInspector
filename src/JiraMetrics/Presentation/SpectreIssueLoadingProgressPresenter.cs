@@ -9,11 +9,16 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 internal sealed class SpectreIssueLoadingProgressPresenter : IJiraIssueLoadingProgressPresenter
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SpectreIssueLoadingProgressPresenter"/> class.
+    /// </summary>
+    /// <param name="statusSection">Console status section used for completion and spacing output.</param>
     public SpectreIssueLoadingProgressPresenter(SpectreStatusSection statusSection)
     {
         _statusSection = statusSection ?? throw new ArgumentNullException(nameof(statusSection));
     }
 
+    /// <inheritdoc />
     public void ShowIssueLoadingStarted(ItemCount totalIssues)
     {
         Stop();
@@ -31,22 +36,30 @@ internal sealed class SpectreIssueLoadingProgressPresenter : IJiraIssueLoadingPr
         AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
     }
 
+    /// <inheritdoc />
     public void ShowIssueLoaded(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: false);
 
+    /// <inheritdoc />
     public void ShowIssueFailed(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: true);
 
+    /// <inheritdoc />
     public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues)
     {
         Stop();
         _statusSection.ShowIssueLoadingCompleted(loadedIssues, failedIssues);
     }
 
+    /// <inheritdoc />
     public void ShowSpacer()
     {
         Stop();
         _statusSection.ShowSpacer();
     }
 
+    /// <summary>
+    /// Starts a pending-operation animation or writes a static message when animation is unavailable.
+    /// </summary>
+    /// <param name="message">Pending operation description.</param>
     public void ShowPending(string message)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
@@ -61,6 +74,9 @@ internal sealed class SpectreIssueLoadingProgressPresenter : IJiraIssueLoadingPr
         StartPendingLoader(() => $"[grey]{Markup.Escape(message)}[/]");
     }
 
+    /// <summary>
+    /// Stops the active progress or pending-operation animation.
+    /// </summary>
     public void Stop()
     {
         CancellationTokenSource? cancellation;
