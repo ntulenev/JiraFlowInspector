@@ -14,6 +14,11 @@ namespace JiraMetrics.API.Mapping;
 /// </summary>
 public static class ReleaseIssueMapper
 {
+    /// <summary>
+    /// Builds the Jira field set required to map release issues.
+    /// </summary>
+    /// <param name="context">Resolved release issue field mapping.</param>
+    /// <returns>The fields to request from Jira.</returns>
     public static JiraSearchFields BuildRequestedFields(ReleaseIssueMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -59,6 +64,12 @@ public static class ReleaseIssueMapper
         return new JiraSearchFields(fields);
     }
 
+    /// <summary>
+    /// Maps Jira issues to release report items.
+    /// </summary>
+    /// <param name="issues">Jira issues returned by the search.</param>
+    /// <param name="context">Resolved release issue field mapping.</param>
+    /// <returns>Mapped, de-duplicated, and chronologically ordered release items.</returns>
     public static IReadOnlyList<ReleaseIssueItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         ReleaseIssueMappingContext context)
