@@ -4,8 +4,6 @@ using JiraMetrics.Models.ValueObjects;
 
 using Microsoft.Extensions.Options;
 
-using Spectre.Console;
-
 namespace JiraMetrics.Presentation;
 
 /// <summary>
@@ -59,6 +57,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
         ArgumentNullException.ThrowIfNull(runContext);
 
         _statusSection = new SpectreStatusSection();
+        ProgressPresenter = new SpectreIssueLoadingProgressPresenter(_statusSection);
         _ratioSection = new SpectreRatioSection();
         _releaseSection = new SpectreReleaseSection();
         _archTasksSection = new SpectreArchTasksSection(runContext.GeneratedAt);
@@ -67,6 +66,8 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
         _generalStatisticsSection = new SpectreGeneralStatisticsSection(runContext.GeneratedAt);
         _failuresSection = new SpectreFailuresSection();
     }
+
+    internal SpectreIssueLoadingProgressPresenter ProgressPresenter { get; }
 
     /// <inheritdoc />
     public void ShowAuthenticationStarted() => _statusSection.ShowAuthenticationStarted();
@@ -112,34 +113,17 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
 
     /// <inheritdoc />
     public void ShowIssueLoadingStarted(ItemCount totalIssues)
-    {
-        StopAllLoaders();
-        _issueLoadTotal = totalIssues.Value;
-        _issueLoadProcessed = 0;
-        _issueLoadFailed = 0;
-        _issueLoadStep = Math.Max(1, _issueLoadTotal / 10);
-
-        if (CanAnimatePendingLoader())
-        {
-            StartPendingLoader(BuildIssueLoadProgressMessage);
-            return;
-        }
-
-        AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
-    }
+        => ProgressPresenter.ShowIssueLoadingStarted(totalIssues);
 
     /// <inheritdoc />
-    public void ShowIssueLoaded(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: false);
+    public void ShowIssueLoaded(IssueKey issueKey) => ProgressPresenter.ShowIssueLoaded(issueKey);
 
     /// <inheritdoc />
-    public void ShowIssueFailed(IssueKey issueKey) => UpdateIssueLoadProgress(wasFailure: true);
+    public void ShowIssueFailed(IssueKey issueKey) => ProgressPresenter.ShowIssueFailed(issueKey);
 
     /// <inheritdoc />
     public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues)
-    {
-        StopAllLoaders();
-        _statusSection.ShowIssueLoadingCompleted(loadedIssues, failedIssues);
-    }
+        => ProgressPresenter.ShowIssueLoadingCompleted(loadedIssues, failedIssues);
 
     /// <inheritdoc />
     public void ShowProcessingStep(string message)
@@ -228,13 +212,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
     }
 
     /// <inheritdoc />
-    public void ShowReleaseReportLoadingStarted() => StartPendingLoader("Loading release report data...");
+    public void ShowReleaseReportLoadingStarted() => ProgressPresenter.ShowPending("Loading release report data...");
 
     /// <inheritdoc />
-    public void ShowGlobalIncidentsReportLoadingStarted() => StartPendingLoader("Loading global incidents report data...");
+    public void ShowGlobalIncidentsReportLoadingStarted() => ProgressPresenter.ShowPending("Loading global incidents report data...");
 
     /// <inheritdoc />
-    public void ShowArchTasksReportLoadingStarted() => StartPendingLoader("Loading architecture tasks report data...");
+    public void ShowArchTasksReportLoadingStarted() => ProgressPresenter.ShowPending("Loading architecture tasks report data...");
 
     /// <inheritdoc />
     public void ShowReleaseReport(
@@ -272,7 +256,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
     }
 
     /// <inheritdoc />
-    public void ShowAllTasksRatioLoadingStarted() => StartPendingLoader("Loading all tasks ratio data...");
+    public void ShowAllTasksRatioLoadingStarted() => ProgressPresenter.ShowPending("Loading all tasks ratio data...");
 
     /// <inheritdoc />
     public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
@@ -304,7 +288,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
         var bugTypes = bugIssueNames.Count == 0
             ? "-"
             : string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
-        StartPendingLoader($"Loading bug ratio data for: {bugTypes}");
+        ProgressPresenter.ShowPending($"Loading bug ratio data for: {bugTypes}");
     }
 
     /// <inheritdoc />
@@ -337,7 +321,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
     {
         ArgumentNullException.ThrowIfNull(settings);
         var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
-        StartPendingLoader($"Loading automated test coverage for: {issueTypes}");
+        ProgressPresenter.ShowPending($"Loading automated test coverage for: {issueTypes}");
     }
 
     /// <inheritdoc />
@@ -384,141 +368,7 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
         _failuresSection.ShowFailures(failures);
     }
 
-    private void UpdateIssueLoadProgress(bool wasFailure)
-    {
-        if (_issueLoadTotal <= 0)
-        {
-            return;
-        }
-
-        _issueLoadProcessed++;
-        if (wasFailure)
-        {
-            _issueLoadFailed++;
-        }
-
-        if (_pendingLoaderCancellation is not null)
-        {
-            return;
-        }
-
-        if (_issueLoadProcessed == _issueLoadTotal
-            || _issueLoadProcessed % _issueLoadStep == 0)
-        {
-            AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
-        }
-    }
-
-    private string BuildIssueLoadProgressMessage()
-    {
-        if (_issueLoadTotal <= 0)
-        {
-            return "[grey]Loading issue timelines:[/] 0/0";
-        }
-
-        if (_issueLoadProcessed == 0 && _issueLoadFailed == 0)
-        {
-            return $"[grey]Loading issue timelines:[/] 0/{_issueLoadTotal}";
-        }
-
-        var percent = _issueLoadProcessed * 100.0 / _issueLoadTotal;
-        return $"[grey]Loading issue timelines:[/] {_issueLoadProcessed}/{_issueLoadTotal} ({percent:0}%)  [grey]failed:[/] {_issueLoadFailed}";
-    }
-
-    private void StartPendingLoader(string message)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(message);
-
-        StopAllLoaders();
-
-        if (!CanAnimatePendingLoader())
-        {
-            AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
-            return;
-        }
-
-        StartPendingLoader(() => $"[grey]{Markup.Escape(message)}[/]");
-    }
-
-    private void StartPendingLoader(Func<string> messageFactory)
-    {
-        ArgumentNullException.ThrowIfNull(messageFactory);
-
-        StopAllLoaders();
-
-        var cancellation = new CancellationTokenSource();
-        lock (_pendingLoaderSync)
-        {
-            _pendingLoaderCancellation = cancellation;
-            _pendingLoaderTask = Task.Run(async () =>
-            {
-                var index = 0;
-
-                while (!cancellation.Token.IsCancellationRequested)
-                {
-                    lock (_pendingLoaderSync)
-                    {
-                        AnsiConsole.Markup($"\r{messageFactory()} {_pendingLoaderFrames[index]}");
-                    }
-
-                    index = (index + 1) % _pendingLoaderFrames.Length;
-
-                    try
-                    {
-                        await Task.Delay(120, cancellation.Token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                }
-            }, cancellation.Token);
-        }
-    }
-
-    private void StopAllLoaders() => StopPendingLoader();
-
-    private void StopPendingLoader()
-    {
-        CancellationTokenSource? cancellation = null;
-        Task? task = null;
-
-        lock (_pendingLoaderSync)
-        {
-            if (_pendingLoaderCancellation is null)
-            {
-                return;
-            }
-
-            cancellation = _pendingLoaderCancellation;
-            task = _pendingLoaderTask;
-            _pendingLoaderCancellation = null;
-            _pendingLoaderTask = null;
-        }
-
-        cancellation.Cancel();
-        try
-        {
-            _ = task?.Wait(250);
-        }
-        catch (AggregateException)
-        {
-        }
-        finally
-        {
-            cancellation.Dispose();
-        }
-
-        lock (_pendingLoaderSync)
-        {
-            AnsiConsole.WriteLine();
-        }
-    }
-
-    private static bool CanAnimatePendingLoader() =>
-        !Console.IsOutputRedirected && AnsiConsole.Console.GetType().Name != "TestConsole";
-    private static readonly char[] _pendingLoaderFrames = ['|', '/', '-', '\\'];
-    private readonly object _pendingLoaderSync = new();
+    private void StopAllLoaders() => ProgressPresenter.Stop();
     private readonly SpectreStatusSection _statusSection;
     private readonly SpectreRatioSection _ratioSection;
     private readonly SpectreReleaseSection _releaseSection;
@@ -527,11 +377,5 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
     private readonly SpectreTransitionSection _transitionSection;
     private readonly SpectreGeneralStatisticsSection _generalStatisticsSection;
     private readonly SpectreFailuresSection _failuresSection;
-    private CancellationTokenSource? _pendingLoaderCancellation;
-    private Task? _pendingLoaderTask;
-    private int _issueLoadTotal;
-    private int _issueLoadProcessed;
-    private int _issueLoadFailed;
-    private int _issueLoadStep = 1;
 }
 

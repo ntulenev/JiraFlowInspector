@@ -161,7 +161,7 @@ public sealed class ServiceCollectionExtensionsTests
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "AddJiraPresentation resolves one shared Spectre presentation instance")]
+    [Fact(DisplayName = "AddJiraPresentation resolves shared section presenters and dedicated progress presenter")]
     [Trait("Category", "Unit")]
     public void AddJiraPresentationWhenCalledResolvesExpectedSingletonPresenters()
     {
@@ -180,7 +180,7 @@ public sealed class ServiceCollectionExtensionsTests
 
         presentation.Should().BeOfType<SpectreJiraPresentationService>();
         status.Should().BeSameAs(presentation);
-        progress.Should().BeSameAs(presentation);
+        progress.Should().BeOfType<SpectreIssueLoadingProgressPresenter>();
         sections.Should().BeSameAs(presentation);
         analysis.Should().BeSameAs(presentation);
         diagnostics.Should().BeSameAs(presentation);
