@@ -23,6 +23,11 @@ public sealed class ReleaseIssuesJqlBuilder
         _reportPeriod = settings.Value.ReportPeriod;
     }
 
+    /// <summary>
+    /// Builds the release issues query for the configured report period.
+    /// </summary>
+    /// <param name="request">Release issue query parameters.</param>
+    /// <returns>The JQL query.</returns>
     public JqlQuery BuildQuery(ReleaseIssueReadRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
