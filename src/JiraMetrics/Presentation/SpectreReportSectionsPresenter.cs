@@ -12,6 +12,12 @@ internal sealed class SpectreReportSectionsPresenter :
     IJiraAnalysisPresenter,
     IJiraDiagnosticsPresenter
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SpectreReportSectionsPresenter"/> class.
+    /// </summary>
+    /// <param name="showTimeCalculationsInHoursOnly">Whether durations are presented only in hours.</param>
+    /// <param name="runContext">Context shared by the current report run.</param>
+    /// <param name="progressPresenter">Presenter controlling pending-operation output.</param>
     public SpectreReportSectionsPresenter(
         bool showTimeCalculationsInHoursOnly,
         ReportRunContext runContext,
@@ -30,6 +36,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _failuresSection = new SpectreFailuresSection();
     }
 
+    /// <inheritdoc />
     public void ShowDoneIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName doneStatusName)
     {
         ArgumentNullException.ThrowIfNull(issues);
@@ -37,6 +44,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _transitionSection.ShowDoneIssuesTable(issues, doneStatusName);
     }
 
+    /// <inheritdoc />
     public void ShowDoneDaysAtWork75PerType(
         IReadOnlyList<IssueTypeWorkDays75Summary> summaries,
         StatusName doneStatusName)
@@ -46,6 +54,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _transitionSection.ShowDoneDaysAtWork75PerType(summaries, doneStatusName);
     }
 
+    /// <inheritdoc />
     public void ShowRejectedIssuesTable(IReadOnlyList<IssueTimeline> issues, StatusName rejectStatusName)
     {
         ArgumentNullException.ThrowIfNull(issues);
@@ -53,6 +62,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _transitionSection.ShowRejectedIssuesTable(issues, rejectStatusName);
     }
 
+    /// <inheritdoc />
     public void ShowPathGroupsSummary(PathGroupsSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
@@ -60,6 +70,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _transitionSection.ShowPathGroupsSummary(summary);
     }
 
+    /// <inheritdoc />
     public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
     {
         ArgumentNullException.ThrowIfNull(groups);
@@ -67,15 +78,19 @@ internal sealed class SpectreReportSectionsPresenter :
         _transitionSection.ShowPathGroups(groups);
     }
 
+    /// <inheritdoc />
     public void ShowReleaseReportLoadingStarted() =>
         _progressPresenter.ShowPending("Loading release report data...");
 
+    /// <inheritdoc />
     public void ShowGlobalIncidentsReportLoadingStarted() =>
         _progressPresenter.ShowPending("Loading global incidents report data...");
 
+    /// <inheritdoc />
     public void ShowArchTasksReportLoadingStarted() =>
         _progressPresenter.ShowPending("Loading architecture tasks report data...");
 
+    /// <inheritdoc />
     public void ShowReleaseReport(
         ReleaseReportSettings settings,
         ReportPeriod reportPeriod,
@@ -87,6 +102,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _releaseSection.ShowReleaseReport(settings, reportPeriod, releases);
     }
 
+    /// <inheritdoc />
     public void ShowArchTasksReport(
         ArchTasksReportSettings settings,
         IReadOnlyList<ArchTaskItem> tasks)
@@ -97,6 +113,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _archTasksSection.ShowArchTasksReport(settings, tasks);
     }
 
+    /// <inheritdoc />
     public void ShowGlobalIncidentsReport(
         GlobalIncidentsReportSettings settings,
         ReportPeriod reportPeriod,
@@ -108,9 +125,11 @@ internal sealed class SpectreReportSectionsPresenter :
         _globalIncidentsSection.ShowGlobalIncidentsReport(settings, reportPeriod, incidents);
     }
 
+    /// <inheritdoc />
     public void ShowAllTasksRatioLoadingStarted() =>
         _progressPresenter.ShowPending("Loading all tasks ratio data...");
 
+    /// <inheritdoc />
     public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -118,6 +137,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _ratioSection.ShowAllTasksRatioLoadingCompleted(snapshot);
     }
 
+    /// <inheritdoc />
     public void ShowAllTasksRatio(
         string? customFieldName,
         string? customFieldValue,
@@ -128,6 +148,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _ratioSection.ShowAllTasksRatio(customFieldName, customFieldValue, snapshot);
     }
 
+    /// <inheritdoc />
     public void ShowBugRatioLoadingStarted(IReadOnlyList<IssueTypeName> bugIssueNames)
     {
         ArgumentNullException.ThrowIfNull(bugIssueNames);
@@ -137,6 +158,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _progressPresenter.ShowPending($"Loading bug ratio data for: {bugTypes}");
     }
 
+    /// <inheritdoc />
     public void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -144,6 +166,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _ratioSection.ShowBugRatioLoadingCompleted(snapshot);
     }
 
+    /// <inheritdoc />
     public void ShowBugRatio(
         IReadOnlyList<IssueTypeName> bugIssueNames,
         string? customFieldName,
@@ -156,6 +179,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _ratioSection.ShowBugRatio(bugIssueNames, customFieldName, customFieldValue, snapshot);
     }
 
+    /// <inheritdoc />
     public void ShowTestCoverageLoadingStarted(TestCoverageSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -163,6 +187,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _progressPresenter.ShowPending($"Loading automated test coverage for: {issueTypes}");
     }
 
+    /// <inheritdoc />
     public void ShowTestCoverage(TestCoverageSettings settings, TestCoverageSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -171,6 +196,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _ratioSection.ShowTestCoverage(settings, snapshot);
     }
 
+    /// <inheritdoc />
     public void ShowOpenIssuesByStatusSummary(
         IReadOnlyList<StatusIssueTypeSummary> statusSummaries,
         StatusName doneStatusName,
@@ -184,6 +210,7 @@ internal sealed class SpectreReportSectionsPresenter :
             rejectStatusName);
     }
 
+    /// <inheritdoc />
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)
     {
         ArgumentNullException.ThrowIfNull(failures);
@@ -191,6 +218,7 @@ internal sealed class SpectreReportSectionsPresenter :
         _failuresSection.ShowFailures(failures);
     }
 
+    /// <inheritdoc />
     public void ShowSpacer() => _progressPresenter.ShowSpacer();
 
     private void StopProgress() => _progressPresenter.Stop();
