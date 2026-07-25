@@ -34,13 +34,8 @@ internal static class PdfPresentationHelpers
             .DefaultTextStyle(static style => style.FontSize(8));
     }
 
-    public static string BuildIssueBrowseUrl(JiraBaseUrl baseUrl, IssueKey issueKey)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(baseUrl.Value);
-        ArgumentException.ThrowIfNullOrWhiteSpace(issueKey.Value);
-
-        return $"{baseUrl.Value}/browse/{issueKey.Value}";
-    }
+    public static string BuildIssueBrowseUrl(JiraBaseUrl baseUrl, IssueKey issueKey) =>
+        PresentationFormatting.BuildIssueBrowseUrl(baseUrl, issueKey);
 
     private const string HEADER_BACKGROUND_COLOR_HEX = "#1f2937";
     private const string HEADER_TEXT_COLOR_HEX = "#f9fafb";

@@ -301,7 +301,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(item.Rule.Label);
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(item.TransitionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                    .Text(PresentationFormatting.FormatLocalDateTime(item.TransitionAt));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
                     .Text(PresentationFormatting.FormatWorkDurationValue(

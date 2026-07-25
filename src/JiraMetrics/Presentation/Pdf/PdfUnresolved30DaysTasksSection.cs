@@ -74,9 +74,7 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
                     .Text(issue.Key.Value);
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(issue.CreatedAt.HasValue
-                        ? issue.CreatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
-                        : "-");
+                    .Text(PresentationFormatting.FormatLocalDateTime(issue.CreatedAt));
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.IssueType ?? "-");
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Assignee ?? "Unassigned");
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Status ?? "-");

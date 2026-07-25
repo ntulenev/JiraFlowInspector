@@ -98,10 +98,10 @@ internal sealed class PdfCustomTransitionAnalysisSection : IPdfReportSection
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(issue.Summary.Truncate(new TextLength(140)).Value);
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                    .Text(PresentationFormatting.FormatLocalDateTime(issue.Created));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(item.TransitionAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                    .Text(PresentationFormatting.FormatLocalDateTime(item.TransitionAt));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
                     .Text(PresentationFormatting.FormatWorkDurationValue(

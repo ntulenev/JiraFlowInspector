@@ -52,10 +52,8 @@ internal sealed class SpectreArchTasksSection
         for (var i = 0; i < tasks.Count; i++)
         {
             var task = tasks[i];
-            var createdAtText = task.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-            var resolvedAtText = task.ResolvedAt.HasValue
-                ? task.ResolvedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
-                : "-";
+            var createdAtText = PresentationFormatting.FormatLocalDateTime(task.CreatedAt);
+            var resolvedAtText = PresentationFormatting.FormatLocalDateTime(task.ResolvedAt);
             var daysInWorkText = PresentationFormatting.FormatCalendarDayDurationValue(task.GetElapsed(now));
             var daysInWorkMarkup = task.IsResolved
                 ? Markup.Escape(daysInWorkText)

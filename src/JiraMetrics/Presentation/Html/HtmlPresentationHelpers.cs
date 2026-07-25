@@ -30,13 +30,8 @@ internal static class HtmlPresentationHelpers
     /// <param name="baseUrl">Jira base URL.</param>
     /// <param name="issueKey">Issue key.</param>
     /// <returns>Issue browse URL.</returns>
-    public static string BuildIssueBrowseUrl(JiraBaseUrl baseUrl, IssueKey issueKey)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(baseUrl.Value);
-        ArgumentException.ThrowIfNullOrWhiteSpace(issueKey.Value);
-
-        return $"{baseUrl.Value}/browse/{issueKey.Value}";
-    }
+    public static string BuildIssueBrowseUrl(JiraBaseUrl baseUrl, IssueKey issueKey) =>
+        PresentationFormatting.BuildIssueBrowseUrl(baseUrl, issueKey);
 
     /// <summary>
     /// Formats local date and time.
@@ -44,14 +39,15 @@ internal static class HtmlPresentationHelpers
     /// <param name="value">Date and time value.</param>
     /// <returns>Formatted date and time.</returns>
     public static string FormatDateTime(DateTimeOffset value) =>
-        value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        PresentationFormatting.FormatLocalDateTime(value);
 
     /// <summary>
     /// Formats optional local date and time.
     /// </summary>
     /// <param name="value">Optional date and time value.</param>
     /// <returns>Formatted date and time or dash.</returns>
-    public static string FormatDateTime(DateTimeOffset? value) => value.HasValue ? FormatDateTime(value.Value) : "-";
+    public static string FormatDateTime(DateTimeOffset? value) =>
+        PresentationFormatting.FormatLocalDateTime(value);
 
     /// <summary>
     /// Formats date.

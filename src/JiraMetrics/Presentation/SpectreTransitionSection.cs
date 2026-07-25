@@ -51,7 +51,7 @@ internal sealed class SpectreTransitionSection
         {
             var issue = orderedIssues[i];
             var lastDoneAtText = PresentationFormatting.BuildLastStatusAtText(issue, doneStatusName);
-            var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+            var createdAtText = PresentationFormatting.FormatLocalDateTime(issue.Created);
             var daysAtWorkText = PresentationFormatting.BuildWorkDurationText(issue, doneStatusName, _showTimeCalculationsInHoursOnly);
             var codeText = issue.HasPullRequest ? "[green]+[/]" : string.Empty;
 
@@ -132,7 +132,7 @@ internal sealed class SpectreTransitionSection
         {
             var issue = orderedIssues[i];
             var lastRejectAtText = PresentationFormatting.BuildLastStatusAtText(issue, rejectStatusName);
-            var createdAtText = issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+            var createdAtText = PresentationFormatting.FormatLocalDateTime(issue.Created);
             var daysAtWorkText = PresentationFormatting.BuildWorkDurationText(issue, rejectStatusName, _showTimeCalculationsInHoursOnly);
 
             _ = table.AddRow(

@@ -269,9 +269,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
                 {
                     _ = table.Cell()
                         .Element(PdfPresentationHelpers.StyleBodyCell)
-                        .Text(issue.CreatedAt.HasValue
-                            ? issue.CreatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
-                            : "-");
+                        .Text(PresentationFormatting.FormatLocalDate(issue.CreatedAt));
                 }
 
                 if (includeReporducedOnProd)

@@ -134,7 +134,7 @@ internal sealed class PdfTransitionAnalysisSection : IPdfReportSection
                 {
                     _ = table.Cell()
                         .Element(PdfPresentationHelpers.StyleBodyCell)
-                        .Text(issue.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                        .Text(PresentationFormatting.FormatLocalDateTime(issue.Created));
                 }
 
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(PresentationFormatting.BuildLastStatusAtText(issue, targetStatusName));

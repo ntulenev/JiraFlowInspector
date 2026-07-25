@@ -70,12 +70,10 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
                     .Text(task.Key.Value);
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(task.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+                    .Text(PresentationFormatting.FormatLocalDateTime(task.CreatedAt));
                 _ = table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
-                    .Text(task.ResolvedAt.HasValue
-                        ? task.ResolvedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
-                        : "-");
+                    .Text(PresentationFormatting.FormatLocalDateTime(task.ResolvedAt));
                 table.Cell()
                     .Element(PdfPresentationHelpers.StyleBodyCell)
                     .Text(text =>

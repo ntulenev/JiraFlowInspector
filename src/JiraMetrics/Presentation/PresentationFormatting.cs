@@ -6,7 +6,7 @@ using JiraMetrics.Models.ValueObjects;
 namespace JiraMetrics.Presentation;
 
 /// <summary>
-/// Provides formatting helpers used by PDF report sections.
+/// Provides output-agnostic formatting helpers used by report presentations.
 /// </summary>
 internal static class PresentationFormatting
 {
@@ -14,12 +14,31 @@ internal static class PresentationFormatting
     public const string DONE_ISSUE_COLOR_HEX = "#16a34a";
     public const string REJECTED_ISSUE_COLOR_HEX = "#f97316";
 
+    public static string BuildIssueBrowseUrl(JiraBaseUrl baseUrl, IssueKey issueKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseUrl.Value);
+        ArgumentException.ThrowIfNullOrWhiteSpace(issueKey.Value);
+
+        return $"{baseUrl.Value}/browse/{issueKey.Value}";
+    }
+
+    public static string FormatLocalDateTime(DateTimeOffset value) =>
+        value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+
+    public static string FormatLocalDateTime(DateTimeOffset? value) =>
+        value.HasValue ? FormatLocalDateTime(value.Value) : "-";
+
+    public static string FormatLocalDate(DateTimeOffset? value) =>
+        value.HasValue
+            ? value.Value.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+            : "-";
+
     public static string BuildLastStatusAtText(IssueTimeline issue, StatusName statusName)
     {
         var lastTimestamp = issue.TryGetLastReachedAt(statusName);
 
         return lastTimestamp.HasValue
-            ? lastTimestamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            ? FormatLocalDateTime(lastTimestamp.Value)
             : "-";
     }
 
