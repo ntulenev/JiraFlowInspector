@@ -23,6 +23,12 @@ public sealed class GlobalIncidentsJqlBuilder
         _reportPeriod = settings.Value.ReportPeriod;
     }
 
+    /// <summary>
+    /// Builds the global incidents query for the configured report period.
+    /// </summary>
+    /// <param name="settings">Global incidents report settings.</param>
+    /// <param name="incidentStartFields">Resolved Jira fields containing the incident start time.</param>
+    /// <returns>The JQL query.</returns>
     public JqlQuery BuildQuery(
         GlobalIncidentsReportSettings settings,
         IReadOnlyList<ResolvedJiraField> incidentStartFields)
