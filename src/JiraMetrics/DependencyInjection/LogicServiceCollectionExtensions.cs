@@ -14,8 +14,7 @@ internal static class LogicServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         return services
-            .AddSingleton<ITransitionBuilder, TransitionBuilder>()
-            .AddTransient<IJiraAnalyticsService, JiraAnalyticsService>()
+            .AddSingleton<TransitionBuilder>()
             .AddTransient<IJiraLogicService, JiraLogicService>()
             .AddTransient<IssueSearchSnapshotLoader>()
             .AddTransient<TestCoverageLoader>()

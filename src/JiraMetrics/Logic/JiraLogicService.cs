@@ -10,15 +10,6 @@ public sealed class JiraLogicService : IJiraLogicService
 {
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="JiraLogicService"/> class.
-    /// </summary>
-    /// <param name="analytics">Analytics service.</param>
-    public JiraLogicService(IJiraAnalyticsService analytics)
-    {
-        _analytics = analytics ?? throw new ArgumentNullException(nameof(analytics));
-    }
-
-    /// <summary>
     /// Filters issues by required path stage.
     /// </summary>
     /// <param name="issues">Issues to filter.</param>
@@ -74,7 +65,7 @@ public sealed class JiraLogicService : IJiraLogicService
 
         return new IssueTimelineSet(issues).BuildDaysAtWork75PerType(
             targetStatusName,
-            _analytics.CalculatePercentile);
+            JiraAnalyticsService.CalculatePercentile);
     }
 
     /// <summary>
@@ -157,7 +148,7 @@ public sealed class JiraLogicService : IJiraLogicService
             return null;
         }
 
-        return _analytics.CalculatePercentile(
+        return JiraAnalyticsService.CalculatePercentile(
             [.. issues.Select(static issue => issue.Duration)],
             new PercentileValue(0.75));
     }
@@ -198,7 +189,7 @@ public sealed class JiraLogicService : IJiraLogicService
                 var samples = group
                     .Select(static issue => issue.Duration)
                     .ToList();
-                var p75 = _analytics.CalculatePercentile(samples, new PercentileValue(0.75));
+                var p75 = JiraAnalyticsService.CalculatePercentile(samples, new PercentileValue(0.75));
 
                 return new IssueTypeDuration75Summary(
                     issueType,
@@ -219,7 +210,7 @@ public sealed class JiraLogicService : IJiraLogicService
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        return new IssueTimelineSet(issues).BuildPathGroups(_analytics.CalculatePercentile);
+        return new IssueTimelineSet(issues).BuildPathGroups(JiraAnalyticsService.CalculatePercentile);
     }
 
     private static TransitionMeasurementIssue? TryBuildTransitionMeasurementIssue(
@@ -300,8 +291,6 @@ public sealed class JiraLogicService : IJiraLogicService
 
     private static bool StatusEquals(StatusName left, StatusName right) =>
         string.Equals(left.Value, right.Value, StringComparison.OrdinalIgnoreCase);
-
-    private readonly IJiraAnalyticsService _analytics;
 
 }
 

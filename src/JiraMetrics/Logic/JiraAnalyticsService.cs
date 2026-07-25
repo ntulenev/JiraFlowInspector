@@ -5,7 +5,7 @@ namespace JiraMetrics.Logic;
 /// <summary>
 /// Default implementation of Jira analytics operations.
 /// </summary>
-public sealed class JiraAnalyticsService : IJiraAnalyticsService
+public static class JiraAnalyticsService
 {
     /// <summary>
     /// Calculates percentile value for a duration collection.
@@ -13,7 +13,7 @@ public sealed class JiraAnalyticsService : IJiraAnalyticsService
     /// <param name="values">Duration samples.</param>
     /// <param name="percentile">Percentile value.</param>
     /// <returns>Percentile duration.</returns>
-    public TimeSpan CalculatePercentile(IReadOnlyList<TimeSpan> values, PercentileValue percentile)
+    public static TimeSpan CalculatePercentile(IReadOnlyList<TimeSpan> values, PercentileValue percentile)
     {
         ArgumentNullException.ThrowIfNull(values);
 

@@ -92,13 +92,9 @@ public sealed class ServiceCollectionExtensionsTests
 
         returned.Should().BeSameAs(services);
         services.Any(static descriptor =>
-            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Logic.ITransitionBuilder)
+            descriptor.ServiceType == typeof(TransitionBuilder)
             && descriptor.ImplementationType == typeof(TransitionBuilder)
             && descriptor.Lifetime == ServiceLifetime.Singleton).Should().BeTrue();
-        services.Any(static descriptor =>
-            descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Logic.IJiraAnalyticsService)
-            && descriptor.ImplementationType == typeof(JiraAnalyticsService)
-            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
         services.Any(static descriptor =>
             descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade)
             && descriptor.ImplementationType == typeof(JiraApplicationDataFacade)

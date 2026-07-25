@@ -100,8 +100,7 @@ public sealed class IssueTimelineSetTests
         // Act
         var summaries = set.BuildDaysAtWork75PerType(
             new StatusName("Done"),
-            static (samples, percentile) => new JiraMetrics.Logic.JiraAnalyticsService()
-                .CalculatePercentile(samples, percentile));
+            JiraMetrics.Logic.JiraAnalyticsService.CalculatePercentile);
 
         // Assert
         summaries.Should().HaveCount(2);
@@ -135,9 +134,7 @@ public sealed class IssueTimelineSetTests
         var set = new IssueTimelineSet([issueOne, issueTwo]);
 
         // Act
-        var groups = set.BuildPathGroups(
-            static (samples, percentile) => new JiraMetrics.Logic.JiraAnalyticsService()
-                .CalculatePercentile(samples, percentile));
+        var groups = set.BuildPathGroups(JiraMetrics.Logic.JiraAnalyticsService.CalculatePercentile);
 
         // Assert
         groups.Should().ContainSingle();

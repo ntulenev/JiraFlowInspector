@@ -15,7 +15,7 @@ public sealed class JiraAnalyticsServiceTests
         // Arrange
 
         // Act
-        var result = _service.CalculatePercentile([], new PercentileValue(0.75));
+        var result = JiraAnalyticsService.CalculatePercentile([], new PercentileValue(0.75));
 
         // Assert
         result.Should().Be(TimeSpan.Zero);
@@ -29,7 +29,7 @@ public sealed class JiraAnalyticsServiceTests
         var values = new List<TimeSpan> { TimeSpan.FromHours(4) };
 
         // Act
-        var result = _service.CalculatePercentile(values, new PercentileValue(0.75));
+        var result = JiraAnalyticsService.CalculatePercentile(values, new PercentileValue(0.75));
 
         // Assert
         result.Should().Be(TimeSpan.FromHours(4));
@@ -49,11 +49,9 @@ public sealed class JiraAnalyticsServiceTests
         };
 
         // Act
-        var result = _service.CalculatePercentile(values, new PercentileValue(0.75));
+        var result = JiraAnalyticsService.CalculatePercentile(values, new PercentileValue(0.75));
 
         // Assert
         result.Should().Be(TimeSpan.FromHours(3.5));
     }
-    private readonly JiraAnalyticsService _service = new();
-
 }

@@ -13,7 +13,7 @@ public sealed class JiraLogicServiceWorkDays75Tests
     public void BuildDaysAtWork75PerTypeWhenIssuesAreNullThrowsArgumentNullException()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         IReadOnlyList<IssueTimeline> issues = null!;
 
         // Act
@@ -28,7 +28,7 @@ public sealed class JiraLogicServiceWorkDays75Tests
     public void BuildDaysAtWork75PerTypeWhenCalledReturnsP75PerType()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = DateTimeOffset.UtcNow;
 
         var taskIssueOne = CreateIssue(
@@ -75,7 +75,7 @@ public sealed class JiraLogicServiceWorkDays75Tests
     public void BuildDaysAtWork75PerTypeWhenIssueDidNotReachTargetSkipsIt()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = DateTimeOffset.UtcNow;
         var issue = CreateIssue(
             new IssueKey("AAA-1"),

@@ -11,7 +11,7 @@ namespace JiraMetrics.Logic;
 /// <summary>
 /// Default transition builder implementation.
 /// </summary>
-public sealed class TransitionBuilder : ITransitionBuilder
+public sealed class TransitionBuilder
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="TransitionBuilder"/> class.

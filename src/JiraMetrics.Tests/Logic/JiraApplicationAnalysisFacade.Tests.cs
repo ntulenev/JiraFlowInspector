@@ -14,7 +14,7 @@ public sealed class JiraApplicationAnalysisFacadeTests
     public void AnalyzeWhenQaTransitionsExistBuildsQaTransitionAnalysis()
     {
         // Arrange
-        var facade = new JiraApplicationAnalysisFacade(new JiraLogicService(new JiraAnalyticsService()));
+        var facade = new JiraApplicationAnalysisFacade(new JiraLogicService());
         var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
         var pickedUpAndTested = CreateIssue(
             "AAA-1",

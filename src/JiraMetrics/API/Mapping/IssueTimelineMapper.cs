@@ -1,4 +1,5 @@
 using JiraMetrics.Helpers;
+using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -21,7 +22,7 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
     /// <param name="settings">Application settings.</param>
     /// <param name="runContext">Context shared by the current report run.</param>
     public IssueTimelineMapper(
-        ITransitionBuilder transitionBuilder,
+        TransitionBuilder transitionBuilder,
         IOptions<AppSettings> settings,
         ReportRunContext runContext)
     {
@@ -119,7 +120,7 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
         return false;
     }
 
-    private readonly ITransitionBuilder _transitionBuilder;
+    private readonly TransitionBuilder _transitionBuilder;
     private readonly string _pullRequestFieldName;
     private readonly DateTimeOffset _reportGeneratedAt;
 }

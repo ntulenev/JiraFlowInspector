@@ -4,33 +4,16 @@ using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.ValueObjects;
 
-using Moq;
-
 namespace JiraMetrics.Tests.Logic;
 
 public sealed class JiraLogicServiceTests
 {
-    [Fact(DisplayName = "Constructor throws when analytics service is null")]
-    [Trait("Category", "Unit")]
-    public void ConstructorWhenAnalyticsServiceIsNullThrowsArgumentNullException()
-    {
-        // Arrange
-        IJiraAnalyticsService analytics = null!;
-
-        // Act
-        Action act = () => _ = new JiraLogicService(analytics);
-
-        // Assert
-        act.Should()
-            .Throw<ArgumentNullException>();
-    }
-
     [Fact(DisplayName = "FilterIssuesByRequiredStage throws when issues are null")]
     [Trait("Category", "Unit")]
     public void FilterIssuesByRequiredStageWhenIssuesAreNullThrowsArgumentNullException()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         IReadOnlyList<IssueTimeline> issues = null!;
 
         // Act
@@ -46,7 +29,7 @@ public sealed class JiraLogicServiceTests
     public void FilterIssuesByRequiredStageWhenRequiredStagesAreNullThrowsArgumentNullException()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var issues = new List<IssueTimeline>();
         IReadOnlyList<StageName> requiredStages = null!;
 
@@ -63,7 +46,7 @@ public sealed class JiraLogicServiceTests
     public void BuildPathGroupsWhenIssuesAreNullThrowsArgumentNullException()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         IReadOnlyList<IssueTimeline> issues = null!;
 
         // Act
@@ -79,8 +62,7 @@ public sealed class JiraLogicServiceTests
     public void FilterIssuesByRequiredStageWhenStageIsProvidedReturnsOnlyMatches()
     {
         // Arrange
-        var analytics = new JiraAnalyticsService();
-        var service = new JiraLogicService(analytics);
+        var service = new JiraLogicService();
 
         var matchingIssue = CreateIssue(
             new IssueKey("AAA-1"),
@@ -111,7 +93,7 @@ public sealed class JiraLogicServiceTests
     public void FilterIssuesByIssueTypesWhenIssueTypesAreNullThrowsArgumentNullException()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var issues = new List<IssueTimeline>();
         IReadOnlyList<IssueTypeName> issueTypes = null!;
 
@@ -128,7 +110,7 @@ public sealed class JiraLogicServiceTests
     public void FilterIssuesByIssueTypesWhenIssueTypesFilterIsEmptyReturnsAllIssues()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var issues = new List<IssueTimeline>
         {
             CreateIssue(new IssueKey("AAA-1"), [new TransitionEvent(new StatusName("Open"), new StatusName("Done"), DateTimeOffset.UtcNow, TimeSpan.FromHours(1))]),
@@ -147,7 +129,7 @@ public sealed class JiraLogicServiceTests
     public void FilterIssuesByIssueTypesWhenTypesAreConfiguredReturnsMatchingIssues()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = DateTimeOffset.UtcNow;
         var transitions = new List<TransitionEvent>
         {
@@ -188,8 +170,7 @@ public sealed class JiraLogicServiceTests
     public void BuildPathGroupsWhenIssuesSharePathBuildsSingleGroupWithP75()
     {
         // Arrange
-        var analytics = new JiraAnalyticsService();
-        var service = new JiraLogicService(analytics);
+        var service = new JiraLogicService();
 
         var issueOne = CreateIssue(
             new IssueKey("AAA-1"),
@@ -222,12 +203,7 @@ public sealed class JiraLogicServiceTests
     public void BuildPathGroupsWhenMultipleGroupsExistOrdersByCountThenLabel()
     {
         // Arrange
-        var analyticsMock = new Mock<IJiraAnalyticsService>(MockBehavior.Strict);
-        analyticsMock
-            .Setup(x => x.CalculatePercentile(It.IsAny<IReadOnlyList<TimeSpan>>(), It.IsAny<PercentileValue>()))
-            .Returns<IReadOnlyList<TimeSpan>, PercentileValue>((samples, _) => samples[0]);
-
-        var service = new JiraLogicService(analyticsMock.Object);
+        var service = new JiraLogicService();
 
         var groupA1 = CreateIssueWithPath(new IssueKey("AAA-1"), new PathKey("A"), new PathLabel("Alpha"));
         var groupA2 = CreateIssueWithPath(new IssueKey("AAA-2"), new PathKey("A"), new PathLabel("Alpha"));
@@ -247,7 +223,7 @@ public sealed class JiraLogicServiceTests
     public void BuildCustomTransitionIssuesWhenCodeOnlyIsEnabledReturnsCodeIssuesOrderedByDuration()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
         var longCodeIssue = CreateIssue(
             new IssueKey("AAA-1"),
@@ -285,7 +261,7 @@ public sealed class JiraLogicServiceTests
     public void BuildTransitionMeasurementIssuesWhenMultipleRulesMatchUsesFirstRule()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
         var issueWithPrimaryRule = CreateIssue(
             new IssueKey("AAA-1"),
@@ -321,7 +297,7 @@ public sealed class JiraLogicServiceTests
     public void BuildTransitionMeasurementIssuesWhenIntervalFallbackIsEnabledMeasuresFromSourceStatusToTargetStatus()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
         var issue = CreateIssue(
             new IssueKey("AAA-1"),
@@ -352,7 +328,7 @@ public sealed class JiraLogicServiceTests
     public void BuildDuration75WhenMeasurementsExistCalculatesP75()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = DateTimeOffset.UtcNow;
         var issue = CreateIssue(new IssueKey("AAA-1"), []);
         var rule = new TransitionMeasurementRule(new StatusName("QA"), new StatusName("Release Candidate"));
@@ -373,7 +349,7 @@ public sealed class JiraLogicServiceTests
     public void BuildDuration75PerTypeWhenMultipleSamplesExistCalculatesP75()
     {
         // Arrange
-        var service = new JiraLogicService(new JiraAnalyticsService());
+        var service = new JiraLogicService();
         var now = DateTimeOffset.UtcNow;
         var story = CreateIssue(new IssueKey("AAA-1"), [], issueType: new IssueTypeName("Story"));
         var bug = CreateIssue(new IssueKey("AAA-2"), [], issueType: new IssueTypeName("Bug"));

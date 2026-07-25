@@ -106,7 +106,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings()),
             CreateDataFacade(apiClient, presentation),
@@ -145,7 +145,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 bugIssueNames: [new IssueTypeName("Bug")],
@@ -189,7 +189,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings()),
             CreateDataFacade(apiClient, presentation),
@@ -216,7 +216,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings()),
             CreateDataFacade(apiClient, presentation),
@@ -247,7 +247,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings([new IssueTypeName("Bug"), new IssueTypeName("Story")])),
             CreateDataFacade(apiClient, presentation),
@@ -279,7 +279,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
@@ -324,7 +324,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -367,7 +367,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -404,7 +404,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
@@ -437,7 +437,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
@@ -476,7 +476,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Bug")],
@@ -534,7 +534,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
@@ -589,7 +589,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
@@ -648,7 +648,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -708,7 +708,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -763,7 +763,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -806,7 +806,7 @@ public sealed class JiraApplicationTests
         apiClient.IssuesByKey["AAA-4"] = CreateIssue(new IssueKey("AAA-4"), new IssueTypeName("Task"));
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -836,7 +836,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -877,7 +877,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -910,7 +910,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
             CreateDataFacade(apiClient, presentation),
@@ -949,7 +949,7 @@ public sealed class JiraApplicationTests
         };
 
         var presentation = new FakePresentationService();
-        var logic = new JiraLogicService(new JiraAnalyticsService());
+        var logic = new JiraLogicService();
         var app = CreateApplication(
             Options.Create(CreateSettings(
                 issueTypes: [new IssueTypeName("Task")],
