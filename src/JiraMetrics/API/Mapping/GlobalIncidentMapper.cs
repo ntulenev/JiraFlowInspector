@@ -14,6 +14,11 @@ namespace JiraMetrics.API.Mapping;
 /// </summary>
 public static class GlobalIncidentMapper
 {
+    /// <summary>
+    /// Builds the Jira field set required to map global incidents.
+    /// </summary>
+    /// <param name="context">Resolved global incident field mapping.</param>
+    /// <returns>The fields to request from Jira.</returns>
     public static JiraSearchFields BuildRequestedFields(GlobalIncidentMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -45,6 +50,12 @@ public static class GlobalIncidentMapper
         return new JiraSearchFields(fields);
     }
 
+    /// <summary>
+    /// Maps Jira issues to global incident report items.
+    /// </summary>
+    /// <param name="issues">Jira issues returned by the search.</param>
+    /// <param name="context">Resolved global incident field mapping.</param>
+    /// <returns>Mapped, de-duplicated, and chronologically ordered incident items.</returns>
     public static IReadOnlyList<GlobalIncidentItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         GlobalIncidentMappingContext context)
