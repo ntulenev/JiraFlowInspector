@@ -12,7 +12,11 @@ namespace JiraMetrics.API.Mapping;
 /// </summary>
 public static class RoadmapItemMapper
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// Builds the Jira field set required to map roadmap items.
+    /// </summary>
+    /// <param name="context">Resolved roadmap field mapping.</param>
+    /// <returns>The fields to request from Jira.</returns>
     public static JiraSearchFields BuildRequestedFields(RoadmapMappingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -26,7 +30,12 @@ public static class RoadmapItemMapper
             context.EndDateField.FieldId.Value);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Maps Jira issues to roadmap report items.
+    /// </summary>
+    /// <param name="issues">Jira issues returned by the search.</param>
+    /// <param name="context">Resolved roadmap field mapping.</param>
+    /// <returns>The mapped roadmap items.</returns>
     public static IReadOnlyList<RoadmapItem> MapIssues(
         IReadOnlyList<JiraIssueKeyResponse> issues,
         RoadmapMappingContext context)
