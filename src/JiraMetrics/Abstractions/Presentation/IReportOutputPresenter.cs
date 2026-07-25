@@ -9,6 +9,13 @@ namespace JiraMetrics.Abstractions.Presentation;
 public interface IReportOutputPresenter
 {
     /// <summary>
+    /// Shows a failure to generate a report output.
+    /// </summary>
+    /// <param name="format">Report output format.</param>
+    /// <param name="errorMessage">Generation failure details.</param>
+    void ShowReportGenerationFailed(ReportOutputFormat format, ErrorMessage errorMessage);
+
+    /// <summary>
     /// Shows a successfully generated report output.
     /// </summary>
     /// <param name="format">Report output format.</param>

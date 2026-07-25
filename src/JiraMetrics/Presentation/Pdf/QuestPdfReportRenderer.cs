@@ -19,6 +19,9 @@ namespace JiraMetrics.Presentation.Pdf;
 /// </summary>
 public sealed class QuestPdfReportRenderer : IPdfReportRenderer
 {
+    /// <inheritdoc />
+    public ReportOutputFormat Format => ReportOutputFormat.Pdf;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="QuestPdfReportRenderer"/> class.
     /// </summary>

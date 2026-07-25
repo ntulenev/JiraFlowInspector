@@ -35,6 +35,8 @@ public sealed class JiraReportPipelineTests
         var htmlRenderer = new Mock<IReportRenderer>(MockBehavior.Strict);
         var pdfRenderer = new Mock<IReportRenderer>(MockBehavior.Strict);
         var presenter = new Mock<IReportOutputPresenter>(MockBehavior.Strict);
+        htmlRenderer.SetupGet(renderer => renderer.Format).Returns(ReportOutputFormat.Html);
+        pdfRenderer.SetupGet(renderer => renderer.Format).Returns(ReportOutputFormat.Pdf);
         htmlRenderer.Setup(renderer => renderer.RenderReport(reportData)).Returns([htmlOutput]);
         pdfRenderer.Setup(renderer => renderer.RenderReport(reportData)).Returns([pdfOutput]);
         presenter.Setup(x => x.ShowReportSaved(ReportOutputFormat.Html, htmlOutput.OutputPath));
@@ -58,6 +60,34 @@ public sealed class JiraReportPipelineTests
             It.IsAny<ErrorMessage>()), Times.Once);
     }
 
+    [Fact(DisplayName = "RenderReport continues with remaining formats after a renderer fails")]
+    [Trait("Category", "Unit")]
+    public void RenderReportWhenRendererFailsContinuesWithRemainingRenderers()
+    {
+        var reportData = CreateReportData();
+        var failure = new InvalidOperationException("HTML generation failed.");
+        var pdfOutput = new ReportOutput(ReportOutputFormat.Pdf, "report.pdf");
+        var htmlRenderer = new Mock<IReportRenderer>(MockBehavior.Strict);
+        var pdfRenderer = new Mock<IReportRenderer>(MockBehavior.Strict);
+        var presenter = new Mock<IReportOutputPresenter>(MockBehavior.Strict);
+        htmlRenderer.SetupGet(renderer => renderer.Format).Returns(ReportOutputFormat.Html);
+        pdfRenderer.SetupGet(renderer => renderer.Format).Returns(ReportOutputFormat.Pdf);
+        htmlRenderer.Setup(renderer => renderer.RenderReport(reportData)).Throws(failure);
+        pdfRenderer.Setup(renderer => renderer.RenderReport(reportData)).Returns([pdfOutput]);
+        presenter.Setup(x => x.ShowReportGenerationFailed(
+            ReportOutputFormat.Html,
+            It.Is<ErrorMessage>(message => message.Value.Contains(failure.Message, StringComparison.Ordinal))));
+        presenter.Setup(x => x.ShowReportSaved(ReportOutputFormat.Pdf, pdfOutput.OutputPath));
+        var pipeline = new JiraReportPipeline(
+            [htmlRenderer.Object, pdfRenderer.Object],
+            presenter.Object);
+
+        pipeline.RenderReport(reportData);
+
+        pdfRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
+        presenter.VerifyAll();
+    }
+
     [Fact(DisplayName = "RenderReport ignores disabled renderer outputs")]
     [Trait("Category", "Unit")]
     public void RenderReportWhenRendererReturnsNoOutputsDoesNotPresentAnything()
@@ -65,6 +95,7 @@ public sealed class JiraReportPipelineTests
         var reportData = CreateReportData();
         var renderer = new Mock<IReportRenderer>(MockBehavior.Strict);
         var presenter = new Mock<IReportOutputPresenter>(MockBehavior.Strict);
+        renderer.SetupGet(x => x.Format).Returns(ReportOutputFormat.Html);
         renderer.Setup(x => x.RenderReport(reportData)).Returns([]);
         var pipeline = new JiraReportPipeline([renderer.Object], presenter.Object);
 

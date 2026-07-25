@@ -11,6 +11,9 @@ namespace JiraMetrics.Presentation.Html;
 /// </summary>
 public sealed class HtmlReportRenderer : IHtmlReportRenderer
 {
+    /// <inheritdoc />
+    public ReportOutputFormat Format => ReportOutputFormat.Html;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="HtmlReportRenderer"/> class.
     /// </summary>

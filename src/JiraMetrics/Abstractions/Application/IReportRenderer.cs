@@ -8,6 +8,11 @@ namespace JiraMetrics.Abstractions.Application;
 public interface IReportRenderer
 {
     /// <summary>
+    /// Gets the report format owned by this renderer.
+    /// </summary>
+    ReportOutputFormat Format { get; }
+
+    /// <summary>
     /// Renders all report files owned by this renderer.
     /// </summary>
     /// <param name="reportData">Aggregated report data.</param>

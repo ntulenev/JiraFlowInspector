@@ -93,6 +93,12 @@ internal sealed class SpectreStatusSection
             $"[green]{FormatReportOutput(format)} report saved to:[/] {Markup.Escape(outputPath)}");
     }
 
+    public void ShowReportGenerationFailed(ReportOutputFormat format, ErrorMessage errorMessage)
+    {
+        AnsiConsole.MarkupLine(
+            $"[red]Failed to generate {FormatReportOutput(format)} report:[/] {Markup.Escape(errorMessage.Value)}");
+    }
+
     public void ShowReportOpenFailed(
         ReportOutputFormat format,
         string outputPath,

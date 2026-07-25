@@ -156,6 +156,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
     }
 
     /// <inheritdoc />
+    public void ShowReportGenerationFailed(ReportOutputFormat format, ErrorMessage errorMessage)
+    {
+        StopAllLoaders();
+        _statusSection.ShowReportGenerationFailed(format, errorMessage);
+    }
+
+    /// <inheritdoc />
     public void ShowReportOpenFailed(
         ReportOutputFormat format,
         string outputPath,
