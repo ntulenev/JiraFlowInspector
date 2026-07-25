@@ -14,6 +14,12 @@ internal static class PresentationFormatting
     public const string DONE_ISSUE_COLOR_HEX = "#16a34a";
     public const string REJECTED_ISSUE_COLOR_HEX = "#f97316";
 
+    /// <summary>
+    /// Builds the browse URL for a Jira issue.
+    /// </summary>
+    /// <param name="baseUrl">Jira base URL.</param>
+    /// <param name="issueKey">Issue key.</param>
+    /// <returns>The issue browse URL.</returns>
     public static string BuildIssueBrowseUrl(JiraBaseUrl baseUrl, IssueKey issueKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(baseUrl.Value);
@@ -22,12 +28,27 @@ internal static class PresentationFormatting
         return $"{baseUrl.Value}/browse/{issueKey.Value}";
     }
 
+    /// <summary>
+    /// Formats a timestamp in the local time zone.
+    /// </summary>
+    /// <param name="value">Timestamp to format.</param>
+    /// <returns>The formatted local date and time.</returns>
     public static string FormatLocalDateTime(DateTimeOffset value) =>
         value.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// Formats an optional timestamp in the local time zone.
+    /// </summary>
+    /// <param name="value">Optional timestamp to format.</param>
+    /// <returns>The formatted local date and time, or a dash when missing.</returns>
     public static string FormatLocalDateTime(DateTimeOffset? value) =>
         value.HasValue ? FormatLocalDateTime(value.Value) : "-";
 
+    /// <summary>
+    /// Formats an optional timestamp as a local calendar date.
+    /// </summary>
+    /// <param name="value">Optional timestamp to format.</param>
+    /// <returns>The formatted local date, or a dash when missing.</returns>
     public static string FormatLocalDate(DateTimeOffset? value) =>
         value.HasValue
             ? value.Value.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
