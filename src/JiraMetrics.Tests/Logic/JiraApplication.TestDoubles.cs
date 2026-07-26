@@ -292,6 +292,15 @@ public sealed partial class JiraApplicationTests
             Task.FromResult<ReportLoadResult>(new ReportLoadResult.Failure(new ErrorMessage("Report load failed.")));
     }
 
+    private sealed class CanceledReportLoader : IJiraApplicationReportLoader
+    {
+        public Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(new JiraAuthUser(new UserDisplayName("Test"), "user@example.com", "1"));
+
+        public Task<ReportLoadResult> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromCanceled<ReportLoadResult>(cancellationToken);
+    }
+
     private sealed class NoOpReportPresenter : IJiraApplicationReportPresenter
     {
         public void ShowLoadingStarted()

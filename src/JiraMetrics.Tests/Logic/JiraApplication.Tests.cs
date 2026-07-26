@@ -94,6 +94,29 @@ public sealed partial class JiraApplicationTests
         act.Should().Throw<ArgumentNullException>();
     }
 
+    [Fact(DisplayName = "RunAsync propagates cancellation and still shows execution summary")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenReportLoadingIsCanceledPropagatesAndShowsExecutionSummary()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var presentation = new FakePresentationService();
+        var app = new JiraApplication(
+            presentation,
+            new FakeRequestTelemetryCollector(),
+            new CanceledReportLoader(),
+            new NoOpReportPresenter(),
+            new NoOpAnalysisRunner());
+
+        // Act
+        Func<Task> act = () => app.RunAsync(cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        presentation.ExecutionSummaryShown.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "RunAsync shows no issues matched filter when search returns empty list")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenSearchReturnsEmptyListShowsNoIssuesMatchedFilter()
