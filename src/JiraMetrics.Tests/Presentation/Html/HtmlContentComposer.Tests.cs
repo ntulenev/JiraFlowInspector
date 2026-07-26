@@ -87,6 +87,27 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("data-sort-column=\"0\"");
         html.Should().Contain("Reset Filters");
         html.Should().Contain("browse/AAA-1");
+        AssertMarkersAppearInOrder(
+            html,
+            "id=\"global-incidents\"",
+            "id=\"ratios\"",
+            "id=\"bug-open-issues\"",
+            "id=\"bug-done-issues\"",
+            "id=\"bug-rejected-issues\"",
+            "id=\"test-coverage\"",
+            "id=\"qa-summary\"",
+            "id=\"done-issues\"",
+            "id=\"done-duration-75\"",
+            "id=\"rejected-issues\"",
+            "id=\"path-summary\"",
+            "id=\"path-groups\"",
+            "id=\"releases\"",
+            "id=\"components-release-table\"",
+            "id=\"arch-tasks\"",
+            "id=\"general-statistics\"",
+            "id=\"unresolved-30-days-tasks\"",
+            "id=\"failures\"",
+            "id=\"roadmap\"");
         html.IndexOf("id=\"global-incidents\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"ratios\"", StringComparison.Ordinal));
         html.IndexOf("id=\"bug-rejected-issues\"", StringComparison.Ordinal).Should()
@@ -343,6 +364,19 @@ public sealed class HtmlContentComposerTests
 
     private static ReportRunContext CreateRunContext() =>
         new(new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)));
+
+    private static void AssertMarkersAppearInOrder(string content, params string[] markers)
+    {
+        var previousIndex = -1;
+        foreach (var marker in markers)
+        {
+            var markerIndex = content.IndexOf(marker, previousIndex + 1, StringComparison.Ordinal);
+            markerIndex.Should().BeGreaterThan(
+                previousIndex,
+                $"'{marker}' should appear after the preceding report section");
+            previousIndex = markerIndex;
+        }
+    }
 
     private sealed class StubHtmlSection(string html) : IHtmlReportSection
     {
