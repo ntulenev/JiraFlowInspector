@@ -43,6 +43,8 @@ public sealed class PdfContentComposer : IPdfContentComposer
         _sections = sections;
     }
 
+    internal IReadOnlyList<IPdfReportSection> Sections => _sections;
+
     /// <inheritdoc />
     public void ComposeContent(ColumnDescriptor column, JiraReportData reportData)
     {

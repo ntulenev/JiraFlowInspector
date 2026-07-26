@@ -13,6 +13,29 @@ namespace JiraMetrics.Tests.Presentation.Pdf;
 
 public sealed class PdfContentComposerTests
 {
+    [Fact(DisplayName = "Default composer preserves the PDF report section contract")]
+    [Trait("Category", "Unit")]
+    public void ConstructorCreatesExpectedSectionsInReportOrder()
+    {
+        // Act
+        var composer = new PdfContentComposer();
+
+        // Assert
+        composer.Sections.Select(static section => section.GetType()).Should().Equal(
+            typeof(PdfReleaseSection),
+            typeof(PdfArchTasksSection),
+            typeof(PdfGlobalIncidentsSection),
+            typeof(PdfRatiosSection),
+            typeof(PdfTestCoverageSection),
+            typeof(PdfTransitionAnalysisSection),
+            typeof(PdfQaTransitionAnalysisSection),
+            typeof(PdfPathGroupsSection),
+            typeof(PdfGeneralStatisticsSection),
+            typeof(PdfUnresolved30DaysTasksSection),
+            typeof(PdfFailuresSection),
+            typeof(PdfCustomTransitionAnalysisSection));
+    }
+
     [Fact(DisplayName = "ComposeContent throws when column is null")]
     [Trait("Category", "Unit")]
     public void ComposeContentWhenColumnIsNullThrowsArgumentNullException()
