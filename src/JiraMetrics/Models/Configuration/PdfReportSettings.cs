@@ -69,6 +69,11 @@ public sealed record PdfReportSettings
 
         var directoryPath = Path.GetDirectoryName(absolutePath);
         var extension = Path.GetExtension(absolutePath);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".pdf";
+        }
+
         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(absolutePath);
         if (!string.IsNullOrWhiteSpace(fileNamePrefix))
         {

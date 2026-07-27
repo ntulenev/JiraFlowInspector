@@ -46,6 +46,24 @@ public sealed class PdfReportSettingsTests
         result.Should().Be(expected);
     }
 
+    [Fact(DisplayName = "ResolveOutputPath appends PDF extension when missing")]
+    [Trait("Category", "Unit")]
+    public void ResolveOutputPathWhenExtensionIsMissingAppendsPdfExtension()
+    {
+        // Arrange
+        var settings = new PdfReportSettings(enabled: true, outputPath: Path.Combine("reports", "result"));
+        var generatedAt = new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2));
+        var expected = Path.GetFullPath(
+            Path.Combine("reports", "result_03_02_2026.pdf"),
+            Directory.GetCurrentDirectory());
+
+        // Act
+        var result = settings.ResolveOutputPath(generatedAt);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
     [Fact(DisplayName = "ResolveOutputPath trims output path")]
     [Trait("Category", "Unit")]
     public void ResolveOutputPathWhenPathHasPaddingTrimsPath()
