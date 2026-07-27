@@ -7,5 +7,7 @@ namespace JiraMetrics.Abstractions.Application.Workflow;
 /// </summary>
 internal interface IJiraApplicationAnalysisRunner
 {
-    Task RunAsync(JiraApplicationReportData reportData, CancellationToken cancellationToken);
+    Task<ReportGenerationOutcome> RunAsync(
+        JiraApplicationReportData reportData,
+        CancellationToken cancellationToken);
 }

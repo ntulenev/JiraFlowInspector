@@ -11,5 +11,6 @@ public interface IJiraReportPipeline
     /// Renders all configured report outputs.
     /// </summary>
     /// <param name="reportData">Aggregated report data.</param>
-    void RenderReport(JiraReportData reportData);
+    /// <returns>Aggregated report generation outcome.</returns>
+    ReportGenerationOutcome RenderReport(JiraReportData reportData);
 }

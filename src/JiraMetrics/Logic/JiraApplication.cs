@@ -60,8 +60,12 @@ public sealed class JiraApplication : IJiraApplication
 
             var success = (ReportLoadResult.Success)loadResult;
             _reportPresenter.ShowLoaded(success.ReportData);
-            await _analysisRunner.RunAsync(success.ReportData, cancellationToken).ConfigureAwait(false);
-            return JiraApplicationExitCode.Success;
+            var reportGenerationOutcome = await _analysisRunner
+                .RunAsync(success.ReportData, cancellationToken)
+                .ConfigureAwait(false);
+            return reportGenerationOutcome == ReportGenerationOutcome.Succeeded
+                ? JiraApplicationExitCode.Success
+                : JiraApplicationExitCode.ReportGenerationFailed;
         }
         finally
         {

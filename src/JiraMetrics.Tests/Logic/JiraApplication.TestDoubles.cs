@@ -301,6 +301,29 @@ public sealed partial class JiraApplicationTests
             Task.FromCanceled<ReportLoadResult>(cancellationToken);
     }
 
+    private sealed class SuccessfulReportLoader : IJiraApplicationReportLoader
+    {
+        public Task<JiraAuthUser> GetReportUserAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(new JiraAuthUser(new UserDisplayName("Test"), "user@example.com", "1"));
+
+        public Task<ReportLoadResult> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<ReportLoadResult>(new ReportLoadResult.Success(
+                new JiraApplicationReportData(
+                    new JiraReportContext([], [], [], [], [], [], [], []),
+                    new IssueRatioSnapshot(
+                        new ItemCount(0),
+                        new ItemCount(0),
+                        new ItemCount(0),
+                        new ItemCount(0),
+                        new ItemCount(0),
+                        [],
+                        [],
+                        []),
+                    BugRatio: null,
+                    InternalIncidents: null,
+                    TestCoverageSnapshot.Empty)));
+    }
+
     private sealed class NoOpReportPresenter : IJiraApplicationReportPresenter
     {
         public void ShowLoadingStarted()
@@ -314,8 +337,18 @@ public sealed partial class JiraApplicationTests
 
     private sealed class NoOpAnalysisRunner : IJiraApplicationAnalysisRunner
     {
-        public Task RunAsync(JiraApplicationReportData reportData, CancellationToken cancellationToken) =>
-            Task.CompletedTask;
+        public NoOpAnalysisRunner(
+            ReportGenerationOutcome outcome = ReportGenerationOutcome.Succeeded)
+        {
+            _outcome = outcome;
+        }
+
+        public Task<ReportGenerationOutcome> RunAsync(
+            JiraApplicationReportData reportData,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(_outcome);
+
+        private readonly ReportGenerationOutcome _outcome;
     }
 
     private sealed class FakePresentationService :
@@ -595,10 +628,11 @@ public sealed partial class JiraApplicationTests
             Calls.Add("ExecutionSummary");
         }
 
-        public void RenderReport(JiraReportData reportData)
+        public ReportGenerationOutcome RenderReport(JiraReportData reportData)
         {
             ReportRendered = true;
             LastReportData = reportData;
+            return ReportGenerationOutcome.Succeeded;
         }
     }
 }

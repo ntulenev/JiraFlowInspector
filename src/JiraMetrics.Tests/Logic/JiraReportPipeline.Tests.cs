@@ -49,8 +49,9 @@ public sealed class JiraReportPipelineTests
             [htmlRenderer.Object, pdfRenderer.Object],
             presenter.Object);
 
-        pipeline.RenderReport(reportData);
+        var outcome = pipeline.RenderReport(reportData);
 
+        outcome.Should().Be(ReportGenerationOutcome.Succeeded);
         htmlRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
         pdfRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
         presenter.Verify(x => x.ShowReportSaved(It.IsAny<ReportOutputFormat>(), It.IsAny<string>()), Times.Exactly(2));
@@ -82,8 +83,9 @@ public sealed class JiraReportPipelineTests
             [htmlRenderer.Object, pdfRenderer.Object],
             presenter.Object);
 
-        pipeline.RenderReport(reportData);
+        var outcome = pipeline.RenderReport(reportData);
 
+        outcome.Should().Be(ReportGenerationOutcome.Failed);
         pdfRenderer.Verify(renderer => renderer.RenderReport(reportData), Times.Once);
         presenter.VerifyAll();
     }
@@ -99,8 +101,9 @@ public sealed class JiraReportPipelineTests
         renderer.Setup(x => x.RenderReport(reportData)).Returns([]);
         var pipeline = new JiraReportPipeline([renderer.Object], presenter.Object);
 
-        pipeline.RenderReport(reportData);
+        var outcome = pipeline.RenderReport(reportData);
 
+        outcome.Should().Be(ReportGenerationOutcome.Succeeded);
         presenter.VerifyNoOtherCalls();
     }
 

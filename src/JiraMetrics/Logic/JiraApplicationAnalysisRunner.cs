@@ -38,7 +38,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         _runContext = runContext;
     }
 
-    public async Task RunAsync(
+    public async Task<ReportGenerationOutcome> RunAsync(
         JiraApplicationReportData reportData,
         CancellationToken cancellationToken)
     {
@@ -50,11 +50,10 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         if (reportContext.IssueKeys.Count == 0)
         {
             _statusPresenter.ShowNoIssuesMatchedFilter();
-            CompleteWithoutTransitionAnalysis(
+            return CompleteWithoutTransitionAnalysis(
                 reportData,
                 failures: [],
                 successfulCount: new ItemCount(0));
-            return;
         }
 
         var loadResult = await _dataFacade.LoadIssueTimelinesAsync(
@@ -65,11 +64,10 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         {
             _statusPresenter.ShowNoIssuesLoaded();
             _diagnosticsPresenter.ShowFailures(loadResult.Failures);
-            CompleteWithoutTransitionAnalysis(
+            return CompleteWithoutTransitionAnalysis(
                 reportData,
                 loadResult.Failures,
                 loadResult.LoadedIssueCount);
-            return;
         }
 
         var analysis = AnalyzeLoadedIssues(loadResult);
@@ -77,22 +75,23 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         {
             PresentUnsuccessfulAnalysis(analysis.Outcome);
             _diagnosticsPresenter.ShowFailures(loadResult.Failures);
-            CompleteWithoutTransitionAnalysis(
+            return CompleteWithoutTransitionAnalysis(
                 reportData,
                 loadResult.Failures,
                 loadResult.LoadedIssueCount);
-            return;
         }
 
         PresentSuccessfulAnalysis(analysis);
         ShowOpenIssuesSummary(reportContext);
-        RenderReport(reportData, loadResult.Failures, analysis);
+        var reportGenerationOutcome = RenderReport(reportData, loadResult.Failures, analysis);
 
         if (loadResult.Failures.Count > 0)
         {
             _statusPresenter.ShowSpacer();
             _diagnosticsPresenter.ShowFailures(loadResult.Failures);
         }
+
+        return reportGenerationOutcome;
     }
 
     private JiraIssueAnalysisResult AnalyzeLoadedIssues(IssueTimelineLoadResult loadResult)
@@ -148,16 +147,16 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         _analysisPresenter.ShowPathGroups(analysis.PathGroups);
     }
 
-    private void CompleteWithoutTransitionAnalysis(
+    private ReportGenerationOutcome CompleteWithoutTransitionAnalysis(
         JiraApplicationReportData reportData,
         IReadOnlyList<LoadFailure> failures,
         ItemCount successfulCount)
     {
         ShowOpenIssuesSummary(reportData.ReportContext);
-        RenderReport(reportData, failures, analysis: null, successfulCount);
+        return RenderReport(reportData, failures, analysis: null, successfulCount);
     }
 
-    private void RenderReport(
+    private ReportGenerationOutcome RenderReport(
         JiraApplicationReportData reportData,
         IReadOnlyList<LoadFailure> failures,
         JiraIssueAnalysisResult? analysis,
@@ -188,7 +187,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
                 analysis,
                 failures);
 
-        _reportPipeline.RenderReport(renderedReport);
+        return _reportPipeline.RenderReport(renderedReport);
     }
 
     private void ShowOpenIssuesSummary(JiraReportContext reportContext)

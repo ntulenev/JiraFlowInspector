@@ -18,5 +18,10 @@ public enum JiraApplicationExitCode
     /// <summary>
     /// Application execution was canceled while the host was stopping.
     /// </summary>
-    Canceled = 2
+    Canceled = 2,
+
+    /// <summary>
+    /// At least one configured report output could not be generated.
+    /// </summary>
+    ReportGenerationFailed = 3
 }

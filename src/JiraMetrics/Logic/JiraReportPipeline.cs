@@ -25,9 +25,11 @@ internal sealed class JiraReportPipeline : IJiraReportPipeline
         "Design",
         "CA1031:Do not catch general exception types",
         Justification = "A report renderer is an output boundary; one format failure must not prevent the remaining formats from being generated.")]
-    public void RenderReport(JiraReportData reportData)
+    public ReportGenerationOutcome RenderReport(JiraReportData reportData)
     {
         ArgumentNullException.ThrowIfNull(reportData);
+
+        var outcome = ReportGenerationOutcome.Succeeded;
 
         foreach (var renderer in _renderers)
         {
@@ -38,6 +40,7 @@ internal sealed class JiraReportPipeline : IJiraReportPipeline
             }
             catch (Exception ex)
             {
+                outcome = ReportGenerationOutcome.Failed;
                 _outputPresenter.ShowReportGenerationFailed(
                     renderer.Format,
                     ErrorMessage.FromException(ex));
@@ -56,6 +59,8 @@ internal sealed class JiraReportPipeline : IJiraReportPipeline
                 }
             }
         }
+
+        return outcome;
     }
 
     private readonly IReadOnlyList<IReportRenderer> _renderers;

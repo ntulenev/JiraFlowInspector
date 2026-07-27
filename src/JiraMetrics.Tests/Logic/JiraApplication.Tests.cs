@@ -117,6 +117,27 @@ public sealed partial class JiraApplicationTests
         presentation.ExecutionSummaryShown.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "RunAsync returns report-generation failure when analysis runner reports a renderer failure")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenReportGenerationFailsReturnsFailureExitCode()
+    {
+        // Arrange
+        var presentation = new FakePresentationService();
+        var app = new JiraApplication(
+            presentation,
+            new FakeRequestTelemetryCollector(),
+            new SuccessfulReportLoader(),
+            new NoOpReportPresenter(),
+            new NoOpAnalysisRunner(ReportGenerationOutcome.Failed));
+
+        // Act
+        var exitCode = await app.RunAsync();
+
+        // Assert
+        exitCode.Should().Be(JiraApplicationExitCode.ReportGenerationFailed);
+        presentation.ExecutionSummaryShown.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "RunAsync shows no issues matched filter when search returns empty list")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenSearchReturnsEmptyListShowsNoIssuesMatchedFilter()

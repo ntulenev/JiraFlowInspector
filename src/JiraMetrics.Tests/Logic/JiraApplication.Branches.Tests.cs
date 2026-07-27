@@ -382,7 +382,8 @@ public sealed class JiraApplicationBranchesTests
             It.IsAny<StatusName?>()));
         reportingFacade.Setup(facade => facade.ShowFailures(It.IsAny<IReadOnlyList<LoadFailure>>()));
         reportingFacade.As<IJiraReportPipeline>()
-            .Setup(pipeline => pipeline.RenderReport(It.IsAny<JiraReportData>()));
+            .Setup(pipeline => pipeline.RenderReport(It.IsAny<JiraReportData>()))
+            .Returns(ReportGenerationOutcome.Succeeded);
         return reportingFacade;
     }
 
