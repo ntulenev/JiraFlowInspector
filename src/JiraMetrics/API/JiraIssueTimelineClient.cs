@@ -43,7 +43,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
             .ConfigureAwait(false);
         if (response is null)
         {
-            throw new InvalidOperationException("Jira issue response is empty.");
+            throw new JiraResponseException("Jira issue response is empty.");
         }
 
         return _issueTimelineMapper.Map(response, issueKey);
@@ -94,7 +94,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
                             AttachChangelog(issueResponse, changelogsByIssueId),
                             issueKey));
                     }
-                    catch (InvalidOperationException ex)
+                    catch (JiraMappingException ex)
                     {
                         failures.Add(new LoadFailure(issueKey, ErrorMessage.FromException(ex)));
                     }
@@ -111,7 +111,7 @@ internal sealed class JiraIssueTimelineClient : IJiraIssueTimelineClient
             {
                 failures.AddRange(BuildBatchFailures(issueKeyBatch, ex));
             }
-            catch (InvalidOperationException ex)
+            catch (JiraDataException ex)
             {
                 failures.AddRange(BuildBatchFailures(issueKeyBatch, ex));
             }

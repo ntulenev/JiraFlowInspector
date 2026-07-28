@@ -51,9 +51,9 @@ public static class RoadmapItemMapper
         RoadmapMappingContext context)
     {
         var key = new IssueKey(
-            issue.Key ?? throw new InvalidOperationException("Roadmap issue key is missing."));
+            issue.Key ?? throw new JiraMappingException("Roadmap issue key is missing."));
         var fields = issue.Fields
-            ?? throw new InvalidOperationException($"Roadmap issue '{key.Value}' fields are missing.");
+            ?? throw new JiraMappingException($"Roadmap issue '{key.Value}' fields are missing.");
         var summary = new IssueSummary(fields.Summary ?? key.Value);
         var status = string.IsNullOrWhiteSpace(fields.Status?.Name) ? "-" : fields.Status.Name.Trim();
         var additionalFields = fields.AdditionalFields;

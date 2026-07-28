@@ -53,7 +53,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
         var fieldId = await TryResolveFieldIdAsync(fieldName, cancellationToken).ConfigureAwait(false);
         if (fieldId is null)
         {
-            throw new InvalidOperationException($"Release date field '{fieldName.Value}' was not found.");
+            throw new JiraResponseException($"Jira field '{fieldName.Value}' was not found.");
         }
 
         return fieldId.Value;
@@ -175,7 +175,7 @@ public sealed class JiraFieldResolver : IJiraFieldResolver
 
         if (response is null)
         {
-            throw new InvalidOperationException("Jira fields response is empty.");
+            throw new JiraResponseException("Jira fields response is empty.");
         }
 
         _cachedFields = [.. response.Where(static field => !string.IsNullOrWhiteSpace(field.Id))];

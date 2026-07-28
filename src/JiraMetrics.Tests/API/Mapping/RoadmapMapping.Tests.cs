@@ -2,6 +2,7 @@ using System.Text.Json;
 
 using FluentAssertions;
 
+using JiraMetrics.API;
 using JiraMetrics.API.Mapping;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
@@ -156,7 +157,7 @@ public sealed class RoadmapMappingTests
 
     [Fact(DisplayName = "Roadmap mapper rejects issue without key")]
     [Trait("Category", "Unit")]
-    public void MapIssuesWhenIssueKeyIsMissingThrowsInvalidOperationException()
+    public void MapIssuesWhenIssueKeyIsMissingThrowsJiraMappingException()
     {
         // Arrange
         var issue = new JiraIssueKeyResponse { Fields = new JiraIssueFieldsResponse() };
@@ -165,13 +166,13 @@ public sealed class RoadmapMappingTests
         Action act = () => _ = RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
+        act.Should().Throw<JiraMappingException>()
             .WithMessage("Roadmap issue key is missing.");
     }
 
     [Fact(DisplayName = "Roadmap mapper rejects issue without fields")]
     [Trait("Category", "Unit")]
-    public void MapIssuesWhenIssueFieldsAreMissingThrowsInvalidOperationException()
+    public void MapIssuesWhenIssueFieldsAreMissingThrowsJiraMappingException()
     {
         // Arrange
         var issue = new JiraIssueKeyResponse { Key = "FLOW-45" };
@@ -180,7 +181,7 @@ public sealed class RoadmapMappingTests
         Action act = () => _ = RoadmapItemMapper.MapIssues([issue], CreateContext());
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
+        act.Should().Throw<JiraMappingException>()
             .WithMessage("Roadmap issue 'FLOW-45' fields are missing.");
     }
 

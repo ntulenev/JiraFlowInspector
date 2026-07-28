@@ -40,12 +40,12 @@ public sealed class IssueTimelineMapper : IIssueTimelineMapper
 
         if (response.Fields is null)
         {
-            throw new InvalidOperationException("Response missing fields.");
+            throw new JiraMappingException("Response missing fields.");
         }
 
         if (response.Fields.Created.ParseNullableDateTimeOffset() is not { } created)
         {
-            throw new InvalidOperationException("Issue created date is missing.");
+            throw new JiraMappingException("Issue created date is missing.");
         }
 
         var transitions = ParseTransitions(response.Changelog?.Histories ?? [], created);

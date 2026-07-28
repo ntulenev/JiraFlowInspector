@@ -22,7 +22,7 @@ internal sealed class JiraUserClient : IJiraUserClient
             .ConfigureAwait(false);
         if (response is null)
         {
-            throw new InvalidOperationException("Jira user response is empty.");
+            throw new JiraResponseException("Jira user response is empty.");
         }
 
         var displayName =

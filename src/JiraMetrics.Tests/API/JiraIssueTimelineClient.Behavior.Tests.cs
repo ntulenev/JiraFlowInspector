@@ -445,7 +445,7 @@ public sealed class JiraIssueTimelineClientBehaviorTests
 
     [Fact(DisplayName = "GetIssueTimelineAsync throws when fields are missing")]
     [Trait("Category", "Unit")]
-    public async Task GetIssueTimelineAsyncWhenFieldsAreMissingThrowsInvalidOperationException()
+    public async Task GetIssueTimelineAsyncWhenFieldsAreMissingThrowsJiraMappingException()
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -468,7 +468,7 @@ public sealed class JiraIssueTimelineClientBehaviorTests
 
         // Assert
         await act.Should()
-            .ThrowAsync<InvalidOperationException>();
+            .ThrowAsync<JiraMappingException>();
     }
 
     private static IOptions<AppSettings> CreateSettings(

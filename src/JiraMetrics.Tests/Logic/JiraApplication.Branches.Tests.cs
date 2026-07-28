@@ -2,6 +2,7 @@ using System.Text.Json;
 
 using FluentAssertions;
 
+using JiraMetrics.API;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -64,9 +65,9 @@ public sealed class JiraApplicationBranchesTests
             Times.Never);
     }
 
-    [Fact(DisplayName = "RunAsync stops before analysis when all-tasks ratio loading throws invalid operation")]
+    [Fact(DisplayName = "RunAsync stops before analysis when all-tasks ratio loading returns invalid Jira data")]
     [Trait("Category", "Unit")]
-    public async Task RunAsyncWhenAllTasksRatioLoadThrowsInvalidOperationExceptionShowsIssueSearchFailure()
+    public async Task RunAsyncWhenAllTasksRatioLoadThrowsJiraDataExceptionShowsIssueSearchFailure()
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -87,7 +88,7 @@ public sealed class JiraApplicationBranchesTests
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(issueTypes => issueTypes.Count == 0),
                 It.Is<CancellationToken>(token => token.CanBeCanceled)))
-            .ThrowsAsync(new InvalidOperationException("Ratio data is unavailable."));
+            .ThrowsAsync(new JiraResponseException("Ratio data is unavailable."));
         telemetryCollector.Setup(collector => collector.GetSummary())
             .Returns(new JiraRequestTelemetrySummary(0, 0, 0, TimeSpan.Zero, []));
 

@@ -1,5 +1,7 @@
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 
+using JiraMetrics.API;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -141,20 +143,34 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         }
         catch (HttpRequestException)
         {
-            // The primary load result already carries the failure that stopped the workflow.
+            ThrowUnexpectedFailure(pendingLoads);
         }
-        catch (InvalidOperationException)
+        catch (JiraDataException)
         {
-            // The primary load result already carries the failure that stopped the workflow.
+            ThrowUnexpectedFailure(pendingLoads);
         }
         catch (JsonException)
         {
-            // The primary load result already carries the failure that stopped the workflow.
+            ThrowUnexpectedFailure(pendingLoads);
         }
     }
 
+    private static void ThrowUnexpectedFailure(IReadOnlyList<Task> pendingLoads)
+    {
+        var unexpectedFailure = pendingLoads
+            .Where(static task => task.IsFaulted)
+            .SelectMany(static task => task.Exception!.Flatten().InnerExceptions)
+            .FirstOrDefault(static exception => !IsExpectedLoadFailure(exception));
+        if (unexpectedFailure is not null)
+        {
+            ExceptionDispatchInfo.Capture(unexpectedFailure).Throw();
+        }
+
+        // Every fault was an expected data-loading failure already represented by the primary result.
+    }
+
     private static bool IsExpectedLoadFailure(Exception exception) =>
-        exception is HttpRequestException or InvalidOperationException or JsonException;
+        exception is HttpRequestException or JiraDataException or JsonException;
 
     private readonly AppSettings _settings;
     private readonly IJiraApplicationDataFacade _dataFacade;

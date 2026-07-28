@@ -1,5 +1,6 @@
 using FluentAssertions;
 
+using JiraMetrics.API;
 using JiraMetrics.API.FieldResolution;
 using JiraMetrics.Models.ValueObjects;
 using JiraMetrics.Transport.Models;
@@ -156,7 +157,7 @@ public sealed class JiraFieldResolverTests
 
     [Fact(DisplayName = "Resolver rejects empty Jira field response")]
     [Trait("Category", "Unit")]
-    public async Task ResolveFieldIdAsyncWhenMetadataResponseIsNullThrowsInvalidOperationException()
+    public async Task ResolveFieldIdAsyncWhenMetadataResponseIsNullThrowsJiraResponseException()
     {
         // Arrange
         var transport = new Mock<IJiraTransport>(MockBehavior.Strict);
@@ -166,7 +167,7 @@ public sealed class JiraFieldResolverTests
 
         // Act
         // Assert
-        await FluentActions.Awaiting(Act).Should().ThrowAsync<InvalidOperationException>()
+        await FluentActions.Awaiting(Act).Should().ThrowAsync<JiraResponseException>()
             .WithMessage("Jira fields response is empty.");
 
         Task<JiraFieldId> Act()

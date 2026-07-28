@@ -42,7 +42,7 @@ public sealed class JiraUserClientBehaviorTests
 
     [Fact(DisplayName = "GetCurrentUserAsync throws when response body is null")]
     [Trait("Category", "Unit")]
-    public async Task GetCurrentUserAsyncWhenResponseBodyIsNullThrowsInvalidOperationException()
+    public async Task GetCurrentUserAsyncWhenResponseBodyIsNullThrowsJiraResponseException()
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -61,7 +61,7 @@ public sealed class JiraUserClientBehaviorTests
 
         // Assert
         await act.Should()
-            .ThrowAsync<InvalidOperationException>();
+            .ThrowAsync<JiraResponseException>();
     }
     private static JiraUserClient CreateClient(IJiraTransport transport) =>
         new(new JiraSearchExecutor(transport));

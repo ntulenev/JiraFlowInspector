@@ -39,7 +39,7 @@ public sealed class JiraIssueTimelineClientTests
 
     [Fact(DisplayName = "Single timeline load rejects empty Jira response")]
     [Trait("Category", "Unit")]
-    public async Task GetIssueTimelineAsyncWhenResponseIsNullThrowsInvalidOperationException()
+    public async Task GetIssueTimelineAsyncWhenResponseIsNullThrowsJiraResponseException()
     {
         // Arrange
         var issueKey = new IssueKey("FLOW-1");
@@ -58,7 +58,7 @@ public sealed class JiraIssueTimelineClientTests
         }
 
         // Assert
-        await FluentActions.Awaiting(Act).Should().ThrowAsync<InvalidOperationException>()
+        await FluentActions.Awaiting(Act).Should().ThrowAsync<JiraResponseException>()
             .WithMessage("Jira issue response is empty.");
     }
 
@@ -274,7 +274,7 @@ public sealed class JiraIssueTimelineClientTests
     [Theory(DisplayName = "Batch timeline load converts supported batch exceptions to per-key failures")]
     [Trait("Category", "Unit")]
     [InlineData("http")]
-    [InlineData("invalid-operation")]
+    [InlineData("jira-data")]
     [InlineData("json")]
     public async Task GetIssueTimelinesAsyncWhenBatchFailsReturnsFailureForEveryKey(string failureKind)
     {
@@ -283,7 +283,7 @@ public sealed class JiraIssueTimelineClientTests
         Exception exception = failureKind switch
         {
             "http" => new HttpRequestException("transport failed"),
-            "invalid-operation" => new InvalidOperationException("payload failed"),
+            "jira-data" => new JiraResponseException("payload failed"),
             "json" => new JsonException("json failed"),
             _ => throw new InvalidOperationException("Unsupported test failure kind.")
         };
@@ -352,7 +352,7 @@ public sealed class JiraIssueTimelineClientTests
         mapper.Setup(m => m.Map(
                 It.Is<JiraIssueResponse>(response => response.Key == invalidKey.Value),
                 invalidKey))
-            .Throws(new InvalidOperationException("invalid issue payload"));
+            .Throws(new JiraMappingException("invalid issue payload"));
         var client = CreateClient(
             searchExecutor.Object,
             new Mock<IJiraFieldResolver>(MockBehavior.Strict).Object,

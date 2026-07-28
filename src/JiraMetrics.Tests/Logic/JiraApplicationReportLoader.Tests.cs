@@ -2,6 +2,7 @@ using System.Text.Json;
 
 using FluentAssertions;
 
+using JiraMetrics.API;
 using JiraMetrics.Logic;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
@@ -100,6 +101,74 @@ public sealed class JiraApplicationReportLoaderTests
         // Assert
         var failure = result.Should().BeOfType<ReportLoadResult.Failure>().Subject;
         failure.Error.Value.Should().Contain("Coverage service unavailable.");
+    }
+
+    [Fact(DisplayName = "LoadAsync propagates unexpected programming failures")]
+    [Trait("Category", "Unit")]
+    public async Task LoadAsyncWhenUnexpectedFailureOccursPropagatesException()
+    {
+        // Arrange
+        var settings = CreateSettings(null, null);
+        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Broken application invariant."));
+        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object);
+
+        // Act
+        Func<Task> act = () => sut.LoadAsync(CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Broken application invariant.");
+    }
+
+    [Fact(DisplayName = "LoadAsync converts Jira data failures to report load failures")]
+    [Trait("Category", "Unit")]
+    public async Task LoadAsyncWhenJiraDataIsInvalidReturnsFailure()
+    {
+        // Arrange
+        var settings = CreateSettings(null, null);
+        var dataFacade = CreateDataFacade(settings, CreateRatioSnapshot(3));
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new JiraResponseException("Invalid Jira response."));
+        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object);
+
+        // Act
+        var result = await sut.LoadAsync(CancellationToken.None);
+
+        // Assert
+        var failure = result.Should().BeOfType<ReportLoadResult.Failure>().Subject;
+        failure.Error.Value.Should().Contain("Invalid Jira response.");
+    }
+
+    [Fact(DisplayName = "LoadAsync does not hide an unexpected pending-load failure behind a Jira data failure")]
+    [Trait("Category", "Unit")]
+    public async Task LoadAsyncWhenExpectedAndUnexpectedLoadsFailPropagatesUnexpectedException()
+    {
+        // Arrange
+        var settings = CreateSettings(null, null);
+        var dataFacade = new Mock<IJiraApplicationDataFacade>(MockBehavior.Strict);
+        dataFacade.Setup(facade => facade.LoadReportContextAsync(
+                settings,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new JiraResponseException("Invalid Jira response."));
+        dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
+                settings,
+                It.Is<IReadOnlyList<IssueTypeName>>(types => types.Count == 0),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Broken ratio invariant."));
+        var sut = new JiraApplicationReportLoader(settings, dataFacade.Object);
+
+        // Act
+        Func<Task> act = () => sut.LoadAsync(CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Broken ratio invariant.");
     }
 
     [Fact(DisplayName = "LoadAsync skips test-coverage loading when the feature is disabled")]

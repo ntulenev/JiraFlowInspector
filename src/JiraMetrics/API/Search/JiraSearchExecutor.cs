@@ -60,7 +60,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
         if (response is null)
         {
-            throw new InvalidOperationException("Jira bulk issue response is empty.");
+            throw new JiraResponseException("Jira bulk issue response is empty.");
         }
 
         return response.Issues;
@@ -96,7 +96,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
             if (response is null)
             {
-                throw new InvalidOperationException("Jira bulk changelog response is empty.");
+                throw new JiraResponseException("Jira bulk changelog response is empty.");
             }
 
             foreach (var issueChangeLog in response.IssueChangeLogs)
@@ -148,7 +148,7 @@ public sealed class JiraSearchExecutor : IJiraSearchExecutor
 
             if (page is null)
             {
-                throw new InvalidOperationException("Jira search response is empty.");
+                throw new JiraResponseException("Jira search response is empty.");
             }
 
             if (page.Issues.Count > 0)
