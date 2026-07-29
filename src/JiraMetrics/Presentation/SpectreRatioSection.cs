@@ -20,6 +20,7 @@ internal sealed class SpectreRatioSection
         string? customFieldValue,
         IssueRatioSnapshot snapshot)
     {
+        var presentationData = IssueRatioPresentationData.Create(snapshot);
         AnsiConsole.MarkupLine("[bold]All tasks ratio[/]");
         if (!string.IsNullOrWhiteSpace(customFieldName)
             && !string.IsNullOrWhiteSpace(customFieldValue))
@@ -31,11 +32,7 @@ internal sealed class SpectreRatioSection
         AnsiConsole.Write(CreateRatioSummaryTable(
             "Issue types",
             "All",
-            snapshot.CreatedThisMonth,
-            snapshot.OpenThisMonth,
-            snapshot.MovedToDoneThisMonth,
-            snapshot.RejectedThisMonth,
-            snapshot.FinishedThisMonth));
+            presentationData));
     }
 
     public void ShowAllTasksRatioLoadingCompleted(IssueRatioSnapshot snapshot)
@@ -56,6 +53,7 @@ internal sealed class SpectreRatioSection
         }
 
         var bugTypes = string.Join(", ", bugIssueNames.Select(static issueType => issueType.Value));
+        var presentationData = IssueRatioPresentationData.Create(snapshot);
 
         AnsiConsole.MarkupLine("[bold]Bug ratio[/]");
         if (!string.IsNullOrWhiteSpace(customFieldName)
@@ -68,13 +66,9 @@ internal sealed class SpectreRatioSection
         AnsiConsole.Write(CreateRatioSummaryTable(
             "Bug issue types",
             bugTypes,
-            snapshot.CreatedThisMonth,
-            snapshot.OpenThisMonth,
-            snapshot.MovedToDoneThisMonth,
-            snapshot.RejectedThisMonth,
-            snapshot.FinishedThisMonth));
+            presentationData));
 
-        if (snapshot.OpenIssues.Count == 0 && snapshot.DoneIssues.Count == 0 && snapshot.RejectedIssues.Count == 0)
+        if (!presentationData.HasIssueDetails)
         {
             return;
         }
@@ -82,13 +76,13 @@ internal sealed class SpectreRatioSection
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Bug ratio details[/]");
         AnsiConsole.MarkupLine("[bold red]Open issues[/]");
-        RenderBugIssueDetailsTable(snapshot.OpenIssues, "red", includeCreationDate: true);
+        RenderBugIssueDetailsTable(presentationData.OpenIssues, "red", includeCreationDate: true);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold green]Done issues[/]");
-        RenderBugIssueDetailsTable(snapshot.DoneIssues, "green", includeCreationDate: true);
+        RenderBugIssueDetailsTable(presentationData.DoneIssues, "green", includeCreationDate: true);
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold orange1]Rejected issues[/]");
-        RenderBugIssueDetailsTable(snapshot.RejectedIssues, "orange1", includeCreationDate: false);
+        RenderBugIssueDetailsTable(presentationData.RejectedIssues, "orange1", includeCreationDate: false);
     }
 
     public void ShowBugRatioLoadingCompleted(IssueRatioSnapshot snapshot)
@@ -102,13 +96,12 @@ internal sealed class SpectreRatioSection
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(snapshot);
 
-        var issueTypes = string.Join(", ", settings.IssueTypes.Select(static issueType => issueType.Value));
-        var percentage = PresentationFormatting.FormatPercentage(snapshot.CoveragePercentage);
+        var presentationData = TestCoveragePresentationData.Create(settings, snapshot);
 
         AnsiConsole.MarkupLine("[bold]Automated test coverage[/]");
-        AnsiConsole.MarkupLine($"[grey]Issue types:[/] {Markup.Escape(issueTypes)}");
-        AnsiConsole.MarkupLine($"[grey]Test project:[/] {Markup.Escape(settings.TestProjectKey.Value)}");
-        AnsiConsole.MarkupLine($"[grey]Link:[/] {Markup.Escape(settings.LinkName)}");
+        AnsiConsole.MarkupLine($"[grey]Issue types:[/] {Markup.Escape(presentationData.IssueTypesLabel)}");
+        AnsiConsole.MarkupLine($"[grey]Test project:[/] {Markup.Escape(presentationData.TestProjectLabel)}");
+        AnsiConsole.MarkupLine($"[grey]Link:[/] {Markup.Escape(presentationData.LinkLabel)}");
 
         var table = new Table()
             .RoundedBorder()
@@ -116,20 +109,16 @@ internal sealed class SpectreRatioSection
             .AddColumn("[bold]Metric[/]")
             .AddColumn("[bold]Value[/]");
 
-        _ = table.AddRow("Done in selected period", snapshot.TotalIssues.Value.ToString(CultureInfo.InvariantCulture));
-        _ = table.AddRow("Covered by automated tests", snapshot.CoveredIssueCount.Value.ToString(CultureInfo.InvariantCulture));
-        _ = table.AddRow("Coverage", percentage);
+        _ = table.AddRow("Done in selected period", presentationData.TotalIssues.Value.ToString(CultureInfo.InvariantCulture));
+        _ = table.AddRow("Covered by automated tests", presentationData.CoveredIssueCount.Value.ToString(CultureInfo.InvariantCulture));
+        _ = table.AddRow("Coverage", presentationData.CoverageText);
         AnsiConsole.Write(table);
     }
 
     private static Table CreateRatioSummaryTable(
         string scopeLabel,
         string scopeValue,
-        ItemCount createdThisMonth,
-        ItemCount openThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth)
+        IssueRatioPresentationData ratio)
     {
         var table = new Table()
             .RoundedBorder()
@@ -138,11 +127,11 @@ internal sealed class SpectreRatioSection
             .AddColumn("[bold]Value[/]");
 
         _ = table.AddRow(Markup.Escape(scopeLabel), Markup.Escape(scopeValue));
-        _ = table.AddRow("[red]Open in selected period[/]", $"[red]{openThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[green]Done in selected period[/]", $"[green]{movedToDoneThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[orange1]Rejected in selected period[/]", $"[orange1]{rejectedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("[deepskyblue1]Finished in selected period[/]", $"[deepskyblue1]{finishedThisMonth.Value.ToString(CultureInfo.InvariantCulture)}[/]");
-        _ = table.AddRow("Finished / Created", PresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
+        _ = table.AddRow("[red]Open in selected period[/]", $"[red]{ratio.OpenCount.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[green]Done in selected period[/]", $"[green]{ratio.DoneCount.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[orange1]Rejected in selected period[/]", $"[orange1]{ratio.RejectedCount.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("[deepskyblue1]Finished in selected period[/]", $"[deepskyblue1]{ratio.FinishedCount.Value.ToString(CultureInfo.InvariantCulture)}[/]");
+        _ = table.AddRow("Finished / Created", ratio.FinishedToCreatedRatioText);
 
         return table;
     }
@@ -171,13 +160,9 @@ internal sealed class SpectreRatioSection
 
         _ = table.AddColumn("[bold]Title[/]");
 
-        var orderedIssues = issues
-            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        for (var i = 0; i < orderedIssues.Count; i++)
+        for (var i = 0; i < issues.Count; i++)
         {
-            var issue = orderedIssues[i];
+            var issue = issues[i];
             var row = new List<string>
             {
                 (i + 1).ToString(CultureInfo.InvariantCulture),

@@ -20,9 +20,12 @@ internal sealed class PdfTestCoverageSection : IPdfReportSection
             return;
         }
 
+        var presentationData = TestCoveragePresentationData.Create(
+            settings,
+            reportData.Ratios.TestCoverage);
         _ = column.Item().Text("Automated test coverage").Bold().FontSize(12);
         _ = column.Item().Text(
-            $"Issue types: {string.Join(", ", settings.IssueTypes.Select(static x => x.Value))}    Test project: {settings.TestProjectKey.Value}    Link: {settings.LinkName}")
+            $"Issue types: {presentationData.IssueTypesLabel}    Test project: {presentationData.TestProjectLabel}    Link: {presentationData.LinkLabel}")
             .FontColor(Colors.Grey.Darken1);
 
         column.Item().Table(table =>
@@ -39,9 +42,9 @@ internal sealed class PdfTestCoverageSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
             });
 
-            AddTextRow(table, "Done in selected period", reportData.Ratios.TestCoverage.TotalIssues.Value.ToString(CultureInfo.InvariantCulture));
-            AddTextRow(table, "Covered by automated tests", reportData.Ratios.TestCoverage.CoveredIssueCount.Value.ToString(CultureInfo.InvariantCulture));
-            AddTextRow(table, "Coverage", PresentationFormatting.FormatPercentage(reportData.Ratios.TestCoverage.CoveragePercentage));
+            AddTextRow(table, "Done in selected period", presentationData.TotalIssues.Value.ToString(CultureInfo.InvariantCulture));
+            AddTextRow(table, "Covered by automated tests", presentationData.CoveredIssueCount.Value.ToString(CultureInfo.InvariantCulture));
+            AddTextRow(table, "Coverage", presentationData.CoverageText);
         });
     }
 

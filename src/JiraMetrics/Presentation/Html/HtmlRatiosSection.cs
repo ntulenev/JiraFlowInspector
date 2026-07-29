@@ -15,16 +15,19 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
+        var presentationData = RatioSectionPresentationData.Create(reportData);
         var html = new StringBuilder();
-        _ = html.Append(BuildRatiosSection(reportData));
-        _ = html.Append(BuildBugRatioDetailsSection(reportData));
-        _ = html.Append(BuildTestCoverageSection(reportData));
+        _ = html.Append(BuildRatiosSection(presentationData));
+        _ = html.Append(BuildBugRatioDetailsSection(presentationData, reportData));
+        _ = html.Append(BuildTestCoverageSection(presentationData));
         return html.ToString();
     }
 
-    private static string BuildBugRatioDetailsSection(JiraReportData reportData)
+    private static string BuildBugRatioDetailsSection(
+        RatioSectionPresentationData presentationData,
+        JiraReportData reportData)
     {
-        if (reportData.Ratios.Bugs is not { } bugRatio)
+        if (presentationData.Bugs is not { } bugRatio)
         {
             return string.Empty;
         }
@@ -80,14 +83,11 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
 
         columns.Add(new TableColumn("Title", "text", "Title", "summary-column"));
 
-        var orderedIssues = issues
-            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        var rows = new List<TableRow>(orderedIssues.Length);
+        var rows = new List<TableRow>(issues.Count);
 
-        for (var index = 0; index < orderedIssues.Length; index++)
+        for (var index = 0; index < issues.Count; index++)
         {
-            var issue = orderedIssues[index];
+            var issue = issues[index];
             var cells = new List<TableCell>
             {
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
@@ -111,14 +111,14 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
         return BuildTableSection(sectionId, title, "No issues.", columns, rows, defaultSortColumn: 1);
     }
 
-    private static string BuildRatiosSection(JiraReportData reportData)
+    private static string BuildRatiosSection(RatioSectionPresentationData presentationData)
     {
         var rows = new List<TableRow>();
-        AddRatioRows(rows, "All tasks", reportData.Ratios.AllTasks);
-        AddRatioRows(rows, "Bugs", reportData.Ratios.Bugs);
-        if (reportData.Ratios.Bugs is { } bugRatio)
+        AddRatioRows(rows, "All tasks", presentationData.AllTasks);
+        AddRatioRows(rows, "Bugs", presentationData.Bugs);
+        if (presentationData.Bugs is { } bugRatio)
         {
-            rows.Add(BuildMetricRow("Bugs: Reproduced on prod", bugRatio.ReporducedOnProdIssues.Count));
+            rows.Add(BuildMetricRow("Bugs: Reproduced on prod", bugRatio.ReproducedOnProdCount.Value));
         }
 
         return BuildTableSection(
@@ -131,9 +131,9 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
             compact: true);
     }
 
-    private static string BuildTestCoverageSection(JiraReportData reportData)
+    private static string BuildTestCoverageSection(RatioSectionPresentationData presentationData)
     {
-        if (reportData.Settings.TestCoverage is not { Enabled: true } testCoverageSettings)
+        if (presentationData.TestCoverage is not { } testCoverage)
         {
             return string.Empty;
         }
@@ -146,17 +146,17 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
             [
                 BuildTextMetricRow(
                     "Issue Types",
-                    string.Join(", ", testCoverageSettings.IssueTypes.Select(static issueType => issueType.Value))),
-                BuildTextMetricRow("Test Project", testCoverageSettings.TestProjectKey.Value),
-                BuildTextMetricRow("Link", testCoverageSettings.LinkName),
-                BuildMetricRow("Done in selected period", reportData.Ratios.TestCoverage.TotalIssues.Value),
-                BuildMetricRow("Covered by automated tests", reportData.Ratios.TestCoverage.CoveredIssueCount.Value),
+                    testCoverage.IssueTypesLabel),
+                BuildTextMetricRow("Test Project", testCoverage.TestProjectLabel),
+                BuildTextMetricRow("Link", testCoverage.LinkLabel),
+                BuildMetricRow("Done in selected period", testCoverage.TotalIssues.Value),
+                BuildMetricRow("Covered by automated tests", testCoverage.CoveredIssueCount.Value),
                 new TableRow(
                 [
                     BuildTextCell("Coverage"),
                     BuildTextCell(
-                        PresentationFormatting.FormatPercentage(reportData.Ratios.TestCoverage.CoveragePercentage),
-                        reportData.Ratios.TestCoverage.CoveragePercentage)
+                        testCoverage.CoverageText,
+                        testCoverage.CoveragePercentage)
                 ])
             ],
             defaultSortColumn: 0,
@@ -166,24 +166,22 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
     private static void AddRatioRows(
         List<TableRow> rows,
         string scope,
-        IssueRatioSnapshot? snapshot)
+        IssueRatioPresentationData? snapshot)
     {
         if (snapshot is null)
         {
             return;
         }
 
-        rows.Add(BuildMetricRow($"{scope}: Created", snapshot.CreatedThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Open", snapshot.OpenThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Done", snapshot.MovedToDoneThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Rejected", snapshot.RejectedThisMonth.Value));
-        rows.Add(BuildMetricRow($"{scope}: Finished", snapshot.FinishedThisMonth.Value));
+        rows.Add(BuildMetricRow($"{scope}: Created", snapshot.CreatedCount.Value));
+        rows.Add(BuildMetricRow($"{scope}: Open", snapshot.OpenCount.Value));
+        rows.Add(BuildMetricRow($"{scope}: Done", snapshot.DoneCount.Value));
+        rows.Add(BuildMetricRow($"{scope}: Rejected", snapshot.RejectedCount.Value));
+        rows.Add(BuildMetricRow($"{scope}: Finished", snapshot.FinishedCount.Value));
         rows.Add(new TableRow(
         [
             BuildTextCell($"{scope}: Finished / Created"),
-            BuildTextCell(PresentationFormatting.BuildFinishedToCreatedRatioText(
-                snapshot.CreatedThisMonth,
-                snapshot.FinishedThisMonth))
+            BuildTextCell(snapshot.FinishedToCreatedRatioText)
         ]));
     }
 }

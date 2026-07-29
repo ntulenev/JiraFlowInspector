@@ -16,46 +16,36 @@ internal sealed class PdfRatiosSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        ComposeAllTasksRatioSection(column, reportData);
-        ComposeBugRatioSection(column, reportData);
-        ComposeInternalIncidentsSection(column, reportData);
+        var presentationData = RatioSectionPresentationData.Create(reportData);
+        ComposeAllTasksRatioSection(column, presentationData);
+        ComposeBugRatioSection(column, presentationData, reportData.Settings.BaseUrl);
+        ComposeInternalIncidentsSection(column, presentationData, reportData.Settings.BaseUrl);
     }
 
-    private static void ComposeBugRatioSection(ColumnDescriptor column, JiraReportData reportData)
+    private static void ComposeBugRatioSection(
+        ColumnDescriptor column,
+        RatioSectionPresentationData presentationData,
+        JiraBaseUrl baseUrl)
     {
-        if (reportData.Ratios.Bugs is not { } bugRatio)
+        if (presentationData.Bugs is not { } bugRatio)
         {
             return;
         }
 
-        var bugTypesLabel = reportData.Settings.BugIssueNames.Count == 0
-            ? "-"
-            : string.Join(", ", reportData.Settings.BugIssueNames.Select(static x => x.Value));
         ComposeRatioSection(
             column,
             "Bug ratio",
             "Bug issue types",
-            bugTypesLabel,
-            bugRatio.OpenThisMonth,
-            bugRatio.CreatedThisMonth,
-            bugRatio.MovedToDoneThisMonth,
-            bugRatio.RejectedThisMonth,
-            bugRatio.FinishedThisMonth,
-            new ItemCount(bugRatio.ReporducedOnProdIssues.Count),
-            new ItemCount(CountReporducedOnProd(bugRatio.OpenIssues)),
-            new ItemCount(CountReporducedOnProd(bugRatio.DoneIssues)),
-            new ItemCount(CountReporducedOnProd(bugRatio.RejectedIssues)),
-            new ItemCount(CountReporducedOnProd(
-                bugRatio.DoneIssues
-                    .Concat(bugRatio.RejectedIssues)
-                    .DistinctBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase))));
+            presentationData.BugIssueTypesLabel,
+            bugRatio,
+            includeReproducedOnProd: true);
 
         ComposeIssueListItemsSection(
             column,
             "Open issues",
             bugRatio.OpenIssues,
             PresentationFormatting.OPEN_ISSUE_COLOR_HEX,
-            reportData.Settings.BaseUrl,
+            baseUrl,
             includeCreationDate: true,
             includeReporducedOnProd: true);
         ComposeIssueListItemsSection(
@@ -63,7 +53,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             "Done issues",
             bugRatio.DoneIssues,
             PresentationFormatting.DONE_ISSUE_COLOR_HEX,
-            reportData.Settings.BaseUrl,
+            baseUrl,
             includeCreationDate: true,
             includeReporducedOnProd: true);
         ComposeIssueListItemsSection(
@@ -71,14 +61,16 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             "Rejected issues",
             bugRatio.RejectedIssues,
             PresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
-            reportData.Settings.BaseUrl,
+            baseUrl,
             includeCreationDate: false,
             includeReporducedOnProd: true);
     }
 
-    private static void ComposeAllTasksRatioSection(ColumnDescriptor column, JiraReportData reportData)
+    private static void ComposeAllTasksRatioSection(
+        ColumnDescriptor column,
+        RatioSectionPresentationData presentationData)
     {
-        if (reportData.Ratios.AllTasks is not { } allTasksRatio)
+        if (presentationData.AllTasks is not { } allTasksRatio)
         {
             return;
         }
@@ -88,48 +80,44 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             "All tasks ratio",
             "Issue types",
             "All",
-            allTasksRatio.OpenThisMonth,
-            allTasksRatio.CreatedThisMonth,
-            allTasksRatio.MovedToDoneThisMonth,
-            allTasksRatio.RejectedThisMonth,
-            allTasksRatio.FinishedThisMonth);
+            allTasksRatio,
+            includeReproducedOnProd: false);
     }
 
-    private static void ComposeInternalIncidentsSection(ColumnDescriptor column, JiraReportData reportData)
+    private static void ComposeInternalIncidentsSection(
+        ColumnDescriptor column,
+        RatioSectionPresentationData presentationData,
+        JiraBaseUrl baseUrl)
     {
-        if (reportData.Settings.InternalIncidentIssueNames.Count == 0
-            || reportData.Ratios.InternalIncidents is not { } internalIncidents)
+        if (presentationData.InternalIncidents is not { } internalIncidents)
         {
             return;
         }
 
-        var incidentTypesLabel = string.Join(
-            ", ",
-            reportData.Settings.InternalIncidentIssueNames.Select(static issueType => issueType.Value));
-
         _ = column.Item().Text("Internal incidents").Bold().FontSize(12);
-        _ = column.Item().Text($"Issue types: {incidentTypesLabel}").FontColor(Colors.Grey.Darken1);
+        _ = column.Item().Text($"Issue types: {presentationData.InternalIncidentIssueTypesLabel}")
+            .FontColor(Colors.Grey.Darken1);
 
         ComposeIssueListItemsSection(
             column,
             "Open issues",
             internalIncidents.OpenIssues,
             PresentationFormatting.OPEN_ISSUE_COLOR_HEX,
-            reportData.Settings.BaseUrl,
+            baseUrl,
             includeCreationDate: true);
         ComposeIssueListItemsSection(
             column,
             "Done issues",
             internalIncidents.DoneIssues,
             PresentationFormatting.DONE_ISSUE_COLOR_HEX,
-            reportData.Settings.BaseUrl,
+            baseUrl,
             includeCreationDate: true);
         ComposeIssueListItemsSection(
             column,
             "Rejected issues",
             internalIncidents.RejectedIssues,
             PresentationFormatting.REJECTED_ISSUE_COLOR_HEX,
-            reportData.Settings.BaseUrl,
+            baseUrl,
             includeCreationDate: false);
     }
 
@@ -138,16 +126,8 @@ internal sealed class PdfRatiosSection : IPdfReportSection
         string title,
         string scopeLabel,
         string scopeValue,
-        ItemCount openThisMonth,
-        ItemCount createdThisMonth,
-        ItemCount movedToDoneThisMonth,
-        ItemCount rejectedThisMonth,
-        ItemCount finishedThisMonth,
-        ItemCount? reporducedOnProd = null,
-        ItemCount? openReporducedOnProd = null,
-        ItemCount? doneReporducedOnProd = null,
-        ItemCount? rejectedReporducedOnProd = null,
-        ItemCount? finishedReporducedOnProd = null)
+        IssueRatioPresentationData ratio,
+        bool includeReproducedOnProd)
     {
         _ = column.Item().Text(title).Bold().FontSize(12);
 
@@ -181,19 +161,31 @@ internal sealed class PdfRatiosSection : IPdfReportSection
 
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeLabel);
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(scopeValue);
-            AddCountRow("Open in selected period", openThisMonth, openReporducedOnProd);
-            AddCountRow("Done in selected period", movedToDoneThisMonth, doneReporducedOnProd);
-            AddCountRow("Rejected in selected period", rejectedThisMonth, rejectedReporducedOnProd);
-            AddCountRow("Finished in selected period", finishedThisMonth, finishedReporducedOnProd);
-            if (reporducedOnProd.HasValue)
+            AddCountRow(
+                "Open in selected period",
+                ratio.OpenCount,
+                includeReproducedOnProd ? ratio.OpenReproducedOnProdCount : null);
+            AddCountRow(
+                "Done in selected period",
+                ratio.DoneCount,
+                includeReproducedOnProd ? ratio.DoneReproducedOnProdCount : null);
+            AddCountRow(
+                "Rejected in selected period",
+                ratio.RejectedCount,
+                includeReproducedOnProd ? ratio.RejectedReproducedOnProdCount : null);
+            AddCountRow(
+                "Finished in selected period",
+                ratio.FinishedCount,
+                includeReproducedOnProd ? ratio.FinishedReproducedOnProdCount : null);
+            if (includeReproducedOnProd)
             {
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Reproduced on prod");
-                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(reporducedOnProd.Value.Value.ToString(CultureInfo.InvariantCulture));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(
+                    ratio.ReproducedOnProdCount.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text("Finished / Created");
-            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(
-                PresentationFormatting.BuildFinishedToCreatedRatioText(createdThisMonth, finishedThisMonth));
+            _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(ratio.FinishedToCreatedRatioText);
         });
     }
 
@@ -214,10 +206,6 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             ComposeIssueListTotals(column, issues, includeReporducedOnProd);
             return;
         }
-
-        var orderedIssues = issues
-            .OrderBy(static issue => issue.Key.Value, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
 
         column.Item().Table(table =>
         {
@@ -255,9 +243,9 @@ internal sealed class PdfRatiosSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Title");
             });
 
-            for (var i = 0; i < orderedIssues.Length; i++)
+            for (var i = 0; i < issues.Count; i++)
             {
-                var issue = orderedIssues[i];
+                var issue = issues[i];
                 _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text((i + 1).ToString(CultureInfo.InvariantCulture));
                 var issueUrl = PdfPresentationHelpers.BuildIssueBrowseUrl(baseUrl, issue.Key);
                 _ = table.Cell()
@@ -288,7 +276,7 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             }
         });
 
-        ComposeIssueListTotals(column, orderedIssues, includeReporducedOnProd);
+        ComposeIssueListTotals(column, issues, includeReporducedOnProd);
     }
 
     private static void ComposeIssueListTotals(
@@ -307,7 +295,4 @@ internal sealed class PdfRatiosSection : IPdfReportSection
             .Bold()
             .FontColor(Colors.Grey.Darken2);
     }
-
-    private static int CountReporducedOnProd(IEnumerable<IssueListItem> issues) =>
-        issues.Count(static issue => issue.ReporducedOnProd);
 }
