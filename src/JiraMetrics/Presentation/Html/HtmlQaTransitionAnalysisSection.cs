@@ -15,14 +15,12 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
-        var analysis = reportData.Transitions.QaTransitionAnalysis;
-        if (analysis.AnalyzedIssueCount.Value == 0)
+        var presentationData = QaTransitionPresentationData.Create(reportData);
+        if (!presentationData.ShouldRender)
         {
             return string.Empty;
         }
 
-        var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
-        var bugRatio = reportData.Ratios.Bugs;
         var html = new StringBuilder();
         _ = html.Append(BuildTableSection(
             "qa-summary",
@@ -30,18 +28,18 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             "No QA transition data.",
             MetricColumns,
             [
-                BuildTextMetricRow("Total Done Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.Transitions.DoneIssues).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Rejected Code Tasks", QaTransitionPresentationSummary.CountCodeIssues(reportData.Transitions.RejectedIssues).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open Bugs", (bugRatio?.OpenIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.OpenIssues ?? [])),
-                BuildTextMetricRow("Done Bugs", (bugRatio?.DoneIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Done On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.DoneIssues ?? [])),
-                BuildTextMetricRow("Rejected Bugs", (bugRatio?.RejectedIssues.Count ?? 0).ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Rejected On Prod", QaTransitionPresentationSummary.BuildProdBugPrioritySummary(bugRatio?.RejectedIssues ?? [])),
-                BuildTextMetricRow("QA In Progress Coverage", QaTransitionPresentationSummary.BuildCoverageText(analysis)),
-                BuildTextMetricRow("QA In Progress 75P", QaTransitionPresentationSummary.FormatDuration(analysis.PickupDuration75, showHoursOnly)),
-                BuildTextMetricRow("QA Transition 75P", QaTransitionPresentationSummary.FormatDuration(analysis.TestingDuration75, showHoursOnly)),
-                BuildTextMetricRow("QA Hold 75P", QaTransitionPresentationSummary.FormatDuration(analysis.HoldDuration75, showHoursOnly))
+                BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Open Bugs", presentationData.OpenBugCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
+                BuildTextMetricRow("Done Bugs", presentationData.DoneBugCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Done On Prod", presentationData.DoneProdBugSummary),
+                BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),
+                BuildTextMetricRow("QA In Progress Coverage", presentationData.PickupCoverageText),
+                BuildTextMetricRow("QA In Progress 75P", presentationData.Pickup.Duration75Text),
+                BuildTextMetricRow("QA Transition 75P", presentationData.Testing.Duration75Text),
+                BuildTextMetricRow("QA Hold 75P", presentationData.Hold.Duration75Text)
             ],
             defaultSortColumn: 0,
             compact: true));
@@ -59,19 +57,31 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             [
                 new TableRow(
                 [
-                    BuildTextCell(QaTransitionPresentationSummary.BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.PickupTransitions)),
-                    BuildTextCell($"{analysis.PickupIssues.Count.ToString(CultureInfo.InvariantCulture)}/{analysis.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture)}"),
-                    BuildTextCell(analysis.PickupIssuePercentage.ToString("0.##", CultureInfo.InvariantCulture) + "%", analysis.PickupIssuePercentage),
-                    BuildTextCell(QaTransitionPresentationSummary.FormatDuration(analysis.PickupDuration75, showHoursOnly), analysis.PickupDuration75?.TotalMinutes)
+                    BuildTextCell(presentationData.Pickup.RulesLabel),
+                    BuildTextCell(presentationData.PickupIssueCountText),
+                    BuildTextCell(presentationData.PickupShareText, presentationData.PickupIssuePercentage),
+                    BuildTextCell(presentationData.Pickup.Duration75Text, presentationData.Pickup.Duration75?.TotalMinutes)
                 ])
             ],
             defaultSortColumn: 2,
             defaultSortDirection: "desc",
             compact: true));
 
-        _ = html.Append(BuildIssueTypeDuration75Table("qa-pickup-75", "QA Pickup 75P per type", analysis.PickupDuration75PerType, showHoursOnly));
-        _ = html.Append(BuildTransitionMeasurementTable("qa-testing-issues", "Testing time by issue", analysis.TestingIssues, reportData));
-        _ = html.Append(BuildIssueTypeDuration75Table("qa-testing-75", "Testing time 75P per type", analysis.TestingDuration75PerType, showHoursOnly));
+        _ = html.Append(BuildIssueTypeDuration75Table(
+            "qa-pickup-75",
+            "QA Pickup 75P per type",
+            presentationData.Pickup.Duration75PerType,
+            presentationData.Duration75ColumnLabel));
+        _ = html.Append(BuildTransitionMeasurementTable(
+            "qa-testing-issues",
+            "Testing time by issue",
+            presentationData.Testing.Issues,
+            presentationData.DurationColumnLabel));
+        _ = html.Append(BuildIssueTypeDuration75Table(
+            "qa-testing-75",
+            "Testing time 75P per type",
+            presentationData.Testing.Duration75PerType,
+            presentationData.Duration75ColumnLabel));
         _ = html.Append(BuildTableSection(
             "qa-hold-summary",
             "QA Hold",
@@ -84,9 +94,9 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             [
                 new TableRow(
                 [
-                    BuildTextCell(QaTransitionPresentationSummary.BuildRulesLabel(reportData.Settings.QaTransitionAnalysis.HoldTransitions)),
-                    BuildTextCell(analysis.HoldIssues.Count.ToString(CultureInfo.InvariantCulture), analysis.HoldIssues.Count),
-                    BuildTextCell(QaTransitionPresentationSummary.FormatDuration(analysis.HoldDuration75, showHoursOnly), analysis.HoldDuration75?.TotalMinutes)
+                    BuildTextCell(presentationData.Hold.RulesLabel),
+                    BuildTextCell(presentationData.Hold.IssueCount.ToString(CultureInfo.InvariantCulture), presentationData.Hold.IssueCount),
+                    BuildTextCell(presentationData.Hold.Duration75Text, presentationData.Hold.Duration75?.TotalMinutes)
                 ])
             ],
             defaultSortColumn: 1,
@@ -95,35 +105,34 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
         _ = html.Append(BuildTransitionMeasurementTable(
             "qa-hold-issues",
             "QA hold time by issue",
-            analysis.HoldIssues,
-            reportData,
-            QaTransitionPresentationSummary.GetHoldDurationColumnLabel(showHoursOnly)));
-        _ = html.Append(BuildIssueTypeDuration75Table("qa-hold-75", "QA hold 75P per type", analysis.HoldDuration75PerType, showHoursOnly));
+            presentationData.Hold.Issues,
+            presentationData.HoldDurationColumnLabel));
+        _ = html.Append(BuildIssueTypeDuration75Table(
+            "qa-hold-75",
+            "QA hold 75P per type",
+            presentationData.Hold.Duration75PerType,
+            presentationData.Duration75ColumnLabel));
         return html.ToString();
     }
 
     private static string BuildTransitionMeasurementTable(
         string sectionId,
         string title,
-        IReadOnlyList<TransitionMeasurementIssue> issues,
-        JiraReportData reportData,
-        string? durationColumnTitle = null)
+        IReadOnlyList<QaTransitionIssuePresentationData> issues,
+        string durationColumnTitle)
     {
-        var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
         var rows = issues
-            .OrderByDescending(static item => item.Duration)
-            .ThenBy(static item => item.Issue.Key.Value, StringComparer.OrdinalIgnoreCase)
             .Select((item, index) => new TableRow(
             [
                 BuildTextCell((index + 1).ToString(CultureInfo.InvariantCulture), index + 1),
-                BuildLinkCell(item.Issue.Key.Value, HtmlPresentationHelpers.BuildIssueBrowseUrl(reportData.Settings.BaseUrl, item.Issue.Key)),
-                BuildTextCell(item.Issue.IssueType.Value),
-                BuildTextCell(item.Issue.SubItemsCount.ToString(CultureInfo.InvariantCulture), item.Issue.SubItemsCount),
-                BuildTextCell(item.Issue.HasPullRequest ? "+" : string.Empty),
-                BuildTextCell(item.Issue.Summary.Value),
-                BuildTextCell(item.Rule.Label),
-                BuildTextCell(HtmlPresentationHelpers.FormatDateTime(item.TransitionAt), item.TransitionAt.ToUnixTimeSeconds()),
-                BuildTextCell(PresentationFormatting.FormatWorkDurationValue(item.Duration, showHoursOnly), item.Duration.TotalMinutes)
+                BuildLinkCell(item.Key.Value, item.IssueUrl),
+                BuildTextCell(item.IssueType.Value),
+                BuildTextCell(item.SubItemsCount.ToString(CultureInfo.InvariantCulture), item.SubItemsCount),
+                BuildTextCell(item.HasPullRequest ? "+" : string.Empty),
+                BuildTextCell(item.Summary.Value),
+                BuildTextCell(item.RuleLabel),
+                BuildTextCell(item.TransitionAtText, item.TransitionAt.ToUnixTimeSeconds()),
+                BuildTextCell(item.DurationText, item.Duration.TotalMinutes)
             ]))
             .ToList();
 
@@ -140,7 +149,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                 new TableColumn("Summary", "text", "Summary", "summary-column"),
                 new TableColumn("Measured transition", "text", "Measured transition"),
                 new TableColumn("Transition At", "number", "Transition At"),
-                new TableColumn(durationColumnTitle ?? QaTransitionPresentationSummary.GetDurationColumnLabel(showHoursOnly), "number", "Duration")
+                new TableColumn(durationColumnTitle, "number", "Duration")
             ],
             rows,
             defaultSortColumn: 8,
@@ -150,20 +159,17 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
     private static string BuildIssueTypeDuration75Table(
         string sectionId,
         string title,
-        IReadOnlyList<IssueTypeDuration75Summary> summaries,
-        bool showTimeCalculationsInHoursOnly)
+        IReadOnlyList<QaDuration75PresentationData> summaries,
+        string duration75Title)
     {
         var rows = summaries
-            .OrderByDescending(static summary => summary.DurationP75)
-            .ThenByDescending(static summary => summary.IssueCount.Value)
-            .ThenBy(static summary => summary.IssueType.Value, StringComparer.OrdinalIgnoreCase)
             .Select(summary => new TableRow(
             [
                 BuildTextCell(summary.IssueType.Value),
                 BuildTextCell(summary.IssueCount.Value.ToString(CultureInfo.InvariantCulture), summary.IssueCount.Value),
                 BuildTextCell(
-                    PresentationFormatting.FormatWorkDurationValue(summary.DurationP75, showTimeCalculationsInHoursOnly),
-                    summary.DurationP75.TotalMinutes)
+                    summary.DurationText,
+                    summary.Duration.TotalMinutes)
             ]))
             .ToList();
 
@@ -174,7 +180,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             [
                 new TableColumn("Type", "text", "Type"),
                 new TableColumn("Issues", "number", "Issues"),
-                new TableColumn(showTimeCalculationsInHoursOnly ? "Hours 75P" : "Days 75P", "number", "75P")
+                new TableColumn(duration75Title, "number", "75P")
             ],
             rows,
             defaultSortColumn: 2,
