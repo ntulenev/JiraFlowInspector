@@ -51,7 +51,7 @@ public sealed class QaTransitionPresentationDataTests
         result.Testing.Issues.Select(static issue => issue.Key.Value)
             .Should().Equal("QA-2", "QA-1");
         result.Testing.Issues[0].IssueUrl.Should().Be("https://example.atlassian.net/browse/QA-2");
-        result.Testing.Issues[0].DurationText.Should().Be("4");
+        result.Testing.Issues[0].DurationText.Should().Be("4 hours");
         result.Testing.Duration75PerType.Select(static summary => summary.IssueType.Value)
             .Should().Equal("Bug", "Task");
         result.DurationColumnLabel.Should().Be("Hours in QA");

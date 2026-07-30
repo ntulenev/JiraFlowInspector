@@ -64,6 +64,7 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("50%");
         html.Should().Contain("QA Transition Analysis");
         html.Should().Contain("Testing time by issue");
+        html.Should().Contain("0.13 days");
         html.Should().Contain("General Statistics");
         html.Should().Contain("General Statistics is a current snapshot.");
         html.Should().Contain("It is not a historical period slice.");

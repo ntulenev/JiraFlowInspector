@@ -112,9 +112,14 @@ internal static class PresentationFormatting
         return string.Format(CultureInfo.InvariantCulture, "{0}m", minutes);
     }
 
-    public static string FormatWorkDurationValue(TimeSpan duration, bool showTimeCalculationsInHoursOnly) =>
-        (showTimeCalculationsInHoursOnly ? duration.TotalHours : duration.TotalDays)
-        .ToString("0.##", CultureInfo.InvariantCulture);
+    public static string FormatWorkDurationValue(TimeSpan duration, bool showTimeCalculationsInHoursOnly)
+    {
+        var value = (showTimeCalculationsInHoursOnly ? duration.TotalHours : duration.TotalDays)
+            .ToString("0.##", CultureInfo.InvariantCulture);
+        var unit = showTimeCalculationsInHoursOnly ? "hours" : "days";
+
+        return $"{value} {unit}";
+    }
 
     public static string FormatCalendarDayDurationValue(TimeSpan duration) =>
         Math.Max(0, duration.TotalDays).ToString("0.##", CultureInfo.InvariantCulture);

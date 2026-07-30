@@ -23,4 +23,19 @@ public sealed class PresentationFormattingTests
         PresentationFormatting.FormatLocalDateTime(null).Should().Be("-");
         PresentationFormatting.FormatLocalDate(null).Should().Be("-");
     }
+
+    [Theory(DisplayName = "Work duration formatting includes its configured unit")]
+    [InlineData(false, "1.5 days")]
+    [InlineData(true, "36 hours")]
+    public void FormatWorkDurationValueWhenCalledIncludesUnit(
+        bool showTimeCalculationsInHoursOnly,
+        string expected)
+    {
+        var result = PresentationFormatting.FormatWorkDurationValue(
+            TimeSpan.FromHours(36),
+            showTimeCalculationsInHoursOnly);
+
+        result.Should().Be(expected);
+    }
+
 }
