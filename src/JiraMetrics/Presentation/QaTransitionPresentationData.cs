@@ -14,8 +14,10 @@ internal sealed class QaTransitionPresentationData
         int doneCodeIssueCount,
         int rejectedCodeIssueCount,
         int openBugCount,
+        string openBugSummary,
         string openProdBugSummary,
         int doneBugCount,
+        string doneBugSummary,
         string doneProdBugSummary,
         int rejectedBugCount,
         string rejectedProdBugSummary,
@@ -29,8 +31,10 @@ internal sealed class QaTransitionPresentationData
         DoneCodeIssueCount = doneCodeIssueCount;
         RejectedCodeIssueCount = rejectedCodeIssueCount;
         OpenBugCount = openBugCount;
+        OpenBugSummary = openBugSummary;
         OpenProdBugSummary = openProdBugSummary;
         DoneBugCount = doneBugCount;
+        DoneBugSummary = doneBugSummary;
         DoneProdBugSummary = doneProdBugSummary;
         RejectedBugCount = rejectedBugCount;
         RejectedProdBugSummary = rejectedProdBugSummary;
@@ -74,9 +78,13 @@ internal sealed class QaTransitionPresentationData
 
     public int OpenBugCount { get; }
 
+    public string OpenBugSummary { get; }
+
     public string OpenProdBugSummary { get; }
 
     public int DoneBugCount { get; }
+
+    public string DoneBugSummary { get; }
 
     public string DoneProdBugSummary { get; }
 
@@ -127,8 +135,10 @@ internal sealed class QaTransitionPresentationData
             CountCodeIssues(reportData.Transitions.DoneIssues),
             CountCodeIssues(reportData.Transitions.RejectedIssues),
             bugRatio?.OpenIssues.Count ?? 0,
+            BuildBugPrioritySummary(bugRatio?.OpenIssues ?? []),
             BuildProdBugPrioritySummary(bugRatio?.OpenIssues ?? []),
             bugRatio?.DoneIssues.Count ?? 0,
+            BuildBugPrioritySummary(bugRatio?.DoneIssues ?? []),
             BuildProdBugPrioritySummary(bugRatio?.DoneIssues ?? []),
             bugRatio?.RejectedIssues.Count ?? 0,
             BuildProdBugPrioritySummary(bugRatio?.RejectedIssues ?? []),
@@ -161,13 +171,14 @@ internal sealed class QaTransitionPresentationData
     private static int CountCodeIssues(IEnumerable<IssueTimeline> issues) =>
         issues.Count(static issue => issue.HasPullRequest);
 
-    private static string BuildProdBugPrioritySummary(IEnumerable<IssueListItem> issues)
+    private static string BuildProdBugPrioritySummary(IEnumerable<IssueListItem> issues) =>
+        BuildBugPrioritySummary(issues.Where(static issue => issue.ReporducedOnProd));
+
+    private static string BuildBugPrioritySummary(IEnumerable<IssueListItem> issues)
     {
-        var prodIssues = issues
-            .Where(static issue => issue.ReporducedOnProd)
-            .ToArray();
-        var total = prodIssues.Length.ToString(CultureInfo.InvariantCulture);
-        var priorityCounts = prodIssues
+        var selectedIssues = issues.ToArray();
+        var total = selectedIssues.Length.ToString(CultureInfo.InvariantCulture);
+        var priorityCounts = selectedIssues
             .Where(static issue => !string.IsNullOrWhiteSpace(issue.Priority))
             .GroupBy(static issue => issue.Priority!, StringComparer.OrdinalIgnoreCase)
             .Select(static group => new

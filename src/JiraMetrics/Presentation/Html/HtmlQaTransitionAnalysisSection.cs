@@ -30,9 +30,9 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             [
                 BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open Bugs", presentationData.OpenBugCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Open Bugs", presentationData.OpenBugSummary),
                 BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
-                BuildTextMetricRow("Done Bugs", presentationData.DoneBugCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Done Bugs", presentationData.DoneBugSummary),
                 BuildTextMetricRow("Done On Prod", presentationData.DoneProdBugSummary),
                 BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugCount.ToString(CultureInfo.InvariantCulture)),
                 BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),

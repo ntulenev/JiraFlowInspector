@@ -78,9 +78,9 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
 
             AddSummaryRow(table, "Total Done Code Tasks", presentationData.DoneCodeIssueCount);
             AddSummaryRow(table, "Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount);
-            AddSummaryRow(table, "Open Bugs", presentationData.OpenBugCount);
+            AddSummaryRow(table, "Open Bugs", presentationData.OpenBugSummary);
             AddSummaryRow(table, "Open On Prod", presentationData.OpenProdBugSummary);
-            AddSummaryRow(table, "Done Bugs", presentationData.DoneBugCount);
+            AddSummaryRow(table, "Done Bugs", presentationData.DoneBugSummary);
             AddSummaryRow(table, "Done On Prod", presentationData.DoneProdBugSummary);
             AddSummaryRow(table, "Rejected Bugs", presentationData.RejectedBugCount);
             AddSummaryRow(table, "Rejected On Prod", presentationData.RejectedProdBugSummary);

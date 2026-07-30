@@ -42,8 +42,12 @@ public sealed class QaTransitionPresentationDataTests
         result.ShouldRender.Should().BeTrue();
         result.DoneCodeIssueCount.Should().Be(1);
         result.RejectedCodeIssueCount.Should().Be(0);
-        result.OpenBugCount.Should().Be(2);
+        result.OpenBugCount.Should().Be(3);
+        result.OpenBugSummary.Should().Be("3 (P1: 1, P2: 1, P3: 1)");
         result.OpenProdBugSummary.Should().Be("2 (P1: 1, P2: 1)");
+        result.DoneBugCount.Should().Be(2);
+        result.DoneBugSummary.Should().Be("2 (P2: 1, P4: 1)");
+        result.DoneProdBugSummary.Should().Be("1 (P4: 1)");
         result.PickupCoverageText.Should().Be("1/2 (50%)");
         result.PickupIssueCountText.Should().Be("1/2");
         result.PickupShareText.Should().Be("50%");
@@ -98,6 +102,19 @@ public sealed class QaTransitionPresentationDataTests
             new IssueSummary("P1 bug"),
             reporducedOnProd: true,
             priority: "P1");
+        var openP3 = new IssueListItem(
+            new IssueKey("BUG-3"),
+            new IssueSummary("P3 bug"),
+            priority: "P3");
+        var doneP2 = new IssueListItem(
+            new IssueKey("BUG-4"),
+            new IssueSummary("P2 bug"),
+            priority: "P2");
+        var doneP4 = new IssueListItem(
+            new IssueKey("BUG-5"),
+            new IssueSummary("P4 bug"),
+            reporducedOnProd: true,
+            priority: "P4");
 
         return new JiraReportData
         {
@@ -106,13 +123,13 @@ public sealed class QaTransitionPresentationDataTests
             Ratios = new JiraReportRatioData
             {
                 Bugs = new IssueRatioSnapshot(
+                    new ItemCount(5),
+                    new ItemCount(3),
                     new ItemCount(2),
+                    new ItemCount(0),
                     new ItemCount(2),
-                    new ItemCount(0),
-                    new ItemCount(0),
-                    new ItemCount(0),
-                    [openP2, openP1],
-                    [],
+                    [openP2, openP1, openP3],
+                    [doneP2, doneP4],
                     [])
             },
             Transitions = new JiraReportTransitionData

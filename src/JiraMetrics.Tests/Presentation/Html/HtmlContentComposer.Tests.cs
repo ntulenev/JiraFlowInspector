@@ -64,6 +64,8 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("50%");
         html.Should().Contain("QA Transition Analysis");
         html.Should().Contain("Testing time by issue");
+        html.Should().Contain("1 (P1: 1)");
+        html.Should().Contain("1 (P4: 1)");
         html.Should().Contain("0.13 days");
         html.Should().Contain("General Statistics");
         html.Should().Contain("General Statistics is a current snapshot.");
@@ -270,7 +272,8 @@ public sealed class HtmlContentComposerTests
                         new IssueListItem(
                             new IssueKey("AAA-3"),
                             new IssueSummary("Done bug"),
-                            new DateTimeOffset(2026, 2, 7, 10, 0, 0, TimeSpan.Zero))
+                            new DateTimeOffset(2026, 2, 7, 10, 0, 0, TimeSpan.Zero),
+                            priority: "P4")
                     ],
                     []),
                 TestCoverage = new TestCoverageSnapshot(
