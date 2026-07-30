@@ -63,6 +63,7 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("Automated Test Coverage");
         html.Should().Contain("50%");
         html.Should().Contain("QA Transition Analysis");
+        html.Should().Contain("QA On Hold Issues");
         html.Should().Contain("Testing time by issue");
         html.Should().Contain("1 (P1: 1)");
         html.Should().Contain("1 (P4: 1)");

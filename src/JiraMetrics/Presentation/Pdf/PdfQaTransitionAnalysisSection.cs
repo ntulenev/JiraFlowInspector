@@ -85,6 +85,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             AddSummaryRow(table, "Rejected Bugs", presentationData.RejectedBugSummary);
             AddSummaryRow(table, "Rejected On Prod", presentationData.RejectedProdBugSummary);
             AddSummaryRow(table, "QA In Progress Coverage", presentationData.PickupCoverageText);
+            AddSummaryRow(table, "QA On Hold Issues", presentationData.Hold.IssueCount);
             AddSummaryRow(
                 table,
                 presentationData.PickupDuration75Label,
