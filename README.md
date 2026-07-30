@@ -140,7 +140,7 @@ HTML output includes:
 - Interactive per-table search, column filters, and sorting.
 - Global incidents as the first report section when configured.
 - Task ratios and bug ratio detail tables, including `ReporducedOnProd` and priority columns when configured.
-- QA transition analysis with summary, pickup metrics, testing issues, QA hold time, and P75-by-type tables.
+- QA Snapshot with summary, pickup metrics, testing issues, QA hold time, and P75-by-type tables.
 - Done/rejected transition analysis tables.
 - Path groups summary.
 - Path groups with compact rows (`#`, `Issues`, `TTM 75P`, `Transition Len`) and expandable details.

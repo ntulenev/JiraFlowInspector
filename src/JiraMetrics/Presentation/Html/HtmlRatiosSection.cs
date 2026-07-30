@@ -8,7 +8,7 @@ using JiraMetrics.Models;
 namespace JiraMetrics.Presentation.Html;
 
 /// <summary>
-/// Renders issue-ratio and test-coverage HTML sections.
+/// Renders issue-ratio HTML sections.
 /// </summary>
 internal sealed class HtmlRatiosSection : IHtmlReportSection
 {
@@ -19,7 +19,6 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
         var html = new StringBuilder();
         _ = html.Append(BuildRatiosSection(presentationData));
         _ = html.Append(BuildBugRatioDetailsSection(presentationData, reportData));
-        _ = html.Append(BuildTestCoverageSection(presentationData));
         return html.ToString();
     }
 
@@ -127,38 +126,6 @@ internal sealed class HtmlRatiosSection : IHtmlReportSection
             "No ratio data available.",
             MetricColumns,
             rows,
-            defaultSortColumn: 0,
-            compact: true);
-    }
-
-    private static string BuildTestCoverageSection(RatioSectionPresentationData presentationData)
-    {
-        if (presentationData.TestCoverage is not { } testCoverage)
-        {
-            return string.Empty;
-        }
-
-        return BuildTableSection(
-            "test-coverage",
-            "Automated Test Coverage",
-            "No automated test coverage data available.",
-            MetricColumns,
-            [
-                BuildTextMetricRow(
-                    "Issue Types",
-                    testCoverage.IssueTypesLabel),
-                BuildTextMetricRow("Test Project", testCoverage.TestProjectLabel),
-                BuildTextMetricRow("Link", testCoverage.LinkLabel),
-                BuildMetricRow("Done in selected period", testCoverage.TotalIssues.Value),
-                BuildMetricRow("Covered by automated tests", testCoverage.CoveredIssueCount.Value),
-                new TableRow(
-                [
-                    BuildTextCell("Coverage"),
-                    BuildTextCell(
-                        testCoverage.CoverageText,
-                        testCoverage.CoveragePercentage)
-                ])
-            ],
             defaultSortColumn: 0,
             compact: true);
     }

@@ -25,7 +25,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             return;
         }
 
-        _ = column.Item().Text("QA transition analysis").Bold().FontSize(12);
+        _ = column.Item().Text("QA Snapshot").Bold().FontSize(12);
         ComposeQaSummary(column, presentationData);
         ComposePickupSummary(column, presentationData);
         ComposeDuration75PerTypeSection(

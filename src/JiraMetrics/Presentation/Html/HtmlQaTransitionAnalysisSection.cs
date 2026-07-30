@@ -24,7 +24,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
         var html = new StringBuilder();
         _ = html.Append(BuildTableSection(
             "qa-summary",
-            "QA Transition Analysis",
+            "QA Snapshot",
             "No QA transition data.",
             MetricColumns,
             [

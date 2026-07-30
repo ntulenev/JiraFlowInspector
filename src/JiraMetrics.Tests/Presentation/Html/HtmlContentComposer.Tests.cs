@@ -62,7 +62,8 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("href=\"#test-coverage\"");
         html.Should().Contain("Automated Test Coverage");
         html.Should().Contain("50%");
-        html.Should().Contain("QA Transition Analysis");
+        html.Should().Contain("QA Snapshot");
+        html.Should().NotContain("QA Transition Analysis");
         html.Should().Contain("QA On Hold Issues");
         html.Should().Contain("Testing time by issue");
         html.Should().Contain("1 (P1: 1)");
@@ -98,8 +99,8 @@ public sealed class HtmlContentComposerTests
             "id=\"bug-open-issues\"",
             "id=\"bug-done-issues\"",
             "id=\"bug-rejected-issues\"",
-            "id=\"test-coverage\"",
             "id=\"qa-summary\"",
+            "id=\"test-coverage\"",
             "id=\"done-issues\"",
             "id=\"done-duration-75\"",
             "id=\"rejected-issues\"",
@@ -115,9 +116,9 @@ public sealed class HtmlContentComposerTests
         html.IndexOf("id=\"global-incidents\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"ratios\"", StringComparison.Ordinal));
         html.IndexOf("id=\"bug-rejected-issues\"", StringComparison.Ordinal).Should()
-            .BeLessThan(html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal));
-        html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal));
         html.IndexOf("id=\"general-statistics\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal));
         html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal).Should()
