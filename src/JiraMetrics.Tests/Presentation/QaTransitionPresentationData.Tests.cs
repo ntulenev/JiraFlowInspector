@@ -48,6 +48,9 @@ public sealed class QaTransitionPresentationDataTests
         result.DoneBugCount.Should().Be(2);
         result.DoneBugSummary.Should().Be("2 (P2: 1, P4: 1)");
         result.DoneProdBugSummary.Should().Be("1 (P4: 1)");
+        result.RejectedBugCount.Should().Be(2);
+        result.RejectedBugSummary.Should().Be("2 (P1: 1, P3: 1)");
+        result.RejectedProdBugSummary.Should().Be("1 (P1: 1)");
         result.PickupCoverageText.Should().Be("1/2 (50%)");
         result.PickupIssueCountText.Should().Be("1/2");
         result.PickupShareText.Should().Be("50%");
@@ -115,6 +118,15 @@ public sealed class QaTransitionPresentationDataTests
             new IssueSummary("P4 bug"),
             reporducedOnProd: true,
             priority: "P4");
+        var rejectedP1 = new IssueListItem(
+            new IssueKey("BUG-6"),
+            new IssueSummary("P1 bug"),
+            reporducedOnProd: true,
+            priority: "P1");
+        var rejectedP3 = new IssueListItem(
+            new IssueKey("BUG-7"),
+            new IssueSummary("P3 bug"),
+            priority: "P3");
 
         return new JiraReportData
         {
@@ -123,14 +135,14 @@ public sealed class QaTransitionPresentationDataTests
             Ratios = new JiraReportRatioData
             {
                 Bugs = new IssueRatioSnapshot(
-                    new ItemCount(5),
+                    new ItemCount(7),
                     new ItemCount(3),
                     new ItemCount(2),
-                    new ItemCount(0),
                     new ItemCount(2),
+                    new ItemCount(4),
                     [openP2, openP1, openP3],
                     [doneP2, doneP4],
-                    [])
+                    [rejectedP1, rejectedP3])
             },
             Transitions = new JiraReportTransitionData
             {

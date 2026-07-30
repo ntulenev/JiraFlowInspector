@@ -34,7 +34,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                 BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
                 BuildTextMetricRow("Done Bugs", presentationData.DoneBugSummary),
                 BuildTextMetricRow("Done On Prod", presentationData.DoneProdBugSummary),
-                BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugSummary),
                 BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),
                 BuildTextMetricRow("QA In Progress Coverage", presentationData.PickupCoverageText),
                 BuildTextMetricRow("QA In Progress 75P", presentationData.Pickup.Duration75Text),

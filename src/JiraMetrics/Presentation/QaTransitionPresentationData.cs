@@ -20,6 +20,7 @@ internal sealed class QaTransitionPresentationData
         string doneBugSummary,
         string doneProdBugSummary,
         int rejectedBugCount,
+        string rejectedBugSummary,
         string rejectedProdBugSummary,
         QaTransitionMetricPresentationData pickup,
         QaTransitionMetricPresentationData testing,
@@ -37,6 +38,7 @@ internal sealed class QaTransitionPresentationData
         DoneBugSummary = doneBugSummary;
         DoneProdBugSummary = doneProdBugSummary;
         RejectedBugCount = rejectedBugCount;
+        RejectedBugSummary = rejectedBugSummary;
         RejectedProdBugSummary = rejectedProdBugSummary;
         Pickup = pickup;
         Testing = testing;
@@ -90,6 +92,8 @@ internal sealed class QaTransitionPresentationData
 
     public int RejectedBugCount { get; }
 
+    public string RejectedBugSummary { get; }
+
     public string RejectedProdBugSummary { get; }
 
     public ItemCount AnalyzedIssueCount { get; }
@@ -141,6 +145,7 @@ internal sealed class QaTransitionPresentationData
             BuildBugPrioritySummary(bugRatio?.DoneIssues ?? []),
             BuildProdBugPrioritySummary(bugRatio?.DoneIssues ?? []),
             bugRatio?.RejectedIssues.Count ?? 0,
+            BuildBugPrioritySummary(bugRatio?.RejectedIssues ?? []),
             BuildProdBugPrioritySummary(bugRatio?.RejectedIssues ?? []),
             QaTransitionMetricPresentationData.Create(
                 settings.PickupTransitions,
