@@ -64,6 +64,9 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("50%");
         html.Should().Contain("QA Snapshot");
         html.Should().NotContain("QA Transition Analysis");
+        html.Should().Contain(">QA IN PROGRESS</h2>");
+        html.Should().Contain(">QA IN PROGRESS 75P per type</h2>");
+        html.Should().NotContain(">QA Pickup</h2>");
         html.Should().Contain("QA On Hold Issues");
         html.Should().Contain("QA In Progress Issues");
         html.Should().Contain("Testing time by issue");

@@ -49,8 +49,8 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
 
         _ = html.Append(BuildTableSection(
             "qa-pickup-summary",
-            "QA Pickup",
-            "No QA pickup data.",
+            "QA IN PROGRESS",
+            "No QA IN PROGRESS data.",
             [
                 new TableColumn("Transition", "text", "Transition"),
                 new TableColumn("Issues", "text", "Issues"),
@@ -72,7 +72,7 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
 
         _ = html.Append(BuildIssueTypeDuration75Table(
             "qa-pickup-75",
-            "QA Pickup 75P per type",
+            "QA IN PROGRESS 75P per type",
             presentationData.Pickup.Duration75PerType,
             presentationData.Duration75ColumnLabel));
         _ = html.Append(BuildTransitionMeasurementTable(

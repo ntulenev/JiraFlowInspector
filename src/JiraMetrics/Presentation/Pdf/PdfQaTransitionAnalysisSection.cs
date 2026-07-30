@@ -30,7 +30,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         ComposePickupSummary(column, presentationData);
         ComposeDuration75PerTypeSection(
             column,
-            "QA pickup 75P per type",
+            "QA IN PROGRESS 75P per type",
             presentationData.Pickup.Duration75PerType,
             presentationData.Duration75Title);
         ComposeTestingSummary(column, presentationData);
@@ -107,7 +107,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
         ColumnDescriptor column,
         QaTransitionPresentationData presentationData)
     {
-        _ = column.Item().Text("QA pickup").Bold();
+        _ = column.Item().Text("QA IN PROGRESS").Bold();
         column.Item().Table(table =>
         {
             table.ColumnsDefinition(columns =>
