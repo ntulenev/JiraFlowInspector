@@ -10,6 +10,8 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 internal sealed class QaTransitionPresentationData
 {
+    private static readonly string[] _standardPriorities = ["P1", "P2", "P3", "P4"];
+
     private QaTransitionPresentationData(
         int doneCodeIssueCount,
         int rejectedCodeIssueCount,
@@ -183,14 +185,23 @@ internal sealed class QaTransitionPresentationData
     {
         var selectedIssues = issues.ToArray();
         var total = selectedIssues.Length.ToString(CultureInfo.InvariantCulture);
-        var priorityCounts = selectedIssues
+        var countsByPriority = selectedIssues
             .Where(static issue => !string.IsNullOrWhiteSpace(issue.Priority))
             .GroupBy(static issue => issue.Priority!, StringComparer.OrdinalIgnoreCase)
-            .Select(static group => new
+            .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        var priorityCounts = _standardPriorities
+            .Select(priority => new
             {
-                Priority = group.Key,
-                Count = group.Count()
+                Priority = priority,
+                Count = countsByPriority.GetValueOrDefault(priority)
             })
+            .Concat(countsByPriority
+                .Where(static item => !_standardPriorities.Contains(item.Key, StringComparer.OrdinalIgnoreCase))
+                .Select(static item => new
+                {
+                    Priority = item.Key,
+                    Count = item.Value
+                }))
             .OrderBy(static item => GetPrioritySortKey(item.Priority))
             .ThenBy(static item => item.Priority, StringComparer.OrdinalIgnoreCase)
             .Select(static item => string.Format(
@@ -200,9 +211,7 @@ internal sealed class QaTransitionPresentationData
                 item.Count))
             .ToArray();
 
-        return priorityCounts.Length == 0
-            ? total
-            : string.Format(CultureInfo.InvariantCulture, "{0} ({1})", total, string.Join(", ", priorityCounts));
+        return string.Format(CultureInfo.InvariantCulture, "{0} ({1})", total, string.Join(", ", priorityCounts));
     }
 
     private static int GetPrioritySortKey(string priority)

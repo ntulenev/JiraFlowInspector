@@ -43,14 +43,14 @@ public sealed class QaTransitionPresentationDataTests
         result.DoneCodeIssueCount.Should().Be(1);
         result.RejectedCodeIssueCount.Should().Be(0);
         result.OpenBugCount.Should().Be(3);
-        result.OpenBugSummary.Should().Be("3 (P1: 1, P2: 1, P3: 1)");
-        result.OpenProdBugSummary.Should().Be("2 (P1: 1, P2: 1)");
+        result.OpenBugSummary.Should().Be("3 (P1: 1, P2: 1, P3: 1, P4: 0)");
+        result.OpenProdBugSummary.Should().Be("2 (P1: 1, P2: 1, P3: 0, P4: 0)");
         result.DoneBugCount.Should().Be(2);
-        result.DoneBugSummary.Should().Be("2 (P2: 1, P4: 1)");
-        result.DoneProdBugSummary.Should().Be("1 (P4: 1)");
+        result.DoneBugSummary.Should().Be("2 (P1: 0, P2: 1, P3: 0, P4: 1)");
+        result.DoneProdBugSummary.Should().Be("1 (P1: 0, P2: 0, P3: 0, P4: 1)");
         result.RejectedBugCount.Should().Be(2);
-        result.RejectedBugSummary.Should().Be("2 (P1: 1, P3: 1)");
-        result.RejectedProdBugSummary.Should().Be("1 (P1: 1)");
+        result.RejectedBugSummary.Should().Be("2 (P1: 1, P2: 0, P3: 1, P4: 0)");
+        result.RejectedProdBugSummary.Should().Be("1 (P1: 1, P2: 0, P3: 0, P4: 0)");
         result.PickupCoverageText.Should().Be("1/2 (50%)");
         result.PickupIssueCountText.Should().Be("1/2");
         result.PickupShareText.Should().Be("50%");
@@ -82,6 +82,9 @@ public sealed class QaTransitionPresentationDataTests
         var result = QaTransitionPresentationData.Create(reportData);
 
         result.ShouldRender.Should().BeFalse();
+        result.OpenBugSummary.Should().Be("0 (P1: 0, P2: 0, P3: 0, P4: 0)");
+        result.DoneBugSummary.Should().Be("0 (P1: 0, P2: 0, P3: 0, P4: 0)");
+        result.RejectedBugSummary.Should().Be("0 (P1: 0, P2: 0, P3: 0, P4: 0)");
         result.Pickup.Duration75Text.Should().Be("-");
         result.Testing.Duration75Text.Should().Be("-");
         result.Hold.Duration75Text.Should().Be("-");

@@ -70,8 +70,8 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("QA On Hold Issues");
         html.Should().Contain("QA In Progress Issues");
         html.Should().Contain("Testing time by issue");
-        html.Should().Contain("1 (P1: 1)");
-        html.Should().Contain("1 (P4: 1)");
+        html.Should().Contain("1 (P1: 1, P2: 0, P3: 0, P4: 0)");
+        html.Should().Contain("1 (P1: 0, P2: 0, P3: 0, P4: 1)");
         html.Should().Contain("0.13 days");
         html.Should().Contain("General Statistics");
         html.Should().Contain("General Statistics is a current snapshot.");
