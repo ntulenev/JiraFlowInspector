@@ -38,4 +38,11 @@ public sealed class PresentationFormattingTests
         result.Should().Be(expected);
     }
 
+    [Fact(DisplayName = "Calendar duration formatting includes days")]
+    public void FormatCalendarDayDurationValueWhenCalledIncludesDays()
+    {
+        var result = PresentationFormatting.FormatCalendarDayDurationValue(TimeSpan.FromHours(36));
+
+        result.Should().Be("1.5 days");
+    }
 }

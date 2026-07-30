@@ -122,7 +122,7 @@ internal static class PresentationFormatting
     }
 
     public static string FormatCalendarDayDurationValue(TimeSpan duration) =>
-        Math.Max(0, duration.TotalDays).ToString("0.##", CultureInfo.InvariantCulture);
+        $"{Math.Max(0, duration.TotalDays).ToString("0.##", CultureInfo.InvariantCulture)} days";
 
     public static string GetWorkDurationColumnLabel(bool showTimeCalculationsInHoursOnly) =>
         showTimeCalculationsInHoursOnly ? "Hours at work" : "Days at work";
