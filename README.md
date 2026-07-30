@@ -8,14 +8,18 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 ## Features
 
 - Jira Cloud authentication with `Email` + `ApiToken`.
-- Transition analytics for issues moved to `Done` in a selected month.
+- Transition analytics for issues moved to `Done` in a selected month or explicit date range.
 - Optional custom transition analysis for a configured `FromStatusName -> ToStatusName` transition.
 - Optional reject flow support (`RejectStatusName`).
 - Optional bug ratio report with open/done/rejected/finished metrics.
 - Optional automated test coverage percentage for completed tasks linked to test-project tasks.
 - Optional release report by label, custom release date field, and optional environment filter.
 - Optional architecture tasks report driven by custom JQL or JQL template.
+- Optional unresolved 30+ days tasks snapshot driven by custom JQL.
+- Optional current roadmap snapshot with status, roadmap value, and start/end dates.
 - Optional global incidents report by namespace/project and JQL filter.
+- Optional internal incidents breakdown by configured issue types.
+- Optional current open-issue statistics grouped by status and issue type.
 - P75 transition timing per path group.
 - Timeline diagrams in console and PDF, plus transition duration bars in HTML path-group details.
 - Optional exclusion of weekends and specific calendar days from duration calculation.
@@ -32,20 +36,17 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 3. Resolves reporting period from either `MonthLabel` or explicit `From`/`To` dates.
    If none are configured, current UTC month is used.
 4. Loads keys for issues that:
-   `status CHANGED TO "<DoneStatusName>"` in month range
+   `status CHANGED TO "<DoneStatusName>"` in the selected report period
    and currently have `status = "<DoneStatusName>"`.
 5. Optionally loads keys for `RejectStatusName` with the same final-status rule.
-6. Optionally loads release issues for the month.
-7. Optionally loads architecture tasks for the report.
-8. Optionally loads global incidents for the month.
-9. Optionally loads bug-ratio datasets.
-10. Optionally loads automated test coverage for completed tasks.
-11. Loads changelogs for selected issues and builds transition timelines.
-12. Applies issue-type and required-stage filters.
-13. Shows console sections.
-14. Optionally writes HTML report.
-15. Optionally writes PDF report.
-16. Optionally appends custom transition analysis to the end of the PDF report.
+6. In parallel, loads the all-task ratio and configured optional datasets: releases,
+   architecture tasks, global incidents, bug ratio, internal incidents, automated test coverage,
+   unresolved 30+ days tasks, general statistics, and roadmap.
+7. Loads changelogs for selected Done/Rejected issues and builds transition timelines.
+8. Applies issue-type and required-stage filters.
+9. Shows the supported console sections.
+10. Independently renders enabled HTML and PDF outputs; failure in one format does not prevent the other format from being attempted.
+11. Optionally appends custom transition analysis to the end of the PDF report and can create a separate custom-transition PDF.
 
 ## Important Behavior Rules
 
@@ -57,14 +58,17 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
 - Required stages use case-insensitive substring matching against both transition `From` and `To` statuses.
 - Path grouping for transition analytics is built only from issues with detected code activity (`HasPullRequest = true`).
 - `CustomTransitionAnalysis.CodeOnly = true` limits the custom transition PDF section to issues with detected code activity.
-- General statistics are a current snapshot of unfinished issues at generation time, not a historical period slice.
+- General statistics, unresolved 30+ days tasks, and roadmap are current snapshots at generation time,
+  not historical slices of the selected report period.
+- `Unresolved30DaysTasks.Jql` is used as-is; the application does not add the 30-day or unresolved clauses automatically.
+- `Roadmap` is currently rendered in HTML only. Internal incidents are currently rendered in PDF only.
 
 ## Report Sections
 
 ### Console Output
 
 - Report context:
-  month, optional created-after date.
+  report period, optional created-after date.
 - Release report (optional):
   all releases in the selected report period by `ProjectLabel`, with tasks/components/environment details.
 - Architecture tasks report (optional):
@@ -73,6 +77,8 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   Open items are highlighted in red in console and PDF.
 - Global incidents report (optional):
   incidents in the selected report period by configured namespace/project and optional JQL filter.
+- All tasks ratio:
+  created/open/done/rejected/finished counts and finished/created rate for the selected period.
 - Bug ratio (optional):
   open/done/rejected/finished counts and finished/created rate.
 - Bug ratio details (optional):
@@ -90,8 +96,6 @@ It analyzes how issues move across statuses, highlights bug/release metrics, and
   total runtime, Jira HTTP request count, retry count, total response payload size,
   total Jira latency, and per-endpoint telemetry table.
 - Failed issues table (when any request fails per issue).
-- Custom transition analysis (optional, PDF only):
-  issues that contain the configured `FromStatusName -> ToStatusName` transition, ordered by transition duration from highest to lowest.
 
 All list tables include `#` index column.
 
@@ -116,23 +120,26 @@ The execution summary endpoint table includes:
 
 When `Jira:Pdf:Enabled` is `true`, PDF includes:
 
-- Header (`Jira Analytics`, generation timestamp, project, done status, month, optional created-after/custom-field filter).
+- Header (`Jira Analytics`, generation timestamp, project, done status, report period, optional created-after/custom-field filter).
 - Release report (if configured).
 - Architecture tasks report (if configured).
 - Global incidents report (if configured).
-- Bug ratio (if configured) and bug detail tables.
+- All tasks ratio, bug ratio/details (if configured), and optional internal incidents breakdown.
+- Automated test coverage (if configured).
 - Transition analysis tables (Done and optional Rejected).
+- QA Snapshot (when enabled; enabled with default transition rules if the section is omitted).
 - Path groups summary.
 - Path groups with timeline diagrams and P75 tables.
+- General statistics (when enabled).
+- Unresolved 30+ Days Tasks snapshot (if configured).
 - Failed issues (if any).
 - Custom transition analysis (if configured), rendered at the very end of the report.
 
-Jira issue identifiers are clickable links in PDF sections:
-release table, bug detail tables, done/rejected tables, path-group issue list, and failures table.
+Jira issue identifiers are clickable links throughout the applicable PDF tables.
 
 ### HTML Output
 
-When `Jira:Html:Enabled` is `true`, a standalone HTML report is generated next to the PDF workflow.
+When `Jira:Html:Enabled` is `true`, a standalone HTML report is generated independently of PDF output.
 
 HTML output includes:
 
@@ -148,7 +155,9 @@ HTML output includes:
 - Release report and optional components release table.
 - Architecture tasks report.
 - General statistics near the end of the report, preceded by a note that it is a current snapshot.
+- Unresolved 30+ Days Tasks after general statistics, with issue type/status filters and oldest tasks first.
 - Failed issues only when failed issue loads exist.
+- Roadmap as the final section when configured, with status/roadmap filters and start/end date filters.
 
 The HTML page is designed for large monitors and can expand wider on 4K/ultrawide screens.
 Jira issue identifiers are clickable links in HTML tables.
@@ -158,7 +167,7 @@ Jira issue identifiers are clickable links in HTML tables.
 ### Transition Analytics
 
 - Source set:
-  issues moved to `DoneStatusName` during month and currently in that status.
+  issues moved to `DoneStatusName` during the selected report period and currently in that status.
 - If `RejectStatusName` configured:
   rejected source set is loaded similarly.
 - Issue types are filtered after loading timelines.
@@ -184,13 +193,13 @@ Jira issue identifiers are clickable links in HTML tables.
 
 `BugIssueNames` defines which issue types are treated as bugs.
 
-- Open this month:
-  bug issues created in month and not in finished set.
-- Done this month:
-  bug issues moved to `DoneStatusName` in month and currently in done status.
-- Rejected this month:
-  bug issues moved to `RejectStatusName` in month and currently in rejected status.
-- Finished this month:
+- Open in the selected period:
+  bug issues created in the selected period and not in the finished set.
+- Done in the selected period:
+  bug issues moved to `DoneStatusName` in the selected period and currently in done status.
+- Rejected in the selected period:
+  bug issues moved to `RejectStatusName` in the selected period and currently in rejected status.
+- Finished in the selected period:
   union of Done and Rejected issue keys.
 - Finished / Created:
   `finished / created * 100`.
@@ -231,13 +240,19 @@ Calculation:
 - Coverage:
   `covered / denominator * 100`.
 
+### Internal Incidents
+
+`TeamTasks.InternalIncidentIssueNames` reuses the same created/done/rejected period logic as task and bug ratios.
+When configured, the PDF contains separate Open, Done, and Rejected issue lists for those issue types.
+This is distinct from `GlobalIncidents`, which queries a separate Jira namespace/project and incident date fields.
+
 ### Release Report
 
 Release query uses:
 
 - `project = ReleaseProjectKey`
 - `labels = ProjectLabel`
-- `ReleaseDateFieldName` in `MonthLabel` range.
+- `ReleaseDateFieldName` in the selected report period.
 - optional `EnvironmentFieldName = EnvironmentFieldValue`
 
 Per release row:
@@ -273,7 +288,7 @@ Architecture tasks query uses the raw `ArchTasks.Jql` value.
 
 - You can provide a fixed JQL query.
 - You can also provide a JQL template using `{{MonthResolvedClause}}`.
-  The placeholder is replaced with the current `MonthLabel` range clause for resolved date filtering.
+  Despite its legacy name, the placeholder is replaced with the selected report-period clause for resolved-date filtering.
 
 Per task row:
 
@@ -291,9 +306,9 @@ Per task row:
 Global incidents query uses:
 
 - `project = GlobalIncidents.Namespace`
-- `IncidentStartFieldName` in `MonthLabel` range
+- `IncidentStartFieldName` in the selected report period
 - if `IncidentStartFallbackFieldName` is configured:
-  incident also matches when fallback start field is in `MonthLabel` range
+  incident also matches when the fallback start field is in the selected report period
 - optional raw `JqlFilter` clause
 - fallback text-term filters derived from `SearchPhrase` when `JqlFilter` is not configured
 
@@ -307,6 +322,19 @@ Per incident row:
 - `Impact`
 - `Urgency`
 - optional configured `AdditionalFieldNames` rendered in one column
+
+### Unresolved 30+ Days Tasks
+
+`Unresolved30DaysTasks.Jql` is executed without modification. Configure the complete query, including the project,
+unfinished-status condition, age threshold, and ordering. The HTML and PDF sections show issue key, creation date,
+issue type, assignee, status, and title. This report is a current snapshot, regardless of the selected report period.
+
+### Roadmap
+
+`Roadmap.Jql` selects the roadmap issues. The HTML-only section shows issue key, current status, configured roadmap
+dropdown value, start date, end date, and title. `RoadmapFieldName` may be a Jira field name or id.
+Start/end fields may be normal date fields or Jira interval subfield references such as
+`cf[15928][startDate]` and `cf[15928][endDate]`. This report is a current snapshot.
 
 ## Duration Calculation
 
@@ -322,7 +350,7 @@ Transition durations come from time between consecutive status changes.
 ## Pull Request Detection
 
 Code activity (`HasPullRequest`) is detected from issue additional fields by searching for pull request data.
-The detector checks configured pull request field (`PullRequestFieldName`);
+The detector checks the configured pull request field (`PullRequestFieldName`).
 
 ## Configuration (`appsettings.json`)
 
@@ -348,6 +376,10 @@ All options live under `Jira`.
   custom field name for filtering.
 - `TeamTasks.CustomFieldValue` (`string`, optional):
   custom field value for filtering.
+- `TeamTasks.ShowGeneralStatistics` (`bool`, optional, default `true`):
+  loads and renders the current unfinished-issue counts grouped by status and issue type.
+- `TeamTasks.InternalIncidentIssueNames` (`string[]`, optional):
+  issue types included in the PDF-only internal incidents breakdown.
 - `TeamTasks.IssueTransitions` (`object`, required):
   transition analysis settings.
 - `TeamTasks.IssueTransitions.RequiredPathStages` (`string[]`, required, at least one):
@@ -359,7 +391,7 @@ All options live under `Jira`.
 - `TeamTasks.IssueTransitions.ExcludedDays` (`string[]`, optional):
   exact days excluded from durations.
 - `TeamTasks.IssueTransitions.QaTransitionAnalysis` (`object`, optional):
-  QA-specific PDF section shown after the main transition report.
+  QA-specific HTML and PDF sections shown with the transition report. If omitted, built-in transition rules are used.
 - `TeamTasks.IssueTransitions.QaTransitionAnalysis.Enabled` (`bool`, optional, default `true`):
   enables or disables the QA-specific section.
 - `TeamTasks.IssueTransitions.QaTransitionAnalysis.PickupTransitions` (`object[]`, optional):
@@ -387,6 +419,19 @@ All options live under `Jira`.
   bug ratio settings.
 - `TeamTasks.BugRatio.BugIssueNames` (`string[]`, optional):
   issue types treated as bug-like.
+- `TeamTasks.BugRatio.ReporducedOnProd` (`string`, optional):
+  Jira field name or id that marks a bug as reproduced on production. The property name intentionally follows
+  the spelling used by the current configuration contract.
+- `TeamTasks.TestCoverage` (`object`, optional):
+  automated test coverage settings.
+- `TeamTasks.TestCoverage.Enabled` (`bool`, optional, default `true`):
+  enables coverage loading and report sections.
+- `TeamTasks.TestCoverage.IssueTypes` (`string[]`, optional):
+  completed issue types included in the coverage denominator; defaults to `["SuperTask"]`.
+- `TeamTasks.TestCoverage.TestProjectKey` (`string`, optional):
+  project key expected for linked automated-test tasks; defaults to `QA`.
+- `TeamTasks.TestCoverage.LinkName` (`string`, optional):
+  exact Jira issue-link relation text used to identify covered tasks; defaults to `is tested by`.
 - `ReleaseReport` (`object`, optional):
   release report settings.
 - `ArchTasks` (`object`, optional):
@@ -395,6 +440,20 @@ All options live under `Jira`.
   raw JQL or JQL template used to load architecture-review items.
   Example:
   `project = CORE AND type = "Architecture Review" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC`
+- `Unresolved30DaysTasks` (`object`, optional):
+  enables the current unresolved-task snapshot when it contains a non-empty `Jql`.
+- `Unresolved30DaysTasks.Jql` (`string`, optional):
+  complete raw JQL executed without modification.
+- `Roadmap` (`object`, optional):
+  enables the current HTML-only roadmap snapshot. `Jql` and `RoadmapFieldName` must be provided together.
+- `Roadmap.Jql` (`string`, required when `Roadmap` used):
+  complete raw JQL selecting roadmap issues.
+- `Roadmap.RoadmapFieldName` (`string`, required when `Roadmap` used):
+  Jira field name or id containing the roadmap dropdown value.
+- `Roadmap.StartDateFieldName` (`string`, optional, default `Start date`):
+  Jira date field or interval subfield reference used as the start date.
+- `Roadmap.EndDateFieldName` (`string`, optional, default `End date`):
+  Jira date field or interval subfield reference used as the end date.
 - `ReleaseReport.ReleaseProjectKey` (`string`, required when `ReleaseReport` used):
   project containing release issues.
 - `ReleaseReport.ProjectLabel` (`string`, required when `ReleaseReport` used):
@@ -418,7 +477,7 @@ Notes:
 - Jira can use different environment fields in different projects.
 - In some projects, the environment data can be stored in a field with display name like `Environment`.
 - In other projects, the same data can be stored in a different field, for example `Environments`, or only be reliably addressable by custom field id.
-- If release report returns `No releases found for selected month`, verify `ReleaseProjectKey`, `MonthLabel`, and the actual Jira field used for environments in that project.
+- If the release report is empty, verify `ReleaseProjectKey`, the selected report period, and the actual Jira field used for environments in that project.
 - `Pdf` (`object`, optional):
   PDF settings.
 - `Html` (`object`, optional):
@@ -529,8 +588,11 @@ Notes:
         }
       },
       "BugRatio": {
-        "BugIssueNames": [ "Bug" ]
+        "BugIssueNames": [ "Bug" ],
+        "ReporducedOnProd": "Reproduced on prod"
       },
+      "InternalIncidentIssueNames": [ "Incident" ],
+      "ShowGeneralStatistics": true,
       "CustomFieldName": "Team",
       "CustomFieldValue": "Team1"
     },
@@ -549,6 +611,15 @@ Notes:
     },
     "ArchTasks": {
       "Jql": "project = CORE AND type = \"Architecture Review\" AND (resolved IS EMPTY OR {{MonthResolvedClause}}) ORDER BY created ASC"
+    },
+    "Unresolved30DaysTasks": {
+      "Jql": "project = AAA AND statusCategory != Done AND created <= -30d ORDER BY created ASC"
+    },
+    "Roadmap": {
+      "Jql": "project = PLAN AND issuetype = Idea",
+      "RoadmapFieldName": "Roadmap",
+      "StartDateFieldName": "Start date",
+      "EndDateFieldName": "End date"
     },
     "GlobalIncidents": {
       "Namespace": "Incidents",
