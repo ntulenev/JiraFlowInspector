@@ -41,7 +41,8 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
                 BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugSummary),
                 BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),
                 BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture))
+                BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Finished Tasks", presentationData.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture))
             ],
             defaultSortColumn: null,
             compact: true));

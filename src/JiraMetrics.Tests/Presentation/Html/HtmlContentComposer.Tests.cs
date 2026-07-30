@@ -130,7 +130,10 @@ public sealed class HtmlContentComposerTests
             "QA On Hold Issues",
             "QA In Progress 75P",
             "QA In Progress Issues",
-            "QA In Progress Coverage");
+            "QA In Progress Coverage",
+            "Total Done Code Tasks",
+            "Total Rejected Code Tasks",
+            "Total Finished Tasks");
         html.IndexOf("id=\"general-statistics\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal));
         html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal).Should()

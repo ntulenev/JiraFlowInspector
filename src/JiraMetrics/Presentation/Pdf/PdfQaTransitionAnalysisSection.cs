@@ -99,6 +99,7 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
             AddSummaryRow(table, "Rejected On Prod", presentationData.RejectedProdBugSummary);
             AddSummaryRow(table, "Total Done Code Tasks", presentationData.DoneCodeIssueCount);
             AddSummaryRow(table, "Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount);
+            AddSummaryRow(table, "Total Finished Tasks", presentationData.AnalyzedIssueCount.Value);
         });
     }
 
