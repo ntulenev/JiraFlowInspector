@@ -76,28 +76,29 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Value");
             });
 
-            AddSummaryRow(table, "Total Done Code Tasks", presentationData.DoneCodeIssueCount);
-            AddSummaryRow(table, "Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount);
-            AddSummaryRow(table, "Open Bugs", presentationData.OpenBugSummary);
-            AddSummaryRow(table, "Open On Prod", presentationData.OpenProdBugSummary);
             AddSummaryRow(table, "Done Bugs", presentationData.DoneBugSummary);
             AddSummaryRow(table, "Done On Prod", presentationData.DoneProdBugSummary);
-            AddSummaryRow(table, "Rejected Bugs", presentationData.RejectedBugSummary);
-            AddSummaryRow(table, "Rejected On Prod", presentationData.RejectedProdBugSummary);
-            AddSummaryRow(table, "QA In Progress Coverage", presentationData.PickupCoverageText);
+            AddSummaryRow(table, "Open Bugs", presentationData.OpenBugSummary);
+            AddSummaryRow(table, "Open On Prod", presentationData.OpenProdBugSummary);
+            AddSummaryRow(
+                table,
+                presentationData.HoldDuration75Label,
+                presentationData.Hold.Duration75Text);
             AddSummaryRow(table, "QA On Hold Issues", presentationData.Hold.IssueCount);
             AddSummaryRow(
                 table,
                 presentationData.PickupDuration75Label,
                 presentationData.Pickup.Duration75Text);
+            AddSummaryRow(table, "QA In Progress Issues", presentationData.Pickup.IssueCount);
+            AddSummaryRow(table, "QA In Progress Coverage", presentationData.PickupCoverageText);
             AddSummaryRow(
                 table,
                 presentationData.TestingDuration75Label,
                 presentationData.Testing.Duration75Text);
-            AddSummaryRow(
-                table,
-                presentationData.HoldDuration75Label,
-                presentationData.Hold.Duration75Text);
+            AddSummaryRow(table, "Rejected Bugs", presentationData.RejectedBugSummary);
+            AddSummaryRow(table, "Rejected On Prod", presentationData.RejectedProdBugSummary);
+            AddSummaryRow(table, "Total Done Code Tasks", presentationData.DoneCodeIssueCount);
+            AddSummaryRow(table, "Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount);
         });
     }
 

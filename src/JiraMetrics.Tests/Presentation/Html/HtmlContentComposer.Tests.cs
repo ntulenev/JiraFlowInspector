@@ -65,6 +65,7 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("QA Snapshot");
         html.Should().NotContain("QA Transition Analysis");
         html.Should().Contain("QA On Hold Issues");
+        html.Should().Contain("QA In Progress Issues");
         html.Should().Contain("Testing time by issue");
         html.Should().Contain("1 (P1: 1)");
         html.Should().Contain("1 (P4: 1)");
@@ -119,6 +120,17 @@ public sealed class HtmlContentComposerTests
             .BeLessThan(html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal));
         html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal));
+        var qaSummaryStart = html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal);
+        var qaSummaryEnd = html.IndexOf("id=\"qa-pickup-summary\"", qaSummaryStart, StringComparison.Ordinal);
+        var qaSummary = html[qaSummaryStart..qaSummaryEnd];
+        qaSummary.Should().Contain("data-default-sort-column=\"\"");
+        AssertMarkersAppearInOrder(
+            qaSummary,
+            "QA Hold 75P",
+            "QA On Hold Issues",
+            "QA In Progress 75P",
+            "QA In Progress Issues",
+            "QA In Progress Coverage");
         html.IndexOf("id=\"general-statistics\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal));
         html.IndexOf("id=\"unresolved-30-days-tasks\"", StringComparison.Ordinal).Should()

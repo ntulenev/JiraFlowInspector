@@ -28,21 +28,22 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
             "No QA transition data.",
             MetricColumns,
             [
-                BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Open Bugs", presentationData.OpenBugSummary),
-                BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
                 BuildTextMetricRow("Done Bugs", presentationData.DoneBugSummary),
                 BuildTextMetricRow("Done On Prod", presentationData.DoneProdBugSummary),
+                BuildTextMetricRow("Open Bugs", presentationData.OpenBugSummary),
+                BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
+                BuildTextMetricRow("QA Hold 75P", presentationData.Hold.Duration75Text),
+                BuildTextMetricRow("QA On Hold Issues", presentationData.Hold.IssueCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("QA In Progress 75P", presentationData.Pickup.Duration75Text),
+                BuildTextMetricRow("QA In Progress Issues", presentationData.Pickup.IssueCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("QA In Progress Coverage", presentationData.PickupCoverageText),
+                BuildTextMetricRow("QA Transition 75P", presentationData.Testing.Duration75Text),
                 BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugSummary),
                 BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),
-                BuildTextMetricRow("QA In Progress Coverage", presentationData.PickupCoverageText),
-                BuildTextMetricRow("QA In Progress 75P", presentationData.Pickup.Duration75Text),
-                BuildTextMetricRow("QA On Hold Issues", presentationData.Hold.IssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("QA Transition 75P", presentationData.Testing.Duration75Text),
-                BuildTextMetricRow("QA Hold 75P", presentationData.Hold.Duration75Text)
+                BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
+                BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture))
             ],
-            defaultSortColumn: 0,
+            defaultSortColumn: null,
             compact: true));
 
         _ = html.Append(BuildTableSection(
