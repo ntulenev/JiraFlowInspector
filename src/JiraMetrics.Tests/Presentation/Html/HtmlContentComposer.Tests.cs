@@ -69,6 +69,8 @@ public sealed class HtmlContentComposerTests
         html.Should().NotContain(">QA Pickup</h2>");
         html.Should().Contain("QA On Hold Issues");
         html.Should().Contain("QA In Progress Issues");
+        html.Should().Contain("AQA Coverage");
+        html.Should().Contain("1/2 (50%)");
         html.Should().Contain("Testing time by issue");
         html.Should().Contain("1 (P1: 1, P2: 0, P3: 0, P4: 0)");
         html.Should().Contain("1 (P1: 0, P2: 0, P3: 0, P4: 1)");
@@ -134,6 +136,7 @@ public sealed class HtmlContentComposerTests
             "QA In Progress 75P",
             "QA In Progress Issues",
             "QA In Progress Coverage",
+            "AQA Coverage",
             "Total Done Code Tasks",
             "Total Rejected Code Tasks",
             "Total Finished Tasks");

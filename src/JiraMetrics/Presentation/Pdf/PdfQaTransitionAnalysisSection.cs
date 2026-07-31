@@ -91,6 +91,11 @@ internal sealed class PdfQaTransitionAnalysisSection : IPdfReportSection
                 presentationData.Pickup.Duration75Text);
             AddSummaryRow(table, "QA In Progress Issues", presentationData.Pickup.IssueCount);
             AddSummaryRow(table, "QA In Progress Coverage", presentationData.PickupCoverageText);
+            if (presentationData.AqaCoverageText is not null)
+            {
+                AddSummaryRow(table, "AQA Coverage", presentationData.AqaCoverageText);
+            }
+
             AddSummaryRow(
                 table,
                 presentationData.TestingDuration75Label,

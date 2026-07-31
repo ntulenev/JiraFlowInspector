@@ -52,6 +52,7 @@ public sealed class QaTransitionPresentationDataTests
         result.RejectedBugSummary.Should().Be("2 (P1: 1, P2: 0, P3: 1, P4: 0)");
         result.RejectedProdBugSummary.Should().Be("1 (P1: 1, P2: 0, P3: 0, P4: 0)");
         result.PickupCoverageText.Should().Be("1/2 (50%)");
+        result.AqaCoverageText.Should().BeNull();
         result.PickupIssueCountText.Should().Be("1/2");
         result.PickupShareText.Should().Be("50%");
         result.Pickup.RulesLabel.Should().Be("Ready for QA -> QA");

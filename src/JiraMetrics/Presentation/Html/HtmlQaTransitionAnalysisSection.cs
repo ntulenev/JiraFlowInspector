@@ -22,28 +22,40 @@ internal sealed class HtmlQaTransitionAnalysisSection : IHtmlReportSection
         }
 
         var html = new StringBuilder();
+        var summaryRows = new List<TableRow>
+        {
+            BuildTextMetricRow("Done Bugs", presentationData.DoneBugSummary),
+            BuildTextMetricRow("Done On Prod", presentationData.DoneProdBugSummary),
+            BuildTextMetricRow("Open Bugs", presentationData.OpenBugSummary),
+            BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
+            BuildTextMetricRow("QA Hold 75P", presentationData.Hold.Duration75Text),
+            BuildTextMetricRow("QA On Hold Issues", presentationData.Hold.IssueCount.ToString(CultureInfo.InvariantCulture)),
+            BuildTextMetricRow("QA In Progress 75P", presentationData.Pickup.Duration75Text),
+            BuildTextMetricRow("QA In Progress Issues", presentationData.Pickup.IssueCount.ToString(CultureInfo.InvariantCulture)),
+            BuildTextMetricRow("QA In Progress Coverage", presentationData.PickupCoverageText)
+        };
+
+        if (presentationData.AqaCoverageText is not null)
+        {
+            summaryRows.Add(BuildTextMetricRow("AQA Coverage", presentationData.AqaCoverageText));
+        }
+
+        summaryRows.AddRange(
+        [
+            BuildTextMetricRow("QA Transition 75P", presentationData.Testing.Duration75Text),
+            BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugSummary),
+            BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),
+            BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
+            BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
+            BuildTextMetricRow("Total Finished Tasks", presentationData.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture))
+        ]);
+
         _ = html.Append(BuildTableSection(
             "qa-summary",
             "QA Snapshot",
             "No QA transition data.",
             MetricColumns,
-            [
-                BuildTextMetricRow("Done Bugs", presentationData.DoneBugSummary),
-                BuildTextMetricRow("Done On Prod", presentationData.DoneProdBugSummary),
-                BuildTextMetricRow("Open Bugs", presentationData.OpenBugSummary),
-                BuildTextMetricRow("Open On Prod", presentationData.OpenProdBugSummary),
-                BuildTextMetricRow("QA Hold 75P", presentationData.Hold.Duration75Text),
-                BuildTextMetricRow("QA On Hold Issues", presentationData.Hold.IssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("QA In Progress 75P", presentationData.Pickup.Duration75Text),
-                BuildTextMetricRow("QA In Progress Issues", presentationData.Pickup.IssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("QA In Progress Coverage", presentationData.PickupCoverageText),
-                BuildTextMetricRow("QA Transition 75P", presentationData.Testing.Duration75Text),
-                BuildTextMetricRow("Rejected Bugs", presentationData.RejectedBugSummary),
-                BuildTextMetricRow("Rejected On Prod", presentationData.RejectedProdBugSummary),
-                BuildTextMetricRow("Total Done Code Tasks", presentationData.DoneCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Rejected Code Tasks", presentationData.RejectedCodeIssueCount.ToString(CultureInfo.InvariantCulture)),
-                BuildTextMetricRow("Total Finished Tasks", presentationData.AnalyzedIssueCount.Value.ToString(CultureInfo.InvariantCulture))
-            ],
+            summaryRows,
             defaultSortColumn: null,
             compact: true));
 

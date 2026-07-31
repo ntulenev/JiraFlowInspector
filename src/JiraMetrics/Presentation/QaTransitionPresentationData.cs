@@ -29,6 +29,7 @@ internal sealed class QaTransitionPresentationData
         QaTransitionMetricPresentationData hold,
         ItemCount analyzedIssueCount,
         decimal pickupIssuePercentage,
+        string? aqaCoverageText,
         bool showTimeCalculationsInHoursOnly)
     {
         DoneCodeIssueCount = doneCodeIssueCount;
@@ -47,6 +48,7 @@ internal sealed class QaTransitionPresentationData
         Hold = hold;
         AnalyzedIssueCount = analyzedIssueCount;
         PickupIssuePercentage = pickupIssuePercentage;
+        AqaCoverageText = aqaCoverageText;
         PickupCoverageText = string.Format(
             CultureInfo.InvariantCulture,
             "{0}/{1} ({2:0.##}%)",
@@ -104,6 +106,8 @@ internal sealed class QaTransitionPresentationData
 
     public string PickupCoverageText { get; }
 
+    public string? AqaCoverageText { get; }
+
     public string PickupIssueCountText { get; }
 
     public string PickupShareText { get; }
@@ -136,6 +140,9 @@ internal sealed class QaTransitionPresentationData
         var settings = reportData.Settings.QaTransitionAnalysis;
         var showHoursOnly = reportData.Settings.ShowTimeCalculationsInHoursOnly;
         var bugRatio = reportData.Ratios.Bugs;
+        var testCoverage = reportData.Settings.TestCoverage is { Enabled: true } testCoverageSettings
+            ? TestCoveragePresentationData.Create(testCoverageSettings, reportData.Ratios.TestCoverage)
+            : null;
 
         return new QaTransitionPresentationData(
             CountCodeIssues(reportData.Transitions.DoneIssues),
@@ -172,6 +179,14 @@ internal sealed class QaTransitionPresentationData
                 showHoursOnly),
             analysis.AnalyzedIssueCount,
             analysis.PickupIssuePercentage,
+            testCoverage is null
+                ? null
+                : string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0}/{1} ({2})",
+                    testCoverage.CoveredIssueCount.Value,
+                    testCoverage.TotalIssues.Value,
+                    testCoverage.CoverageText),
             showHoursOnly);
     }
 
