@@ -143,16 +143,21 @@ When `Jira:Html:Enabled` is `true`, a standalone HTML report is generated indepe
 
 HTML output includes:
 
-- Sticky quick navigation for jumping to rendered report sections.
+- Sticky quick navigation that follows the rendered section order and groups related subsections under
+  `QA Snapshot`, `Finished Tasks`, and `Release Report`.
 - Interactive per-table search, column filters, and sorting.
 - Global incidents as the first report section when configured.
-- Task ratios and bug ratio detail tables, including `ReporducedOnProd` and priority columns when configured.
-- QA Snapshot with QA IN PROGRESS metrics, testing issues, QA hold time, and P75-by-type tables.
-- Done/rejected transition analysis tables.
-- Path groups summary.
-- Path groups with compact rows (`#`, `Issues`, `TTM 75P`, `Transition Len`) and expandable details.
+- Task ratios.
+- `QA Snapshot` summary with QA IN PROGRESS, QA hold, testing, bug, finished-task, and optional `AQA Coverage` metrics.
+  Its navigation group contains QA IN PROGRESS and QA hold summaries, testing/hold issue tables,
+  P75-by-type tables, bug ratio Open/Done/Rejected details, and optional automated test coverage.
+  Bug ratio detail tables include `ReporducedOnProd` and priority columns when configured.
+- `Finished Tasks` summary with unique Finished, Done, and Rejected counts.
+  Its navigation group contains Done/Rejected transition tables, work-duration P75 by issue type,
+  Path Groups Summary, and Path Groups.
+- Path Groups use compact rows (`#`, `Issues`, `TTM 75P`, `Transition Len`) and expandable details.
   Expanded details show tasks and transition duration bars with duration labels plus hours in parentheses.
-- Release report and optional components release table.
+- `Release Report`, with the optional `Components Release Table` shown as its navigation subsection.
 - Architecture tasks report.
 - General statistics near the end of the report, preceded by a note that it is a current snapshot.
 - Unresolved 30+ Days Tasks after general statistics, with issue type/status filters and oldest tasks first.
