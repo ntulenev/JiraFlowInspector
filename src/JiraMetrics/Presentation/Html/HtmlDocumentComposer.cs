@@ -63,19 +63,27 @@ internal static partial class HtmlDocumentComposer
         foreach (Match match in sectionMatches)
         {
             var sectionId = match.Groups["id"].Value;
-            if (_qaChildSectionIds.Contains(sectionId))
+            if (_navigationGroups.Any(group => group.ChildSectionIds.Contains(sectionId)))
             {
                 continue;
             }
 
-            if (string.Equals(sectionId, QA_PARENT_SECTION_ID, StringComparison.Ordinal))
+            var navigationGroup = _navigationGroups.FirstOrDefault(group =>
+                string.Equals(sectionId, group.ParentSectionId, StringComparison.Ordinal));
+            if (navigationGroup is not null)
             {
-                _ = html.AppendLine("    <div class=\"report-nav-group\" data-nav-group=\"qa\">");
+                _ = html.AppendLine(string.Concat(
+                    "    <div class=\"report-nav-group\" data-nav-group=\"",
+                    HtmlPresentationHelpers.EncodeAttribute(navigationGroup.Key),
+                    "\">"));
                 AppendNavigationLink(html, match, "report-nav-parent", 6);
-                _ = html.AppendLine("      <div class=\"report-nav-children\" aria-label=\"QA Snapshot subsections\">");
+                _ = html.AppendLine(string.Concat(
+                    "      <div class=\"report-nav-children\" aria-label=\"",
+                    HtmlPresentationHelpers.EncodeAttribute(navigationGroup.SubsectionsLabel),
+                    "\">"));
                 foreach (Match childMatch in sectionMatches)
                 {
-                    if (_qaChildSectionIds.Contains(childMatch.Groups["id"].Value))
+                    if (navigationGroup.ChildSectionIds.Contains(childMatch.Groups["id"].Value))
                     {
                         AppendNavigationLink(html, childMatch, "report-nav-child", 8);
                     }
@@ -116,22 +124,41 @@ internal static partial class HtmlDocumentComposer
             "</a>"));
     }
 
-    private const string QA_PARENT_SECTION_ID = "qa-summary";
+    private static readonly NavigationGroup[] _navigationGroups =
+    [
+        new(
+            "qa-summary",
+            "qa",
+            "QA Snapshot subsections",
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "bug-open-issues",
+                "bug-done-issues",
+                "bug-rejected-issues",
+                "qa-pickup-summary",
+                "qa-pickup-75",
+                "qa-testing-issues",
+                "qa-testing-75",
+                "qa-hold-summary",
+                "qa-hold-issues",
+                "qa-hold-75",
+                "test-coverage"
+            }),
+        new(
+            "releases",
+            "release",
+            "Release Report subsections",
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "components-release-table"
+            })
+    ];
 
-    private static readonly HashSet<string> _qaChildSectionIds = new(StringComparer.Ordinal)
-    {
-        "bug-open-issues",
-        "bug-done-issues",
-        "bug-rejected-issues",
-        "qa-pickup-summary",
-        "qa-pickup-75",
-        "qa-testing-issues",
-        "qa-testing-75",
-        "qa-hold-summary",
-        "qa-hold-issues",
-        "qa-hold-75",
-        "test-coverage"
-    };
+    private sealed record NavigationGroup(
+        string ParentSectionId,
+        string Key,
+        string SubsectionsLabel,
+        IReadOnlySet<string> ChildSectionIds);
 
     [GeneratedRegex("<section\\s+class=\"[^\"]*table-section[^\"]*\"\\s+id=\"(?<id>[^\"]+)\">\\s*<div\\s+class=\"section-header\"><h2>(?<title>.*?)</h2></div>", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
     private static partial Regex SectionHeadingRegex();

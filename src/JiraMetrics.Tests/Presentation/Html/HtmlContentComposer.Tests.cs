@@ -72,6 +72,12 @@ public sealed class HtmlContentComposerTests
             html.Should().Contain($"class=\"report-nav-child\" href=\"#{qaChildSectionId}\"");
         }
 
+        html.Should().Contain("<div class=\"report-nav-group\" data-nav-group=\"release\">");
+        html.Should().Contain("class=\"report-nav-parent\" href=\"#releases\">Release Report</a>");
+        html.Should().Contain("<div class=\"report-nav-children\" aria-label=\"Release Report subsections\">");
+        html.Should().Contain(
+            "class=\"report-nav-child\" href=\"#components-release-table\">Components Release Table</a>");
+
         html.Should().Contain("Issues moved to Done in selected period");
         html.Should().Contain("Path Groups Summary");
         html.Should().Contain("Transition Len");
