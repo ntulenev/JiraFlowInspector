@@ -63,19 +63,72 @@ internal static partial class HtmlDocumentComposer
         foreach (Match match in sectionMatches)
         {
             var sectionId = match.Groups["id"].Value;
-            var title = TagRegex().Replace(match.Groups["title"].Value, string.Empty).Trim();
-            _ = html.AppendLine(string.Concat(
-                "    <a href=\"#",
-                HtmlPresentationHelpers.EncodeAttribute(sectionId),
-                "\">",
-                HtmlPresentationHelpers.Encode(title),
-                "</a>"));
+            if (_qaChildSectionIds.Contains(sectionId))
+            {
+                continue;
+            }
+
+            if (string.Equals(sectionId, QA_PARENT_SECTION_ID, StringComparison.Ordinal))
+            {
+                _ = html.AppendLine("    <div class=\"report-nav-group\" data-nav-group=\"qa\">");
+                AppendNavigationLink(html, match, "report-nav-parent", 6);
+                _ = html.AppendLine("      <div class=\"report-nav-children\" aria-label=\"QA Snapshot subsections\">");
+                foreach (Match childMatch in sectionMatches)
+                {
+                    if (_qaChildSectionIds.Contains(childMatch.Groups["id"].Value))
+                    {
+                        AppendNavigationLink(html, childMatch, "report-nav-child", 8);
+                    }
+                }
+
+                _ = html.AppendLine("      </div>");
+                _ = html.AppendLine("    </div>");
+                continue;
+            }
+
+            AppendNavigationLink(html, match, cssClass: null, indentation: 4);
         }
 
         _ = html.AppendLine("  </nav>");
         _ = html.AppendLine("</aside>");
         return html.ToString();
     }
+
+    private static void AppendNavigationLink(
+        StringBuilder html,
+        Match sectionMatch,
+        string? cssClass,
+        int indentation)
+    {
+        var sectionId = sectionMatch.Groups["id"].Value;
+        var title = TagRegex().Replace(sectionMatch.Groups["title"].Value, string.Empty).Trim();
+        var classAttribute = cssClass is null
+            ? string.Empty
+            : string.Concat(" class=\"", cssClass, "\"");
+
+        _ = html.Append(' ', indentation).AppendLine(string.Concat(
+            "<a",
+            classAttribute,
+            " href=\"#",
+            HtmlPresentationHelpers.EncodeAttribute(sectionId),
+            "\">",
+            HtmlPresentationHelpers.Encode(title),
+            "</a>"));
+    }
+
+    private const string QA_PARENT_SECTION_ID = "qa-summary";
+
+    private static readonly HashSet<string> _qaChildSectionIds = new(StringComparer.Ordinal)
+    {
+        "qa-pickup-summary",
+        "qa-pickup-75",
+        "qa-testing-issues",
+        "qa-testing-75",
+        "qa-hold-summary",
+        "qa-hold-issues",
+        "qa-hold-75",
+        "test-coverage"
+    };
 
     [GeneratedRegex("<section\\s+class=\"[^\"]*table-section[^\"]*\"\\s+id=\"(?<id>[^\"]+)\">\\s*<div\\s+class=\"section-header\"><h2>(?<title>.*?)</h2></div>", RegexOptions.CultureInvariant | RegexOptions.Singleline)]
     private static partial Regex SectionHeadingRegex();

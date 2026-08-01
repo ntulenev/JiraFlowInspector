@@ -51,6 +51,24 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("2026-02-03 23:59:58 +02:00");
         html.Should().Contain("report-nav");
         html.Should().Contain("href=\"#path-groups\"");
+        html.Should().Contain("<div class=\"report-nav-group\" data-nav-group=\"qa\">");
+        html.Should().Contain("class=\"report-nav-parent\" href=\"#qa-summary\">QA Snapshot</a>");
+        html.Should().Contain("<div class=\"report-nav-children\" aria-label=\"QA Snapshot subsections\">");
+        foreach (var qaChildSectionId in new[]
+                 {
+                     "qa-pickup-summary",
+                     "qa-pickup-75",
+                     "qa-testing-issues",
+                     "qa-testing-75",
+                     "qa-hold-summary",
+                     "qa-hold-issues",
+                     "qa-hold-75",
+                     "test-coverage"
+                 })
+        {
+            html.Should().Contain($"class=\"report-nav-child\" href=\"#{qaChildSectionId}\"");
+        }
+
         html.Should().Contain("Issues moved to Done in selected period");
         html.Should().Contain("Path Groups Summary");
         html.Should().Contain("Transition Len");
