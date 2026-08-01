@@ -56,6 +56,9 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("<div class=\"report-nav-children\" aria-label=\"QA Snapshot subsections\">");
         foreach (var qaChildSectionId in new[]
                  {
+                     "bug-open-issues",
+                     "bug-done-issues",
+                     "bug-rejected-issues",
                      "qa-pickup-summary",
                      "qa-pickup-75",
                      "qa-testing-issues",

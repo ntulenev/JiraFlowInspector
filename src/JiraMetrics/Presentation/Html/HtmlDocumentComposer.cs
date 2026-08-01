@@ -120,6 +120,9 @@ internal static partial class HtmlDocumentComposer
 
     private static readonly HashSet<string> _qaChildSectionIds = new(StringComparer.Ordinal)
     {
+        "bug-open-issues",
+        "bug-done-issues",
+        "bug-rejected-issues",
         "qa-pickup-summary",
         "qa-pickup-75",
         "qa-testing-issues",
