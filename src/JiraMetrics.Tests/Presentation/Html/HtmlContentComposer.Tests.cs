@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 using FluentAssertions;
 
 using JiraMetrics.Models;
@@ -7,7 +9,7 @@ using JiraMetrics.Presentation.Html;
 
 namespace JiraMetrics.Tests.Presentation.Html;
 
-public sealed class HtmlContentComposerTests
+public sealed partial class HtmlContentComposerTests
 {
     [Fact(DisplayName = "Compose renders injected sections in configured order")]
     [Trait("Category", "Unit")]
@@ -77,6 +79,14 @@ public sealed class HtmlContentComposerTests
         html.Should().Contain("<div class=\"report-nav-children\" aria-label=\"Release Report subsections\">");
         html.Should().Contain(
             "class=\"report-nav-child\" href=\"#components-release-table\">Components Release Table</a>");
+        var navigationStart = html.IndexOf("<aside class=\"report-nav\"", StringComparison.Ordinal);
+        var navigationEnd = html.IndexOf("</aside>", navigationStart, StringComparison.Ordinal);
+        var navigationHtml = html[navigationStart..navigationEnd];
+        var navigationSectionIds = NavigationLinkRegex().Matches(navigationHtml)
+            .Select(match => match.Groups["id"].Value);
+        var contentSectionIds = ContentSectionRegex().Matches(html)
+            .Select(match => match.Groups["id"].Value);
+        navigationSectionIds.Should().Equal(contentSectionIds);
 
         html.Should().Contain("Issues moved to Done in selected period");
         html.Should().Contain("Path Groups Summary");
@@ -129,10 +139,17 @@ public sealed class HtmlContentComposerTests
             html,
             "id=\"global-incidents\"",
             "id=\"ratios\"",
+            "id=\"qa-summary\"",
+            "id=\"qa-pickup-summary\"",
+            "id=\"qa-pickup-75\"",
+            "id=\"qa-testing-issues\"",
+            "id=\"qa-testing-75\"",
+            "id=\"qa-hold-summary\"",
+            "id=\"qa-hold-issues\"",
+            "id=\"qa-hold-75\"",
             "id=\"bug-open-issues\"",
             "id=\"bug-done-issues\"",
             "id=\"bug-rejected-issues\"",
-            "id=\"qa-summary\"",
             "id=\"test-coverage\"",
             "id=\"done-issues\"",
             "id=\"done-duration-75\"",
@@ -148,9 +165,9 @@ public sealed class HtmlContentComposerTests
             "id=\"roadmap\"");
         html.IndexOf("id=\"global-incidents\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"ratios\"", StringComparison.Ordinal));
-        html.IndexOf("id=\"bug-rejected-issues\"", StringComparison.Ordinal).Should()
-            .BeLessThan(html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal));
         html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal).Should()
+            .BeLessThan(html.IndexOf("id=\"bug-open-issues\"", StringComparison.Ordinal));
+        html.IndexOf("id=\"bug-rejected-issues\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal));
         var qaSummaryStart = html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal);
         var qaSummaryEnd = html.IndexOf("id=\"qa-pickup-summary\"", qaSummaryStart, StringComparison.Ordinal);
@@ -431,6 +448,12 @@ public sealed class HtmlContentComposerTests
             previousIndex = markerIndex;
         }
     }
+
+    [GeneratedRegex("href=\"#(?<id>[^\"]+)\"")]
+    private static partial Regex NavigationLinkRegex();
+
+    [GeneratedRegex("<section class=\"[^\"]*table-section[^\"]*\" id=\"(?<id>[^\"]+)\"")]
+    private static partial Regex ContentSectionRegex();
 
     private sealed class StubHtmlSection(string html) : IHtmlReportSection
     {
