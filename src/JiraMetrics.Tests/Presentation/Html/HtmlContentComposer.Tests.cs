@@ -79,6 +79,22 @@ public sealed partial class HtmlContentComposerTests
         html.Should().Contain("<div class=\"report-nav-children\" aria-label=\"Release Report subsections\">");
         html.Should().Contain(
             "class=\"report-nav-child\" href=\"#components-release-table\">Components Release Table</a>");
+        html.Should().Contain("<div class=\"report-nav-group\" data-nav-group=\"finished-tasks\">");
+        html.Should().Contain("class=\"report-nav-parent\" href=\"#finished-tasks\">Finished Tasks</a>");
+        html.Should().Contain("<div class=\"report-nav-children\" aria-label=\"Finished Tasks subsections\">");
+        foreach (var finishedTasksChildSectionId in new[]
+                 {
+                     "done-issues",
+                     "done-duration-75",
+                     "rejected-issues",
+                     "path-summary",
+                     "path-groups"
+                 })
+        {
+            html.Should().Contain(
+                $"class=\"report-nav-child\" href=\"#{finishedTasksChildSectionId}\"");
+        }
+
         var navigationStart = html.IndexOf("<aside class=\"report-nav\"", StringComparison.Ordinal);
         var navigationEnd = html.IndexOf("</aside>", navigationStart, StringComparison.Ordinal);
         var navigationHtml = html[navigationStart..navigationEnd];
@@ -151,6 +167,7 @@ public sealed partial class HtmlContentComposerTests
             "id=\"bug-done-issues\"",
             "id=\"bug-rejected-issues\"",
             "id=\"test-coverage\"",
+            "id=\"finished-tasks\"",
             "id=\"done-issues\"",
             "id=\"done-duration-75\"",
             "id=\"rejected-issues\"",
@@ -169,6 +186,21 @@ public sealed partial class HtmlContentComposerTests
             .BeLessThan(html.IndexOf("id=\"bug-open-issues\"", StringComparison.Ordinal));
         html.IndexOf("id=\"bug-rejected-issues\"", StringComparison.Ordinal).Should()
             .BeLessThan(html.IndexOf("id=\"test-coverage\"", StringComparison.Ordinal));
+        var finishedTasksStart = html.IndexOf("id=\"finished-tasks\"", StringComparison.Ordinal);
+        var finishedTasksEnd = html.IndexOf("id=\"done-issues\"", finishedTasksStart, StringComparison.Ordinal);
+        var finishedTasks = html[finishedTasksStart..finishedTasksEnd];
+        AssertMarkersAppearInOrder(
+            finishedTasks,
+            "Finished Tasks",
+            "Moved to Done",
+            "Moved to Rejected",
+            "Issue Types with 75P",
+            "Issues in 75P Sample",
+            "Successful Path Analyses",
+            "Matched Stage",
+            "Failed Path Analyses",
+            "Path Groups");
+        finishedTasks.Should().Contain("data-default-sort-column=\"\"");
         var qaSummaryStart = html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal);
         var qaSummaryEnd = html.IndexOf("id=\"qa-pickup-summary\"", qaSummaryStart, StringComparison.Ordinal);
         var qaSummary = html[qaSummaryStart..qaSummaryEnd];

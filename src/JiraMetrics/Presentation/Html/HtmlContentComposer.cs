@@ -20,6 +20,7 @@ public sealed class HtmlContentComposer : IHtmlContentComposer
                 new HtmlQaTransitionAnalysisSection(),
                 new HtmlBugRatiosSection(),
                 new HtmlTestCoverageSection(),
+                new HtmlFinishedTasksSection(),
                 new HtmlIssueTimelineSection(),
                 new HtmlPathGroupsSection(),
                 new HtmlReleaseSection(),

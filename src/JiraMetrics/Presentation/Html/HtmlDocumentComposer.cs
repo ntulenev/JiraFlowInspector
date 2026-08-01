@@ -145,6 +145,18 @@ internal static partial class HtmlDocumentComposer
                 "test-coverage"
             }),
         new(
+            "finished-tasks",
+            "finished-tasks",
+            "Finished Tasks subsections",
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                "done-issues",
+                "done-duration-75",
+                "rejected-issues",
+                "path-summary",
+                "path-groups"
+            }),
+        new(
             "releases",
             "release",
             "Release Report subsections",
