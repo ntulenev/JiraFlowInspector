@@ -193,13 +193,13 @@ public sealed partial class HtmlContentComposerTests
             finishedTasks,
             "Finished Tasks",
             "Moved to Done",
-            "Moved to Rejected",
-            "Issue Types with 75P",
-            "Issues in 75P Sample",
-            "Successful Path Analyses",
-            "Matched Stage",
-            "Failed Path Analyses",
-            "Path Groups");
+            "Moved to Rejected");
+        finishedTasks.Should().NotContain("Issue Types with 75P");
+        finishedTasks.Should().NotContain("Issues in 75P Sample");
+        finishedTasks.Should().NotContain("Successful Path Analyses");
+        finishedTasks.Should().NotContain("Matched Stage");
+        finishedTasks.Should().NotContain("Failed Path Analyses");
+        finishedTasks.Should().NotContain("Path Groups");
         finishedTasks.Should().Contain("data-default-sort-column=\"\"");
         var qaSummaryStart = html.IndexOf("id=\"qa-summary\"", StringComparison.Ordinal);
         var qaSummaryEnd = html.IndexOf("id=\"qa-pickup-summary\"", qaSummaryStart, StringComparison.Ordinal);

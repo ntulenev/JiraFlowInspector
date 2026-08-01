@@ -18,9 +18,6 @@ internal sealed class HtmlFinishedTasksSection : IHtmlReportSection
             .Select(static issue => issue.Key.Value)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Count();
-        var duration75SampleIssueCount = transitions.DoneDaysAtWork75PerType
-            .Sum(static summary => summary.IssueCount.Value);
-
         return BuildTableSection(
             "finished-tasks",
             "Finished Tasks",
@@ -29,13 +26,7 @@ internal sealed class HtmlFinishedTasksSection : IHtmlReportSection
             [
                 BuildMetricRow("Finished Tasks", finishedIssueCount),
                 BuildMetricRow("Moved to Done", transitions.DoneIssues.Count),
-                BuildMetricRow("Moved to Rejected", transitions.RejectedIssues.Count),
-                BuildMetricRow("Issue Types with 75P", transitions.DoneDaysAtWork75PerType.Count),
-                BuildMetricRow("Issues in 75P Sample", duration75SampleIssueCount),
-                BuildMetricRow("Successful Path Analyses", transitions.PathSummary.SuccessfulCount.Value),
-                BuildMetricRow("Matched Stage", transitions.PathSummary.MatchedStageCount.Value),
-                BuildMetricRow("Failed Path Analyses", transitions.PathSummary.FailedCount.Value),
-                BuildMetricRow("Path Groups", transitions.PathSummary.PathGroupCount.Value)
+                BuildMetricRow("Moved to Rejected", transitions.RejectedIssues.Count)
             ],
             defaultSortColumn: null,
             compact: true);
