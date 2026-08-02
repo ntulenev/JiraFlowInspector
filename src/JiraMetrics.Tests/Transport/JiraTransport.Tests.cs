@@ -441,6 +441,48 @@ public sealed class JiraTransportTests
         exception.Which.Message.Should().NotContain("rate-limit details");
     }
 
+    [Fact(DisplayName = "GetAsync classifies an exhausted request timeout response")]
+    [Trait("Category", "Unit")]
+    public async Task GetAsyncWhenRequestTimesOutThrowsTimeoutTransportException()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var baseUri = new Uri("https://example.test/");
+        var requestUrl = new Uri(baseUri, "rest/api/3/myself");
+
+        using var response = new HttpResponseMessage(HttpStatusCode.RequestTimeout)
+        {
+            Content = new StringContent("request timeout", Encoding.UTF8, "text/plain")
+        };
+
+        var handler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+        handler.Protected().Setup("Dispose", ItExpr.IsAny<bool>());
+        handler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(request => request.RequestUri == requestUrl),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(response);
+
+        using var http = new HttpClient(handler.Object) { BaseAddress = baseUri };
+        var transport = new JiraTransport(
+            http,
+            new JiraRetryPolicy(Options.Create(CreateOptions())),
+            new SimpleJsonSerializer(),
+            new JiraRequestTelemetryCollector());
+
+        // Act
+        Func<Task> act = () => transport.GetAsync<JiraCurrentUserResponse>(
+            new Uri("rest/api/3/myself", UriKind.Relative),
+            cts.Token);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<JiraTransportException>();
+        exception.Which.FailureKind.Should().Be(JiraTransportFailureKind.Timeout);
+        exception.Which.StatusCode.Should().Be(HttpStatusCode.RequestTimeout);
+    }
+
     [Fact(DisplayName = "GetAsync classifies exhausted network failures")]
     [Trait("Category", "Unit")]
     public async Task GetAsyncWhenNetworkFailsThrowsTypedTransportException()

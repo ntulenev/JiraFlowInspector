@@ -185,6 +185,11 @@ public sealed class JiraTransport : IJiraTransport
 
     private static JiraTransportFailureKind ClassifyFailure(System.Net.HttpStatusCode statusCode)
     {
+        if (statusCode == System.Net.HttpStatusCode.RequestTimeout)
+        {
+            return JiraTransportFailureKind.Timeout;
+        }
+
         if (statusCode == System.Net.HttpStatusCode.TooManyRequests)
         {
             return JiraTransportFailureKind.RateLimited;
