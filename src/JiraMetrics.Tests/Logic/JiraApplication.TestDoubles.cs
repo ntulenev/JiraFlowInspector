@@ -109,7 +109,7 @@ public sealed partial class JiraApplicationTests
             {
                 RejectedThisMonthIssuesRequested = true;
                 RejectedThisMonthIssuesRequestCount++;
-                return Task.FromResult<IReadOnlyList<IssueListItem>>(
+                return Task.FromResult(
                     RejectedThisMonthIssues.Count > 0
                         ? RejectedThisMonthIssues
                         : [.. (RejectIssueKeys.Count == 0 ? IssueKeys : RejectIssueKeys)
@@ -119,7 +119,7 @@ public sealed partial class JiraApplicationTests
 
             MovedToDoneThisMonthIssuesRequested = true;
             MovedToDoneThisMonthIssuesRequestCount++;
-            return Task.FromResult<IReadOnlyList<IssueListItem>>(
+            return Task.FromResult(
                 MovedToDoneThisMonthIssues.Count > 0
                     ? MovedToDoneThisMonthIssues
                     : [.. IssueKeys.Select(static key => new IssueListItem(key, new IssueSummary($"Summary {key.Value}")))]
@@ -437,10 +437,7 @@ public sealed partial class JiraApplicationTests
 
         public void ShowNoIssuesMatchedFilter() => NoIssuesMatchedFilterShown = true;
 
-        public void ShowIssueLoadingStarted(ItemCount totalIssues)
-        {
-            IssueLoadingStartedTotal = totalIssues;
-        }
+        public void ShowIssueLoadingStarted(ItemCount totalIssues) => IssueLoadingStartedTotal = totalIssues;
 
         public void ShowIssueLoaded(IssueKey issueKey)
         {
@@ -450,15 +447,9 @@ public sealed partial class JiraApplicationTests
         {
         }
 
-        public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues)
-        {
-            IssueLoadingCompletedLoaded = loadedIssues;
-        }
+        public void ShowIssueLoadingCompleted(ItemCount loadedIssues, ItemCount failedIssues) => IssueLoadingCompletedLoaded = loadedIssues;
 
-        public void ShowProcessingStep(string message)
-        {
-            ProcessingSteps.Add(message);
-        }
+        public void ShowProcessingStep(string message) => ProcessingSteps.Add(message);
 
         public void ShowSpacer()
         {
@@ -496,10 +487,7 @@ public sealed partial class JiraApplicationTests
             }
         }
 
-        public void ShowPathGroupsSummary(PathGroupsSummary summary)
-        {
-            PathGroupsSummary = summary;
-        }
+        public void ShowPathGroupsSummary(PathGroupsSummary summary) => PathGroupsSummary = summary;
 
         public void ShowReleaseReport(
             ReleaseReportSettings settings,
@@ -600,10 +588,7 @@ public sealed partial class JiraApplicationTests
             Calls.Add("TestCoverage");
         }
 
-        public void ShowPathGroups(IReadOnlyList<PathGroup> groups)
-        {
-            Calls.Add("PathGroups");
-        }
+        public void ShowPathGroups(IReadOnlyList<PathGroup> groups) => Calls.Add("PathGroups");
 
         public void ShowOpenIssuesByStatusSummary(
             IReadOnlyList<StatusIssueTypeSummary> statusSummaries,

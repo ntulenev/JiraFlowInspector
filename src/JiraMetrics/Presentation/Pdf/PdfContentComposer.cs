@@ -40,10 +40,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
     internal PdfContentComposer(IReadOnlyList<IPdfReportSection> sections)
     {
         ArgumentNullException.ThrowIfNull(sections);
-        _sections = sections;
+        Sections = sections;
     }
 
-    internal IReadOnlyList<IPdfReportSection> Sections => _sections;
+    internal IReadOnlyList<IPdfReportSection> Sections { get; }
 
     /// <inheritdoc />
     public void ComposeContent(ColumnDescriptor column, JiraReportData reportData)
@@ -53,11 +53,10 @@ public sealed class PdfContentComposer : IPdfContentComposer
 
         column.Spacing(10);
 
-        foreach (var section in _sections)
+        foreach (var section in Sections)
         {
             section.Compose(column, reportData);
         }
     }
-    private readonly IReadOnlyList<IPdfReportSection> _sections;
 }
 
