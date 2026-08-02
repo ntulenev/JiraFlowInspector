@@ -22,10 +22,13 @@ internal sealed class SpectreIssueLoadingProgressPresenter : IJiraIssueLoadingPr
     public void ShowIssueLoadingStarted(ItemCount totalIssues)
     {
         Stop();
-        _issueLoadTotal = totalIssues.Value;
-        _issueLoadProcessed = 0;
-        _issueLoadFailed = 0;
-        _issueLoadStep = Math.Max(1, _issueLoadTotal / 10);
+        lock (_pendingLoaderSync)
+        {
+            _issueLoadTotal = totalIssues.Value;
+            _issueLoadProcessed = 0;
+            _issueLoadFailed = 0;
+            _issueLoadStep = Math.Max(1, _issueLoadTotal / 10);
+        }
 
         if (CanAnimatePendingLoader())
         {
@@ -116,26 +119,29 @@ internal sealed class SpectreIssueLoadingProgressPresenter : IJiraIssueLoadingPr
 
     private void UpdateIssueLoadProgress(bool wasFailure)
     {
-        if (_issueLoadTotal <= 0)
+        lock (_pendingLoaderSync)
         {
-            return;
-        }
+            if (_issueLoadTotal <= 0)
+            {
+                return;
+            }
 
-        _issueLoadProcessed++;
-        if (wasFailure)
-        {
-            _issueLoadFailed++;
-        }
+            _issueLoadProcessed++;
+            if (wasFailure)
+            {
+                _issueLoadFailed++;
+            }
 
-        if (_pendingLoaderCancellation is not null)
-        {
-            return;
-        }
+            if (_pendingLoaderCancellation is not null)
+            {
+                return;
+            }
 
-        if (_issueLoadProcessed == _issueLoadTotal
-            || _issueLoadProcessed % _issueLoadStep == 0)
-        {
-            AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
+            if (_issueLoadProcessed == _issueLoadTotal
+                || _issueLoadProcessed % _issueLoadStep == 0)
+            {
+                AnsiConsole.MarkupLine(BuildIssueLoadProgressMessage());
+            }
         }
     }
 
@@ -182,7 +188,7 @@ internal sealed class SpectreIssueLoadingProgressPresenter : IJiraIssueLoadingPr
         !Console.IsOutputRedirected && AnsiConsole.Console.GetType().Name != "TestConsole";
 
     private static readonly char[] _pendingLoaderFrames = ['|', '/', '-', '\\'];
-    private readonly object _pendingLoaderSync = new();
+    private readonly Lock _pendingLoaderSync = new();
     private readonly SpectreStatusSection _statusSection;
     private CancellationTokenSource? _pendingLoaderCancellation;
     private Task? _pendingLoaderTask;
