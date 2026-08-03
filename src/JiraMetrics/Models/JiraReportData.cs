@@ -149,7 +149,7 @@ public sealed class JiraReportData
             Settings = settings,
             Source = new JiraReportSourceData
             {
-                SearchIssueCount = new ItemCount(reportContext.IssueKeys.Count),
+                SearchIssueCount = reportContext.TransitionIssueCount,
                 ReleaseIssues = reportContext.ReleaseIssues,
                 ArchTasks = reportContext.ArchTasks,
                 GlobalIncidents = reportContext.GlobalIncidents,

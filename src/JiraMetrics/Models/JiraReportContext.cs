@@ -21,4 +21,15 @@ public sealed record JiraReportContext(
     IReadOnlyList<GlobalIncidentItem> GlobalIncidents,
     IReadOnlyList<IssueListItem> Unresolved30DaysTasks,
     IReadOnlyList<StatusIssueTypeSummary> OpenIssuesByStatus,
-    IReadOnlyList<RoadmapItem> RoadmapItems);
+    IReadOnlyList<RoadmapItem> RoadmapItems)
+{
+    /// <summary>
+    /// Gets the number of unique issues selected for done or rejected transition analysis.
+    /// </summary>
+    public ItemCount TransitionIssueCount => new(
+        IssueKeys
+            .Concat(RejectIssueKeys)
+            .Select(static issueKey => issueKey.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count());
+}

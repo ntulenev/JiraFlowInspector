@@ -28,7 +28,10 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
         ArgumentNullException.ThrowIfNull(settings);
 
         var issuesByType = _logicService.FilterIssuesByIssueTypes(issues, settings.IssueTypes);
-        if (issuesByType.Count == 0)
+        IReadOnlyList<IssueTimeline> rejectIssuesByType = settings.RejectStatusName is null
+            ? []
+            : _logicService.FilterIssuesByIssueTypes(rejectIssues, settings.IssueTypes);
+        if (issuesByType.Count == 0 && rejectIssuesByType.Count == 0)
         {
             return JiraIssueAnalysisResult.NoIssuesMatchedTypeFilter();
         }
@@ -36,20 +39,12 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
         var filteredIssues = _logicService.FilterIssuesByRequiredStage(
             issuesByType,
             settings.RequiredPathStages);
-        if (filteredIssues.Count == 0)
+        var filteredRejectedIssues = _logicService.FilterIssuesByRequiredStage(
+            rejectIssuesByType,
+            settings.RequiredPathStages);
+        if (filteredIssues.Count == 0 && filteredRejectedIssues.Count == 0)
         {
             return JiraIssueAnalysisResult.NoIssuesMatchedRequiredStage();
-        }
-
-        IReadOnlyList<IssueTimeline> filteredRejectedIssues = [];
-        if (settings.RejectStatusName is not null)
-        {
-            var rejectIssuesByType = _logicService.FilterIssuesByIssueTypes(
-                rejectIssues,
-                settings.IssueTypes);
-            filteredRejectedIssues = _logicService.FilterIssuesByRequiredStage(
-                rejectIssuesByType,
-                settings.RequiredPathStages);
         }
 
         var doneDaysAtWork75PerType = _logicService.BuildDaysAtWork75PerType(
@@ -77,8 +72,13 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             .Where(static issue => issue.HasPullRequest)
             .ToList();
         var groups = _logicService.BuildPathGroups(groupedIssues);
+        var successfullyLoadedIssueCount = issues
+            .Concat(rejectIssues)
+            .Select(static issue => issue.Key.Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
         var pathSummary = new PathGroupsSummary(
-            new ItemCount(issues.Count),
+            new ItemCount(successfullyLoadedIssueCount),
             new ItemCount(groupedIssues.Count),
             new ItemCount(failures.Count),
             new ItemCount(groups.Count));

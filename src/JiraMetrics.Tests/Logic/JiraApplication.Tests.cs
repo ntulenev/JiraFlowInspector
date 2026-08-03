@@ -707,6 +707,61 @@ public sealed partial class JiraApplicationTests
         presentation.RejectedIssuesTableShown.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "RunAsync renders transition report when only rejected issues are found")]
+    [Trait("Category", "Unit")]
+    public async Task RunAsyncWhenOnlyRejectedIssuesAreFoundRendersTransitionReport()
+    {
+        // Arrange
+        var rejectedTransitions = new List<TransitionEvent>
+        {
+            new(new StatusName("Open"), new StatusName("Code Review"), DateTimeOffset.UtcNow.AddHours(-2), TimeSpan.FromHours(1)),
+            new(new StatusName("Code Review"), new StatusName("Reject"), DateTimeOffset.UtcNow.AddHours(-1), TimeSpan.FromHours(1))
+        };
+        var rejectedIssue = new IssueTimeline(
+            new IssueKey("AAA-1"),
+            new IssueTypeName("Task"),
+            new IssueSummary("Rejected task"),
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow,
+            rejectedTransitions,
+            PathKey.FromTransitions(rejectedTransitions),
+            PathLabel.FromTransitions(rejectedTransitions),
+            hasPullRequest: true);
+        var apiClient = new FakeApiClient
+        {
+            CurrentUser = new JiraAuthUser(new UserDisplayName("Nikita"), "user@example.com", "123"),
+            IssueKeys = [],
+            RejectIssueKeys = [new IssueKey("AAA-1")],
+            IssuesByKey =
+            {
+                ["AAA-1"] = rejectedIssue
+            }
+        };
+
+        var presentation = new FakePresentationService();
+        var logic = new JiraLogicService();
+        var app = CreateApplication(
+            Options.Create(CreateSettings(issueTypes: [new IssueTypeName("Task")])),
+            CreateDataFacade(apiClient, presentation),
+            CreateAnalysisFacade(logic),
+            presentation,
+            new FakeRequestTelemetryCollector());
+
+        // Act
+        var exitCode = await app.RunAsync();
+
+        // Assert
+        exitCode.Should().Be(JiraApplicationExitCode.Success);
+        presentation.NoIssuesMatchedFilterShown.Should().BeFalse();
+        presentation.RejectedIssuesTableShown.Should().BeTrue();
+        presentation.RejectedIssues.Should().Equal(rejectedIssue);
+        presentation.ReportRendered.Should().BeTrue();
+        presentation.LastReportData.Should().NotBeNull();
+        presentation.LastReportData!.Source.SearchIssueCount.Should().Be(new ItemCount(1));
+        presentation.LastReportData.Transitions.RejectedIssues.Should().Equal(rejectedIssue);
+        presentation.LastReportData.Transitions.PathSummary.SuccessfulCount.Should().Be(new ItemCount(1));
+    }
+
     [Fact(DisplayName = "RunAsync transition analysis uses only issues with code")]
     [Trait("Category", "Unit")]
     public async Task RunAsyncWhenIssueHasNoCodeExcludesItFromTransitionAnalysis()

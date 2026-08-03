@@ -45,9 +45,9 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         ArgumentNullException.ThrowIfNull(reportData);
 
         var reportContext = reportData.ReportContext;
-        _statusPresenter.ShowReportHeader(_settings, new ItemCount(reportContext.IssueKeys.Count));
+        _statusPresenter.ShowReportHeader(_settings, reportContext.TransitionIssueCount);
 
-        if (reportContext.IssueKeys.Count == 0)
+        if (reportContext.TransitionIssueCount.Value == 0)
         {
             _statusPresenter.ShowNoIssuesMatchedFilter();
             return CompleteWithoutTransitionAnalysis(
@@ -60,7 +60,7 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
             reportContext.IssueKeys,
             reportContext.RejectIssueKeys,
             cancellationToken).ConfigureAwait(false);
-        if (loadResult.DoneIssues.Count == 0)
+        if (loadResult.DoneIssues.Count == 0 && loadResult.RejectIssues.Count == 0)
         {
             _statusPresenter.ShowNoIssuesLoaded();
             _diagnosticsPresenter.ShowFailures(loadResult.Failures);

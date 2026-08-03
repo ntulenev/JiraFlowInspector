@@ -76,6 +76,33 @@ public sealed class JiraApplicationAnalysisFacadeTests
         result.QaTransitionAnalysis.HoldDuration75.Should().Be(TimeSpan.FromHours(5));
     }
 
+    [Fact(DisplayName = "Analyze succeeds when only rejected issues match transition filters")]
+    [Trait("Category", "Unit")]
+    public void AnalyzeWhenOnlyRejectedIssuesMatchReturnsSuccessfulAnalysis()
+    {
+        // Arrange
+        var facade = new JiraApplicationAnalysisFacade(new JiraLogicService());
+        var now = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
+        var rejectedIssue = CreateIssue(
+            "AAA-1",
+            [
+                new TransitionEvent(new StatusName("Testing"), new StatusName("Ready for release"), now.AddHours(-2), TimeSpan.FromHours(2)),
+                new TransitionEvent(new StatusName("Ready for release"), new StatusName("Rejected"), now, TimeSpan.FromHours(1))
+            ]);
+
+        // Act
+        var result = facade.Analyze([], [rejectedIssue], [], CreateSettings());
+
+        // Assert
+        result.Outcome.Should().Be(JiraIssueAnalysisOutcome.Success);
+        result.DoneIssues.Should().BeEmpty();
+        result.RejectedIssues.Should().Equal(rejectedIssue);
+        result.PathSummary.Should().NotBeNull();
+        result.PathSummary!.SuccessfulCount.Should().Be(new ItemCount(1));
+        result.PathSummary.MatchedStageCount.Should().Be(new ItemCount(0));
+        result.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(1));
+    }
+
     private static AppSettings CreateSettings() =>
         new(
             new JiraBaseUrl("https://example.atlassian.net"),

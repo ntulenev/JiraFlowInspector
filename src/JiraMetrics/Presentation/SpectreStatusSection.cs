@@ -44,13 +44,17 @@ internal sealed class SpectreStatusSection
 
     public void ShowReportHeader(AppSettings settings, ItemCount issueCount)
     {
+        var targetStatuses = settings.RejectStatusName is { } rejectStatusName
+            ? $"{settings.DoneStatusName.Value} or {rejectStatusName.Value}"
+            : settings.DoneStatusName.Value;
+
         AnsiConsole.Write(
             new Rule($"[bold cyan]Jira Transition Analytics[/] - [bold]{issueCount.Value} issue(s)[/]")
                 .RuleStyle("grey")
                 .LeftJustified());
 
         AnsiConsole.MarkupLine(
-            $"[grey]Filter:[/] project = {Markup.Escape(settings.ProjectKey.Value)}, moved to {Markup.Escape(settings.DoneStatusName.Value)} during {Markup.Escape(settings.ReportPeriod.Label)}");
+            $"[grey]Filter:[/] project = {Markup.Escape(settings.ProjectKey.Value)}, moved to {Markup.Escape(targetStatuses)} during {Markup.Escape(settings.ReportPeriod.Label)}");
         if (settings.CreatedAfter is { } createdAfter)
         {
             AnsiConsole.MarkupLine($"[grey]Created after:[/] {Markup.Escape(createdAfter.ToString())}");
