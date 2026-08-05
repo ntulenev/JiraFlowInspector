@@ -1,41 +1,31 @@
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
-using JiraMetrics.Models.ValueObjects;
 
 namespace JiraMetrics.Logic;
 
 /// <summary>
-/// Executes timeline loading, analysis, presentation, and report rendering for a prepared report.
+/// Presents transition-analysis outcomes and renders the prepared report.
 /// </summary>
 internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRunner
 {
     internal JiraApplicationAnalysisRunner(
         AppSettings settings,
-        IJiraApplicationDataFacade dataFacade,
-        IJiraApplicationAnalysisFacade analysisFacade,
-        IJiraStatusPresenter statusPresenter,
-        IJiraAnalysisPresenter analysisPresenter,
-        IJiraDiagnosticsPresenter diagnosticsPresenter,
-        IJiraReportPipeline reportPipeline,
-        ReportRunContext runContext)
+        JiraTransitionAnalysisRunner transitionAnalysisRunner,
+        IJiraPresentationService presentation,
+        JiraReportDataFactory reportDataFactory,
+        IJiraReportPipeline reportPipeline)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(dataFacade);
-        ArgumentNullException.ThrowIfNull(analysisFacade);
-        ArgumentNullException.ThrowIfNull(statusPresenter);
-        ArgumentNullException.ThrowIfNull(analysisPresenter);
-        ArgumentNullException.ThrowIfNull(diagnosticsPresenter);
+        ArgumentNullException.ThrowIfNull(transitionAnalysisRunner);
+        ArgumentNullException.ThrowIfNull(presentation);
+        ArgumentNullException.ThrowIfNull(reportDataFactory);
         ArgumentNullException.ThrowIfNull(reportPipeline);
-        ArgumentNullException.ThrowIfNull(runContext);
 
         _settings = settings;
-        _dataFacade = dataFacade;
-        _analysisFacade = analysisFacade;
-        _statusPresenter = statusPresenter;
-        _analysisPresenter = analysisPresenter;
-        _diagnosticsPresenter = diagnosticsPresenter;
+        _transitionAnalysisRunner = transitionAnalysisRunner;
+        _presentation = presentation;
+        _reportDataFactory = reportDataFactory;
         _reportPipeline = reportPipeline;
-        _runContext = runContext;
     }
 
     public async Task<ReportGenerationOutcome> RunAsync(
@@ -45,149 +35,105 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
         ArgumentNullException.ThrowIfNull(reportData);
 
         var reportContext = reportData.ReportContext;
-        _statusPresenter.ShowReportHeader(_settings, reportContext.TransitionIssueCount);
+        _presentation.ShowReportHeader(_settings, reportContext.TransitionIssueCount);
+        var analysisResult = await _transitionAnalysisRunner
+            .RunAsync(reportContext, cancellationToken)
+            .ConfigureAwait(false);
 
-        if (reportContext.TransitionIssueCount.Value == 0)
+        return analysisResult switch
         {
-            _statusPresenter.ShowNoIssuesMatchedFilter();
-            return CompleteWithoutTransitionAnalysis(
+            JiraTransitionAnalysisResult.NoTransitionIssues => CompleteWithoutAnalysis(
                 reportData,
-                failures: [],
-                successfulCount: new ItemCount(0));
+                analysisResult,
+                _presentation.ShowNoIssuesMatchedFilter),
+            JiraTransitionAnalysisResult.NoIssuesLoaded noIssuesLoaded => CompleteWithoutAnalysis(
+                reportData,
+                analysisResult,
+                _presentation.ShowNoIssuesLoaded,
+                noIssuesLoaded.LoadResult.Failures),
+            JiraTransitionAnalysisResult.NoIssuesMatchedTypeFilter noTypeMatch =>
+                CompleteWithoutAnalysis(
+                    reportData,
+                    analysisResult,
+                    _presentation.ShowNoIssuesMatchedFilter,
+                    noTypeMatch.LoadResult.Failures),
+            JiraTransitionAnalysisResult.NoIssuesMatchedRequiredStage noStageMatch =>
+                CompleteWithoutAnalysis(
+                    reportData,
+                    analysisResult,
+                    _presentation.ShowNoIssuesMatchedRequiredStage,
+                    noStageMatch.LoadResult.Failures),
+            JiraTransitionAnalysisResult.Success success => CompleteSuccessfulAnalysis(
+                reportData,
+                success),
+            _ => throw new InvalidOperationException(
+                $"Unsupported transition-analysis result: {analysisResult.GetType().Name}.")
+        };
+    }
+
+    private ReportGenerationOutcome CompleteWithoutAnalysis(
+        JiraApplicationReportData reportData,
+        JiraTransitionAnalysisResult analysisResult,
+        Action showOutcome,
+        IReadOnlyList<LoadFailure>? failures = null)
+    {
+        showOutcome();
+        if (failures is { Count: > 0 })
+        {
+            _presentation.ShowFailures(failures);
         }
 
-        var loadResult = await _dataFacade.LoadIssueTimelinesAsync(
-            reportContext.IssueKeys,
-            reportContext.RejectIssueKeys,
-            cancellationToken).ConfigureAwait(false);
-        if (loadResult.DoneIssues.Count == 0 && loadResult.RejectIssues.Count == 0)
-        {
-            _statusPresenter.ShowNoIssuesLoaded();
-            _diagnosticsPresenter.ShowFailures(loadResult.Failures);
-            return CompleteWithoutTransitionAnalysis(
-                reportData,
-                loadResult.Failures,
-                loadResult.LoadedIssueCount);
-        }
+        ShowOpenIssuesSummary(reportData.ReportContext);
+        return RenderReport(reportData, analysisResult);
+    }
 
-        var analysis = AnalyzeLoadedIssues(loadResult);
-        if (analysis.Outcome != JiraIssueAnalysisOutcome.Success)
-        {
-            PresentUnsuccessfulAnalysis(analysis.Outcome);
-            _diagnosticsPresenter.ShowFailures(loadResult.Failures);
-            return CompleteWithoutTransitionAnalysis(
-                reportData,
-                loadResult.Failures,
-                loadResult.LoadedIssueCount);
-        }
+    private ReportGenerationOutcome CompleteSuccessfulAnalysis(
+        JiraApplicationReportData reportData,
+        JiraTransitionAnalysisResult.Success success)
+    {
+        PresentSuccessfulAnalysis(success.Analysis);
+        ShowOpenIssuesSummary(reportData.ReportContext);
+        var reportGenerationOutcome = RenderReport(reportData, success);
 
-        PresentSuccessfulAnalysis(analysis);
-        ShowOpenIssuesSummary(reportContext);
-        var reportGenerationOutcome = RenderReport(reportData, loadResult.Failures, analysis);
-
-        if (loadResult.Failures.Count > 0)
+        if (success.LoadResult.Failures.Count > 0)
         {
-            _statusPresenter.ShowSpacer();
-            _diagnosticsPresenter.ShowFailures(loadResult.Failures);
+            _presentation.ShowSpacer();
+            _presentation.ShowFailures(success.LoadResult.Failures);
         }
 
         return reportGenerationOutcome;
     }
 
-    private JiraIssueAnalysisResult AnalyzeLoadedIssues(IssueTimelineLoadResult loadResult)
+    private void PresentSuccessfulAnalysis(SuccessfulJiraIssueAnalysis analysis)
     {
-        _statusPresenter.ShowProcessingStep(
-            "Applying issue type and required-stage filters...");
-        return _analysisFacade.Analyze(
-            loadResult.DoneIssues,
-            loadResult.RejectIssues,
-            loadResult.Failures,
-            _settings);
-    }
-
-    private void PresentUnsuccessfulAnalysis(JiraIssueAnalysisOutcome outcome)
-    {
-        switch (outcome)
-        {
-            case JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter:
-                _statusPresenter.ShowNoIssuesMatchedFilter();
-                break;
-            case JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage:
-                _statusPresenter.ShowNoIssuesMatchedRequiredStage();
-                break;
-            case JiraIssueAnalysisOutcome.Success:
-                throw new InvalidOperationException("Successful analysis cannot be presented as unsuccessful.");
-            default:
-                throw new InvalidOperationException($"Unsupported analysis outcome: {outcome}.");
-        }
-    }
-
-    private void PresentSuccessfulAnalysis(JiraIssueAnalysisResult analysis)
-    {
-        _statusPresenter.ShowProcessingStep(
+        _presentation.ShowProcessingStep(
             "Calculating transition metrics and percentiles...");
-        _analysisPresenter.ShowDoneIssuesTable(analysis.DoneIssues, _settings.DoneStatusName);
-        _statusPresenter.ShowSpacer();
-        _analysisPresenter.ShowDoneDaysAtWork75PerType(
+        _presentation.ShowDoneIssuesTable(analysis.DoneIssues, _settings.DoneStatusName);
+        _presentation.ShowSpacer();
+        _presentation.ShowDoneDaysAtWork75PerType(
             analysis.DoneDaysAtWork75PerType,
             _settings.DoneStatusName);
-        _statusPresenter.ShowSpacer();
+        _presentation.ShowSpacer();
 
         if (_settings.RejectStatusName is { } rejectStatusName)
         {
-            _analysisPresenter.ShowRejectedIssuesTable(analysis.RejectedIssues, rejectStatusName);
-            _statusPresenter.ShowSpacer();
+            _presentation.ShowRejectedIssuesTable(analysis.RejectedIssues, rejectStatusName);
+            _presentation.ShowSpacer();
         }
 
-        _statusPresenter.ShowProcessingStep("Building path groups...");
-        var pathSummary = analysis.PathSummary
-            ?? throw new InvalidOperationException("Path summary is required for successful analysis.");
-        _analysisPresenter.ShowPathGroupsSummary(pathSummary);
-        _statusPresenter.ShowSpacer();
-        _analysisPresenter.ShowPathGroups(analysis.PathGroups);
-    }
-
-    private ReportGenerationOutcome CompleteWithoutTransitionAnalysis(
-        JiraApplicationReportData reportData,
-        IReadOnlyList<LoadFailure> failures,
-        ItemCount successfulCount)
-    {
-        ShowOpenIssuesSummary(reportData.ReportContext);
-        return RenderReport(reportData, failures, analysis: null, successfulCount);
+        _presentation.ShowProcessingStep("Building path groups...");
+        _presentation.ShowPathGroupsSummary(analysis.PathSummary);
+        _presentation.ShowSpacer();
+        _presentation.ShowPathGroups(analysis.PathGroups);
     }
 
     private ReportGenerationOutcome RenderReport(
         JiraApplicationReportData reportData,
-        IReadOnlyList<LoadFailure> failures,
-        JiraIssueAnalysisResult? analysis,
-        ItemCount successfulCount = default)
+        JiraTransitionAnalysisResult analysisResult)
     {
-        _statusPresenter.ShowProcessingStep("Rendering reports...");
-
-        var renderedReport = analysis is null
-            ? JiraReportData.CreateWithoutTransitionAnalysis(
-                _runContext,
-                _settings,
-                reportData.ReportContext,
-                reportData.AllTasksRatio,
-                reportData.BugRatio,
-                reportData.InternalIncidents,
-                reportData.TestCoverage,
-                failures,
-                successfulCount,
-                matchedStageCount: new ItemCount(0))
-            : JiraReportData.Create(
-                _runContext,
-                _settings,
-                reportData.ReportContext,
-                reportData.AllTasksRatio,
-                reportData.BugRatio,
-                reportData.InternalIncidents,
-                reportData.TestCoverage,
-                analysis,
-                failures);
-
-        return _reportPipeline.RenderReport(renderedReport);
+        _presentation.ShowProcessingStep("Rendering reports...");
+        return _reportPipeline.RenderReport(
+            _reportDataFactory.Create(reportData, analysisResult));
     }
 
     private void ShowOpenIssuesSummary(JiraReportContext reportContext)
@@ -197,19 +143,16 @@ internal sealed class JiraApplicationAnalysisRunner : IJiraApplicationAnalysisRu
             return;
         }
 
-        _diagnosticsPresenter.ShowOpenIssuesByStatusSummary(
+        _presentation.ShowOpenIssuesByStatusSummary(
             reportContext.OpenIssuesByStatus,
             _settings.DoneStatusName,
             _settings.RejectStatusName);
-        _statusPresenter.ShowSpacer();
+        _presentation.ShowSpacer();
     }
 
     private readonly AppSettings _settings;
-    private readonly IJiraApplicationDataFacade _dataFacade;
-    private readonly IJiraApplicationAnalysisFacade _analysisFacade;
-    private readonly IJiraStatusPresenter _statusPresenter;
-    private readonly IJiraAnalysisPresenter _analysisPresenter;
-    private readonly IJiraDiagnosticsPresenter _diagnosticsPresenter;
+    private readonly JiraTransitionAnalysisRunner _transitionAnalysisRunner;
+    private readonly IJiraPresentationService _presentation;
+    private readonly JiraReportDataFactory _reportDataFactory;
     private readonly IJiraReportPipeline _reportPipeline;
-    private readonly ReportRunContext _runContext;
 }

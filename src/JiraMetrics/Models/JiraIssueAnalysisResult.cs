@@ -1,68 +1,24 @@
 namespace JiraMetrics.Models;
 
 /// <summary>
-/// Aggregated issue analysis results used by presentation and PDF rendering.
+/// Represents one valid outcome of applying issue-analysis filters.
 /// </summary>
-public sealed record JiraIssueAnalysisResult
+public abstract record JiraIssueAnalysisResult
+{
+    private protected JiraIssueAnalysisResult()
+    {
+    }
+}
+
+/// <summary>
+/// Represents a completed analysis with all report datasets.
+/// </summary>
+public sealed record SuccessfulJiraIssueAnalysis : JiraIssueAnalysisResult
 {
     /// <summary>
-    /// Gets the overall analysis outcome.
+    /// Initializes a successful analysis result.
     /// </summary>
-    public required JiraIssueAnalysisOutcome Outcome { get; init; }
-
-    /// <summary>
-    /// Gets filtered done issues.
-    /// </summary>
-    public IReadOnlyList<IssueTimeline> DoneIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets filtered rejected issues.
-    /// </summary>
-    public IReadOnlyList<IssueTimeline> RejectedIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets P75 work-duration summaries per issue type.
-    /// </summary>
-    public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; init; } = [];
-
-    /// <summary>
-    /// Gets issues matched by configured custom transition analysis.
-    /// </summary>
-    public IReadOnlyList<CustomTransitionIssue> CustomTransitionIssues { get; init; } = [];
-
-    /// <summary>
-    /// Gets custom transition P75 duration summaries per issue type.
-    /// </summary>
-    public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; init; } = [];
-
-    /// <summary>
-    /// Gets QA-specific transition measurements.
-    /// </summary>
-    public QaTransitionAnalysis QaTransitionAnalysis { get; init; } = QaTransitionAnalysis.Empty;
-
-    /// <summary>
-    /// Gets grouped issue paths.
-    /// </summary>
-    public IReadOnlyList<PathGroup> PathGroups { get; init; } = [];
-
-    /// <summary>
-    /// Gets path-group summary for the analyzed issues.
-    /// </summary>
-    public PathGroupsSummary? PathSummary { get; init; }
-
-    /// <summary>
-    /// Creates a result for a successful analysis.
-    /// </summary>
-    /// <param name="doneIssues">The <paramref name="doneIssues"/> value.</param>
-    /// <param name="rejectedIssues">The <paramref name="rejectedIssues"/> value.</param>
-    /// <param name="doneDaysAtWork75PerType">The <paramref name="doneDaysAtWork75PerType"/> value.</param>
-    /// <param name="customTransitionIssues">The <paramref name="customTransitionIssues"/> value.</param>
-    /// <param name="customTransitionDuration75PerType">The <paramref name="customTransitionDuration75PerType"/> value.</param>
-    /// <param name="pathGroups">The <paramref name="pathGroups"/> value.</param>
-    /// <param name="pathSummary">The <paramref name="pathSummary"/> value.</param>
-    /// <param name="qaTransitionAnalysis">The <paramref name="qaTransitionAnalysis"/> value.</param>
-    /// <returns>The result of the operation.</returns>
-    public static JiraIssueAnalysisResult Success(
+    public SuccessfulJiraIssueAnalysis(
         IReadOnlyList<IssueTimeline> doneIssues,
         IReadOnlyList<IssueTimeline> rejectedIssues,
         IReadOnlyList<IssueTypeWorkDays75Summary> doneDaysAtWork75PerType,
@@ -80,35 +36,63 @@ public sealed record JiraIssueAnalysisResult
         ArgumentNullException.ThrowIfNull(pathGroups);
         ArgumentNullException.ThrowIfNull(pathSummary);
 
-        return new JiraIssueAnalysisResult
-        {
-            Outcome = JiraIssueAnalysisOutcome.Success,
-            DoneIssues = doneIssues,
-            RejectedIssues = rejectedIssues,
-            DoneDaysAtWork75PerType = doneDaysAtWork75PerType,
-            CustomTransitionIssues = customTransitionIssues,
-            CustomTransitionDuration75PerType = customTransitionDuration75PerType,
-            QaTransitionAnalysis = qaTransitionAnalysis ?? QaTransitionAnalysis.Empty,
-            PathGroups = pathGroups,
-            PathSummary = pathSummary
-        };
+        DoneIssues = doneIssues;
+        RejectedIssues = rejectedIssues;
+        DoneDaysAtWork75PerType = doneDaysAtWork75PerType;
+        CustomTransitionIssues = customTransitionIssues;
+        CustomTransitionDuration75PerType = customTransitionDuration75PerType;
+        QaTransitionAnalysis = qaTransitionAnalysis ?? QaTransitionAnalysis.Empty;
+        PathGroups = pathGroups;
+        PathSummary = pathSummary;
     }
 
     /// <summary>
-    /// Creates a result when no issues match the configured issue-type filter.
+    /// Gets filtered done issues.
     /// </summary>
-    public static JiraIssueAnalysisResult NoIssuesMatchedTypeFilter() =>
-        new()
-        {
-            Outcome = JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter
-        };
+    public IReadOnlyList<IssueTimeline> DoneIssues { get; }
 
     /// <summary>
-    /// Creates a result when no issues match the required stage filter.
+    /// Gets filtered rejected issues.
     /// </summary>
-    public static JiraIssueAnalysisResult NoIssuesMatchedRequiredStage() =>
-        new()
-        {
-            Outcome = JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage
-        };
+    public IReadOnlyList<IssueTimeline> RejectedIssues { get; }
+
+    /// <summary>
+    /// Gets P75 work-duration summaries per issue type.
+    /// </summary>
+    public IReadOnlyList<IssueTypeWorkDays75Summary> DoneDaysAtWork75PerType { get; }
+
+    /// <summary>
+    /// Gets issues matched by configured custom transition analysis.
+    /// </summary>
+    public IReadOnlyList<CustomTransitionIssue> CustomTransitionIssues { get; }
+
+    /// <summary>
+    /// Gets custom transition P75 duration summaries per issue type.
+    /// </summary>
+    public IReadOnlyList<IssueTypeDuration75Summary> CustomTransitionDuration75PerType { get; }
+
+    /// <summary>
+    /// Gets QA-specific transition measurements.
+    /// </summary>
+    public QaTransitionAnalysis QaTransitionAnalysis { get; }
+
+    /// <summary>
+    /// Gets grouped issue paths.
+    /// </summary>
+    public IReadOnlyList<PathGroup> PathGroups { get; }
+
+    /// <summary>
+    /// Gets path-group summary for the analyzed issues.
+    /// </summary>
+    public PathGroupsSummary PathSummary { get; }
 }
+
+/// <summary>
+/// Represents an analysis where no issue matched the issue-type filter.
+/// </summary>
+public sealed record NoIssuesMatchedTypeFilterAnalysis : JiraIssueAnalysisResult;
+
+/// <summary>
+/// Represents an analysis where no issue matched the required-stage filter.
+/// </summary>
+public sealed record NoIssuesMatchedRequiredStageAnalysis : JiraIssueAnalysisResult;

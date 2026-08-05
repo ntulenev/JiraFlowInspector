@@ -33,7 +33,7 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             : _logicService.FilterIssuesByIssueTypes(rejectIssues, settings.IssueTypes);
         if (issuesByType.Count == 0 && rejectIssuesByType.Count == 0)
         {
-            return JiraIssueAnalysisResult.NoIssuesMatchedTypeFilter();
+            return new NoIssuesMatchedTypeFilterAnalysis();
         }
 
         var filteredIssues = _logicService.FilterIssuesByRequiredStage(
@@ -44,7 +44,7 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             settings.RequiredPathStages);
         if (filteredIssues.Count == 0 && filteredRejectedIssues.Count == 0)
         {
-            return JiraIssueAnalysisResult.NoIssuesMatchedRequiredStage();
+            return new NoIssuesMatchedRequiredStageAnalysis();
         }
 
         var doneDaysAtWork75PerType = _logicService.BuildDaysAtWork75PerType(
@@ -83,7 +83,7 @@ internal sealed class JiraApplicationAnalysisFacade : IJiraApplicationAnalysisFa
             new ItemCount(failures.Count),
             new ItemCount(groups.Count));
 
-        return JiraIssueAnalysisResult.Success(
+        return new SuccessfulJiraIssueAnalysis(
             filteredIssues,
             filteredRejectedIssues,
             doneDaysAtWork75PerType,

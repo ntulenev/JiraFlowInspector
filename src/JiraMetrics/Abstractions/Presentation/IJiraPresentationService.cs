@@ -10,5 +10,9 @@ public interface IJiraPresentationService :
     IJiraAnalysisPresenter,
     IJiraDiagnosticsPresenter
 {
+    /// <summary>
+    /// Stops active progress output and writes a spacer.
+    /// </summary>
+    new void ShowSpacer();
 }
 

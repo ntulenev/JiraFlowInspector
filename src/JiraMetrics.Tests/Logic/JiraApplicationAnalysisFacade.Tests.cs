@@ -62,18 +62,18 @@ public sealed class JiraApplicationAnalysisFacadeTests
             settings);
 
         // Assert
-        result.Outcome.Should().Be(JiraIssueAnalysisOutcome.Success);
-        result.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(4));
-        result.QaTransitionAnalysis.PickupIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-3", "AAA-1");
-        result.QaTransitionAnalysis.PickupIssuePercentage.Should().Be(50m);
-        result.QaTransitionAnalysis.PickupDuration75.Should().Be(TimeSpan.FromHours(8));
-        result.QaTransitionAnalysis.TestingIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-5", "AAA-3", "AAA-1", "AAA-2");
-        result.QaTransitionAnalysis.TestingIssues[0].Rule.Label.Should().Be("Manual QA -> Ready for release");
-        result.QaTransitionAnalysis.TestingIssues[0].Duration.Should().Be(TimeSpan.FromHours(9));
-        result.QaTransitionAnalysis.TestingIssues[3].Rule.Label.Should().Be("Manual QA -> Ready for release");
-        result.QaTransitionAnalysis.TestingDuration75.Should().Be(TimeSpan.FromHours(8.25));
-        result.QaTransitionAnalysis.HoldIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-5");
-        result.QaTransitionAnalysis.HoldDuration75.Should().Be(TimeSpan.FromHours(5));
+        var success = result.Should().BeOfType<SuccessfulJiraIssueAnalysis>().Which;
+        success.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(4));
+        success.QaTransitionAnalysis.PickupIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-3", "AAA-1");
+        success.QaTransitionAnalysis.PickupIssuePercentage.Should().Be(50m);
+        success.QaTransitionAnalysis.PickupDuration75.Should().Be(TimeSpan.FromHours(8));
+        success.QaTransitionAnalysis.TestingIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-5", "AAA-3", "AAA-1", "AAA-2");
+        success.QaTransitionAnalysis.TestingIssues[0].Rule.Label.Should().Be("Manual QA -> Ready for release");
+        success.QaTransitionAnalysis.TestingIssues[0].Duration.Should().Be(TimeSpan.FromHours(9));
+        success.QaTransitionAnalysis.TestingIssues[3].Rule.Label.Should().Be("Manual QA -> Ready for release");
+        success.QaTransitionAnalysis.TestingDuration75.Should().Be(TimeSpan.FromHours(8.25));
+        success.QaTransitionAnalysis.HoldIssues.Select(static item => item.Issue.Key.Value).Should().Equal("AAA-5");
+        success.QaTransitionAnalysis.HoldDuration75.Should().Be(TimeSpan.FromHours(5));
     }
 
     [Fact(DisplayName = "Analyze succeeds when only rejected issues match transition filters")]
@@ -94,13 +94,12 @@ public sealed class JiraApplicationAnalysisFacadeTests
         var result = facade.Analyze([], [rejectedIssue], [], CreateSettings());
 
         // Assert
-        result.Outcome.Should().Be(JiraIssueAnalysisOutcome.Success);
-        result.DoneIssues.Should().BeEmpty();
-        result.RejectedIssues.Should().Equal(rejectedIssue);
-        result.PathSummary.Should().NotBeNull();
-        result.PathSummary!.SuccessfulCount.Should().Be(new ItemCount(1));
-        result.PathSummary.MatchedStageCount.Should().Be(new ItemCount(0));
-        result.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(1));
+        var success = result.Should().BeOfType<SuccessfulJiraIssueAnalysis>().Which;
+        success.DoneIssues.Should().BeEmpty();
+        success.RejectedIssues.Should().Equal(rejectedIssue);
+        success.PathSummary.SuccessfulCount.Should().Be(new ItemCount(1));
+        success.PathSummary.MatchedStageCount.Should().Be(new ItemCount(0));
+        success.QaTransitionAnalysis.AnalyzedIssueCount.Should().Be(new ItemCount(1));
     }
 
     private static AppSettings CreateSettings() =>

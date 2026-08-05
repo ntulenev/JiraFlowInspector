@@ -30,15 +30,20 @@ internal static class ApplicationServiceCollectionExtensions
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraReportSectionsPresenter>()))
-            .AddScoped<IJiraApplicationAnalysisRunner>(sp => new JiraApplicationAnalysisRunner(
+            .AddScoped(sp => new JiraTransitionAnalysisRunner(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>(),
                 sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
-                sp.GetRequiredService<IJiraStatusPresenter>(),
-                sp.GetRequiredService<IJiraAnalysisPresenter>(),
-                sp.GetRequiredService<IJiraDiagnosticsPresenter>(),
-                sp.GetRequiredService<IJiraReportPipeline>(),
+                sp.GetRequiredService<IJiraStatusPresenter>()))
+            .AddScoped(sp => new JiraReportDataFactory(
+                sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<ReportRunContext>()))
+            .AddScoped<IJiraApplicationAnalysisRunner>(sp => new JiraApplicationAnalysisRunner(
+                sp.GetRequiredService<IOptions<AppSettings>>().Value,
+                sp.GetRequiredService<JiraTransitionAnalysisRunner>(),
+                sp.GetRequiredService<IJiraPresentationService>(),
+                sp.GetRequiredService<JiraReportDataFactory>(),
+                sp.GetRequiredService<IJiraReportPipeline>()))
             .AddScoped<IJiraReportPipeline, JiraReportPipeline>()
             .AddScoped<IJiraApplication>(sp => new JiraApplication(
                 sp.GetRequiredService<IJiraStatusPresenter>(),

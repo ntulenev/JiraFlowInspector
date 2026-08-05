@@ -19,13 +19,13 @@ public sealed class JiraIssueAnalysisResultTests
         var pathGroups = new List<PathGroup>();
         var pathSummary = new PathGroupsSummary(new ItemCount(1), new ItemCount(1), new ItemCount(0), new ItemCount(1));
 
-        Action nullDoneIssues = () => _ = JiraIssueAnalysisResult.Success(null!, rejectedIssues, summaries, customTransitionIssues, customTransitionSummaries, pathGroups, pathSummary);
-        Action nullRejectedIssues = () => _ = JiraIssueAnalysisResult.Success(doneIssues, null!, summaries, customTransitionIssues, customTransitionSummaries, pathGroups, pathSummary);
-        Action nullSummaries = () => _ = JiraIssueAnalysisResult.Success(doneIssues, rejectedIssues, null!, customTransitionIssues, customTransitionSummaries, pathGroups, pathSummary);
-        Action nullCustomTransitionIssues = () => _ = JiraIssueAnalysisResult.Success(doneIssues, rejectedIssues, summaries, null!, customTransitionSummaries, pathGroups, pathSummary);
-        Action nullCustomTransitionSummaries = () => _ = JiraIssueAnalysisResult.Success(doneIssues, rejectedIssues, summaries, customTransitionIssues, null!, pathGroups, pathSummary);
-        Action nullPathGroups = () => _ = JiraIssueAnalysisResult.Success(doneIssues, rejectedIssues, summaries, customTransitionIssues, customTransitionSummaries, null!, pathSummary);
-        Action nullPathSummary = () => _ = JiraIssueAnalysisResult.Success(doneIssues, rejectedIssues, summaries, customTransitionIssues, customTransitionSummaries, pathGroups, null!);
+        Action nullDoneIssues = () => _ = new SuccessfulJiraIssueAnalysis(null!, rejectedIssues, summaries, customTransitionIssues, customTransitionSummaries, pathGroups, pathSummary);
+        Action nullRejectedIssues = () => _ = new SuccessfulJiraIssueAnalysis(doneIssues, null!, summaries, customTransitionIssues, customTransitionSummaries, pathGroups, pathSummary);
+        Action nullSummaries = () => _ = new SuccessfulJiraIssueAnalysis(doneIssues, rejectedIssues, null!, customTransitionIssues, customTransitionSummaries, pathGroups, pathSummary);
+        Action nullCustomTransitionIssues = () => _ = new SuccessfulJiraIssueAnalysis(doneIssues, rejectedIssues, summaries, null!, customTransitionSummaries, pathGroups, pathSummary);
+        Action nullCustomTransitionSummaries = () => _ = new SuccessfulJiraIssueAnalysis(doneIssues, rejectedIssues, summaries, customTransitionIssues, null!, pathGroups, pathSummary);
+        Action nullPathGroups = () => _ = new SuccessfulJiraIssueAnalysis(doneIssues, rejectedIssues, summaries, customTransitionIssues, customTransitionSummaries, null!, pathSummary);
+        Action nullPathSummary = () => _ = new SuccessfulJiraIssueAnalysis(doneIssues, rejectedIssues, summaries, customTransitionIssues, customTransitionSummaries, pathGroups, null!);
 
         nullDoneIssues.Should().Throw<ArgumentNullException>();
         nullRejectedIssues.Should().Throw<ArgumentNullException>();
@@ -56,7 +56,7 @@ public sealed class JiraIssueAnalysisResultTests
             new List<PathGroup> { new(new PathLabel("Open -> Done"), doneIssues, [], TimeSpan.FromDays(2)) };
         var pathSummary = new PathGroupsSummary(new ItemCount(2), new ItemCount(2), new ItemCount(0), new ItemCount(1));
 
-        var result = JiraIssueAnalysisResult.Success(
+        var result = new SuccessfulJiraIssueAnalysis(
             doneIssues,
             rejectedIssues,
             summaries,
@@ -65,7 +65,6 @@ public sealed class JiraIssueAnalysisResultTests
             pathGroups,
             pathSummary);
 
-        result.Outcome.Should().Be(JiraIssueAnalysisOutcome.Success);
         result.DoneIssues.Should().BeSameAs(doneIssues);
         result.RejectedIssues.Should().BeSameAs(rejectedIssues);
         result.DoneDaysAtWork75PerType.Should().BeSameAs(summaries);
@@ -75,36 +74,22 @@ public sealed class JiraIssueAnalysisResultTests
         result.PathSummary.Should().Be(pathSummary);
     }
 
-    [Fact(DisplayName = "NoIssuesMatchedTypeFilter returns matching outcome")]
+    [Fact(DisplayName = "NoIssuesMatchedTypeFilter is a typed analysis outcome")]
     [Trait("Category", "Unit")]
     public void NoIssuesMatchedTypeFilterWhenCalledReturnsExpectedOutcome()
     {
-        var result = JiraIssueAnalysisResult.NoIssuesMatchedTypeFilter();
+        JiraIssueAnalysisResult result = new NoIssuesMatchedTypeFilterAnalysis();
 
-        result.Outcome.Should().Be(JiraIssueAnalysisOutcome.NoIssuesMatchedTypeFilter);
-        result.DoneIssues.Should().BeEmpty();
-        result.RejectedIssues.Should().BeEmpty();
-        result.DoneDaysAtWork75PerType.Should().BeEmpty();
-        result.CustomTransitionIssues.Should().BeEmpty();
-        result.CustomTransitionDuration75PerType.Should().BeEmpty();
-        result.PathGroups.Should().BeEmpty();
-        result.PathSummary.Should().BeNull();
+        result.Should().BeOfType<NoIssuesMatchedTypeFilterAnalysis>();
     }
 
-    [Fact(DisplayName = "NoIssuesMatchedRequiredStage returns matching outcome")]
+    [Fact(DisplayName = "NoIssuesMatchedRequiredStage is a typed analysis outcome")]
     [Trait("Category", "Unit")]
     public void NoIssuesMatchedRequiredStageWhenCalledReturnsExpectedOutcome()
     {
-        var result = JiraIssueAnalysisResult.NoIssuesMatchedRequiredStage();
+        JiraIssueAnalysisResult result = new NoIssuesMatchedRequiredStageAnalysis();
 
-        result.Outcome.Should().Be(JiraIssueAnalysisOutcome.NoIssuesMatchedRequiredStage);
-        result.DoneIssues.Should().BeEmpty();
-        result.RejectedIssues.Should().BeEmpty();
-        result.DoneDaysAtWork75PerType.Should().BeEmpty();
-        result.CustomTransitionIssues.Should().BeEmpty();
-        result.CustomTransitionDuration75PerType.Should().BeEmpty();
-        result.PathGroups.Should().BeEmpty();
-        result.PathSummary.Should().BeNull();
+        result.Should().BeOfType<NoIssuesMatchedRequiredStageAnalysis>();
     }
 
     private static IssueTimeline CreateIssueTimeline(string key)

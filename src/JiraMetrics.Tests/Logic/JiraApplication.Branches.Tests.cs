@@ -268,7 +268,7 @@ public sealed class JiraApplicationBranchesTests
                 It.IsAny<IReadOnlyList<IssueTimeline>>(),
                 failures,
                 settings))
-            .Returns(JiraIssueAnalysisResult.NoIssuesMatchedRequiredStage());
+            .Returns(new NoIssuesMatchedRequiredStageAnalysis());
         telemetryCollector.Setup(collector => collector.GetSummary())
             .Returns(new JiraRequestTelemetrySummary(0, 0, 0, TimeSpan.Zero, []));
 
@@ -291,60 +291,6 @@ public sealed class JiraApplicationBranchesTests
             Times.Once);
     }
 
-    [Fact(DisplayName = "RunAsync rethrows when analysis outcome is unsupported")]
-    [Trait("Category", "Unit")]
-    public async Task RunAsyncWhenAnalysisOutcomeIsUnsupportedThrowsInvalidOperationException()
-    {
-        // Arrange
-        using var cts = new CancellationTokenSource();
-        var settings = CreateSettings();
-        var dataFacade = new Mock<IJiraApplicationDataFacade>(MockBehavior.Strict);
-        var analysisFacade = new Mock<IJiraApplicationAnalysisFacade>(MockBehavior.Strict);
-        var reportingFacade = CreateReportingFacade();
-        var telemetryCollector = new Mock<IJiraRequestTelemetryCollector>(MockBehavior.Strict);
-        telemetryCollector.Setup(collector => collector.Reset());
-        var reportContext = CreateReportContext();
-        var loadedIssue = CreateIssue("APP-1");
-
-        dataFacade.Setup(facade => facade.GetCurrentUserAsync(cts.Token))
-            .ReturnsAsync(CreateUser());
-        dataFacade.Setup(facade => facade.LoadReportContextAsync(
-                settings,
-                It.Is<CancellationToken>(token => token.CanBeCanceled)))
-            .ReturnsAsync(reportContext);
-        dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
-                settings,
-                It.IsAny<IReadOnlyList<IssueTypeName>>(),
-                It.Is<CancellationToken>(token => token.CanBeCanceled)))
-            .ReturnsAsync(CreateRatioSnapshot());
-        dataFacade.Setup(facade => facade.LoadIssueTimelinesAsync(
-                reportContext.IssueKeys,
-                reportContext.RejectIssueKeys,
-                cts.Token))
-            .ReturnsAsync(new IssueTimelineLoadResult([loadedIssue], [], [], new ItemCount(1)));
-        analysisFacade.Setup(facade => facade.Analyze(
-                It.IsAny<IReadOnlyList<IssueTimeline>>(),
-                It.IsAny<IReadOnlyList<IssueTimeline>>(),
-                It.IsAny<IReadOnlyList<LoadFailure>>(),
-                settings))
-            .Returns(new JiraIssueAnalysisResult
-            {
-                Outcome = (JiraIssueAnalysisOutcome)999
-            });
-        telemetryCollector.Setup(collector => collector.GetSummary())
-            .Returns(new JiraRequestTelemetrySummary(0, 0, 0, TimeSpan.Zero, []));
-
-        var app = CreateApplication(settings, dataFacade, analysisFacade, reportingFacade, telemetryCollector);
-
-        // Act
-        Func<Task> act = () => app.RunAsync(cts.Token);
-
-        // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Unsupported analysis outcome*");
-        reportingFacade.Verify(facade => facade.ShowExecutionSummary(It.IsAny<TimeSpan>(), It.IsAny<JiraRequestTelemetrySummary>()), Times.Once);
-    }
-
     private static Mock<IJiraPresentationService> CreateReportingFacade()
     {
         var reportingFacade = new Mock<IJiraPresentationService>(MockBehavior.Strict);
@@ -358,6 +304,7 @@ public sealed class JiraApplicationBranchesTests
         reportingFacade.Setup(facade => facade.ShowReportHeader(It.IsAny<AppSettings>(), It.IsAny<ItemCount>()));
         reportingFacade.Setup(facade => facade.ShowNoIssuesMatchedFilter());
         reportingFacade.Setup(facade => facade.ShowProcessingStep(It.IsAny<string>()));
+        reportingFacade.Setup(facade => facade.ShowSpacer());
         reportingFacade.As<IJiraStatusPresenter>().Setup(presenter => presenter.ShowSpacer());
         reportingFacade.Setup(facade => facade.ShowNoIssuesLoaded());
         reportingFacade.Setup(facade => facade.ShowNoIssuesMatchedRequiredStage());
@@ -395,6 +342,9 @@ public sealed class JiraApplicationBranchesTests
         Mock<IJiraPresentationService> reportingFacade,
         Mock<IJiraRequestTelemetryCollector> telemetryCollector)
     {
+        var reportRunContext = new ReportRunContext(
+            new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)));
+
         return new JiraApplication(
             reportingFacade.Object,
             telemetryCollector.Object,
@@ -407,14 +357,14 @@ public sealed class JiraApplicationBranchesTests
                 reportingFacade.Object),
             new JiraApplicationAnalysisRunner(
                 settings,
-                dataFacade.Object,
-                analysisFacade.Object,
+                new JiraTransitionAnalysisRunner(
+                    settings,
+                    dataFacade.Object,
+                    analysisFacade.Object,
+                    reportingFacade.Object),
                 reportingFacade.Object,
-                reportingFacade.Object,
-                reportingFacade.Object,
-                reportingFacade.As<IJiraReportPipeline>().Object,
-                new ReportRunContext(
-                    new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)))));
+                new JiraReportDataFactory(settings, reportRunContext),
+                reportingFacade.As<IJiraReportPipeline>().Object));
     }
 
     private static AppSettings CreateSettings(IReadOnlyList<IssueTypeName>? bugIssueNames = null)

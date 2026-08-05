@@ -1106,6 +1106,9 @@ public sealed partial class JiraApplicationTests
         ArgumentNullException.ThrowIfNull(requestTelemetryCollector);
 
         var appSettings = settings.Value;
+        var reportRunContext = new ReportRunContext(
+            new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)));
+
         return new JiraApplication(
             presentation,
             requestTelemetryCollector,
@@ -1113,14 +1116,14 @@ public sealed partial class JiraApplicationTests
             new JiraApplicationReportPresenter(appSettings, presentation, presentation),
             new JiraApplicationAnalysisRunner(
                 appSettings,
-                dataFacade,
-                analysisFacade,
+                new JiraTransitionAnalysisRunner(
+                    appSettings,
+                    dataFacade,
+                    analysisFacade,
+                    presentation),
                 presentation,
-                presentation,
-                presentation,
-                presentation,
-                new ReportRunContext(
-                    new DateTimeOffset(2026, 2, 3, 23, 59, 58, TimeSpan.FromHours(2)))));
+                new JiraReportDataFactory(appSettings, reportRunContext),
+                presentation));
     }
 
     private static AppSettings CreateSettings(

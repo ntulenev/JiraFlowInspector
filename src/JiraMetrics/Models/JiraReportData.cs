@@ -85,7 +85,7 @@ public sealed class JiraReportData
         IssueRatioSnapshot? bugRatio,
         IssueRatioSnapshot? internalIncidents,
         TestCoverageSnapshot testCoverage,
-        JiraIssueAnalysisResult analysis,
+        SuccessfulJiraIssueAnalysis analysis,
         IReadOnlyList<LoadFailure> failures)
     {
         ArgumentNullException.ThrowIfNull(runContext);
@@ -94,18 +94,6 @@ public sealed class JiraReportData
         ArgumentNullException.ThrowIfNull(allTasksRatio);
         ArgumentNullException.ThrowIfNull(analysis);
         ArgumentNullException.ThrowIfNull(failures);
-
-        if (analysis.Outcome != JiraIssueAnalysisOutcome.Success)
-        {
-            throw new InvalidOperationException(
-                "Report data can only be created for a successful analysis.");
-        }
-
-        if (analysis.PathSummary is null)
-        {
-            throw new InvalidOperationException(
-                "Successful analysis must include path summary data.");
-        }
 
         return CreateCore(
             runContext,
