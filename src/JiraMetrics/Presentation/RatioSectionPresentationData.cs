@@ -50,6 +50,7 @@ internal sealed class RatioSectionPresentationData
                 ? null
                 : CreateOptionalRatio(ratios.InternalIncidents),
             settings.TestCoverage is { Enabled: true } testCoverageSettings
+                && reportData.IsOptionalSectionAvailable(OptionalReportSection.TestCoverage)
                 ? TestCoveragePresentationData.Create(testCoverageSettings, ratios.TestCoverage)
                 : null,
             JoinIssueTypes(settings.BugIssueNames, emptyValue: "-"),

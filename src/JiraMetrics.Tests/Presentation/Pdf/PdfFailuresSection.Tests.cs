@@ -46,6 +46,27 @@ public sealed class PdfFailuresSectionTests
         bytes.Should().NotBeEmpty();
     }
 
+    [Fact(DisplayName = "Compose renders optional section failures")]
+    [Trait("Category", "Unit")]
+    public void ComposeWhenOptionalSectionFailuresArePresentProducesValidPdf()
+    {
+        // Arrange
+        var section = new PdfFailuresSection();
+        var reportData = CreateReportData(
+            [],
+            [
+                new OptionalSectionLoadFailure(
+                    OptionalReportSection.ReleaseReport,
+                    new ErrorMessage("Release data unavailable."))
+            ]);
+
+        // Act
+        var bytes = GeneratePdf(column => section.Compose(column, reportData));
+
+        // Assert
+        bytes.Should().NotBeEmpty();
+    }
+
     private static byte[] GeneratePdf(Action<ColumnDescriptor> composeContent)
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -63,7 +84,9 @@ public sealed class PdfFailuresSectionTests
             .GeneratePdf();
     }
 
-    private static JiraReportData CreateReportData(IReadOnlyList<LoadFailure> failures)
+    private static JiraReportData CreateReportData(
+        IReadOnlyList<LoadFailure> failures,
+        IReadOnlyList<OptionalSectionLoadFailure>? optionalSectionFailures = null)
     {
         return new JiraReportData
         {
@@ -87,7 +110,8 @@ public sealed class PdfFailuresSectionTests
                     new ItemCount(failures.Count),
                     new ItemCount(1))
             },
-            Failures = failures
+            Failures = failures,
+            OptionalSectionFailures = optionalSectionFailures ?? []
         };
     }
 }

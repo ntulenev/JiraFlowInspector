@@ -259,7 +259,31 @@ public sealed partial class HtmlContentComposerTests
         html.Should().NotContain("id=\"failures\"");
     }
 
-    private static JiraReportData CreateReportData()
+    [Fact(DisplayName = "Compose renders optional section failures and omits unavailable data sections")]
+    [Trait("Category", "Unit")]
+    public void ComposeWhenOptionalSectionFailsRendersWarningInsteadOfEmptySection()
+    {
+        // Arrange
+        var composer = new HtmlContentComposer();
+        var reportData = CreateReportData(
+        [
+            new OptionalSectionLoadFailure(
+                OptionalReportSection.ReleaseReport,
+                new ErrorMessage("Release data unavailable."))
+        ]);
+
+        // Act
+        var html = composer.Compose(reportData);
+
+        // Assert
+        html.Should().Contain("Optional Sections Unavailable");
+        html.Should().Contain("Release data unavailable.");
+        html.Should().NotContain("id=\"releases\"");
+        html.Should().NotContain("id=\"components-release-table\"");
+    }
+
+    private static JiraReportData CreateReportData(
+        IReadOnlyList<OptionalSectionLoadFailure>? optionalSectionFailures = null)
     {
         var settings = CreateSettings();
         var transition = new TransitionEvent(
@@ -434,7 +458,8 @@ public sealed partial class HtmlContentComposerTests
                     TimeSpan.FromHours(3))
             ]
             },
-            Failures = [new LoadFailure(new IssueKey("AAA-9"), new ErrorMessage("Timeout"))]
+            Failures = [new LoadFailure(new IssueKey("AAA-9"), new ErrorMessage("Timeout"))],
+            OptionalSectionFailures = optionalSectionFailures ?? []
         };
     }
 

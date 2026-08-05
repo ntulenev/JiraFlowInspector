@@ -15,11 +15,50 @@ internal sealed class PdfFailuresSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
+        if (reportData.OptionalSectionFailures.Count > 0)
+        {
+            ComposeOptionalSectionFailures(column, reportData.OptionalSectionFailures);
+        }
+
         if (reportData.Failures.Count == 0)
         {
             return;
         }
 
+        ComposeIssueFailures(column, reportData);
+    }
+
+    private static void ComposeOptionalSectionFailures(
+        ColumnDescriptor column,
+        IReadOnlyList<OptionalSectionLoadFailure> failures)
+    {
+        _ = column.Item().Text("Optional sections unavailable").Bold().FontSize(12).FontColor(Colors.Orange.Darken2);
+
+        column.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
+                columns.RelativeColumn(2);
+                columns.RelativeColumn(4);
+            });
+
+            table.Header(header =>
+            {
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Section");
+                _ = header.Cell().Element(PdfPresentationHelpers.StyleHeaderCell).Text("Reason");
+            });
+
+            foreach (var failure in failures)
+            {
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell)
+                    .Text(OptionalReportSectionNames.GetDisplayName(failure.Section));
+                _ = table.Cell().Element(PdfPresentationHelpers.StyleBodyCell).Text(failure.Error.Value);
+            }
+        });
+    }
+
+    private static void ComposeIssueFailures(ColumnDescriptor column, JiraReportData reportData)
+    {
         _ = column.Item().Text("Failed issues").Bold().FontSize(12).FontColor(Colors.Red.Darken2);
 
         column.Item().Table(table =>

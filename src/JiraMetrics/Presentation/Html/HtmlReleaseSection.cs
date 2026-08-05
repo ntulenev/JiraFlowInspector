@@ -15,6 +15,11 @@ internal sealed class HtmlReleaseSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
+        if (!reportData.IsOptionalSectionAvailable(OptionalReportSection.ReleaseReport))
+        {
+            return string.Empty;
+        }
+
         var presentationData = ReleasePresentationData.Create(reportData.Source.ReleaseIssues);
         var html = new StringBuilder();
         _ = html.Append(BuildReleaseTable(reportData, presentationData));

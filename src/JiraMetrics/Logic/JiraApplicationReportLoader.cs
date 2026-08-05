@@ -1,7 +1,5 @@
 using System.Runtime.ExceptionServices;
-using System.Text.Json;
 
-using JiraMetrics.API;
 using JiraMetrics.Models;
 using JiraMetrics.Models.Configuration;
 using JiraMetrics.Models.ValueObjects;
@@ -51,9 +49,16 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         {
             var reportContext = await reportContextTask.ConfigureAwait(false);
             var allTasksRatio = await allTasksRatioTask.ConfigureAwait(false);
-            var bugRatio = await AwaitOptionalAsync(bugRatioTask).ConfigureAwait(false);
-            var internalIncidents = await AwaitOptionalAsync(internalIncidentsTask).ConfigureAwait(false);
-            var testCoverage = await AwaitOptionalAsync(testCoverageTask).ConfigureAwait(false)
+            var optionalSectionFailures = reportContext.OptionalSectionFailures.ToList();
+            var bugRatio = await AwaitOptionalAsync(
+                bugRatioTask,
+                optionalSectionFailures).ConfigureAwait(false);
+            var internalIncidents = await AwaitOptionalAsync(
+                internalIncidentsTask,
+                optionalSectionFailures).ConfigureAwait(false);
+            var testCoverage = await AwaitOptionalAsync(
+                testCoverageTask,
+                optionalSectionFailures).ConfigureAwait(false)
                 ?? TestCoverageSnapshot.Empty;
 
             return new ReportLoadResult.Success(
@@ -62,9 +67,12 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
                     allTasksRatio,
                     bugRatio,
                     internalIncidents,
-                    testCoverage));
+                    testCoverage)
+                {
+                    OptionalSectionFailures = optionalSectionFailures
+                });
         }
-        catch (Exception ex) when (IsExpectedLoadFailure(ex))
+        catch (Exception ex) when (ReportLoadExceptionClassifier.IsExpected(ex))
         {
             return new ReportLoadResult.Failure(ErrorMessage.FromException(ex));
         }
@@ -83,43 +91,57 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         }
     }
 
-    private Task<IssueRatioSnapshot>? StartBugRatioLoading(CancellationToken cancellationToken)
+    private Task<OptionalSectionLoadResult<IssueRatioSnapshot>>? StartBugRatioLoading(
+        CancellationToken cancellationToken)
     {
         if (_settings.BugIssueNames.Count == 0)
         {
             return null;
         }
 
-        return _dataFacade.LoadIssueRatioAsync(
-            _settings,
-            _settings.BugIssueNames,
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.BugRatio,
+            token => _dataFacade.LoadIssueRatioAsync(
+                _settings,
+                _settings.BugIssueNames,
+                token),
             cancellationToken);
     }
 
-    private Task<IssueRatioSnapshot>? StartInternalIncidentsLoading(CancellationToken cancellationToken)
+    private Task<OptionalSectionLoadResult<IssueRatioSnapshot>>? StartInternalIncidentsLoading(
+        CancellationToken cancellationToken)
     {
         if (_settings.InternalIncidentIssueNames.Count == 0)
         {
             return null;
         }
 
-        return _dataFacade.LoadIssueRatioAsync(
-            _settings,
-            _settings.InternalIncidentIssueNames,
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.InternalIncidents,
+            token => _dataFacade.LoadIssueRatioAsync(
+                _settings,
+                _settings.InternalIncidentIssueNames,
+                token),
             cancellationToken);
     }
 
-    private Task<TestCoverageSnapshot>? StartTestCoverageLoading(CancellationToken cancellationToken)
+    private Task<OptionalSectionLoadResult<TestCoverageSnapshot>>? StartTestCoverageLoading(
+        CancellationToken cancellationToken)
     {
         if (_settings.TestCoverage is not { Enabled: true } testCoverageSettings)
         {
             return null;
         }
 
-        return _dataFacade.LoadTestCoverageAsync(_settings, testCoverageSettings, cancellationToken);
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.TestCoverage,
+            token => _dataFacade.LoadTestCoverageAsync(_settings, testCoverageSettings, token),
+            cancellationToken);
     }
 
-    private static async Task<T?> AwaitOptionalAsync<T>(Task<T>? task)
+    private static async Task<T?> AwaitOptionalAsync<T>(
+        Task<OptionalSectionLoadResult<T>>? task,
+        List<OptionalSectionLoadFailure> failures)
         where T : class
     {
         if (task is null)
@@ -127,7 +149,14 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
             return null;
         }
 
-        return await task.ConfigureAwait(false);
+        var result = await task.ConfigureAwait(false);
+        if (result is OptionalSectionLoadResult<T>.Loaded loaded)
+        {
+            return loaded.Value;
+        }
+
+        failures.Add(((OptionalSectionLoadResult<T>.Failed)result).Failure);
+        return null;
     }
 
     private static async Task ObservePendingLoadsAsync(
@@ -141,15 +170,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         catch (OperationCanceledException) when (!callerCancellationToken.IsCancellationRequested)
         {
         }
-        catch (HttpRequestException)
-        {
-            ThrowUnexpectedFailure(pendingLoads);
-        }
-        catch (JiraDataException)
-        {
-            ThrowUnexpectedFailure(pendingLoads);
-        }
-        catch (JsonException)
+        catch (Exception ex) when (ReportLoadExceptionClassifier.IsExpected(ex))
         {
             ThrowUnexpectedFailure(pendingLoads);
         }
@@ -160,7 +181,7 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
         var unexpectedFailure = pendingLoads
             .Where(static task => task.IsFaulted)
             .SelectMany(static task => task.Exception!.Flatten().InnerExceptions)
-            .FirstOrDefault(static exception => !IsExpectedLoadFailure(exception));
+            .FirstOrDefault(static exception => !ReportLoadExceptionClassifier.IsExpected(exception));
         if (unexpectedFailure is not null)
         {
             ExceptionDispatchInfo.Capture(unexpectedFailure).Throw();
@@ -168,9 +189,6 @@ internal sealed class JiraApplicationReportLoader : IJiraApplicationReportLoader
 
         // Every fault was an expected data-loading failure already represented by the primary result.
     }
-
-    private static bool IsExpectedLoadFailure(Exception exception) =>
-        exception is HttpRequestException or JiraDataException or JsonException;
 
     private readonly AppSettings _settings;
     private readonly IJiraApplicationDataFacade _dataFacade;

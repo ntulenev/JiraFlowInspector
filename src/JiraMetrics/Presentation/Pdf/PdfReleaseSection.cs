@@ -16,7 +16,8 @@ internal sealed class PdfReleaseSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (reportData.Settings.ReleaseReport is not { } releaseReport)
+        if (reportData.Settings.ReleaseReport is not { } releaseReport
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.ReleaseReport))
         {
             return;
         }

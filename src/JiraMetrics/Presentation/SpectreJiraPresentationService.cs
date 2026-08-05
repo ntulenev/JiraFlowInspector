@@ -297,6 +297,13 @@ public sealed class SpectreJiraPresentationService : IJiraPresentationService, I
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)
         => ReportSectionsPresenter.ShowFailures(failures);
 
+    /// <inheritdoc />
+    public void ShowOptionalSectionFailures(IReadOnlyList<OptionalSectionLoadFailure> failures)
+    {
+        StopAllLoaders();
+        ReportSectionsPresenter.ShowOptionalSectionFailures(failures);
+    }
+
     private void StopAllLoaders() => ProgressPresenter.Stop();
     private readonly SpectreStatusSection _statusSection;
 }

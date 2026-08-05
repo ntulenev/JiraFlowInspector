@@ -15,7 +15,8 @@ internal sealed class PdfUnresolved30DaysTasksSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (reportData.Settings.Unresolved30DaysTasksReport is null)
+        if (reportData.Settings.Unresolved30DaysTasksReport is null
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.Unresolved30DaysTasksReport))
         {
             return;
         }

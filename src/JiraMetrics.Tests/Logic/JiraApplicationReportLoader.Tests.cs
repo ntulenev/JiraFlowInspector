@@ -50,9 +50,9 @@ public sealed class JiraApplicationReportLoaderTests
         success.ReportData.TestCoverage.Should().BeSameAs(testCoverage);
     }
 
-    [Fact(DisplayName = "LoadAsync returns failure when internal-incident loading fails")]
+    [Fact(DisplayName = "LoadAsync keeps the report usable when internal-incident loading fails")]
     [Trait("Category", "Unit")]
-    public async Task LoadAsyncWhenInternalIncidentLoadFailsReturnsFailure()
+    public async Task LoadAsyncWhenInternalIncidentLoadFailsReturnsPartialSuccess()
     {
         // Arrange
         var settings = CreateSettings(null, [new IssueTypeName("Incident")]);
@@ -72,13 +72,16 @@ public sealed class JiraApplicationReportLoaderTests
         var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        var failure = result.Should().BeOfType<ReportLoadResult.Failure>().Subject;
+        var reportData = result.Should().BeOfType<ReportLoadResult.Success>().Which.ReportData;
+        reportData.InternalIncidents.Should().BeNull();
+        var failure = reportData.OptionalSectionFailures.Should().ContainSingle().Which;
+        failure.Section.Should().Be(OptionalReportSection.InternalIncidents);
         failure.Error.Value.Should().Contain("Invalid incident response.");
     }
 
-    [Fact(DisplayName = "LoadAsync returns failure when test-coverage loading fails")]
+    [Fact(DisplayName = "LoadAsync keeps the report usable when test-coverage loading fails")]
     [Trait("Category", "Unit")]
-    public async Task LoadAsyncWhenTestCoverageLoadFailsReturnsFailure()
+    public async Task LoadAsyncWhenTestCoverageLoadFailsReturnsPartialSuccess()
     {
         // Arrange
         var coverageSettings = new TestCoverageSettings();
@@ -99,7 +102,10 @@ public sealed class JiraApplicationReportLoaderTests
         var result = await sut.LoadAsync(cts.Token);
 
         // Assert
-        var failure = result.Should().BeOfType<ReportLoadResult.Failure>().Subject;
+        var reportData = result.Should().BeOfType<ReportLoadResult.Success>().Which.ReportData;
+        reportData.TestCoverage.Should().BeSameAs(TestCoverageSnapshot.Empty);
+        var failure = reportData.OptionalSectionFailures.Should().ContainSingle().Which;
+        failure.Section.Should().Be(OptionalReportSection.TestCoverage);
         failure.Error.Value.Should().Contain("Coverage service unavailable.");
     }
 

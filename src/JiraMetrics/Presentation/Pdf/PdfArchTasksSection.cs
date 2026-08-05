@@ -16,7 +16,8 @@ internal sealed class PdfArchTasksSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (reportData.Settings.ArchTasksReport is not { } archTasksReport)
+        if (reportData.Settings.ArchTasksReport is not { } archTasksReport
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.ArchTasksReport))
         {
             return;
         }

@@ -26,6 +26,12 @@ public interface IJiraDiagnosticsPresenter
     void ShowFailures(IReadOnlyList<LoadFailure> failures);
 
     /// <summary>
+    /// Shows enabled optional report sections that could not be loaded.
+    /// </summary>
+    /// <param name="failures">Optional section load failures.</param>
+    void ShowOptionalSectionFailures(IReadOnlyList<OptionalSectionLoadFailure> failures);
+
+    /// <summary>
     /// Shows a spacer line between sections.
     /// </summary>
     void ShowSpacer();

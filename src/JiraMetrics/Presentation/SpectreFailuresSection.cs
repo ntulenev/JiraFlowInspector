@@ -13,6 +13,31 @@ namespace JiraMetrics.Presentation;
 /// </summary>
 internal sealed class SpectreFailuresSection
 {
+    public void ShowOptionalSectionFailures(IReadOnlyList<OptionalSectionLoadFailure> failures)
+    {
+        if (failures.Count == 0)
+        {
+            return;
+        }
+
+        AnsiConsole.MarkupLine("[bold yellow]Optional sections unavailable[/]");
+
+        var table = new Table()
+            .RoundedBorder()
+            .BorderColor(Color.Grey)
+            .AddColumn("[bold]Section[/]")
+            .AddColumn("[bold]Reason[/]");
+
+        foreach (var failure in failures)
+        {
+            _ = table.AddRow(
+                Markup.Escape(OptionalReportSectionNames.GetDisplayName(failure.Section)),
+                Markup.Escape(failure.Error.Value));
+        }
+
+        AnsiConsole.Write(table);
+    }
+
     public void ShowFailures(IReadOnlyList<LoadFailure> failures)
     {
         if (failures.Count == 0)

@@ -219,6 +219,14 @@ internal sealed class SpectreReportSectionsPresenter :
     }
 
     /// <inheritdoc />
+    public void ShowOptionalSectionFailures(IReadOnlyList<OptionalSectionLoadFailure> failures)
+    {
+        ArgumentNullException.ThrowIfNull(failures);
+        StopProgress();
+        _failuresSection.ShowOptionalSectionFailures(failures);
+    }
+
+    /// <inheritdoc />
     public void ShowSpacer() => _progressPresenter.ShowSpacer();
 
     private void StopProgress() => _progressPresenter.Stop();

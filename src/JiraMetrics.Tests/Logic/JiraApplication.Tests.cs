@@ -1113,7 +1113,7 @@ public sealed partial class JiraApplicationTests
             presentation,
             requestTelemetryCollector,
             new JiraApplicationReportLoader(appSettings, dataFacade),
-            new JiraApplicationReportPresenter(appSettings, presentation, presentation),
+            new JiraApplicationReportPresenter(appSettings, presentation, presentation, presentation),
             new JiraApplicationAnalysisRunner(
                 appSettings,
                 new JiraTransitionAnalysisRunner(

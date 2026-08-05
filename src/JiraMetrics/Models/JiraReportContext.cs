@@ -24,6 +24,11 @@ public sealed record JiraReportContext(
     IReadOnlyList<RoadmapItem> RoadmapItems)
 {
     /// <summary>
+    /// Gets enabled optional sections that could not be loaded.
+    /// </summary>
+    public IReadOnlyList<OptionalSectionLoadFailure> OptionalSectionFailures { get; init; } = [];
+
+    /// <summary>
     /// Gets the number of unique issues selected for done or rejected transition analysis.
     /// </summary>
     public ItemCount TransitionIssueCount => new(

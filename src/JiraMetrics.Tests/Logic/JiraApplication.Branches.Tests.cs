@@ -112,9 +112,9 @@ public sealed class JiraApplicationBranchesTests
             Times.Never);
     }
 
-    [Fact(DisplayName = "RunAsync stops before analysis when bug-ratio loading throws JSON exception")]
+    [Fact(DisplayName = "RunAsync continues without bug ratio when its loading throws JSON exception")]
     [Trait("Category", "Unit")]
-    public async Task RunAsyncWhenBugRatioLoadThrowsJsonExceptionShowsIssueSearchFailure()
+    public async Task RunAsyncWhenBugRatioLoadThrowsJsonExceptionShowsOptionalSectionFailure()
     {
         // Arrange
         using var cts = new CancellationTokenSource();
@@ -130,7 +130,7 @@ public sealed class JiraApplicationBranchesTests
         dataFacade.Setup(facade => facade.LoadReportContextAsync(
                 settings,
                 It.Is<CancellationToken>(token => token.CanBeCanceled)))
-            .ReturnsAsync(CreateReportContext());
+            .ReturnsAsync(new JiraReportContext([], [], [], [], [], [], [], []));
         dataFacade.Setup(facade => facade.LoadIssueRatioAsync(
                 settings,
                 It.Is<IReadOnlyList<IssueTypeName>>(issueTypes => issueTypes.Count == 0),
@@ -151,13 +151,23 @@ public sealed class JiraApplicationBranchesTests
 
         // Assert
         reportingFacade.Verify(facade => facade.ShowBugRatioLoadingStarted(settings.BugIssueNames), Times.Once);
-        reportingFacade.Verify(facade => facade.ShowAllTasksRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()), Times.Never);
-        reportingFacade.Verify(facade => facade.ShowAllTasksRatio(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<IssueRatioSnapshot>()), Times.Never);
-        reportingFacade.Verify(
-            facade => facade.ShowIssueSearchFailed(It.Is<ErrorMessage>(message => message.Value.Contains("Bug ratio payload is invalid.", StringComparison.Ordinal))),
+        reportingFacade.Verify(facade => facade.ShowAllTasksRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()), Times.Once);
+        reportingFacade.Verify(facade => facade.ShowAllTasksRatio(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<IssueRatioSnapshot>()), Times.Once);
+        reportingFacade.Verify(facade => facade.ShowOptionalSectionFailures(
+                It.Is<IReadOnlyList<OptionalSectionLoadFailure>>(failures =>
+                    failures.Count == 1
+                    && failures[0].Section == OptionalReportSection.BugRatio
+                    && failures[0].Error.Value.Contains("Bug ratio payload is invalid.", StringComparison.Ordinal))),
             Times.Once);
+        reportingFacade.Verify(facade => facade.ShowIssueSearchFailed(It.IsAny<ErrorMessage>()), Times.Never);
         reportingFacade.Verify(facade => facade.ShowBugRatioLoadingCompleted(It.IsAny<IssueRatioSnapshot>()), Times.Never);
-        reportingFacade.Verify(facade => facade.ShowReportHeader(It.IsAny<AppSettings>(), It.IsAny<ItemCount>()), Times.Never);
+        reportingFacade.Verify(facade => facade.ShowReportHeader(It.IsAny<AppSettings>(), It.IsAny<ItemCount>()), Times.Once);
+        reportingFacade.As<IJiraReportPipeline>().Verify(
+            pipeline => pipeline.RenderReport(It.Is<JiraReportData>(report =>
+                report.Ratios.Bugs == null
+                && report.OptionalSectionFailures.Count == 1
+                && report.OptionalSectionFailures[0].Section == OptionalReportSection.BugRatio)),
+            Times.Once);
     }
 
     [Fact(DisplayName = "RunAsync shows no issues loaded when timeline loading returns only failures")]
@@ -329,6 +339,8 @@ public sealed class JiraApplicationBranchesTests
             It.IsAny<StatusName>(),
             It.IsAny<StatusName?>()));
         reportingFacade.Setup(facade => facade.ShowFailures(It.IsAny<IReadOnlyList<LoadFailure>>()));
+        reportingFacade.Setup(facade => facade.ShowOptionalSectionFailures(
+            It.IsAny<IReadOnlyList<OptionalSectionLoadFailure>>()));
         reportingFacade.As<IJiraReportPipeline>()
             .Setup(pipeline => pipeline.RenderReport(It.IsAny<JiraReportData>()))
             .Returns(ReportGenerationOutcome.Succeeded);
@@ -353,6 +365,7 @@ public sealed class JiraApplicationBranchesTests
                 dataFacade.Object),
             new JiraApplicationReportPresenter(
                 settings,
+                reportingFacade.Object,
                 reportingFacade.Object,
                 reportingFacade.Object),
             new JiraApplicationAnalysisRunner(

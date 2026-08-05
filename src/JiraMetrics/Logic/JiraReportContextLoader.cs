@@ -9,7 +9,6 @@ namespace JiraMetrics.Logic;
 /// </summary>
 internal sealed class JiraReportContextLoader
 {
-
     public JiraReportContextLoader(
         IJiraIssueSearchClient issueSearchClient,
         IJiraReportDataClient reportDataClient)
@@ -41,26 +40,34 @@ internal sealed class JiraReportContextLoader
         var openIssuesByStatusTask = LoadOpenIssuesByStatusAsync(settings, cancellationToken);
         var roadmapItemsTask = LoadRoadmapItemsAsync(settings, cancellationToken);
 
-        await Task.WhenAll(
-                issueKeysTask,
-                rejectIssueKeysTask,
-                releaseIssuesTask,
-                archTasksTask,
-                globalIncidentsTask,
-                unresolved30DaysTasksTask,
-                openIssuesByStatusTask,
-                roadmapItemsTask)
-            .ConfigureAwait(false);
+        var pendingLoads = new List<Task>
+        {
+            issueKeysTask,
+            rejectIssueKeysTask
+        };
+        AddPendingLoad(pendingLoads, releaseIssuesTask);
+        AddPendingLoad(pendingLoads, archTasksTask);
+        AddPendingLoad(pendingLoads, globalIncidentsTask);
+        AddPendingLoad(pendingLoads, unresolved30DaysTasksTask);
+        AddPendingLoad(pendingLoads, openIssuesByStatusTask);
+        AddPendingLoad(pendingLoads, roadmapItemsTask);
+
+        await Task.WhenAll(pendingLoads).ConfigureAwait(false);
+
+        var optionalSectionFailures = new List<OptionalSectionLoadFailure>();
 
         return new JiraReportContext(
             await issueKeysTask.ConfigureAwait(false),
             await rejectIssueKeysTask.ConfigureAwait(false),
-            await releaseIssuesTask.ConfigureAwait(false),
-            await archTasksTask.ConfigureAwait(false),
-            await globalIncidentsTask.ConfigureAwait(false),
-            await unresolved30DaysTasksTask.ConfigureAwait(false),
-            await openIssuesByStatusTask.ConfigureAwait(false),
-            await roadmapItemsTask.ConfigureAwait(false));
+            await AwaitOptionalAsync(releaseIssuesTask, optionalSectionFailures).ConfigureAwait(false),
+            await AwaitOptionalAsync(archTasksTask, optionalSectionFailures).ConfigureAwait(false),
+            await AwaitOptionalAsync(globalIncidentsTask, optionalSectionFailures).ConfigureAwait(false),
+            await AwaitOptionalAsync(unresolved30DaysTasksTask, optionalSectionFailures).ConfigureAwait(false),
+            await AwaitOptionalAsync(openIssuesByStatusTask, optionalSectionFailures).ConfigureAwait(false),
+            await AwaitOptionalAsync(roadmapItemsTask, optionalSectionFailures).ConfigureAwait(false))
+        {
+            OptionalSectionFailures = optionalSectionFailures
+        };
     }
 
     private Task<IReadOnlyList<IssueKey>> LoadIssueKeysAsync(
@@ -100,83 +107,130 @@ internal sealed class JiraReportContextLoader
             cancellationToken);
     }
 
-    private Task<IReadOnlyList<ReleaseIssueItem>> LoadReleaseIssuesAsync(
+    private Task<OptionalSectionLoadResult<IReadOnlyList<ReleaseIssueItem>>>? LoadReleaseIssuesAsync(
         AppSettings settings,
         CancellationToken cancellationToken)
     {
         if (settings.ReleaseReport is not { } releaseReport)
         {
-            return Task.FromResult<IReadOnlyList<ReleaseIssueItem>>([]);
+            return null;
         }
 
-        return _reportDataClient.GetReleaseIssuesForMonthAsync(
-            BuildReleaseIssueReadRequest(releaseReport),
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.ReleaseReport,
+            token => _reportDataClient.GetReleaseIssuesForMonthAsync(
+                BuildReleaseIssueReadRequest(releaseReport),
+                token),
             cancellationToken);
     }
 
-    private Task<IReadOnlyList<ArchTaskItem>> LoadArchTasksAsync(
+    private Task<OptionalSectionLoadResult<IReadOnlyList<ArchTaskItem>>>? LoadArchTasksAsync(
         AppSettings settings,
         CancellationToken cancellationToken)
     {
         if (settings.ArchTasksReport is not { } archTasksReport)
         {
-            return Task.FromResult<IReadOnlyList<ArchTaskItem>>([]);
+            return null;
         }
 
-        return _reportDataClient.GetArchTasksAsync(archTasksReport, cancellationToken);
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.ArchTasksReport,
+            token => _reportDataClient.GetArchTasksAsync(archTasksReport, token),
+            cancellationToken);
     }
 
-    private Task<IReadOnlyList<GlobalIncidentItem>> LoadGlobalIncidentsAsync(
+    private Task<OptionalSectionLoadResult<IReadOnlyList<GlobalIncidentItem>>>? LoadGlobalIncidentsAsync(
         AppSettings settings,
         CancellationToken cancellationToken)
     {
         if (settings.GlobalIncidentsReport is not { } globalIncidentsReport)
         {
-            return Task.FromResult<IReadOnlyList<GlobalIncidentItem>>([]);
+            return null;
         }
 
-        return _reportDataClient.GetGlobalIncidentsForMonthAsync(globalIncidentsReport, cancellationToken);
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.GlobalIncidentsReport,
+            token => _reportDataClient.GetGlobalIncidentsForMonthAsync(globalIncidentsReport, token),
+            cancellationToken);
     }
 
-    private Task<IReadOnlyList<IssueListItem>> LoadUnresolved30DaysTasksAsync(
+    private Task<OptionalSectionLoadResult<IReadOnlyList<IssueListItem>>>? LoadUnresolved30DaysTasksAsync(
         AppSettings settings,
         CancellationToken cancellationToken)
     {
         if (settings.Unresolved30DaysTasksReport is not { } unresolvedTasksReport)
         {
-            return Task.FromResult<IReadOnlyList<IssueListItem>>([]);
+            return null;
         }
 
-        return _reportDataClient.GetUnresolved30DaysTasksAsync(unresolvedTasksReport, cancellationToken);
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.Unresolved30DaysTasksReport,
+            token => _reportDataClient.GetUnresolved30DaysTasksAsync(unresolvedTasksReport, token),
+            cancellationToken);
     }
 
-    private Task<IReadOnlyList<StatusIssueTypeSummary>> LoadOpenIssuesByStatusAsync(
+    private Task<OptionalSectionLoadResult<IReadOnlyList<StatusIssueTypeSummary>>>? LoadOpenIssuesByStatusAsync(
         AppSettings settings,
         CancellationToken cancellationToken)
     {
         if (!settings.ShowGeneralStatistics)
         {
-            return Task.FromResult<IReadOnlyList<StatusIssueTypeSummary>>([]);
+            return null;
         }
 
-        return _issueSearchClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
-            settings.ProjectKey,
-            settings.DoneStatusName,
-            settings.RejectStatusName,
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.GeneralStatistics,
+            token => _issueSearchClient.GetIssueCountsByStatusExcludingDoneAndRejectAsync(
+                settings.ProjectKey,
+                settings.DoneStatusName,
+                settings.RejectStatusName,
+                token),
             cancellationToken);
     }
 
-    private Task<IReadOnlyList<RoadmapItem>> LoadRoadmapItemsAsync(
+    private Task<OptionalSectionLoadResult<IReadOnlyList<RoadmapItem>>>? LoadRoadmapItemsAsync(
         AppSettings settings,
         CancellationToken cancellationToken)
     {
         if (settings.RoadmapReport is not { } roadmapReport)
         {
-            return Task.FromResult<IReadOnlyList<RoadmapItem>>([]);
+            return null;
         }
 
-        return _reportDataClient.GetRoadmapItemsAsync(roadmapReport, cancellationToken);
+        return OptionalSectionLoader.LoadAsync(
+            OptionalReportSection.RoadmapReport,
+            token => _reportDataClient.GetRoadmapItemsAsync(roadmapReport, token),
+            cancellationToken);
     }
+
+    private static void AddPendingLoad(List<Task> pendingLoads, Task? pendingLoad)
+    {
+        if (pendingLoad is not null)
+        {
+            pendingLoads.Add(pendingLoad);
+        }
+    }
+
+    private static async Task<IReadOnlyList<T>> AwaitOptionalAsync<T>(
+        Task<OptionalSectionLoadResult<IReadOnlyList<T>>>? task,
+        List<OptionalSectionLoadFailure> failures)
+    {
+        if (task is null)
+        {
+            return [];
+        }
+
+        var result = await task.ConfigureAwait(false);
+        if (result is OptionalSectionLoadResult<IReadOnlyList<T>>.Loaded loaded)
+        {
+            return loaded.Value;
+        }
+
+        failures.Add(
+            ((OptionalSectionLoadResult<IReadOnlyList<T>>.Failed)result).Failure);
+        return [];
+    }
+
     private readonly IJiraIssueSearchClient _issueSearchClient;
     private readonly IJiraReportDataClient _reportDataClient;
 

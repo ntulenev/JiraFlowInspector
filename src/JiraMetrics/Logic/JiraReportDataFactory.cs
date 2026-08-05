@@ -36,7 +36,8 @@ internal sealed class JiraReportDataFactory
                 reportData.InternalIncidents,
                 reportData.TestCoverage,
                 success.Analysis,
-                success.LoadResult.Failures),
+                success.LoadResult.Failures,
+                reportData.OptionalSectionFailures),
             JiraTransitionAnalysisResult.NoTransitionIssues => CreateWithoutAnalysis(
                 reportData,
                 failures: [],
@@ -74,7 +75,8 @@ internal sealed class JiraReportDataFactory
             reportData.TestCoverage,
             failures,
             successfulCount,
-            matchedStageCount: new ItemCount(0));
+            matchedStageCount: new ItemCount(0),
+            optionalSectionFailures: reportData.OptionalSectionFailures);
 
     private readonly AppSettings _settings;
     private readonly ReportRunContext _runContext;

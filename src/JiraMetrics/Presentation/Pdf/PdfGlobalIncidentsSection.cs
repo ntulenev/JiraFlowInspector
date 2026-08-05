@@ -16,7 +16,8 @@ internal sealed class PdfGlobalIncidentsSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (reportData.Settings.GlobalIncidentsReport is not { } globalIncidentsReport)
+        if (reportData.Settings.GlobalIncidentsReport is not { } globalIncidentsReport
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.GlobalIncidentsReport))
         {
             return;
         }

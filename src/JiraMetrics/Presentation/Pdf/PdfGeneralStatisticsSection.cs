@@ -15,7 +15,8 @@ internal sealed class PdfGeneralStatisticsSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (!reportData.Settings.ShowGeneralStatistics)
+        if (!reportData.Settings.ShowGeneralStatistics
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.GeneralStatistics))
         {
             return;
         }

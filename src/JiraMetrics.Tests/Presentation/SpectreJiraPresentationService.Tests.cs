@@ -345,6 +345,30 @@ public sealed class SpectreJiraPresentationServiceTests
         output.Should().Contain("boom");
     }
 
+    [Fact(DisplayName = "ShowOptionalSectionFailures writes optional section warning table")]
+    [Trait("Category", "Unit")]
+    public async Task ShowOptionalSectionFailuresWhenFailuresExistWritesTable()
+    {
+        // Arrange
+        var service = new SpectreJiraPresentationService();
+        var failures = new List<OptionalSectionLoadFailure>
+        {
+            new(OptionalReportSection.TestCoverage, new ErrorMessage("service unavailable"))
+        };
+
+        // Act
+        var output = await RunWithTestConsoleAsync(console =>
+        {
+            service.ShowOptionalSectionFailures(failures);
+            return Task.FromResult(console.Output);
+        });
+
+        // Assert
+        output.Should().Contain("Optional sections unavailable");
+        output.Should().Contain("Test coverage");
+        output.Should().Contain("service unavailable");
+    }
+
     [Fact(DisplayName = "ShowFailures writes nothing when list is empty")]
     [Trait("Category", "Unit")]
     public async Task ShowFailuresWhenListIsEmptyWritesNothing()

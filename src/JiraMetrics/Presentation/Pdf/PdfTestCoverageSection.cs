@@ -15,7 +15,8 @@ internal sealed class PdfTestCoverageSection : IPdfReportSection
     /// <inheritdoc />
     public void Compose(ColumnDescriptor column, JiraReportData reportData)
     {
-        if (reportData.Settings.TestCoverage is not { Enabled: true } settings)
+        if (reportData.Settings.TestCoverage is not { Enabled: true } settings
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.TestCoverage))
         {
             return;
         }

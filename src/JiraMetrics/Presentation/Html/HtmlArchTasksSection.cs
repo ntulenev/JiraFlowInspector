@@ -14,7 +14,8 @@ internal sealed class HtmlArchTasksSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
-        if (reportData.Settings.ArchTasksReport is null)
+        if (reportData.Settings.ArchTasksReport is null
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.ArchTasksReport))
         {
             return string.Empty;
         }

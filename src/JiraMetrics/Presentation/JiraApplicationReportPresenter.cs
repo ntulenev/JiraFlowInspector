@@ -11,15 +11,18 @@ internal sealed class JiraApplicationReportPresenter : IJiraApplicationReportPre
     public JiraApplicationReportPresenter(
         AppSettings settings,
         IJiraStatusPresenter statusPresenter,
-        IJiraReportSectionsPresenter reportSectionsPresenter)
+        IJiraReportSectionsPresenter reportSectionsPresenter,
+        IJiraDiagnosticsPresenter diagnosticsPresenter)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(statusPresenter);
         ArgumentNullException.ThrowIfNull(reportSectionsPresenter);
+        ArgumentNullException.ThrowIfNull(diagnosticsPresenter);
 
         _settings = settings;
         _statusPresenter = statusPresenter;
         _reportSectionsPresenter = reportSectionsPresenter;
+        _diagnosticsPresenter = diagnosticsPresenter;
     }
 
     public void ShowLoadingStarted()
@@ -59,7 +62,13 @@ internal sealed class JiraApplicationReportPresenter : IJiraApplicationReportPre
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
-        ShowOptionalReports(reportData.ReportContext);
+        if (reportData.OptionalSectionFailures.Count > 0)
+        {
+            _diagnosticsPresenter.ShowOptionalSectionFailures(reportData.OptionalSectionFailures);
+            _statusPresenter.ShowSpacer();
+        }
+
+        ShowOptionalReports(reportData);
 
         _reportSectionsPresenter.ShowAllTasksRatioLoadingCompleted(reportData.AllTasksRatio);
         _reportSectionsPresenter.ShowAllTasksRatio(
@@ -79,16 +88,19 @@ internal sealed class JiraApplicationReportPresenter : IJiraApplicationReportPre
             _statusPresenter.ShowSpacer();
         }
 
-        if (_settings.TestCoverage is { Enabled: true } testCoverageSettings)
+        if (_settings.TestCoverage is { Enabled: true } testCoverageSettings
+            && reportData.IsOptionalSectionAvailable(OptionalReportSection.TestCoverage))
         {
             _reportSectionsPresenter.ShowTestCoverage(testCoverageSettings, reportData.TestCoverage);
             _statusPresenter.ShowSpacer();
         }
     }
 
-    private void ShowOptionalReports(JiraReportContext reportContext)
+    private void ShowOptionalReports(JiraApplicationReportData reportData)
     {
-        if (_settings.ReleaseReport is { } releaseReportSettings)
+        var reportContext = reportData.ReportContext;
+        if (_settings.ReleaseReport is { } releaseReportSettings
+            && reportData.IsOptionalSectionAvailable(OptionalReportSection.ReleaseReport))
         {
             _statusPresenter.ShowSpacer();
             _reportSectionsPresenter.ShowReleaseReport(
@@ -98,7 +110,8 @@ internal sealed class JiraApplicationReportPresenter : IJiraApplicationReportPre
             _statusPresenter.ShowSpacer();
         }
 
-        if (_settings.ArchTasksReport is { } archTasksReportSettings)
+        if (_settings.ArchTasksReport is { } archTasksReportSettings
+            && reportData.IsOptionalSectionAvailable(OptionalReportSection.ArchTasksReport))
         {
             _reportSectionsPresenter.ShowArchTasksReport(
                 archTasksReportSettings,
@@ -106,7 +119,8 @@ internal sealed class JiraApplicationReportPresenter : IJiraApplicationReportPre
             _statusPresenter.ShowSpacer();
         }
 
-        if (_settings.GlobalIncidentsReport is { } globalIncidentsReportSettings)
+        if (_settings.GlobalIncidentsReport is { } globalIncidentsReportSettings
+            && reportData.IsOptionalSectionAvailable(OptionalReportSection.GlobalIncidentsReport))
         {
             _reportSectionsPresenter.ShowGlobalIncidentsReport(
                 globalIncidentsReportSettings,
@@ -119,4 +133,5 @@ internal sealed class JiraApplicationReportPresenter : IJiraApplicationReportPre
     private readonly AppSettings _settings;
     private readonly IJiraStatusPresenter _statusPresenter;
     private readonly IJiraReportSectionsPresenter _reportSectionsPresenter;
+    private readonly IJiraDiagnosticsPresenter _diagnosticsPresenter;
 }

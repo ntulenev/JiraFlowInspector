@@ -14,7 +14,8 @@ internal sealed class HtmlGeneralStatisticsSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
-        if (!reportData.Settings.ShowGeneralStatistics)
+        if (!reportData.Settings.ShowGeneralStatistics
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.GeneralStatistics))
         {
             return string.Empty;
         }

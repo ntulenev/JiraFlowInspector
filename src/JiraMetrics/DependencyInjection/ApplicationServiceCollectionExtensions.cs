@@ -29,7 +29,8 @@ internal static class ApplicationServiceCollectionExtensions
             .AddScoped<IJiraApplicationReportPresenter>(sp => new JiraApplicationReportPresenter(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraStatusPresenter>(),
-                sp.GetRequiredService<IJiraReportSectionsPresenter>()))
+                sp.GetRequiredService<IJiraReportSectionsPresenter>(),
+                sp.GetRequiredService<IJiraDiagnosticsPresenter>()))
             .AddScoped(sp => new JiraTransitionAnalysisRunner(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>(),

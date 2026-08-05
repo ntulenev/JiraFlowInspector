@@ -16,7 +16,8 @@ internal sealed class HtmlUnresolved30DaysTasksSection : IHtmlReportSection
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
-        if (reportData.Settings.Unresolved30DaysTasksReport is null)
+        if (reportData.Settings.Unresolved30DaysTasksReport is null
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.Unresolved30DaysTasksReport))
         {
             return string.Empty;
         }

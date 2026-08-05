@@ -13,4 +13,13 @@ internal sealed record JiraApplicationReportData(
     IssueRatioSnapshot AllTasksRatio,
     IssueRatioSnapshot? BugRatio,
     IssueRatioSnapshot? InternalIncidents,
-    TestCoverageSnapshot TestCoverage);
+    TestCoverageSnapshot TestCoverage)
+{
+    /// <summary>
+    /// Gets enabled optional sections that could not be loaded.
+    /// </summary>
+    public IReadOnlyList<OptionalSectionLoadFailure> OptionalSectionFailures { get; init; } = [];
+
+    public bool IsOptionalSectionAvailable(OptionalReportSection section) =>
+        OptionalSectionFailures.All(failure => failure.Section != section);
+}

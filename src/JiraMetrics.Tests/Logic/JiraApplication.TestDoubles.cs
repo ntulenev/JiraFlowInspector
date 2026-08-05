@@ -367,6 +367,8 @@ public sealed partial class JiraApplicationTests
 
         public bool FailuresShown { get; private set; }
 
+        public bool OptionalSectionFailuresShown { get; private set; }
+
         public bool BugRatioShown { get; private set; }
 
         public bool TestCoverageShown { get; private set; }
@@ -604,6 +606,14 @@ public sealed partial class JiraApplicationTests
             if (failures.Count > 0)
             {
                 FailuresShown = true;
+            }
+        }
+
+        public void ShowOptionalSectionFailures(IReadOnlyList<OptionalSectionLoadFailure> failures)
+        {
+            if (failures.Count > 0)
+            {
+                OptionalSectionFailuresShown = true;
             }
         }
 

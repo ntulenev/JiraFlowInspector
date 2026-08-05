@@ -14,7 +14,8 @@ internal sealed class HtmlGlobalIncidentsSection : IHtmlReportSection
     /// <inheritdoc />
     public string Compose(JiraReportData reportData)
     {
-        if (reportData.Settings.GlobalIncidentsReport is null)
+        if (reportData.Settings.GlobalIncidentsReport is null
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.GlobalIncidentsReport))
         {
             return string.Empty;
         }

@@ -16,7 +16,8 @@ internal sealed class HtmlRoadmapSection : IHtmlReportSection
     {
         ArgumentNullException.ThrowIfNull(reportData);
 
-        if (reportData.Settings.RoadmapReport is null)
+        if (reportData.Settings.RoadmapReport is null
+            || !reportData.IsOptionalSectionAvailable(OptionalReportSection.RoadmapReport))
         {
             return string.Empty;
         }

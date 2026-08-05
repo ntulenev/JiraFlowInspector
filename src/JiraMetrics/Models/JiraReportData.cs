@@ -22,6 +22,7 @@ public sealed class JiraReportData
     /// <param name="failures">Issue load failures.</param>
     /// <param name="successfulCount">Count of successfully loaded issues for the main analysis set.</param>
     /// <param name="matchedStageCount">Count of issues that matched transition-analysis prerequisites.</param>
+    /// <param name="optionalSectionFailures">Enabled optional sections that could not be loaded.</param>
     /// <returns>Aggregated report data.</returns>
     public static JiraReportData CreateWithoutTransitionAnalysis(
         ReportRunContext runContext,
@@ -33,7 +34,8 @@ public sealed class JiraReportData
         TestCoverageSnapshot testCoverage,
         IReadOnlyList<LoadFailure> failures,
         ItemCount successfulCount,
-        ItemCount matchedStageCount)
+        ItemCount matchedStageCount,
+        IReadOnlyList<OptionalSectionLoadFailure>? optionalSectionFailures = null)
     {
         ArgumentNullException.ThrowIfNull(runContext);
         ArgumentNullException.ThrowIfNull(settings);
@@ -61,7 +63,8 @@ public sealed class JiraReportData
                 new ItemCount(failures.Count),
                 new ItemCount(0)),
             pathGroups: [],
-            failures);
+            failures,
+            optionalSectionFailures ?? []);
     }
 
     /// <summary>
@@ -76,6 +79,7 @@ public sealed class JiraReportData
     /// <param name="testCoverage">Automated test coverage snapshot.</param>
     /// <param name="analysis">Issue analysis result.</param>
     /// <param name="failures">Issue load failures.</param>
+    /// <param name="optionalSectionFailures">Enabled optional sections that could not be loaded.</param>
     /// <returns>Aggregated report data.</returns>
     public static JiraReportData Create(
         ReportRunContext runContext,
@@ -86,7 +90,8 @@ public sealed class JiraReportData
         IssueRatioSnapshot? internalIncidents,
         TestCoverageSnapshot testCoverage,
         SuccessfulJiraIssueAnalysis analysis,
-        IReadOnlyList<LoadFailure> failures)
+        IReadOnlyList<LoadFailure> failures,
+        IReadOnlyList<OptionalSectionLoadFailure>? optionalSectionFailures = null)
     {
         ArgumentNullException.ThrowIfNull(runContext);
         ArgumentNullException.ThrowIfNull(settings);
@@ -111,7 +116,8 @@ public sealed class JiraReportData
             analysis.RejectedIssues,
             analysis.PathSummary,
             analysis.PathGroups,
-            failures);
+            failures,
+            optionalSectionFailures ?? []);
     }
 
     private static JiraReportData CreateCore(
@@ -130,7 +136,8 @@ public sealed class JiraReportData
         IReadOnlyList<IssueTimeline> rejectedIssues,
         PathGroupsSummary pathSummary,
         IReadOnlyList<PathGroup> pathGroups,
-        IReadOnlyList<LoadFailure> failures) =>
+        IReadOnlyList<LoadFailure> failures,
+        IReadOnlyList<OptionalSectionLoadFailure> optionalSectionFailures) =>
         new()
         {
             RunContext = runContext,
@@ -163,7 +170,8 @@ public sealed class JiraReportData
                 PathSummary = pathSummary,
                 PathGroups = pathGroups
             },
-            Failures = failures
+            Failures = failures,
+            OptionalSectionFailures = optionalSectionFailures
         };
 
     /// <summary>
@@ -195,4 +203,16 @@ public sealed class JiraReportData
     /// Gets or sets failed issue loads.
     /// </summary>
     public IReadOnlyList<LoadFailure> Failures { get; init; } = [];
+
+    /// <summary>
+    /// Gets enabled optional sections that could not be loaded.
+    /// </summary>
+    public IReadOnlyList<OptionalSectionLoadFailure> OptionalSectionFailures { get; init; } = [];
+
+    /// <summary>
+    /// Returns whether an optional section is available for presentation.
+    /// </summary>
+    /// <param name="section">Optional section to inspect.</param>
+    public bool IsOptionalSectionAvailable(OptionalReportSection section) =>
+        OptionalSectionFailures.All(failure => failure.Section != section);
 }
