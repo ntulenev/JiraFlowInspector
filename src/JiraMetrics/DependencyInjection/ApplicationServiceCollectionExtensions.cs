@@ -19,18 +19,18 @@ internal static class ApplicationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton(static sp =>
+        services.TryAddScoped(static sp =>
             ReportRunContext.Create(sp.GetRequiredService<TimeProvider>()));
 
         return services
-            .AddTransient<IJiraApplicationReportLoader>(sp => new JiraApplicationReportLoader(
+            .AddScoped<IJiraApplicationReportLoader>(sp => new JiraApplicationReportLoader(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>()))
-            .AddTransient<IJiraApplicationReportPresenter>(sp => new JiraApplicationReportPresenter(
+            .AddScoped<IJiraApplicationReportPresenter>(sp => new JiraApplicationReportPresenter(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraReportSectionsPresenter>()))
-            .AddTransient<IJiraApplicationAnalysisRunner>(sp => new JiraApplicationAnalysisRunner(
+            .AddScoped<IJiraApplicationAnalysisRunner>(sp => new JiraApplicationAnalysisRunner(
                 sp.GetRequiredService<IOptions<AppSettings>>().Value,
                 sp.GetRequiredService<IJiraApplicationDataFacade>(),
                 sp.GetRequiredService<IJiraApplicationAnalysisFacade>(),
@@ -39,8 +39,8 @@ internal static class ApplicationServiceCollectionExtensions
                 sp.GetRequiredService<IJiraDiagnosticsPresenter>(),
                 sp.GetRequiredService<IJiraReportPipeline>(),
                 sp.GetRequiredService<ReportRunContext>()))
-            .AddTransient<IJiraReportPipeline, JiraReportPipeline>()
-            .AddTransient<IJiraApplication>(sp => new JiraApplication(
+            .AddScoped<IJiraReportPipeline, JiraReportPipeline>()
+            .AddScoped<IJiraApplication>(sp => new JiraApplication(
                 sp.GetRequiredService<IJiraStatusPresenter>(),
                 sp.GetRequiredService<IJiraRequestTelemetryCollector>(),
                 sp.GetRequiredService<IJiraApplicationReportLoader>(),

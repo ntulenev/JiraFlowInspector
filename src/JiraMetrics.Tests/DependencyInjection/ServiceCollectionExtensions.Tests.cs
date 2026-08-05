@@ -79,7 +79,7 @@ public sealed class ServiceCollectionExtensionsTests
             descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Api.IJiraFieldResolver)
             && descriptor.ImplementationType != null
             && descriptor.ImplementationType.Name == "JiraFieldResolver"
-            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+            && descriptor.Lifetime == ServiceLifetime.Scoped).Should().BeTrue();
     }
 
     [Fact(DisplayName = "AddJiraLogic registers logic services")]
@@ -98,11 +98,11 @@ public sealed class ServiceCollectionExtensionsTests
         services.Any(static descriptor =>
             descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Application.IJiraApplicationDataFacade)
             && descriptor.ImplementationType == typeof(JiraApplicationDataFacade)
-            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+            && descriptor.Lifetime == ServiceLifetime.Scoped).Should().BeTrue();
         services.Any(static descriptor =>
             descriptor.ServiceType == typeof(JiraMetrics.Abstractions.Application.IJiraApplicationAnalysisFacade)
             && descriptor.ImplementationType == typeof(JiraApplicationAnalysisFacade)
-            && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
+            && descriptor.Lifetime == ServiceLifetime.Scoped).Should().BeTrue();
     }
 
     [Fact(DisplayName = "AddJiraPdf registers PDF services")]
@@ -157,22 +157,24 @@ public sealed class ServiceCollectionExtensionsTests
             && descriptor.Lifetime == ServiceLifetime.Transient).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "AddJiraPresentation resolves shared section presenters and dedicated progress presenter")]
+    [Fact(DisplayName = "AddJiraPresentation resolves report-run scoped presenters")]
     [Trait("Category", "Unit")]
     public void AddJiraPresentationWhenCalledResolvesExpectedSingletonPresenters()
     {
         var services = new ServiceCollection();
         services.AddJiraPresentation();
 
-        using var provider = services.BuildServiceProvider();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
+        var scopedServices = scope.ServiceProvider;
 
-        var presentation = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>();
-        var status = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraStatusPresenter>();
-        var progress = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraIssueLoadingProgressPresenter>();
-        var sections = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraReportSectionsPresenter>();
-        var analysis = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraAnalysisPresenter>();
-        var diagnostics = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraDiagnosticsPresenter>();
-        var reportOutput = provider.GetRequiredService<JiraMetrics.Abstractions.Presentation.IReportOutputPresenter>();
+        var presentation = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraPresentationService>();
+        var status = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraStatusPresenter>();
+        var progress = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraIssueLoadingProgressPresenter>();
+        var sections = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraReportSectionsPresenter>();
+        var analysis = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraAnalysisPresenter>();
+        var diagnostics = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IJiraDiagnosticsPresenter>();
+        var reportOutput = scopedServices.GetRequiredService<JiraMetrics.Abstractions.Presentation.IReportOutputPresenter>();
 
         presentation.Should().BeOfType<SpectreJiraPresentationService>();
         status.Should().BeSameAs(presentation);
@@ -181,6 +183,36 @@ public sealed class ServiceCollectionExtensionsTests
         analysis.Should().BeSameAs(sections);
         diagnostics.Should().BeSameAs(sections);
         reportOutput.Should().BeSameAs(presentation);
+    }
+
+    [Fact(DisplayName = "Report-run state is shared within a scope and isolated between scopes")]
+    [Trait("Category", "Unit")]
+    public void ReportRunServicesWhenResolvedAcrossScopesUseScopeBoundaries()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IOptions<AppSettings>>(Options.Create(CreateAppSettings()));
+        services.AddSingleton<JiraMetrics.Abstractions.Api.IJiraTransport>(
+            new Mock<JiraMetrics.Abstractions.Api.IJiraTransport>(MockBehavior.Strict).Object);
+        services.AddJiraApi();
+        services.AddJiraPresentation();
+        services.AddJiraApplication();
+
+        using var provider = services.BuildServiceProvider(
+            new ServiceProviderOptions { ValidateScopes = true });
+        using var firstScope = provider.CreateScope();
+        using var secondScope = provider.CreateScope();
+
+        var firstRunContext = firstScope.ServiceProvider.GetRequiredService<JiraMetrics.Models.ReportRunContext>();
+        var repeatedRunContext = firstScope.ServiceProvider.GetRequiredService<JiraMetrics.Models.ReportRunContext>();
+        var secondRunContext = secondScope.ServiceProvider.GetRequiredService<JiraMetrics.Models.ReportRunContext>();
+        var firstFieldResolver = firstScope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraFieldResolver>();
+        var repeatedFieldResolver = firstScope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraFieldResolver>();
+        var secondFieldResolver = secondScope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraFieldResolver>();
+
+        repeatedRunContext.Should().BeSameAs(firstRunContext);
+        secondRunContext.Should().NotBeSameAs(firstRunContext);
+        repeatedFieldResolver.Should().BeSameAs(firstFieldResolver);
+        secondFieldResolver.Should().NotBeSameAs(firstFieldResolver);
     }
 
     [Fact(DisplayName = "AddJiraConfiguration binds Jira options and app settings")]
@@ -232,9 +264,10 @@ public sealed class ServiceCollectionExtensionsTests
         services.AddJiraPresentation();
         services.AddJiraApplication();
 
-        using var provider = services.BuildServiceProvider();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
 
-        var application = provider.GetRequiredService<JiraMetrics.Abstractions.Application.IJiraApplication>();
+        var application = scope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Application.IJiraApplication>();
 
         application.Should().BeOfType<JiraApplication>();
     }
@@ -247,9 +280,10 @@ public sealed class ServiceCollectionExtensionsTests
         services.AddSingleton<IOptions<AppSettings>>(Options.Create(CreateAppSettings()));
         services.AddJiraTransport();
 
-        using var provider = services.BuildServiceProvider();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
 
-        var transport = provider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraTransport>();
+        var transport = scope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraTransport>();
         var httpClient = GetPrivateHttpClient((JiraTransport)transport);
 
         transport.Should().BeOfType<JiraTransport>();
@@ -260,8 +294,8 @@ public sealed class ServiceCollectionExtensionsTests
             new AuthenticationHeaderValue(
                 "Basic",
                 Convert.ToBase64String(Encoding.UTF8.GetBytes("user@example.com:secret-token"))));
-        provider.GetRequiredService<JiraMetrics.Abstractions.Api.ISerializer>().Should().BeOfType<SimpleJsonSerializer>();
-        provider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraRetryPolicy>().Should().BeOfType<JiraRetryPolicy>();
+        scope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Api.ISerializer>().Should().BeOfType<SimpleJsonSerializer>();
+        scope.ServiceProvider.GetRequiredService<JiraMetrics.Abstractions.Api.IJiraRetryPolicy>().Should().BeOfType<JiraRetryPolicy>();
     }
 
     private static AppSettings CreateAppSettings() =>

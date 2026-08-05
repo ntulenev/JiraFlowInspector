@@ -30,7 +30,7 @@ internal static class TransportServiceCollectionExtensions
             })
             .Services
             .AddSingleton<ISerializer, SimpleJsonSerializer>()
-            .AddSingleton<IJiraRequestTelemetryCollector, JiraRequestTelemetryCollector>()
+            .AddScoped<IJiraRequestTelemetryCollector, JiraRequestTelemetryCollector>()
             .AddSingleton<IJiraRetryPolicy, JiraRetryPolicy>();
 
         return services;

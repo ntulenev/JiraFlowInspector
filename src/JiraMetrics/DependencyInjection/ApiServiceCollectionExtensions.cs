@@ -19,16 +19,16 @@ internal static class ApiServiceCollectionExtensions
 
         return services
             .AddTransient<IJiraSearchExecutor, JiraSearchExecutor>()
-            .AddTransient<IJiraFieldResolver, JiraFieldResolver>()
+            .AddScoped<IJiraFieldResolver, JiraFieldResolver>()
             .AddTransient<TeamTasksJqlBuilder>()
             .AddTransient<ReleaseIssuesJqlBuilder>()
             .AddTransient<ArchTasksJqlBuilder>()
             .AddTransient<GlobalIncidentsJqlBuilder>()
             .AddTransient<IJiraJqlFacade, JiraJqlFacade>()
-            .AddTransient<IIssueTimelineMapper, IssueTimelineMapper>()
-            .AddTransient<IJiraUserClient, JiraUserClient>()
-            .AddTransient<IJiraIssueSearchClient, JiraIssueSearchClient>()
-            .AddTransient<IJiraReportDataClient, JiraReportDataClient>()
-            .AddTransient<IJiraIssueTimelineClient, JiraIssueTimelineClient>();
+            .AddScoped<IIssueTimelineMapper, IssueTimelineMapper>()
+            .AddScoped<IJiraUserClient, JiraUserClient>()
+            .AddScoped<IJiraIssueSearchClient, JiraIssueSearchClient>()
+            .AddScoped<IJiraReportDataClient, JiraReportDataClient>()
+            .AddScoped<IJiraIssueTimelineClient, JiraIssueTimelineClient>();
     }
 }

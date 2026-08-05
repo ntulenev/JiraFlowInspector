@@ -29,7 +29,8 @@ await host.StartAsync().ConfigureAwait(false);
 WriteStartupMessage("Services started. Launching Jira workflow...");
 
 var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-var app = host.Services.GetRequiredService<IJiraApplication>();
+using var reportRunScope = host.Services.CreateScope();
+var app = reportRunScope.ServiceProvider.GetRequiredService<IJiraApplication>();
 var exitCode = JiraApplicationExitCode.Success;
 
 try

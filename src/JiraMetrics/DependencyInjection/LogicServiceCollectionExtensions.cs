@@ -16,11 +16,11 @@ internal static class LogicServiceCollectionExtensions
         return services
             .AddSingleton<TransitionBuilder>()
             .AddTransient<IJiraLogicService, JiraLogicService>()
-            .AddTransient<IssueSearchSnapshotLoader>()
-            .AddTransient<TestCoverageLoader>()
-            .AddTransient<JiraReportContextLoader>()
-            .AddTransient<JiraIssueTimelineLoader>()
-            .AddTransient<IJiraApplicationDataFacade, JiraApplicationDataFacade>()
-            .AddTransient<IJiraApplicationAnalysisFacade, JiraApplicationAnalysisFacade>();
+            .AddScoped<IssueSearchSnapshotLoader>()
+            .AddScoped<TestCoverageLoader>()
+            .AddScoped<JiraReportContextLoader>()
+            .AddScoped<JiraIssueTimelineLoader>()
+            .AddScoped<IJiraApplicationDataFacade, JiraApplicationDataFacade>()
+            .AddScoped<IJiraApplicationAnalysisFacade, JiraApplicationAnalysisFacade>();
     }
 }

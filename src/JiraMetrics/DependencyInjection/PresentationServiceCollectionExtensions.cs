@@ -14,17 +14,17 @@ internal static class PresentationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         return services
-            .AddSingleton<SpectreJiraPresentationService>()
-            .AddSingleton<IJiraPresentationService>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
-            .AddSingleton<IJiraStatusPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
-            .AddSingleton<IJiraIssueLoadingProgressPresenter>(sp =>
+            .AddScoped<SpectreJiraPresentationService>()
+            .AddScoped<IJiraPresentationService>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
+            .AddScoped<IJiraStatusPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>())
+            .AddScoped<IJiraIssueLoadingProgressPresenter>(sp =>
                 sp.GetRequiredService<SpectreJiraPresentationService>().ProgressPresenter)
-            .AddSingleton<IJiraReportSectionsPresenter>(sp =>
+            .AddScoped<IJiraReportSectionsPresenter>(sp =>
                 sp.GetRequiredService<SpectreJiraPresentationService>().ReportSectionsPresenter)
-            .AddSingleton<IJiraAnalysisPresenter>(sp =>
+            .AddScoped<IJiraAnalysisPresenter>(sp =>
                 sp.GetRequiredService<SpectreJiraPresentationService>().ReportSectionsPresenter)
-            .AddSingleton<IJiraDiagnosticsPresenter>(sp =>
+            .AddScoped<IJiraDiagnosticsPresenter>(sp =>
                 sp.GetRequiredService<SpectreJiraPresentationService>().ReportSectionsPresenter)
-            .AddSingleton<IReportOutputPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
+            .AddScoped<IReportOutputPresenter>(sp => sp.GetRequiredService<SpectreJiraPresentationService>());
     }
 }
